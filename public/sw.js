@@ -1,5 +1,5 @@
-// Service Worker v20260417 — Web Push + cache
-const CACHE = 'egchat-v20260417';
+// Service Worker v20260418 — Web Push + cache
+const CACHE = 'egchat-v20260418';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => {
@@ -14,9 +14,11 @@ self.addEventListener('activate', e => {
   );
 });
 
-// No interceptar peticiones a la API
+// Solo interceptar para excluir páginas HTML estáticas
 self.addEventListener('fetch', e => {
-  return;
+  const url = new URL(e.request.url);
+  // No interceptar páginas HTML estáticas
+  if (url.pathname.endsWith('.html')) return;
 });
 
 // ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────

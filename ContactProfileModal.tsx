@@ -22,6 +22,8 @@ interface Props {
   onSendMoney: (contact:any) => void;
   onStartCall: (type:'audio'|'video', contact:any) => void;
   onFavoriteToggle?: (id:string, isFav:boolean) => void;
+  isInContacts?: boolean;
+  onAddContact?: () => void;
 }
 
 // Toggle switch component
@@ -69,7 +71,8 @@ export const ContactProfileModal: React.FC<Props> = ({
   contact: cp, onClose, mutedChats, blockedChats, pinnedChats,
   chatMessages, allGroups, userBalance, isFavorite,
   onMuteToggle, onBlockToggle, onPinToggle, onClearChat,
-  onDeleteContact, onOpenWallpaper, onSendMoney, onStartCall, onFavoriteToggle
+  onDeleteContact, onOpenWallpaper, onSendMoney, onStartCall, onFavoriteToggle,
+  isInContacts = true, onAddContact
 }) => {
   const [tab, setTab] = React.useState<'info'|'media'|'grupos'>('info');
   const [note, setNote] = React.useState('');
@@ -149,6 +152,21 @@ export const ContactProfileModal: React.FC<Props> = ({
               </button>
             ))}
           </div>
+
+          {/* Botón añadir a contactos — solo si no está en la lista */}
+          {!isInContacts && onAddContact && (
+            <button onClick={onAddContact} style={{
+              marginTop:'14px', width:'100%',
+              background:'linear-gradient(135deg,#00c8a0,#00b4e6)',
+              border:'none', borderRadius:'10px', padding:'10px',
+              color:'#fff', fontSize:'13px', fontWeight:'700',
+              cursor:'pointer', outline:'none',
+              display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              Añadir a mis contactos
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
