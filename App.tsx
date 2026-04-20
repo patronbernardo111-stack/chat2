@@ -58,6 +58,8 @@ const App: React.FC = () => {
   const chatAudioChunksRef = useRef<Blob[]>([]);
   const [chatRecordingTime, setChatRecordingTime] = useState(0);
   const chatRecordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef<boolean>(true);
   // -- Mensajería real -------------------------------------------
   const [realChats, setRealChats] = useState<any[]>([]);
   const [newChatSearching, setNewChatSearching] = useState(false);
@@ -77,6 +79,7 @@ const App: React.FC = () => {
         const fmt = msgs.map((m: any) => ({
           id: m.id, from: m.sender_id === currentUserId.current ? 'me' as const : 'them' as const,
           text: m.text || '', time: new Date(m.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+          created_at: m.created_at,
           status: (m.status||'delivered') as 'pending'|'delivered'|'read',
           // Archivos e imágenes del backend
           ...(m.file_url ? {
@@ -524,6 +527,21 @@ const App: React.FC = () => {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Scroll al fondo al ABRIR un chat
+  React.useEffect(() => {
+    if (!selectedChat) return;
+    isAtBottomRef.current = true;
+    setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }, 100);
+  }, [selectedChat?.id]);
+
+  // Scroll automático SOLO si el usuario está abajo
+  React.useEffect(() => {
+    if (!selectedChat) return;
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
 
   // Geolocalización automática + clima real (Open-Meteo, sin API key)
   // watchPosition detecta cambios de ubicación — actualiza ciudad y temperatura
@@ -2713,8 +2731,7 @@ const App: React.FC = () => {
         <div onClick={e => e.stopPropagation()} style={{
           width: '100%', maxHeight: '92vh', background: '#FFFFFF',
           borderRadius: '20px 20px 0 0', border: '1px solid rgba(0,0,0,0.07)',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden'
-        }}>
+          display: 'flex', flexDirection: 'column', }}>
           {/* Handle */}
           <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e5e7eb' }} />
@@ -3076,7 +3093,7 @@ const App: React.FC = () => {
                     else setGroupMembers(prev => [...prev, { id: c.id, name: c.name, initials: c.avatar || c.name?.slice(0,2).toUpperCase(), color: '#a855f7' }]);
                   }}
                   style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: isAdded ? '#f3e8ff' : '#fafafa', border: `1.5px solid ${isAdded ? '#d8b4fe' : '#f0f0f0'}`, borderRadius: '12px', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#a855f7,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#a855f7,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0, }}>
                     {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : (c.avatar || c.name?.slice(0,2).toUpperCase())}
                   </div>
                   <div style={{ flex: 1, textAlign: 'left' }}>
@@ -3254,7 +3271,7 @@ const App: React.FC = () => {
             <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); setShowWallpaperCatalog(false); }}
               title={w.label}
               style={{ border: selectedWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
-              <div style={{ height: '130px', background: w.type === 'none' ? '#f3f4f6' : (w as any).bg || '#1a1a2e', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ height: '130px', background: w.type === 'none' ? '#f3f4f6' : (w as any).bg || '#1a1a2e', position: 'relative', }}>
                 {(w as any).overlay && <div style={{ position: 'absolute', inset: 0, background: (w as any).overlay }} />}
                 {w.category === 'dynamic' && <div style={{ position: 'absolute', top: '2px', left: '2px', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '3px', padding: '1px 3px', fontSize: '6px', fontWeight: '700', color: 'white', zIndex: 2 }}>VIVO</div>}
               </div>
@@ -3453,7 +3470,7 @@ const App: React.FC = () => {
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, background: wp.bg, overflow: 'hidden', pointerEvents: 'none' }}>
         {wp.overlay && <div style={{ position: 'absolute', inset: 0, background: wp.overlay }} />}
         {wp.rain && (
-          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: 0, }}>
             {Array.from({ length: 55 }).map((_, i) => (
               <div key={i} style={{ position: 'absolute', left: `${(i * 1.9) % 100}%`, top: `-${10 + (i * 7) % 30}%`, width: '1px', height: `${18 + (i * 3) % 22}px`, background: 'linear-gradient(to bottom, transparent, rgba(150,210,255,0.7))', animation: `rainDrop ${0.55 + (i % 5) * 0.12}s linear ${(i * 0.07) % 2}s infinite`, transform: 'rotate(12deg)' }} />
             ))}
@@ -3467,7 +3484,7 @@ const App: React.FC = () => {
           <div key={i} style={{ position: 'absolute', left: `${(i * 5.3) % 100}%`, top: `${(i * 7.1) % 100}%`, width: `${4 + (i % 4) * 2}px`, height: `${4 + (i % 4) * 2}px`, borderRadius: '50%', background: i % 2 === 0 ? 'rgba(0,200,160,0.6)' : 'rgba(0,180,230,0.6)', animation: `pulse ${2 + (i % 3)}s ease-in-out ${(i * 0.2) % 2}s infinite`, filter: 'blur(1px)' }} />
         ))}
         {wp.waves && (
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', }}>
             {[0, 1, 2].map(i => (
               <div key={i} style={{ position: 'absolute', bottom: `${i * 20}px`, left: '-50%', width: '200%', height: '60px', background: `rgba(14,165,233,${0.15 - i * 0.04})`, borderRadius: '50%', animation: `wave ${3 + i}s ease-in-out ${i * 0.5}s infinite alternate` }} />
             ))}
@@ -3741,18 +3758,17 @@ const App: React.FC = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        height: 'calc(72px + env(safe-area-inset-bottom, 0px))',
         background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
-        borderTop: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
-        padding: '0 8px',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingTop: '8px',
+        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+        paddingLeft: '4px',
+        paddingRight: '4px',
         zIndex: 1000,
         boxShadow: '0 -2px 12px rgba(0,180,230,0.35)',
-        overflow: 'hidden'
-      }}>
+        }}>
         
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,200,160,0.5)', pointerEvents: 'none', zIndex: 1 }} />
         
@@ -4118,7 +4134,7 @@ const App: React.FC = () => {
     );
 
     return (
-      <div style={{ padding: '56px 0 0', height: '100vh', display: 'flex', flexDirection: 'column', background: '#F7F8FA', overflow: 'hidden' }}>
+      <div style={{ padding: '56px 0 0', height: '100vh', display: 'flex', flexDirection: 'column', background: '#F7F8FA', }}>
         <div style={{ padding: '10px 16px 8px', background: '#FFFFFF', borderBottom: '1px solid #F0F2F5', flexShrink: 0 }}>
           <span style={{ fontSize: '17px', fontWeight: '700', color: '#111827' }}>Servicios</span>
         </div>
@@ -4347,7 +4363,7 @@ const App: React.FC = () => {
                 style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', background: '#efeae2' }}
               >
                 {renderChatWallpaperContent()}
-                {msgs.map((msg) => (
+                {[...msgs].filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i).sort((a,b)=>{const ts=(m)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px' }}>
                     <div
                       style={{
@@ -5729,8 +5745,7 @@ const App: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             background: '#EEF2F7',
-            overflow: 'hidden'
-          }}>
+            }}>
             {/* Header */}
             <div style={{
               display: 'flex',
@@ -8440,7 +8455,7 @@ const App: React.FC = () => {
         >
           <style>{`@keyframes slideDownNotif { from{opacity:0;transform:translateX(-50%) translateY(-20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }`}</style>
           {/* Avatar */}
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: '#fff', flexShrink: 0, }}>
             {msgNotif.avatar
               ? <img src={msgNotif.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
               : msgNotif.sender.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
