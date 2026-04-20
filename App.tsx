@@ -1209,7 +1209,7 @@ const App: React.FC = () => {
         const response = {
           id: (Date.now() + 1).toString(),
           type: 'assistant' as const,
-          content: `?? Archivo "${file.name}" cargado exitosamente. Puedo:\n- Analizar su contenido\n- Extraer información clave\n- Generar resumen\n- Detectar sentimiento\n\nQu deseas que haga con este archivo?`,
+          content: `📌 Archivo "${file.name}" cargado exitosamente. Puedo:\n- Analizar su contenido\n- Extraer información clave\n- Generar resumen\n- Detectar sentimiento\n\nQu deseas que haga con este archivo?`,
           timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
         };
         setAiMessages(prev => [...prev, response]);
@@ -1302,7 +1302,7 @@ const App: React.FC = () => {
       }
       // Clima
       else if (lowerMessage.includes('clima') || lowerMessage.includes('tiempo')) {
-        assistantResponse = `?? CLIMA EN MALABO\n\nTemperatura: 28C\nCondicion: Soleado\nHumedad: 75%\n\nPerfecto para el dia`;
+        assistantResponse = `🌤️ CLIMA EN MALABO\n\nTemperatura: 28C\nCondicion: Soleado\nHumedad: 75%\n\nPerfecto para el dia`;
       }
       // Navegar
       else if (lowerMessage.includes('ir a') || lowerMessage.includes('abrir')) {
@@ -1327,7 +1327,7 @@ const App: React.FC = () => {
       }
       // capacidades
       else if (lowerMessage.includes('capacidades') || lowerMessage.includes('que puedes hacer')) {
-        assistantResponse = `🤖 MIS CAPACIDADES\n\n?? DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n?? ANLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
+        assistantResponse = `🤖 MIS CAPACIDADES\n\n💰 DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n?? ANLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
       }
       // Ayuda
       else if (lowerMessage.includes('ayuda') || lowerMessage.includes('help')) {
@@ -2499,14 +2499,15 @@ const App: React.FC = () => {
 
   const endCall = () => {
     stopRingtone(); stopDialingTone(); playCallEnded(); vibrate([100, 50, 100]);
-    // Registrar llamada en el chat
     if (activeCall) {
       const status = activeCall.status === 'connected' ? 'completed' : 'outgoing';
       addCallRecord(activeCall.type, status, callDuration, activeCall.contact);
     }
-    webrtc.endCall();
-    if (localStream) { localStream.getTracks().forEach(t => t.stop()); setLocalStream(null); }
-    setActiveCall(null); setCallDuration(0);
+    try { webrtc.endCall(); } catch {}
+    if (localStream) { localStream.getTracks().forEach(t => { try { t.stop(); } catch {} }); setLocalStream(null); }
+    if (remoteVideoRef.current) { remoteVideoRef.current.srcObject = null; }
+    if (localVideoRef.current) { localVideoRef.current.srcObject = null; }
+    setActiveCall(null); setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
   };
 
   // Temporizador de llamada
@@ -4233,7 +4234,7 @@ const App: React.FC = () => {
           return (
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Header conversacin */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 8px 6px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
+              <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 8px 6px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -4312,7 +4313,7 @@ const App: React.FC = () => {
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,label:mutedChats.includes(sc.id?.toString()||'')?'Activar notificaciones':'Silenciar',color:'#374151',action:()=>{const id=sc.id?.toString()||'';setMutedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,label:'Fondo de pantalla',color:'#374151',action:()=>{setShowChatMenu(false);setShowWallpaperCatalog(true);}},
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,label:'Cifrado E2E',color:'#00c8a0',action:()=>{setShowChatMenu(false);alert('?? Chat cifrado de extremo a extremo.');}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,label:'Cifrado E2E',color:'#00c8a0',action:()=>{setShowChatMenu(false);alert('🔒 Chat cifrado de extremo a extremo.');}},
                     ].map((item,i)=>(
                       <button key={i} onClick={item.action} style={{width:'100%',background:'none',border:'none',padding:'10px 14px',display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',outline:'none',borderBottom:'1px solid rgba(0,0,0,0.06)',textAlign:'left'}}
                         onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,0,0,0.05)';}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}><span style={{color:item.color,flexShrink:0,display:'flex'}}>{item.icon}</span>
@@ -4346,6 +4347,8 @@ const App: React.FC = () => {
                 </div>
               )}
 
+              {/* Spacer for fixed header */}
+              <div style={{ height: '60px', flexShrink: 0 }} />
               {/* Barra b?squeda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
@@ -4364,7 +4367,7 @@ const App: React.FC = () => {
                 style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', background: '#efeae2' }}
               >
                 {renderChatWallpaperContent()}
-                {[...msgs].filter((m,i,a)=>a.findIndex(x=>x.id===m.id)===i).sort((a,b)=>{const ts=(m)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
+                {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px' }}>
                     <div
                       style={{
@@ -4680,11 +4683,11 @@ const App: React.FC = () => {
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                   <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                                     style={{ flex: 1, background: '#e3f2fd', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', fontWeight: '600', color: '#1565c0', textDecoration: 'none', textAlign: 'center' }}>
-                                    ?? Ver mapa
+                                    🗺️ Ver mapa
                                   </a>
                                   <a href={directionsUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                                     style={{ flex: 1, background: '#e8f5e9', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', fontWeight: '600', color: '#2e7d32', textDecoration: 'none', textAlign: 'center' }}>
-                                    ?? Cmo llegar
+                                    📍 Cómo llegar
                                   </a>
                                 </div>
                               </div>
@@ -4728,7 +4731,7 @@ const App: React.FC = () => {
                               <div style={{ display: 'flex', gap: '8px', padding: '8px 0 2px' }}>
                                 <button onClick={() => setShowContactProfile(contactProfile)}
                                   style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontSize: '12px', fontWeight: '700', color: '#6b7280', outline: 'none', textAlign: 'center' }}>
-                                  ?? Ver perfil
+                                  👤 Ver perfil
                                 </button>
                                 {!isAlreadyContact && (
                                   <button onClick={() => {
@@ -4749,7 +4752,7 @@ const App: React.FC = () => {
                                         .catch(() => showToast('No se pudo eliminar.', 'error'));
                                     }
                                   }} style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontSize: '12px', fontWeight: '700', color: '#ef4444', outline: 'none', textAlign: 'center' }}>
-                                    ?? Eliminar
+                                    🗑️ Eliminar
                                   </button>
                                 )}
                               </div>
@@ -4763,7 +4766,7 @@ const App: React.FC = () => {
                           const lines = (msg.text || '').split('\n');
                           const amount = lines[1]?.replace('💸 ', '') || '';
                           const recipient = lines[2]?.replace('💸 ', '') || '';
-                          const code = lines[3]?.replace('?? C?digo: ', '') || '';
+                          const code = lines[3]?.replace('🔑 Código: ', '') || '';
                           const status = lines[4]?.replace('💸 ', '') || '';
                           return (
                             <div style={{ minWidth: '220px' }}>
@@ -4919,7 +4922,7 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const t = new Date();
                           const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? ${myName}\n?? ${myPhone}`, time: tm, status: 'pending' as const, type: 'contact' as any, contactAvatar: myAvatar } as any] }));
+                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `👤 ${myName}\n?? ${myPhone}`, time: tm, status: 'pending' as const, type: 'contact' as any, contactAvatar: myAvatar } as any] }));
                         }
                       },
                       {
@@ -4931,17 +4934,17 @@ const App: React.FC = () => {
                           const t = new Date();
                           const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                           if (!navigator.geolocation) {
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
                             return;
                           }
                           navigator.geolocation.getCurrentPosition(
                             pos => {
                               const lat = pos.coords.latitude.toFixed(6);
                               const lng = pos.coords.longitude.toFixed(6);
-                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Mi ubicación\nhttps://maps.google.com/?q=${lat},${lng}`, time: tm, status: 'pending' as const }] }));
+                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Mi ubicación\nhttps://maps.google.com/?q=${lat},${lng}`, time: tm, status: 'pending' as const }] }));
                             },
                             () => {
-                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
+                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
                             },
                             { timeout: 8000, enableHighAccuracy: true }
                           );
@@ -4963,7 +4966,7 @@ const App: React.FC = () => {
                           try { subtractBalance(amount); } catch {}
                           setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), {
                             id: Date.now().toString(), from: 'me' as const,
-                            text: `?? Transferencia\n?? ${amount.toLocaleString()} XAF\n?? ${sc.title}\n?? C?digo: ${code}\n?? ? Enviado`,
+                            text: `📌 Transferencia\n?? ${amount.toLocaleString()} XAF\n?? ${sc.title}\n?? C?digo: ${code}\n?? ? Enviado`,
                             time: tm, status: 'pending' as const
                           }] }));
                         }
@@ -5107,22 +5110,22 @@ const App: React.FC = () => {
               {/* Barra de input */}
               <div style={{
                 flexShrink: 0,
-                background: '#FFFFFF',
-                borderTop: '1px solid rgba(0,0,0,0.07)',
-                padding: '10px 10px',
-                paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+                background: '#f0f2f5',
+                borderTop: 'none',
+                padding: '8px 8px',
+                paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '6px'
               }}>
                 {/* Botón + */}
                 <button onClick={() => { setShowChatAttach(p => !p); setShowChatEmojis(false); }}
-                  style={{ background: showChatAttach ? 'rgba(0,180,230,0.15)' : '#f5f6f7', border: `1px solid ${showChatAttach ? 'rgba(0,180,230,0.3)' : '#f3f4f6'}`, borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', color: showChatAttach ? '#00b4e6' : '#9ca3af', flexShrink: 0, transition: 'all 0.15s' }}>
+                  style={{ background: 'none', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', color: showChatAttach ? '#00b4e6' : '#9ca3af', flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
 
                 {/* Input */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(249,250,251,0.95)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: '22px', minHeight: '44px', padding: '0 10px 0 16px', gap: '6px' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f0f2f5', border: 'none', borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px' }}>
                   <input
                     type="text"
                     value={currentChatInput}
@@ -5133,15 +5136,15 @@ const App: React.FC = () => {
                   />
                   {currentChatInput.trim() && (
                     <button onClick={sendChatMessage}
-                      style={{ background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', color: '#fff', flexShrink: 0 }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      style={{ background: 'none', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', color: '#00c8a0', flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
                   )}
                 </div>
 
                 {/* Emoji */}
                 <button onClick={() => { setShowChatEmojis(p => !p); setShowChatAttach(false); }}
-                  style={{ background: showChatEmojis ? '#FEF3C7' : 'transparent', border: 'none', borderRadius: '50%', color: showChatEmojis ? '#f59e0b' : '#6b7280', cursor: 'pointer', outline: 'none', padding: '8px', display: 'flex', flexShrink: 0, transition: 'all 0.15s' }}>
+                  style={{ background: 'none', border: 'none', borderRadius: '50%', color: showChatEmojis ? '#f59e0b' : '#9ca3af', cursor: 'pointer', outline: 'none', padding: '8px', display: 'flex', flexShrink: 0 }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
                   </svg>
@@ -5165,7 +5168,9 @@ const App: React.FC = () => {
                         : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
                       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
                       recorder.ondataavailable = e => { if (e.data.size > 0) chatAudioChunksRef.current.push(e.data); };
+                      let audioSent = false;
                       recorder.onstop = async () => {
+                        if (audioSent) return; audioSent = true;
                         stream.getTracks().forEach(t => t.stop());
                         if (chatRecordTimerRef.current) { clearInterval(chatRecordTimerRef.current); chatRecordTimerRef.current = null; }
                         setChatRecordingTime(0);
@@ -5178,7 +5183,7 @@ const App: React.FC = () => {
                         const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
                         const msgId = Date.now().toString();
                         const localUrl = URL.createObjectURL(blob);
-                        const newMsg = { id: msgId, from: 'me' as const, text: `?? Mensaje de voz`, time, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
+                        const newMsg = { id: msgId, from: 'me' as const, text: `📌 Mensaje de voz`, time, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
                         addMsg(newMsg);
                         // Subir al servidor para que persista
                         const chatId = sc?.id?.toString() || '';
@@ -5187,7 +5192,7 @@ const App: React.FC = () => {
                             const audioFile = new File([blob], `audio_${msgId}.${ext}`, { type: mimeType });
                             const result = await chatAPI.uploadFile(chatId, audioFile);
                             if (result.file_url) {
-                              await chatAPI.sendMessage(chatId, { text: '?? Mensaje de voz', type: 'audio', file_url: result.file_url });
+                              await chatAPI.sendMessage(chatId, { text: '📌 Mensaje de voz', type: 'audio', file_url: result.file_url });
                               // Actualizar URL local con la del servidor
                               const key = sc?.id?.toString() || sc?.title;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, audioUrl: result.file_url, status: 'delivered' } : m) }));
@@ -5202,7 +5207,7 @@ const App: React.FC = () => {
                       chatRecordTimerRef.current = setInterval(() => setChatRecordingTime(t => t + 1), 1000);
                     } catch { showToast('No se pudo acceder al micr?fono', 'error'); }
                   }}
-                  style={{ background: isRecordingAudio ? '#ef4444' : 'transparent', border: 'none', borderRadius: '50%', color: isRecordingAudio ? '#fff' : '#6b7280', cursor: 'pointer', outline: 'none', padding: '8px', display: 'flex', flexShrink: 0, transition: 'all 0.15s', position: 'relative' }}>
+                  style={{ background: isRecordingAudio ? '#ef4444' : 'none', border: 'none', borderRadius: '50%', color: isRecordingAudio ? '#fff' : '#9ca3af', cursor: 'pointer', outline: 'none', padding: '8px', display: 'flex', flexShrink: 0, position: 'relative' }}>
                   {isRecordingAudio && (
                     <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', color: '#ef4444', fontWeight: '700', whiteSpace: 'nowrap', background: '#fff', padding: '2px 6px', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,0.15)', border: '1px solid rgba(239,68,68,0.2)' }}>
                       ? {String(Math.floor(chatRecordingTime/60)).padStart(2,'0')}:{String(chatRecordingTime%60).padStart(2,'0')}
@@ -5615,7 +5620,20 @@ const App: React.FC = () => {
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:'15px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</div>
-                        <div style={{ fontSize:'13px', color:'#6b7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>{lastMsg || 'Sin mensajes'}</div>
+                        <div style={{ fontSize:'13px', color:'#6b7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>
+                          {(() => {
+                            if (!lastMsg) return 'Sin mensajes';
+                            // Clean call message previews
+                            if (lastMsg.includes('Llamada perdida')) return '📵 Llamada perdida';
+                            if (lastMsg.includes('Llamada saliente')) return '📞 Llamada saliente';
+                            if (lastMsg.includes('Llamada')) return '📞 Llamada';
+                            if (lastMsg.includes('Mensaje de voz')) return '🎤 Mensaje de voz';
+                            if (lastMsg.includes('Foto')) return '📷 Foto';
+                            if (lastMsg.includes('Video')) return '🎥 Video';
+                            // Remove any corrupted ?? sequences
+                            return lastMsg.replace(/\?\?/g, '').trim() || 'Sin mensajes';
+                          })()}
+                        </div>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'4px', flexShrink:0 }}>
                         {time && <span style={{ fontSize:'11px', color:'#9ca3af' }}>{time}</span>}
@@ -6660,7 +6678,7 @@ const App: React.FC = () => {
                     color: contact.status === 'online' ? '#00c8a0' : contact.status === 'away' ? '#f59e0b' : '#9ca3af',
                     flexShrink: 0
                   }}>
-                    {contact.status === 'online' ? '?? En línea' : contact.status === 'away' ? '?? Ausente' : '? Desconectado'}
+                    {contact.status === 'online' ? '📌 En línea' : contact.status === 'away' ? '📌 Ausente' : '? Desconectado'}
                   </div>
                 </button>
               ))}
@@ -7204,7 +7222,7 @@ const App: React.FC = () => {
                     )}
 
                     <div style={{ marginTop:'10px', padding:'8px 10px', background:'#f8f9fa', borderRadius:'8px', fontSize:'11px', color:'#9ca3af', lineHeight:'1.5' }}>
-                      ?? Formatos soportados: MP3, WAV, OGG, M4A ? M?x. recomendado: 30 segundos
+                      📁 Formatos soportados: MP3, WAV, OGG, M4A ? Máx. recomendado: 30 segundos
                     </div>
                   </div>
 
@@ -7906,7 +7924,7 @@ const App: React.FC = () => {
     // Polling cada 3 segundos
     pollingRef.current = setInterval(() => {
       loadMessages(chatId);
-    }, 3000);
+    }, 1500);
     return () => {
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
     };
@@ -8370,7 +8388,7 @@ const App: React.FC = () => {
                         };
                         const key = callerChat.id?.toString();
                         setChatMessages(prev => ({ ...prev, [key]: [...(prev[key] || []), missedMsg] }));
-                        chatAPI.sendMessage(key, { text: '?? Llamada perdida', type: 'text' }).catch(() => {});
+                        chatAPI.sendMessage(key, { text: '📌 Llamada perdida', type: 'text' }).catch(() => {});
                         // notificación en campanita
                         const nt = new Date();
                         const ntime = `${nt.getHours().toString().padStart(2,'0')}:${nt.getMinutes().toString().padStart(2,'0')}`;
@@ -9108,13 +9126,13 @@ const App: React.FC = () => {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     <input type="text" placeholder="Ej: 0012345678" value={svcData.contrato||''} onChange={(e)=>setSvcData((p:Record<string,string>)=>({...p,contrato:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'15px', color:'#111827', fontFamily:'inherit', fontWeight:'600' }}/>
                   </div>
-                  <div style={{ fontSize:'10px', color:'#9CA3AF', marginBottom:'14px' }}>?? Encu?ntralo en tu factura o en el medidor</div>
+                  <div style={{ fontSize:'10px', color:'#9CA3AF', marginBottom:'14px' }}>📋 Encuéntralo en tu factura o en el medidor</div>
 
                   {/* Consultar factura */}
                   {svcData.contrato && !svcData.facturaConsultada && (
                     <button onClick={()=>setSvcData((p:Record<string,string>)=>({...p,facturaConsultada:'1',facturaImporte:'18500',facturaPeriodo:'Marzo 2026',facturaVencimiento:'30/04/2026',facturaEstado:'Pendiente'}))}
                       style={{ width:'100%', background:'linear-gradient(135deg,#1A3A6B,#2A5298)', border:'none', borderRadius:'10px', padding:'13px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', marginBottom:'12px' }}>
-                      ?? Consultar factura
+                      🔍 Consultar factura
                     </button>
                   )}
 
@@ -9181,11 +9199,11 @@ const App: React.FC = () => {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
                     <input type="text" placeholder="Ej: SNGE-00456" value={svcData.contrato||''} onChange={(e)=>setSvcData((p:Record<string,string>)=>({...p,contrato:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'15px', color:'#111827', fontFamily:'inherit', fontWeight:'600' }}/>
                   </div>
-                  <div style={{ fontSize:'10px', color:'#9CA3AF', marginBottom:'14px' }}>?? Encu?ntralo en tu factura de agua</div>
+                  <div style={{ fontSize:'10px', color:'#9CA3AF', marginBottom:'14px' }}>📋 Encuéntralo en tu factura de agua</div>
                   {svcData.contrato && !svcData.facturaConsultada && (
                     <button onClick={()=>setSvcData((p:Record<string,string>)=>({...p,facturaConsultada:'1',facturaImporte:'8200',facturaPeriodo:'Marzo 2026',facturaVencimiento:'15/04/2026',facturaEstado:'Pendiente'}))}
                       style={{ width:'100%', background:'linear-gradient(135deg,#0A4A8A,#1565C0)', border:'none', borderRadius:'10px', padding:'13px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', marginBottom:'12px' }}>
-                      ?? Consultar factura
+                      🔍 Consultar factura
                     </button>
                   )}
                   {svcData.facturaConsultada && (
@@ -9467,7 +9485,7 @@ const App: React.FC = () => {
                   </div>
                 ))}
                 <div style={{ background:'#FEF3C7', borderRadius:'10px', padding:'10px 14px', marginBottom:'12px', fontSize:'12px', color:'#92400E', display:'flex', gap:'8px', alignItems:'flex-start' }}>
-                  <span>??</span><span>El pago de impuestos genera un justificante oficial. Guarda el nmero de referencia.</span>
+                  <span>ℹ️</span><span>El pago de impuestos genera un justificante oficial. Guarda el nmero de referencia.</span>
                 </div>
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
@@ -10633,7 +10651,7 @@ const App: React.FC = () => {
             const msgId = Date.now().toString();
             setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId]||[]), {
               id: msgId, from: 'me' as const,
-              text: caption ? `?? ${caption}` : '?? Foto',
+              text: caption ? `📷 ${caption}` : '📌 Foto',
               time, status: 'pending' as const,
               type: 'image' as any,
               imageUrl
