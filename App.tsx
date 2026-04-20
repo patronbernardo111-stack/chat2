@@ -53,14 +53,14 @@ const App: React.FC = () => {
   const webrtc = useWebRTC();
   // -- Llamada entrante ------------------------------------------
   const [incomingCall, setIncomingCall] = useState<{callId:string; callerId:string; type:'audio'|'video'; offer:any} | null>(null);
-  // -- Grabaci�n de voz en chat ----------------------------------
+  // -- Grabación de voz en chat ----------------------------------
   const chatRecorderRef = useRef<MediaRecorder | null>(null);
   const chatAudioChunksRef = useRef<Blob[]>([]);
   const [chatRecordingTime, setChatRecordingTime] = useState(0);
   const chatRecordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef<boolean>(true);
-  // -- Mensajer�a real -------------------------------------------
+  // -- Mensajería real -------------------------------------------
   const [realChats, setRealChats] = useState<any[]>([]);
   const [newChatSearching, setNewChatSearching] = useState(false);
   const currentUserId = useRef<string>('');
@@ -81,7 +81,7 @@ const App: React.FC = () => {
           text: m.text || '', time: new Date(m.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
           created_at: m.created_at,
           status: (m.status||'delivered') as 'pending'|'delivered'|'read',
-          // Archivos e im�genes del backend
+          // Archivos e imágenes del backend
           ...(m.file_url ? {
             fileUrl: m.type !== 'image' && m.type !== 'audio' ? m.file_url : undefined,
             imageUrl: m.type === 'image' ? m.file_url : undefined,
@@ -97,11 +97,11 @@ const App: React.FC = () => {
             const newest = newFromThem[newFromThem.length - 1];
             if (lastId && newest.id !== lastId) {
               notifyNewMessage(chatId, newest.text);
-              playMessageReceived(); vibrate([50, 30, 50]); // sonido + vibraci�n doble al recibir
+              playMessageReceived(); vibrate([50, 30, 50]); // sonido + vibración doble al recibir
             }
             lastMsgIds.current[chatId] = newest.id;
           }
-          // Fusionar: conservar mensajes locales (fotos, audio, archivos) que no est�n en el backend
+          // Fusionar: conservar mensajes locales (fotos, audio, archivos) que no están en el backend
           const backendIds = new Set(fmt.map((m: any) => m.id));
           const localOnly = (prev[chatId] || []).filter((m: any) =>
             !backendIds.has(m.id) && (m.type === 'image' || m.type === 'audio' || m.imageUrl || m.audioUrl || m.status === 'pending')
@@ -129,7 +129,7 @@ const App: React.FC = () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, type });
     toastTimer.current = setTimeout(() => setToast(null), 3000);
-    // Sonido seg�n tipo
+    // Sonido segn tipo
     if (type === 'success') playSuccess();
     else if (type === 'error') playError();
     else playNotification();
@@ -144,18 +144,18 @@ const App: React.FC = () => {
     if (msgNotifTimer.current) clearTimeout(msgNotifTimer.current);
     setMsgNotif({ id: Date.now().toString(), sender: senderName, text, chatId, avatar });
     msgNotifTimer.current = setTimeout(() => setMsgNotif(null), 5000);
-    // A�adir a notificaciones reales de la app
+    // Añadir a notificaciones reales de la app
     const t = new Date();
     const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
     setAppNotifications(prev => [{
       id: Date.now().toString(), type: 'message' as const,
-      title: `?? ${senderName}`, body: text, time, read: false, chatId,
+      title: `💬 ${senderName}`, body: text, time, read: false, chatId,
     }, ...prev].slice(0, 50));
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(`?? ${senderName}`, { body: text, icon: '/logo-transparent.png', tag: chatId });
+      new Notification(`💬 ${senderName}`, { body: text, icon: '/logo-transparent.png', tag: chatId });
     }
   }, []);
-  // Helper: navegar a una vista siempre cierra el men� radial
+  // Helper: navegar a una vista siempre cierra el men radial
   const navigateTo = (view: string) => { setIsMenuOpen(false); setCurrentView(view); };
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [selectedService, setSelectedService] = useState<string>('');
@@ -220,12 +220,12 @@ const App: React.FC = () => {
   const [emojiSearch, setEmojiSearch] = useState<string>('');
   const [isRecordingAudio, setIsRecordingAudio] = useState<boolean>(false);
   const [customEmojis, setCustomEmojis] = useState<Array<{id:string; label:string; title:string; source:'created'|'copied'; from?:string}>>([
-    { id:'1', label:'??', title:'Rico',    source:'created' },
-    { id:'2', label:'??', title:'Leon GQ', source:'created' },
+    { id:'1', label:'🦁', title:'Rico',    source:'created' },
+    { id:'2', label:'🌍', title:'Leon GQ', source:'created' },
     { id:'3', label:'?', title:'Africa',  source:'created' },
-    { id:'4', label:'??', title:'Verde GQ',source:'created' },
-    { id:'5', label:'??', title:'Medalla', source:'copied', from:'Juan' },
-    { id:'6', label:'??', title:'Fuerza',  source:'copied', from:'Maria Garcia' },
+    { id:'4', label:'💚', title:'Verde GQ',source:'created' },
+    { id:'5', label:'🏅', title:'Medalla', source:'copied', from:'Juan' },
+    { id:'6', label:'💪', title:'Fuerza',  source:'copied', from:'María Garcia' },
   ]);
   const [showEmojiEditor, setShowEmojiEditor] = useState<boolean>(false);
   const [editingEmoji, setEditingEmoji] = useState<{id?:string; label:string; title:string} | null>(null);
@@ -233,7 +233,7 @@ const App: React.FC = () => {
   const [isDraggingAI, setIsDraggingAI] = useState<boolean>(false);
   const [dragOffsetAI, setDragOffsetAI] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Posiciones de los 4 iconos arrastrables del men� radial
+  // Posiciones de los 4 iconos arrastrables del men radial
   const [floatingIconPositions, setFloatingIconPositions] = useState<Record<string, { x: number; y: number }>>({});
   const floatingDragRef = React.useRef<{ id: string; ox: number; oy: number; moved: boolean } | null>(null);
   // Saldo sincronizado con WalletSystem
@@ -296,7 +296,7 @@ const App: React.FC = () => {
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [showChatSearch, setShowChatSearch] = useState(false);
   const [chatImageViewer, setChatImageViewer] = useState<string | null>(null); // visor de imagen inline
-  const [msgContextMenu, setMsgContextMenu] = useState<{msg: any; x: number; y: number} | null>(null); // men� contextual de mensaje
+  const [msgContextMenu, setMsgContextMenu] = useState<{msg: any; x: number; y: number} | null>(null); // men contextual de mensaje
   const [saludInitTab, setSaludInitTab] = useState<'hospitales'|'farmacias'|'cita'|'urgencias'>('hospitales');
   const [showSvcModal, setShowSvcModal] = useState<string | null>(null); // servicios publicos + diarios + herramientas
   const [svcStep, setSvcStep] = useState<string>('main');
@@ -315,7 +315,7 @@ const App: React.FC = () => {
     {
       id: '1',
       type: 'assistant',
-      content: '�Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. Puedo ayudarte con cualquier cosa: responder preguntas, enviar mensajes a contactos, gestionar tu dinero, y mucho m�s. �En qu� puedo ayudarte?',
+      content: '¡Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. Puedo ayudarte con cualquier cosa: responder preguntas, enviar mensajes a contactos, gestionar tu dinero, y mucho ms. En qu puedo ayudarte?',
       timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -351,9 +351,9 @@ const App: React.FC = () => {
   const [transactionHistory, setTransactionHistory] = useState<Array<{ id: string; type: 'sent' | 'received' | 'payment' | 'deposit' | 'withdrawal' | 'salary' | 'card_withdrawal'; amount: number; description: string; date: string; status: 'completed' | 'pending' | 'failed'; fromAccount?: string; toAccount?: string; commission?: number }>>([
     { id: '1', type: 'received', amount: 50000, description: 'Transferencia recibida de Juan', date: '12/03/2026', status: 'completed' },
     { id: '2', type: 'sent', amount: 25000, description: 'Pago de servicios', date: '11/03/2026', status: 'completed' },
-    { id: '3', type: 'received', amount: 75000, description: 'Dep�sito salario', date: '10/03/2026', status: 'completed' },
+    { id: '3', type: 'received', amount: 75000, description: 'Depósito salario', date: '10/03/2026', status: 'completed' },
     { id: '4', type: 'payment', amount: 15000, description: 'Pago de electricidad', date: '09/03/2026', status: 'completed' },
-    { id: '5', type: 'sent', amount: 30000, description: 'Transferencia a Mar�a', date: '08/03/2026', status: 'completed' }
+    { id: '5', type: 'sent', amount: 30000, description: 'Transferencia a María', date: '08/03/2026', status: 'completed' }
   ]);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'sent' | 'received' | 'payment' | 'deposit' | 'withdrawal'>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
@@ -365,16 +365,16 @@ const App: React.FC = () => {
   const [showCardWithdrawalModal, setShowCardWithdrawalModal] = useState<boolean>(false);
   const [cardWithdrawalData, setCardWithdrawalData] = useState<{ amount: string; accountId: string; cardNumber: string }>({ amount: '', accountId: '', cardNumber: '' });
 
-  // Seguridad: PIN y Autenticaci�n
+  // Seguridad: PIN y Autenticación
   const [showPINModal, setShowPINModal] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
-  const [userPIN, setUserPIN] = useState<string>('1234'); // PIN por defecto (en producci�n ser� encriptado)
+  const [userPIN, setUserPIN] = useState<string>('1234'); // PIN por defecto (en producción ser encriptado)
   const [pinAttempts, setPinAttempts] = useState<number>(0);
   const [isAccountLocked, setIsAccountLocked] = useState<boolean>(false);
   const [lockoutTime, setLockoutTime] = useState<number>(0);
   const [pendingOperation, setPendingOperation] = useState<any>(null);
   
-  // Seguridad: L�mites y Validaciones
+  // Seguridad: Límites y Validaciones
   const [dailyTransactionTotal, setDailyTransactionTotal] = useState<number>(0);
   const [transactionLog, setTransactionLog] = useState<Array<{ id: string; type: string; amount: number; timestamp: Date; status: string; ipAddress?: string }>>([]);
   const [suspiciousActivities, setSuspiciousActivities] = useState<Array<{ id: string; type: string; description: string; timestamp: Date }>>([]);
@@ -451,10 +451,10 @@ const App: React.FC = () => {
     try { localStorage.setItem('egchat_custom_tones', JSON.stringify(tones)); } catch {}
   };
   const [activityLog, setActivityLog] = useState<Array<{ id: string; action: string; description: string; timestamp: Date; type: 'login' | 'transaction' | 'security' | 'profile' }>>([
-    { id: '1', action: 'Login', description: 'Inicio de sesi�n exitoso', timestamp: new Date(Date.now() - 3600000), type: 'login' },
-    { id: '2', action: 'Transferencia', description: 'Transferencia de 25,000 XAF a Mar�a', timestamp: new Date(Date.now() - 7200000), type: 'transaction' },
+    { id: '1', action: 'Login', description: 'Inicio de sesión exitoso', timestamp: new Date(Date.now() - 3600000), type: 'login' },
+    { id: '2', action: 'Transferencia', description: 'Transferencia de 25,000 XAF a María', timestamp: new Date(Date.now() - 7200000), type: 'transaction' },
     { id: '3', action: 'PIN Verificado', description: 'PIN verificado para retiro a tarjeta', timestamp: new Date(Date.now() - 10800000), type: 'security' },
-    { id: '4', action: 'Perfil Actualizado', description: 'Tel�fono actualizado', timestamp: new Date(Date.now() - 86400000), type: 'profile' }
+    { id: '4', action: 'Perfil Actualizado', description: 'Teléfono actualizado', timestamp: new Date(Date.now() - 86400000), type: 'profile' }
   ]);
 
   // Gestion de Contactos - Ahora usa datos reales del backend
@@ -470,7 +470,7 @@ const App: React.FC = () => {
   const [showCreateGroupModal, setShowCreateGroupModal] = useState<boolean>(false);
   const [newGroupData, setNewGroupData] = useState<{ name: string; description: string; selectedMembers: string[] }>({ name: '', description: '', selectedMembers: [] });
 
-  // Persistir mensajes en localStorage � incluye im�genes comprimidas
+  // Persistir mensajes en localStorage  incluye imágenes comprimidas
   useEffect(() => {
     try {
       const toSave: Record<string, any[]> = {};
@@ -481,9 +481,9 @@ const App: React.FC = () => {
           if (saved.audioUrl && saved.audioUrl.startsWith('blob:')) {
             delete saved.audioUrl;
           }
-          // Comprimir im�genes base64 grandes a thumbnail para localStorage
+          // Comprimir imágenes base64 grandes a thumbnail para localStorage
           if (saved.imageUrl && saved.imageUrl.startsWith('data:image') && saved.imageUrl.length > 50000) {
-            // Guardar versi�n comprimida como thumbnail
+            // Guardar versión comprimida como thumbnail
             try {
               const canvas = document.createElement('canvas');
               const img = new Image();
@@ -502,7 +502,7 @@ const App: React.FC = () => {
       try {
         localStorage.setItem('egchat_messages', JSON.stringify(toSave));
       } catch {
-        // Si a�n falla, guardar solo mensajes de texto (sin im�genes)
+        // Si aún falla, guardar solo mensajes de texto (sin imágenes)
         const toSaveLite: Record<string, any[]> = {};
         for (const [k, msgs] of Object.entries(toSave)) {
           toSaveLite[k] = msgs.filter((m: any) => !m.imageUrl || !m.imageUrl.startsWith('data:'));
@@ -535,7 +535,7 @@ const App: React.FC = () => {
     setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }, 100);
   }, [selectedChat?.id]);
 
-  // Scroll autom�tico SOLO si el usuario est� abajo
+  // Scroll automático SOLO si el usuario est abajo
   React.useEffect(() => {
     if (!selectedChat) return;
     if (isAtBottomRef.current) {
@@ -543,9 +543,9 @@ const App: React.FC = () => {
     }
   }, [chatMessages]);
 
-  // Geolocalizaci�n autom�tica + clima real (Open-Meteo, sin API key)
-  // watchPosition detecta cambios de ubicaci�n � actualiza ciudad y temperatura
-  // Adem�s refresca temperatura cada 15 min aunque no te muevas
+  // Geolocalizacin automática + clima real (Open-Meteo, sin API key)
+  // watchPosition detecta cambios de ubicación  actualiza ciudad y temperatura
+  // Además refresca temperatura cada 15 min aunque no te muevas
   useEffect(() => {
     if (!navigator.geolocation) return;
 
@@ -565,7 +565,7 @@ const App: React.FC = () => {
 
     const fetchAll = async (lat: number, lon: number, forceCity = false) => {
       try {
-        // Temperatura + condici�n siempre
+        // Temperatura + condición siempre
         const meteo = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`
         ).then(r => r.json());
@@ -574,7 +574,7 @@ const App: React.FC = () => {
         const condition = wcode === 0 ? 'sunny' : wcode <= 3 ? 'cloudy' : 'rain';
 
         if (forceCity) {
-          // Ciudad � solo cuando cambia de zona
+          // Ciudad  solo cuando cambia de zona
           const geo = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
           ).then(r => r.json());
@@ -634,7 +634,7 @@ const App: React.FC = () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Manejar drag del bot�n home
+  // Manejar drag del botón home
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
@@ -677,7 +677,7 @@ const App: React.FC = () => {
     }
   }, [isDragging, dragOffset]);
 
-  // Manejar drag del bot�n AI
+  // Manejar drag del botón AI
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDraggingAI) {
@@ -720,7 +720,7 @@ const App: React.FC = () => {
     }
   }, [isDraggingAI, dragOffsetAI]);
 
-  // Drag de iconos flotantes del men� radial
+  // Drag de iconos flotantes del men radial
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const d = floatingDragRef.current;
@@ -751,12 +751,12 @@ const App: React.FC = () => {
   const processTransfer = (amount: number, recipient: string): boolean => {
     if (amount > 0 && amount <= userBalance) {
       setUserBalance(userBalance - amount);
-      // Notificaci�n real de pago enviado
+      // notificación real de pago enviado
       const t = new Date();
       const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
       setAppNotifications(prev => [{
         id: Date.now().toString(), type: 'payment' as const,
-        title: '?? Transferencia enviada',
+        title: '💸 Transferencia enviada',
         body: `${amount.toLocaleString()} XAF a ${recipient}`,
         time, read: false,
       }, ...prev].slice(0, 50));
@@ -773,32 +773,32 @@ const App: React.FC = () => {
     {
       id: 'bange',
       name: 'BANGE',
-      services: ['Transferencias', 'Pagos de Servicios', 'Consulta de Saldo', 'Historial', 'Cambio de Divisa', 'Pr�stamos']
+      services: ['Transferencias', 'Pagos de Servicios', 'Consulta de Saldo', 'Historial', 'Cambio de Divisa', 'Préstamos']
     },
     {
       id: 'ccei',
       name: 'CCEI Bank',
-      services: ['Transferencias Internacionales', 'Pagos M�viles', 'Consulta de Cuenta', 'Inversiones', 'Tarjetas', 'Seguros']
+      services: ['Transferencias Internacionales', 'Pagos Móviles', 'Consulta de Cuenta', 'Inversiones', 'Tarjetas', 'Seguros']
     },
     {
       id: 'bgfi',
       name: 'BGFI Bank',
-      services: ['Banca Digital', 'Pagos QR', 'Consultas', 'Cr�ditos', 'Ahorros', 'Comercio Exterior']
+      services: ['Banca Digital', 'Pagos QR', 'Consultas', 'Créditos', 'Ahorros', 'Comercio Exterior']
     },
     {
       id: 'afrexim',
       name: 'Afrexim Bank',
-      services: ['Financiamiento', 'Comercio', 'Consultor�a', 'Inversi�n', 'Desarrollo', 'Cooperaci�n']
+      services: ['Financiamiento', 'Comercio', 'Consultoría', 'Inversión', 'Desarrollo', 'Cooperación']
     },
     {
       id: 'ecobank',
       name: 'Ecobank',
-      services: ['Banca M�vil', 'Transferencias', 'Pagos', 'Pr�stamos', 'Tarjetas', 'Seguros']
+      services: ['Banca Móvil', 'Transferencias', 'Pagos', 'Préstamos', 'Tarjetas', 'Seguros']
     },
     {
       id: 'societe',
       name: 'Societe Generale',
-      services: ['Banca Personal', 'Empresarial', 'Inversiones', 'Seguros', 'Cr�ditos', 'Consultas']
+      services: ['Banca Personal', 'Empresarial', 'Inversiones', 'Seguros', 'Créditos', 'Consultas']
     }
   ];
 
@@ -883,14 +883,14 @@ const App: React.FC = () => {
       id: '3',
       type: 'received',
       amount: 75000,
-      description: 'Depu�sito salario',
+      description: 'Depósito salario',
       date: '10/03/2026'
     },
     {
       id: '4',
       type: 'sent',
       amount: 15000,
-      description: 'Compra En l�nea',
+      description: 'Compra En línea',
       date: '09/03/2026'
     },
     {
@@ -988,12 +988,12 @@ const App: React.FC = () => {
 
   // Funcion para procesar mensaje de audio
   const handleAudioMessage = (audioBlob: Blob) => {
-    // Simular transcripci?n de audio (en producci�n usar?s una API de speech-to-text)
+    // Simular transcripci?n de audio (en producción usar?s una API de speech-to-text)
     const transcriptions = [
-      '�Cu�l es mi saldo?',
+      '¿Cuál es mi saldo?',
       'Enviar 5000 XAF a Juan',
-      'Abrir Mensajer�a',
-      '�Qu� noticias hay?',
+      'Abrir Mensajería',
+      'Qu noticias hay?',
       'Ayuda',
       'Hola asistente',
       'Qu hora es?',
@@ -1040,8 +1040,8 @@ const App: React.FC = () => {
     const charCount = content.length;
     const paragraphs = content.split('\n\n').length;
 
-    let analysis = `?? AN�LISIS DE DOCUMENTO\n\n`;
-    analysis += `?? Estad?sticas B?sicas:\n`;
+    let analysis = `📄 ANLISIS DE DOCUMENTO\n\n`;
+    analysis += `📊 Estad?sticas B?sicas:\n`;
     analysis += `- Palabras: ${wordCount}\n`;
     analysis += `- Caracteres: ${charCount}\n`;
     analysis += `- Parrafos: ${paragraphs}\n`;
@@ -1054,7 +1054,7 @@ const App: React.FC = () => {
       const positiveCount = positiveWords.filter(word => content.toLowerCase().includes(word)).length;
       const negativeCount = negativeWords.filter(word => content.toLowerCase().includes(word)).length;
       
-      analysis += `?? AN�LISIS de Sentimiento:\n`;
+      analysis += `📄 ANLISIS de Sentimiento:\n`;
       analysis += `- Palabras positivas: ${positiveCount}\n`;
       analysis += `- Palabras negativas: ${negativeCount}\n`;
       analysis += `- Sentimiento general: ${positiveCount > negativeCount ? 'Positivo' : negativeCount > positiveCount ? 'Negativo' : 'Neutral'}\n\n`;
@@ -1073,7 +1073,7 @@ const App: React.FC = () => {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
       
-      analysis += `?? Palabras Clave:\n`;
+      analysis += `🔑 Palabras Clave:\n`;
       topWords.forEach(([word, count]) => {
         analysis += `- "${word}" (${count} veces)\n`;
       });
@@ -1085,7 +1085,7 @@ const App: React.FC = () => {
       const summaryLength = Math.ceil(sentences.length / 3);
       const summary = sentences.slice(0, summaryLength).join('. ');
       
-      analysis += `?? Resumen:\n${summary}...\n\n`;
+      analysis += `📝 Resumen:\n${summary}...\n\n`;
     }
 
     return analysis;
@@ -1152,7 +1152,7 @@ const App: React.FC = () => {
         {
           title: 'Introduccian al Tema',
           content: 'Contexto y relevancia',
-          bullets: ['?Por qu� es importante?', 'Objetivos de aprendizaje', 'Estructura del curso']
+          bullets: ['?Por qu es importante?', 'Objetivos de aprendizaje', 'Estructura del curso']
         },
         {
           title: 'Conceptos Fundamentales',
@@ -1199,7 +1199,7 @@ const App: React.FC = () => {
       const fileMessage = {
         id: Date.now().toString(),
         type: 'user' as const,
-        content: `?? Archivo cargado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`,
+        content: `📎 Archivo cargado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`,
         timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
       };
       setAiMessages(prev => [...prev, fileMessage]);
@@ -1209,7 +1209,7 @@ const App: React.FC = () => {
         const response = {
           id: (Date.now() + 1).toString(),
           type: 'assistant' as const,
-          content: `?? Archivo "${file.name}" cargado exitosamente. Puedo:\n- Analizar su contenido\n- Extraer informaci�n clave\n- Generar resumen\n- Detectar sentimiento\n\n�Qu� deseas que haga con este archivo?`,
+          content: `?? Archivo "${file.name}" cargado exitosamente. Puedo:\n- Analizar su contenido\n- Extraer información clave\n- Generar resumen\n- Detectar sentimiento\n\nQu deseas que haga con este archivo?`,
           timestamp: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
         };
         setAiMessages(prev => [...prev, response]);
@@ -1249,7 +1249,7 @@ const App: React.FC = () => {
         slides.forEach((slide, idx) => {
           assistantResponse += `${idx + 1}. ${slide.title}\n`;
         });
-        assistantResponse += `\n? Presentaci�n lista. Escribe "mostrar presentacion" para verla.`;
+        assistantResponse += `\n? Presentacin lista. Escribe "mostrar presentacion" para verla.`;
       }
       // ANALISIS de documentos - FUNCIONA CON ARCHIVOS
       else if ((lowerMessage.includes('analizar') || lowerMessage.includes('ANALISIS')) && uploadedFiles.length > 0) {
@@ -1264,11 +1264,11 @@ const App: React.FC = () => {
       }
       // Saldo
       else if (lowerMessage.includes('saldo') || lowerMessage.includes('balance')) {
-        assistantResponse = `?? TU SALDO ACTUAL\n\nSaldo: ${userBalance.toLocaleString()} XAF\n\nPuedo ayudarte con:\n- Transferencias\n- Consultas\n- Historial`;
+        assistantResponse = `📊 TU SALDO ACTUAL\n\nSaldo: ${userBalance.toLocaleString()} XAF\n\nPuedo ayudarte con:\n- Transferencias\n- Consultas\n- Historial`;
       }
       // Enviar dinero
       else if (lowerMessage.includes('enviar') && lowerMessage.includes('dinero')) {
-        assistantResponse = `?? TRANSFERENCIA DE DINERO\n\nTu saldo: ${userBalance.toLocaleString()} XAF\n\nPara enviar dinero:\n- Escribe: "Enviar 5000 XAF a Juan"\n- O: "Transferir 10000 XAF a Maria"\n\nContactos disponibles:\n- Juan P�rez\n- Mar�a Gonz�lez\n- Carlos Mendoza`;
+        assistantResponse = `💸 TRANSFERENCIA DE DINERO\n\nTu saldo: ${userBalance.toLocaleString()} XAF\n\nPara enviar dinero:\n- Escribe: "Enviar 5000 XAF a Juan"\n- O: "Transferir 10000 XAF a María"\n\nContactos disponibles:\n- Juan Prez\n- María Gonzlez\n- Carlos Mendoza`;
       }
       // Procesar transferencia
       else if (lowerMessage.match(/enviar\s+(\d+)\s*xaf\s+a\s+(\w+)/i)) {
@@ -1286,56 +1286,56 @@ const App: React.FC = () => {
       }
       // Noticias
       else if (lowerMessage.includes('noticias') || lowerMessage.includes('noticia')) {
-        assistantResponse = `?? NOTICIAS RECIENTES\n\n1. Presidente anuncia nuevas medidas economicas\n2. CEMAC aprueba nuevo marco financiero\n3. Ministerio de Salud reporta avances en vacunacion\n4. Nueva tecnologia 5G llega a Malabo\n5. Seleccion nacional se prepara para eliminatorias\n\nEscribe el numero para mas detalles`;
+        assistantResponse = `📰 NOTICIAS RECIENTES\n\n1. Presidente anuncia nuevas medidas economicas\n2. CEMAC aprueba nuevo marco financiero\n3. Ministerio de Salud reporta avances en vacunacion\n4. Nueva tecnologia 5G llega a Malabo\n5. Seleccion nacional se prepara para eliminatorias\n\nEscribe el numero para mas detalles`;
       }
       // Servicios
       else if (lowerMessage.includes('servicios') || lowerMessage.includes('banco')) {
-        assistantResponse = `?? SERVICIOS BANCARIOS\n\nBancos disponibles:\n- BANGE\n- CCEI Bank\n- BGFI Bank\n- Afrexim Bank\n- Ecobank\n- Societe Generale\n\n�Cu�l necesitas?`;
+        assistantResponse = `🏦 SERVICIOS BANCARIOS\n\nBancos disponibles:\n- BANGE\n- CCEI Bank\n- BGFI Bank\n- Afrexim Bank\n- Ecobank\n- Societe Generale\n\n¿Cuál necesitas?`;
       }
       // Contactos
       else if (lowerMessage.includes('contactos') || lowerMessage.includes('amigos')) {
-        assistantResponse = `?? TUS CONTACTOS\n\n- Juan P�rez (Dinero)\n- Mar�a Gonz�lez (Personal)\n- Carlos Mendoza (Negocios)\n\n�Deseas contactar a alguien?`;
+        assistantResponse = `👥 TUS CONTACTOS\n\n- Juan Prez (Dinero)\n- María Gonzlez (Personal)\n- Carlos Mendoza (Negocios)\n\nDeseas contactar a alguien?`;
       }
       // Hora
       else if (lowerMessage.includes('hora') || lowerMessage.includes('que hora')) {
-        assistantResponse = ` HORA ACTUAL\n\n${currentTime}\n\n�Hay algo m�s que necesites?`;
+        assistantResponse = ` HORA ACTUAL\n\n${currentTime}\n\nHay algo ms que necesites?`;
       }
       // Clima
       else if (lowerMessage.includes('clima') || lowerMessage.includes('tiempo')) {
-        assistantResponse = `?? CLIMA EN MALABO\n\nTemperatura: 28�C\nCondicion: Soleado\nHumedad: 75%\n\nPerfecto para el dia`;
+        assistantResponse = `?? CLIMA EN MALABO\n\nTemperatura: 28C\nCondicion: Soleado\nHumedad: 75%\n\nPerfecto para el dia`;
       }
       // Navegar
       else if (lowerMessage.includes('ir a') || lowerMessage.includes('abrir')) {
-        if (lowerMessage.includes('Mensajer�a') || lowerMessage.includes('mensajes')) {
-          setCurrentView('Mensajer�a');
-          assistantResponse = `?? Abriendo Mensajer�a...`;
+        if (lowerMessage.includes('Mensajería') || lowerMessage.includes('mensajes')) {
+          setCurrentView('Mensajería');
+          assistantResponse = `💬 Abriendo Mensajería...`;
         } else if (lowerMessage.includes('monedero') || lowerMessage.includes('cartera')) {
           setCurrentView('monedero');
-          assistantResponse = `?? Abriendo monedero...`;
+          assistantResponse = `💰 Abriendo monedero...`;
         } else if (lowerMessage.includes('servicios')) {
           setCurrentView('servicios');
-          assistantResponse = `?? Abriendo servicios...`;
+          assistantResponse = `🛠 Abriendo servicios...`;
         } else if (lowerMessage.includes('noticias')) {
           setCurrentView('news');
-          assistantResponse = `?? Abriendo noticias...`;
+          assistantResponse = `📰 Abriendo noticias...`;
         } else if (lowerMessage.includes('inicio') || lowerMessage.includes('home')) {
           setCurrentView('home');
-          assistantResponse = `?? Volviendo al inicio...`;
+          assistantResponse = `🏠 Volviendo al inicio...`;
         } else {
-          assistantResponse = `Puedo abrir:\n- Mensajer�a\n- Monedero\n- Servicios\n- Noticias\n- Inicio\n\n�Cu�l prefieres?`;
+          assistantResponse = `Puedo abrir:\n- Mensajería\n- Monedero\n- Servicios\n- Noticias\n- Inicio\n\n¿Cuál prefieres?`;
         }
       }
       // capacidades
       else if (lowerMessage.includes('capacidades') || lowerMessage.includes('que puedes hacer')) {
-        assistantResponse = `?? MIS CAPACIDADES\n\n?? DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n?? AN�LISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACI�N:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACI�N:\n- Abrir vistas\n- Gestionar app\n\n�Qu� necesitas?`;
+        assistantResponse = `🤖 MIS CAPACIDADES\n\n?? DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n?? ANLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
       }
       // Ayuda
       else if (lowerMessage.includes('ayuda') || lowerMessage.includes('help')) {
-        assistantResponse = `? AYUDA\n\nPuedo ayudarte con:\n\nEscribe:\n- "Saldo" - Ver tu saldo\n- "Enviar 5000 XAF a Juan" - Transferir\n- "presentacion de negocios" - Crear slides\n- "Noticias" - Ver noticias\n- "capacidades" - Ver todo lo que puedo hacer\n\nO habla:\n- Manten presionado el micr�fono\n- Habla tu comando\n- Suelta para enviar\n\n�Qu� necesitas?`;
+        assistantResponse = `❓ AYUDA\n\nPuedo ayudarte con:\n\nEscribe:\n- "Saldo" - Ver tu saldo\n- "Enviar 5000 XAF a Juan" - Transferir\n- "presentacion de negocios" - Crear slides\n- "Noticias" - Ver noticias\n- "capacidades" - Ver todo lo que puedo hacer\n\nO habla:\n- Manten presionado el micrfono\n- Habla tu comando\n- Suelta para enviar\n\nQu necesitas?`;
       }
       // Fallback
       else {
-        assistantResponse = `? Entendido: "${userMessage}"\n\nPuedo ayudarte con:\n- Consultar saldo\n- Transferencias\n- Generar presentaciones\n- Analizar documentos\n- Ver noticias\n- Navegar la app\n\n�Qu� deseas hacer?`;
+        assistantResponse = `? Entendido: "${userMessage}"\n\nPuedo ayudarte con:\n- Consultar saldo\n- Transferencias\n- Generar presentaciones\n- Analizar documentos\n- Ver noticias\n- Navegar la app\n\nQu deseas hacer?`;
       }
 
       const newAssistantMessage = {
@@ -1389,7 +1389,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Validar monto de transacci�n
+  // Validar monto de transacción
   const validateTransactionAmount = (amount: number, maxLimit: number = 500000): { valid: boolean; error?: string } => {
     if (amount <= 0) {
       return { valid: false, error: 'El monto debe ser mayor a 0' };
@@ -1407,7 +1407,7 @@ const App: React.FC = () => {
       return { valid: false, error: 'numero de tarjeta invalido' };
     }
     if (!/^\d+$/.test(cleaned)) {
-      return { valid: false, error: 'El n�mero de tarjeta solo debe contener d�gitos' };
+      return { valid: false, error: 'El nmero de tarjeta solo debe contener dgitos' };
     }
     return { valid: true };
   };
@@ -1425,7 +1425,7 @@ const App: React.FC = () => {
     return { valid: true };
   };
 
-  // Verificar l�mite de transacciones diarias
+  // Verificar lmite de transacciones diarias
   const checkDailyLimit = (amount: number, dailyLimit: number = 2000000): { valid: boolean; error?: string } => {
     const today = new Date().toDateString();
     const todayTransactions = transactionLog.filter(t => new Date(t.timestamp).toDateString() === today);
@@ -1433,32 +1433,32 @@ const App: React.FC = () => {
     
     if (todayTotal + amount > dailyLimit) {
       const remaining = dailyLimit - todayTotal;
-      return { valid: false, error: `L�mite diario excedido. Puedes transferir ${remaining.toLocaleString()} XAF m�s hoy` };
+      return { valid: false, error: `Lmite diario excedido. Puedes transferir ${remaining.toLocaleString()} XAF ms hoy` };
     }
     return { valid: true };
   };
 
   // Detectar actividad sospechosa
   const detectSuspiciousActivity = (amount: number, type: string): boolean => {
-    // Transacci�n muy grande
+    // Transacción muy grande
     if (amount > 1000000) {
       setSuspiciousActivities([...suspiciousActivities, {
         id: Date.now().toString(),
         type: 'large_transaction',
-        description: `Transacci�n grande detectada: ${amount.toLocaleString()} XAF`,
+        description: `Transacción grande detectada: ${amount.toLocaleString()} XAF`,
         timestamp: new Date()
       }]);
       return true;
     }
 
-    // M�ltiples transacciones en corto tiempo
+    // Mltiples transacciones en corto tiempo
     const lastMinute = new Date(Date.now() - 60000);
     const recentTransactions = transactionLog.filter(t => new Date(t.timestamp) > lastMinute);
     if (recentTransactions.length > 5) {
       setSuspiciousActivities([...suspiciousActivities, {
         id: Date.now().toString(),
         type: 'rapid_transactions',
-        description: `${recentTransactions.length} transacciones en el �ltimo minuto`,
+        description: `${recentTransactions.length} transacciones en el ltimo minuto`,
         timestamp: new Date()
       }]);
       return true;
@@ -1467,7 +1467,7 @@ const App: React.FC = () => {
     return false;
   };
 
-  // Registrar transacci�n en log de auditor�a
+  // Registrar transacción en log de auditora
   const logTransaction = (type: string, amount: number, status: string) => {
     const newLog = {
       id: Date.now().toString(),
@@ -1475,14 +1475,14 @@ const App: React.FC = () => {
       amount: amount,
       timestamp: new Date(),
       status: status,
-      ipAddress: 'local' // En producci�n ser� la IP real
+      ipAddress: 'local' // En producción ser la IP real
     };
     setTransactionLog([...transactionLog, newLog]);
     setDailyTransactionTotal(dailyTransactionTotal + amount);
     
   };
 
-  // Requerir PIN para operaci�n sensible
+  // Requerir PIN para operación sensible
   const requirePINForOperation = (operation: any) => {
     setPendingOperation(operation);
     setShowPINModal(true);
@@ -2061,7 +2061,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Renderizar header - OPTIMIZADO PARA M�vil CON COLORES DEL LOGO
+  // Renderizar header - OPTIMIZADO PARA Móvil CON COLORES DEL LOGO
   const renderHeader = () => (
     <div style={{
       position: 'fixed',
@@ -2083,7 +2083,7 @@ const App: React.FC = () => {
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,200,160,0.5)', pointerEvents: 'none', zIndex: 1 }} />
       
       <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,180,230,0.5)', pointerEvents: 'none', zIndex: 1 }} />
-      {/* L�nea inferior � fusi�n verde-blanco/negro-azul */}
+      {/* Línea inferior  fusin verde-blanco/negro-azul */}
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '2px', background: 'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow: '0 0 8px rgba(255,255,255,0.8)', pointerEvents: 'none', zIndex: 1 }} />
       {/* Logo y texto / Botan de regreso */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
@@ -2124,26 +2124,26 @@ const App: React.FC = () => {
           // Logo normal
           <>
             <div style={{
-              width: '28px',
-              height: '28px',
+              width: '44px',
+              height: '44px',
               borderRadius: '50%',
               background: 'radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
-              boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)',
+              boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
               flexShrink: 0,
             }}>
               <img 
                 src="/logo-transparent.png" 
                 alt="EGCHAT Logo" 
-                style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', animation: 'spin 6s linear infinite' }}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', animation: 'spin 6s linear infinite' }}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0px', marginLeft: '3px' }}>
-              <span id="neon-eg" style={{ fontSize: '15px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>EG</span>
-              <span id="neon-chat" style={{ fontSize: '11px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>CHAT</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1px', marginLeft: '4px' }}>
+              <span id="neon-eg" style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>EG</span>
+              <span id="neon-chat" style={{ fontSize: '14px', fontWeight: '800', color: 'white', letterSpacing: '-0.5px' }}>CHAT</span>
             </div>
           </>
         )}
@@ -2159,7 +2159,7 @@ const App: React.FC = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(10,20,40,0.75)', padding: '2px 5px', borderRadius: '50px', border: 'none', cursor: 'pointer', outline: 'none' }}
           >
             <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain',  10)}</div>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}�</span>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}°</span>
             <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)' }}>{weather.city}</span>
           </button>
         </div>
@@ -2198,7 +2198,7 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Men� */}
+        {/* Men */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -2261,7 +2261,7 @@ const App: React.FC = () => {
               {appNotifications.length > 0 && (
                 <button onClick={() => setAppNotifications(prev => prev.map(n => ({ ...n, read: true })))}
                   style={{ background: 'none', border: 'none', color: '#00c8a0', fontSize: '11px', fontWeight: '600', cursor: 'pointer', outline: 'none' }}>
-                  Marcar todas
+                  Maríar todas
                 </button>
               )}
               <button onClick={() => setShowNotifications(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', outline: 'none', padding: '0', fontSize: '16px' }}>?</button>
@@ -2272,14 +2272,14 @@ const App: React.FC = () => {
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
             {appNotifications.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>??</div>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔔</div>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>Sin notificaciones</div>
-                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Las notificaciones de mensajes, pagos y m�s aparecer�n aqu�</div>
+                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Las notificaciones de mensajes, pagos y ms aparecern aqu</div>
               </div>
             ) : appNotifications.map((n, i) => (
               <div key={n.id}
                 onClick={async () => {
-                  // Eliminar notificaci�n vista inmediatamente
+                  // Eliminar notificación vista inmediatamente
                   setAppNotifications(prev => prev.filter(x => x.id !== n.id));
                   setShowNotifications(false);
                   // Si es de chat, navegar directamente al chat
@@ -2296,7 +2296,7 @@ const App: React.FC = () => {
                       }
                       setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
                     }
-                    setCurrentView('Mensajer�a');
+                    setCurrentView('Mensajería');
                   }
                   if (n.action) n.action();
                 }}
@@ -2358,7 +2358,7 @@ const App: React.FC = () => {
       <>
         {/* Capa invisible para cerrar al tocar fuera */}
         <div style={{ position: 'fixed', inset: 0, zIndex: 1099 }} onClick={() => setShowWeatherModal(false)} />
-        {/* Dropdown anclado bajo el bot�n de clima */}
+        {/* Dropdown anclado bajo el botón de clima */}
         <div style={{
           position: 'fixed', top: '52px', right: '80px',
           background: 'rgba(12,22,48,0.95)', backdropFilter: 'blur(20px)',
@@ -2374,14 +2374,14 @@ const App: React.FC = () => {
           {/* Ciudad + temp actual */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
             <div>
-              <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', marginBottom:'1px' }}>Mi ubicaci�n</div>
+              <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', marginBottom:'1px' }}>Mi ubicación</div>
               <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{weather.city}</div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
               <div style={{ color: conditions.find(c=>c.id===weather.condition)?.color || '#fbbf24' }}>
                 {renderIcon(weatherIcon, 20)}
               </div>
-              <span style={{ fontSize:'20px', fontWeight:'800', color:'#fff' }}>{weather.temp}�</span>
+              <span style={{ fontSize:'20px', fontWeight:'800', color:'#fff' }}>{weather.temp}°</span>
             </div>
           </div>
 
@@ -2392,7 +2392,7 @@ const App: React.FC = () => {
           <div style={{ display:'flex', gap:'5px', marginBottom:'8px' }}>
             <input type="number" value={editWeather.temp}
               onChange={e => setEditWeather({ ...editWeather, temp: e.target.value })}
-              placeholder="�C"
+              placeholder="C"
               style={{ width:'48px', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', padding:'5px 6px', color:'#fff', fontSize:'11px', outline:'none' }} />
             <input type="text" value={editWeather.city}
               onChange={e => setEditWeather({ ...editWeather, city: e.target.value })}
@@ -2400,7 +2400,7 @@ const App: React.FC = () => {
               style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', padding:'5px 7px', color:'#fff', fontSize:'11px', outline:'none' }} />
           </div>
 
-          {/* Condici�n */}
+          {/* Condición */}
           <div style={{ display:'flex', gap:'4px', marginBottom:'10px' }}>
             {conditions.map(c => {
               const sel = editWeather.condition === c.id;
@@ -2466,7 +2466,7 @@ const App: React.FC = () => {
     }
   };
 
-  // A�adir registro de llamada en el chat
+  // Añadir registro de llamada en el chat
   const addCallRecord = React.useCallback((type: 'audio' | 'video', status: 'completed' | 'missed' | 'outgoing', duration: number, contact: any) => {
     const chatId = selectedChat?.id?.toString() || '';
     if (!chatId) return;
@@ -2474,8 +2474,8 @@ const App: React.FC = () => {
     const t = new Date();
     const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
     const durationStr = duration > 0 ? ` ? ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
-    const icon = type === 'video' ? '??' : '??';
-    const statusText = status === 'missed' ? '?? Llamada perdida' : status === 'outgoing' ? `${icon} Llamada saliente${durationStr}` : `${icon} Llamada${durationStr}`;
+    const icon = type === 'video' ? '📹' : '📞';
+    const statusText = status === 'missed' ? '📵 Llamada perdida' : status === 'outgoing' ? `${icon} Llamada saliente${durationStr}` : `${icon} Llamada${durationStr}`;
     const msgId = `call_${Date.now()}`;
     const callMsg: any = {
       id: msgId,
@@ -2542,7 +2542,7 @@ const App: React.FC = () => {
     }
   }, [webrtc.localStream, localStream]);
 
-  // Sincronizar streams cuando cambian (para cuando el elemento ya est� montado)
+  // Sincronizar streams cuando cambian (para cuando el elemento ya est montado)
   React.useEffect(() => {
     if (remoteVideoRef.current && webrtc.remoteStream) {
       remoteVideoRef.current.srcObject = webrtc.remoteStream;
@@ -2711,16 +2711,16 @@ const App: React.FC = () => {
   const renderProfileView = () => {
     if (!showProfileView) return null;
 
-    // QR real con link para a�adir contacto directamente
+    // QR real con link para añadir contacto directamente
     const qrLink = `https://egchat-app.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}&id=${userProfile.id}`;
 
     const fields = [
       { key: 'name', label: 'Nombre completo', icon: 'contactos' },
       { key: 'email', label: 'Email', icon: 'message-square' },
-      { key: 'phone', label: 'Tel�fono', icon: 'phone' },
-      { key: 'country', label: 'Pa�s', icon: 'world' },
+      { key: 'phone', label: 'Teléfono', icon: 'phone' },
+      { key: 'country', label: 'Pas', icon: 'world' },
       { key: 'city', label: 'Ciudad', icon: 'building' },
-      { key: 'address', label: 'Direcci�n', icon: 'briefcase' },
+      { key: 'address', label: 'dirección', icon: 'briefcase' },
     ];
 
     return (
@@ -2794,7 +2794,7 @@ const App: React.FC = () => {
             {showProfileQR && (
               <div style={{ background: 'rgba(250,250,250,0.88)', borderRadius: '14px', border: '1px solid rgba(0,180,230,0.2)', padding: '16px', marginBottom: '16px', textAlign: 'center' }}>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Escanea para a�adirme
+                  Escanea para añadirme
                 </div>
                 <div style={{ display: 'inline-block', padding: '10px', background: 'white', borderRadius: '12px', marginBottom: '10px', position: 'relative' }}>
                   <QRCodeSVG
@@ -2827,7 +2827,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
-                  V�lido para EGCHAT a {userProfile.id}
+                  Vlido para EGCHAT a {userProfile.id}
                 </div>
               </div>
             )}
@@ -2860,7 +2860,7 @@ const App: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
               <div style={{ fontSize: '13px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Seguridad</div>
               {[
-                { label: 'Autenticaci�n 2FA', value: userProfile.twoFactorEnabled, key: 'twoFactorEnabled', color: '#00c8a0' },
+                { label: 'Autenticación 2FA', value: userProfile.twoFactorEnabled, key: 'twoFactorEnabled', color: '#00c8a0' },
                 { label: 'Notificaciones', value: userProfile.notificationsEnabled, key: 'notificationsEnabled', color: '#00b4e6' },
               ].map(item => (
                 <div key={item.key} style={{ background: 'rgba(250,250,250,0.88)', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.07)', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2873,9 +2873,9 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            {/* Cerrar sesi�n */}
+            {/* Cerrar sesión */}
             <button onClick={() => {
-              if(window.confirm('�Cerrar sesi�n?')) {
+              if(window.confirm('Cerrar sesión?')) {
                 authAPI.logout().catch(()=>{});
                 localStorage.removeItem('token');
                 localStorage.removeItem('egchat_token_backup');
@@ -2885,7 +2885,7 @@ const App: React.FC = () => {
               }
             }} style={{ width: '100%', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px', padding: '11px', color: '#ef4444', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Cerrar Sesi�n
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -2893,24 +2893,24 @@ const App: React.FC = () => {
     );
   };
 
-  // Panel de men� lateral
+  // Panel de men lateral
   const renderMenuPanel = () => {
     if (!showMenu) return null;
     const menuItems = [
       { id:'perfil',          label:'Mi Perfil',            sub:'Ver y editar tu perfil',       icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, color:'#374151' },
-      { id:'nuevo-contacto',  label:'Nuevo contacto',       sub:'A�adir a tu lista',            icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>, color:'#374151' },
+      { id:'nuevo-contacto',  label:'Nuevo contacto',       sub:'Añadir a tu lista',            icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>, color:'#374151' },
       { id:'crear-grupo',     label:'Crear grupo',          sub:'Nuevo grupo de chat',          icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, color:'#374151' },
       { id:'contactos',       label:'Mis contactos',        sub:'Ver todos tus contactos',      icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, color:'#374151' },
       { id:'mensajes-arch',   label:'Mensajes archivados',  sub:'Chats archivados',             icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>, color:'#374151' },
       { id:'notificaciones',  label:'Notificaciones',       sub:'Gestionar alertas',            icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>, color:'#374151' },
       { id:'privacidad',      label:'Privacidad',           sub:'Configurar privacidad',        icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, color:'#374151' },
-      { id:'ajustes',         label:'Ajustes',              sub:'Configuraci�n de la app',      icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>, color:'#374151' },
+      { id:'ajustes',         label:'Ajustes',              sub:'configuración de la app',      icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>, color:'#374151' },
       { id:'ayuda',           label:'Ayuda y soporte',      sub:'Centro de ayuda',              icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, color:'#374151' },
-      { id:'salir',           label:'Cerrar sesi�n',        sub:'Salir de tu cuenta',           icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>, color:'#EF4444' },
+      { id:'salir',           label:'Cerrar sesión',        sub:'Salir de tu cuenta',           icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>, color:'#EF4444' },
     ];
     return (
       <div style={{ position:'fixed', top:'56px', right:'8px', width:'230px', background:'rgba(255,255,255,0.35)', backdropFilter:'blur(28px) saturate(200%)', WebkitBackdropFilter:'blur(28px) saturate(200%)', borderRadius:'16px', border:'1.5px solid rgba(255,255,255,0.6)', boxShadow:'0 8px 32px rgba(0,0,0,0.15)', zIndex:1001, overflow:'hidden' }}>
-        {/* Header del men� � solo avatar, sin nombre */}
+        {/* Header del men  solo avatar, sin nombre */}
         <div style={{ padding:'12px 14px 10px', borderBottom:'1px solid rgba(0,0,0,0.06)', display:'flex', alignItems:'center', gap:'10px' }}>
           <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'#fff', flexShrink:0, overflow:'hidden' }}>
             {userProfile.avatarUrl
@@ -2920,7 +2920,7 @@ const App: React.FC = () => {
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:'12px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{userProfile.name}</div>
-            <div style={{ fontSize:'10px', color:'#00c8a0', fontWeight:'600' }}>? En l�nea</div>
+            <div style={{ fontSize:'10px', color:'#00c8a0', fontWeight:'600' }}>? En línea</div>
           </div>
         </div>
         {/* Items */}
@@ -2930,13 +2930,13 @@ const App: React.FC = () => {
             else if (item.id==='nuevo-contacto') { setShowAddContact(true); }
             else if (item.id==='crear-grupo') { setShowCreateGroup(true); setGroupName(''); setGroupMembers([]); }
             else if (item.id==='contactos') { setShowMenu(false); setCurrentView('contactos'); }
-            else if (item.id==='mensajes-arch') { setCurrentView('Mensajer�a'); setMessageFilter('all'); }
+            else if (item.id==='mensajes-arch') { setCurrentView('Mensajería'); setMessageFilter('all'); }
             else if (item.id==='notificaciones') { setShowNotifications(true); }
             else if (item.id==='privacidad') { setCurrentView('ajustes'); setCurrentSettingsTab('perfil'); }
             else if (item.id==='ajustes') { setCurrentView('ajustes'); }
             else if (item.id==='ayuda') { setCurrentView('ajustes'); setCurrentSettingsTab('ayuda'); }
             else if (item.id==='salir') {
-              if(window.confirm('�Cerrar sesi�n?')) {
+              if(window.confirm('Cerrar sesión?')) {
                 authAPI.logout().catch(()=>{});
                 localStorage.removeItem('token');
                 localStorage.removeItem('egchat_token_backup');
@@ -2975,7 +2975,7 @@ const App: React.FC = () => {
             {(['phone','qr'] as const).map(tab => (
               <button key={tab} onClick={() => setAddContactTab(tab)}
                 style={{ flex: 1, padding: '7px', background: addContactTab === tab ? 'rgba(0,180,230,0.3)' : 'none', border: addContactTab === tab ? '1px solid rgba(0,180,230,0.4)' : '1px solid transparent', borderRadius: '6px', color: addContactTab === tab ? '#00b4e6' : '#9ca3af', fontSize: '14px', fontWeight: '600', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
-                {tab === 'phone' ? ' Por Tel�fono' : ' Escanear QR'}
+                {tab === 'phone' ? ' Por Teléfono' : ' Escanear QR'}
               </button>
             ))}
           </div>
@@ -2996,26 +2996,26 @@ const App: React.FC = () => {
                   try {
                     const phone = newContactPhone.startsWith('+') ? newContactPhone : '+240' + newContactPhone.replace(/\D/g, '').slice(-9);
                     await contactsAPI.add(undefined, phone, newContactName.trim() || undefined);
-                    showToast('? Contacto a�adido', 'success');
+                    showToast('? Contacto aadido', 'success');
                     setShowAddContact(false);
                     setNewContactPhone(''); setNewContactName('');
                     await loadContacts();
                   } catch (err: any) {
                     const msg = err?.message || '';
                     if (msg.includes('no encontrado') || msg.includes('404')) {
-                      showToast('No se encontr? ning�n usuario con ese n�mero.', 'error');
-                    } else if (msg.includes('Token inv�lido') || msg.includes('Token expirado')) {
-                      showToast('Sesi?n expirada. Inicia sesi�n de nuevo.', 'error');
+                      showToast('No se encontr? ningn usuario con ese nmero.', 'error');
+                    } else if (msg.includes('Token invlido') || msg.includes('Token expirado')) {
+                      showToast('sesión expirada. Inicia sesión de nuevo.', 'error');
                     } else if (msg.includes('ya existe') || msg.includes('409') || msg.includes('duplicate')) {
-                      showToast('Este contacto ya est� en tu lista.', 'info');
+                      showToast('Este contacto ya est en tu lista.', 'info');
                       setNewContactPhone(''); setNewContactName(''); setShowAddContact(false);
                     } else {
-                      showToast(msg || 'Error al a�adir contacto. Intenta de nuevo.', 'error');
+                      showToast(msg || 'Error al añadir contacto. Intenta de nuevo.', 'error');
                     }
                   }
                 } }}
                 style={{ background: '#00b4e6', border: 'none', borderRadius: '10px', padding: '12px', color: 'white', fontSize: '13px', fontWeight: '700', cursor: 'pointer', outline: 'none', marginTop: '4px' }}>
-                A�adir contacto
+                Añadir contacto
               </button>
             </div>
           ) : (
@@ -3075,7 +3075,7 @@ const App: React.FC = () => {
 
           {/* Lista contactos */}
           <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            A�adir participantes ({contacts.length} contactos)
+            Añadir participantes ({contacts.length} contactos)
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px', maxHeight: '280px', overflowY: 'auto' }}>
             {contacts.length === 0 ? (
@@ -3133,7 +3133,7 @@ const App: React.FC = () => {
                   initials: newGroup.name.slice(0,2).toUpperCase(),
                   color: '#a855f7', isGroup: true, members: newGroup.members,
                 });
-                setCurrentView('Mensajer�a');
+                setCurrentView('Mensajería');
                 setShowCreateGroup(false);
                 setGroupName('');
                 setGroupMembers([]);
@@ -3158,7 +3158,7 @@ const App: React.FC = () => {
                   initials: newGroup.name.slice(0,2).toUpperCase(),
                   color: '#a855f7', isGroup: true, members: newGroup.members,
                 });
-                setCurrentView('Mensajer�a');
+                setCurrentView('Mensajería');
                 setShowCreateGroup(false);
                 setGroupName('');
                 setGroupMembers([]);
@@ -3193,7 +3193,7 @@ const App: React.FC = () => {
       overlay: `radial-gradient(ellipse at 30% 20%, rgba(74,222,128,0.2) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(0,200,160,0.15) 0%, transparent 40%)`
     },
     {
-      id: 'static-ocean', label: 'Oc�ano Atl�ntico', type: 'css', category: 'static', emoji: '',
+      id: 'static-ocean', label: 'Ocano Atlntico', type: 'css', category: 'static', emoji: '',
       bg: 'linear-gradient(170deg, #0c4a6e 0%, #0369a1 35%, #0284c7 60%, #0ea5e9 80%, #38bdf8 100%)',
       overlay: `radial-gradient(ellipse at 50% 100%, rgba(56,189,248,0.25) 0%, transparent 50%)`
     },
@@ -3203,7 +3203,7 @@ const App: React.FC = () => {
       overlay: `radial-gradient(ellipse at 50% 40%, rgba(0,200,160,0.35) 0%, transparent 55%), radial-gradient(ellipse at 30% 60%, rgba(0,180,230,0.25) 0%, transparent 45%)`,
       logo: true
     },
-    // -- DIN�MICOS ------------------------------------------------------
+    // -- DINMICOS ------------------------------------------------------
     {
       id: 'dyn-rain-bata', label: 'Lluvia en Paseo Bata', type: 'css', category: 'dynamic', emoji: '',
       bg: 'linear-gradient(170deg, #0f2027 0%, #203a43 45%, #2c5364 100%)',
@@ -3217,7 +3217,7 @@ const App: React.FC = () => {
       rain: true, lightning: true, logo: true
     },
     {
-      id: 'dyn-kids-school', label: 'Ni�os Estudiando', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-kids-school', label: 'Niños Estudiando', type: 'css', category: 'dynamic', emoji: '',
       bg: 'linear-gradient(170deg, #1a3a2e 0%, #2d6a4f 40%, #1e5a38 70%, #0f3020 100%)',
       overlay: `radial-gradient(ellipse at 50% 30%, rgba(100,255,150,0.15) 0%, transparent 55%)`,
       floating: true, logo: true
@@ -3229,7 +3229,7 @@ const App: React.FC = () => {
       particles: true, logo: true
     },
     {
-      id: 'dyn-maritime', label: 'Paseo Mar�timo', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-maritime', label: 'Paseo Martimo', type: 'css', category: 'dynamic', emoji: '',
       bg: 'linear-gradient(170deg, #0c1445 0%, #1a3a6e 40%, #0369a1 70%, #0ea5e9 100%)',
       overlay: `radial-gradient(ellipse at 50% 80%, rgba(14,165,233,0.2) 0%, transparent 50%)`,
       waves: true, logo: true
@@ -3296,7 +3296,7 @@ const App: React.FC = () => {
             Fondo de pantalla
           </div>
 
-          {/* Secci�n: Mis fondos personalizados */}
+          {/* Seccin: Mis fondos personalizados */}
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px' }}>Mis fondos</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -3345,24 +3345,24 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <Section title="Est�ticos" items={statics} />
-          <Section title="Din�micos y Animados" items={dynamics} />
+          <Section title="Estticos" items={statics} />
+          <Section title="Dinmicos y Animados" items={dynamics} />
         </div>
       </div>
     );
   };
 
-  // Panel de selecci�n de layouts para la p�gina home
+  // Panel de selección de layouts para la pgina home
   const renderLayoutPanel = () => {
     if (!showLayoutPanel) return null;
 
     const layouts = [
-      { id: 'default',   label: 'Est�ndar',    desc: 'Balance + tarjetas',       icon: '??' },
+      { id: 'default',   label: 'Estándar',    desc: 'Balance + tarjetas',       icon: '🏠' },
       { id: 'compact',   label: 'Compacto',    desc: 'Solo accesos r?pidos',      icon: '?' },
-      { id: 'cards',     label: 'Tarjetas',    desc: 'Grid de servicios grande',  icon: '??' },
+      { id: 'cards',     label: 'Tarjetas',    desc: 'Grid de servicios grande',  icon: '🏠' },
       { id: 'minimal',   label: 'Minimal',     desc: 'Solo saldo y botones',      icon: '?' },
-      { id: 'news',      label: 'Noticias',    desc: 'Noticias en portada',       icon: '??' },
-      { id: 'finance',   label: 'Finanzas',    desc: 'Enfocado en cartera',       icon: '??' },
+      { id: 'news',      label: 'Noticias',    desc: 'Noticias en portada',       icon: '📰' },
+      { id: 'finance',   label: 'Finanzas',    desc: 'Enfocado en cartera',       icon: '💳' },
     ];
 
     return (
@@ -3415,7 +3415,7 @@ const App: React.FC = () => {
     );
   };
 
-  // Devuelve el estilo de fondo para el �rea de mensajes del chat
+  // Devuelve el estilo de fondo para el rea de mensajes del chat
   const getChatAreaBg = (): React.CSSProperties => {
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
@@ -3426,7 +3426,7 @@ const App: React.FC = () => {
     return { background: (wp as any).bg || '#f0f2f5', position: 'relative', overflow: 'hidden' };
   };
 
-  // Renderiza elementos animados del wallpaper dentro del �rea de mensajes
+  // Renderiza elementos animados del wallpaper dentro del rea de mensajes
   const renderChatWallpaperContent = () => {
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
@@ -3504,7 +3504,7 @@ const App: React.FC = () => {
     );
   };
 
-  // Renderizar men� radial - CON 12 SERVICIOS VISIBLES
+  // Renderizar men radial - CON 12 SERVICIOS VISIBLES
   const renderRadialMenu = () => {
     if (!isMenuOpen || currentView !== 'home') return null;
 
@@ -3563,7 +3563,7 @@ const App: React.FC = () => {
               onClick={() => {
                 if (item.id === 'noticias') setCurrentView('news');
                 else if (item.id === 'cartera' || item.id === 'banking') setCurrentView('banking');
-                else if (item.id === 'mensajes') setCurrentView('Mensajer�a');
+                else if (item.id === 'mensajes') setCurrentView('Mensajería');
                 else if (item.id === 'fondo') { setShowWallpaperCatalog(true); setIsMenuOpen(false); }
                 else if (item.id === 'comercio') { setShowLayoutPanel(true); setIsMenuOpen(false); }
                 else setCurrentView(item.id);
@@ -3737,14 +3737,14 @@ const App: React.FC = () => {
       </button>
     );
   };
-  // Renderizar NAVEGACION inferior - OPTIMIZADA PARA M�vil
+  // Renderizar NAVEGACION inferior - OPTIMIZADA PARA Móvil
   const renderBottomNavigation = () => {
-    const allViews = ['home', 'Mensajer�a', 'monedero', 'servicios', 'ajustes', 'Lia-25', 'estados', 'apuestas', 'cemac', 'mitaxi'];
+    const allViews = ['home', 'Mensajería', 'monedero', 'servicios', 'ajustes', 'Lia-25', 'estados', 'apuestas', 'cemac', 'mitaxi'];
     if (!allViews.includes(currentView)) return null;
-    if (currentView === 'Mensajer�a' && selectedChat) return null;
+    if (currentView === 'Mensajería' && selectedChat) return null;
 
     const navItems = [
-      { id: 'Mensajer�a', label: 'Mensajer�a', icon: 'mensajes' },
+      { id: 'Mensajería', label: 'Mensajería', icon: 'mensajes' },
       { id: 'monedero',   label: 'Cartera',    icon: 'wallet'   },
       { id: 'servicios',  label: 'Servicios',  icon: 'services' },
       { id: 'ajustes',    label: 'Ajustes',    icon: 'ajustes'  },
@@ -3752,20 +3752,22 @@ const App: React.FC = () => {
 
     return (
       <>
-        {/* Tab bar � 49px est�ndar iOS/WhatsApp/WeChat */}
+        {/* Tab bar */}
         <div style={{
           position: 'fixed',
-          bottom: 'env(safe-area-inset-bottom, 0px)',
+          bottom: 0,
           left: 0,
           right: 0,
-          height: '49px',
           background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-around',
           zIndex: 1000,
           borderTop: '0.5px solid rgba(255,255,255,0.25)',
           boxShadow: '0 -1px 0 rgba(0,0,0,0.1)',
+          paddingTop: '6px',
+          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          minHeight: '49px',
         }}>
           {navItems.map((item) => (
             <button
@@ -3799,10 +3801,10 @@ const App: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '24px',
-                height: '24px',
+                width: '28px',
+                height: '28px',
               }}>
-                {renderIcon(item.icon, 24)}
+                {renderIcon(item.icon, 28)}
               </div>
               <span style={{
                 fontSize: '10px',
@@ -3816,16 +3818,7 @@ const App: React.FC = () => {
             </button>
           ))}
         </div>
-        {/* Safe area fill � mismo color, sin contenido */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 'env(safe-area-inset-bottom, 0px)',
-          background: '#00b4e6',
-          zIndex: 1000,
-        }} />
+        {/* Safe area incluida en la barra principal */}
       </>
     );
   };
@@ -3848,8 +3841,8 @@ const App: React.FC = () => {
         <div style={{ background: 'linear-gradient(135deg,#1A3A6B,#0E5F8A,#0A7A8A)', borderRadius: '20px', padding: '20px 18px 18px', border: 'none', boxShadow: '0 6px 24px rgba(14,95,138,0.25)' }}>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '6px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Saldo disponible</div>
           <div style={{ fontSize: '32px', fontWeight: '800', color: '#fff', marginBottom: '18px', letterSpacing: '-1px', cursor: 'pointer' }} onClick={() => toggleBalanceVisible('home-minimal')}>
-          {isBalanceVisible('home-minimal') ? <>{userBalance.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>XAF</span></> : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>������</span>}
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>{isBalanceVisible('home-minimal') ? '??' : '??'}</span>
+          {isBalanceVisible('home-minimal') ? <>{userBalance.toLocaleString()} <span style={{ fontSize: '14px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>XAF</span></> : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>● ● ● ●</span>}
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>{isBalanceVisible('home-minimal') ? '🙈' : '👁'}</span>
         </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button onClick={() => setCurrentView('monedero')} style={{ flex: 1, background: 'rgba(255,255,255,0.92)', border: 'none', color: '#1A2B4A', padding: '11px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
@@ -3874,7 +3867,7 @@ const App: React.FC = () => {
       <div style={containerStyle}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
           {[
-            { label: 'Mensajes', icon: 'mensajes', view: 'Mensajer�a', color: '#00b4e6' },
+            { label: 'Mensajes', icon: 'mensajes', view: 'Mensajería', color: '#00b4e6' },
             { label: 'Cartera', icon: 'wallet', view: 'monedero', color: '#00c8a0' },
             { label: 'Servicios', icon: 'services', view: 'servicios', color: '#8b5cf6' },
             { label: 'Noticias', icon: 'noticias', view: 'news', color: '#ef4444' },
@@ -3898,8 +3891,8 @@ const App: React.FC = () => {
           <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>SALDO</div>
           <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#0d0d0d' }}>45.200 XAF</div>
         </div>
-        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0d0d0d', marginBottom: '10px' }}>�LTIMAS NOTICIAS</div>
-        {['Nuevas inversiones en Malabo', 'Actualizaci�n del sistema bancario', 'Festival cultural de Bata'].map((n, i) => (
+        <div style={{ fontSize: '12px', fontWeight: '700', color: '#0d0d0d', marginBottom: '10px' }}>LTIMAS NOTICIAS</div>
+        {['Nuevas inversiones en Malabo', 'Actualización del sistema bancario', 'Festival cultural de Bata'].map((n, i) => (
           <button key={i} onClick={() => setCurrentView('news')}
             style={{ width: '100%', background: 'rgba(243,244,246,0.85)', border: '1px solid rgba(0,0,0,0.07)', borderRadius: '10px', padding: '12px', marginBottom: '8px', cursor: 'pointer', outline: 'none', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
@@ -3915,7 +3908,7 @@ const App: React.FC = () => {
         <div style={{ background: 'linear-gradient(135deg,#1A3A6B,#0E5F8A,#0A7A8A)', borderRadius: '16px', padding: '16px', marginBottom: '12px', boxShadow: '0 6px 24px rgba(14,95,138,0.25)' }}>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '4px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Saldo Total</div>
           <div style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '14px', letterSpacing: '-1px', cursor: 'pointer' }} onClick={() => toggleBalanceVisible('home-finance')}>
-          {isBalanceVisible('home-finance') ? <>{userBalance.toLocaleString()} <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>XAF</span></> : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>������</span>}
+          {isBalanceVisible('home-finance') ? <>{userBalance.toLocaleString()} <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>XAF</span></> : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>● ● ● ●</span>}
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>{isBalanceVisible('home-finance') ? (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>) : (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>)}</span>
         </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -3971,7 +3964,7 @@ const App: React.FC = () => {
           onClick={() => toggleBalanceVisible('home-default')}>
           {isBalanceVisible('home-default')
             ? <>{userBalance.toLocaleString()} <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.6)' }}>XAF</span></>
-            : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>������</span>
+            : <span style={{ letterSpacing: '4px', color: 'rgba(255,255,255,0.4)' }}>● ● ● ●</span>
           }
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>{isBalanceVisible('home-default') ? (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>) : (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>)}</span>
         </div>
@@ -4093,7 +4086,7 @@ const App: React.FC = () => {
   );
   };
 
-  // Renderizar vista de servicios ? estilo WeChat
+  // Renderizar vista de servicios ? estilo EGCHAT
   const renderServicesView = () => {
     const Btn = ({ label, icon, color, onClick }: { label: string; icon: string; color: string; onClick: () => void }) => (
       <button
@@ -4105,7 +4098,7 @@ const App: React.FC = () => {
         onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)'; }}
         onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; }}
       >
-        {/* Contenedor icono estilo WhatsApp: sin fondo, icono 34px */}
+        {/* Contenedor icono sin fondo, icono 34px */}
         <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color }}>
           {renderIcon(icon, 34)}
         </div>
@@ -4118,7 +4111,7 @@ const App: React.FC = () => {
         <div style={{ padding: '10px 14px 6px', borderBottom: '1px solid #F3F4F6' }}>
           <span style={{ fontSize: '12px', fontWeight: '600', color: '#9CA3AF' }}>{title}</span>
         </div>
-        {/* 4 columnas como WhatsApp */}
+        {/* 4 columnas */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', padding: '6px 4px 8px' }}>
           {children}
         </div>
@@ -4144,13 +4137,13 @@ const App: React.FC = () => {
             <Btn label="Bancos" icon="banking" color="#1485EE" onClick={() => setShowBancosModal(true)} />
             <Btn label="Seguros" icon="seguros" color="#2E9E6B" onClick={() => setShowSegurosModal(true)} />
             <Btn label="Facturas" icon="factura" color="#C47D2A" onClick={() => setShowFacturasModal(true)} />
-            <Btn label="Inversi�n" icon="invest" color="#6B5BD6" onClick={() => { setShowFinModal('invest'); setFinStep('main'); setFinData({}); }} />
+            <Btn label="Inversión" icon="invest" color="#6B5BD6" onClick={() => { setShowFinModal('invest'); setFinStep('main'); setFinData({}); }} />
             <Btn label="Tarjetas" icon="tarjeta" color="#C0392B" onClick={() => { setBancosInitScreen('cards'); setShowBancosModal(true); }} />
             <Btn label="Historial" icon="historial" color="#5A7090" onClick={() => setCurrentView('historial-completo')} />
           </Section>
 
           {/* SERVICIOS P?BLICOS */}
-          <Section title="Servicios P�blicos">
+          <Section title="Servicios Pblicos">
             <Btn label="Electricidad" icon="electricidad" color="#C47D2A" onClick={() => { setShowSvcModal('elec'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Agua" icon="rain" color="#1485EE" onClick={() => { setShowSvcModal('agua'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Salud" icon="salud" color="#C0392B" onClick={() => setShowSaludModal(true)} />
@@ -4196,8 +4189,8 @@ const App: React.FC = () => {
         return renderHomeView();
       case 'servicios':
         return renderServicesView();
-      case 'Mensajer�a':
-        // Si hay un chat seleccionado, mostrar la conversaci�n directamente
+      case 'Mensajería':
+        // Si hay un chat seleccionado, mostrar la conversacin directamente
         if (selectedChat) {
           const sc = selectedChat;
           const initials = sc.initials || sc.title.split(' ').map((w: string) => w[0]).join('').slice(0,2).toUpperCase();
@@ -4214,7 +4207,7 @@ const App: React.FC = () => {
 
           const sendChatMessage = async () => {
             if (!currentChatInput.trim()) return;
-            playMessageSent(); vibrate(30); // sonido + vibraci�n al enviar
+            playMessageSent(); vibrate(30); // sonido + vibración al enviar
             const messageText = currentChatInput.trim();
             const newMsg = { id: Date.now().toString(), from: 'me' as const, text: messageText, time: makeTime(), status: 'pending' as const };
             addMsg(newMsg);
@@ -4239,7 +4232,7 @@ const App: React.FC = () => {
 
           return (
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
-              {/* Header conversaci�n */}
+              {/* Header conversacin */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 8px 6px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
@@ -4253,7 +4246,7 @@ const App: React.FC = () => {
                 <div style={{ flex: 1, cursor: 'pointer', minWidth: 0 }} onClick={() => setShowContactProfile(sc)}>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#0d0d0d' }}>{sc.title}</div>
                   <div style={{ fontSize: '12px', color: sc.isGroup ? '#a855f7' : sc.status === 'online' ? '#00c8a0' : sc.status === 'away' ? '#f59e0b' : '#9ca3af' }}>
-                    {sc.isGroup ? `?? ${sc.members || ''} miembros` : sc.status === 'online' ? 'En l�nea' : sc.status === 'away' ? 'Ausente' : 'Desconectado'}
+                    {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? 'En línea' : sc.status === 'away' ? 'Ausente' : 'Desconectado'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -4298,12 +4291,12 @@ const App: React.FC = () => {
                   </button>                </div>
               </div>
 
-              {/* Dropdown men� del chat � cae desde arriba */}
+              {/* Dropdown men del chat  cae desde arriba */}
               {showChatMenu && (
                 <div style={{position:'fixed',inset:0,zIndex:200}} onClick={()=>setShowChatMenu(false)}>
                   <div style={{position:'absolute',top:'100px',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)'}}
                     onClick={e=>e.stopPropagation()}>
-                    {/* Secci�n principal */}
+                    {/* Seccin principal */}
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:()=>{setShowChatMenu(false);setShowContactProfile(sc);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,label:'Buscar en el chat',color:'#374151',action:()=>{setShowChatMenu(false);setShowChatSearch(true);setChatSearchQuery('');}},
@@ -4315,7 +4308,7 @@ const App: React.FC = () => {
                         <span style={{fontSize:'13px',color:item.color,fontWeight:'500'}}>{item.label}</span>
                       </button>
                     ))}
-                    {/* Secci�n configuraci�n */}
+                    {/* Seccin configuración */}
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,label:mutedChats.includes(sc.id?.toString()||'')?'Activar notificaciones':'Silenciar',color:'#374151',action:()=>{const id=sc.id?.toString()||'';setMutedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,label:'Fondo de pantalla',color:'#374151',action:()=>{setShowChatMenu(false);setShowWallpaperCatalog(true);}},
@@ -4326,10 +4319,10 @@ const App: React.FC = () => {
                         <span style={{fontSize:'13px',color:item.color,fontWeight:'500'}}>{item.label}</span>
                       </button>
                     ))}
-                    {/* Secci�n acciones */}
+                    {/* Seccin acciones */}
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,label:'Enviar dinero',color:'#374151',action:()=>{setShowChatMenu(false);setQuickTransferData({contactId:sc.id?.toString()||'',contactName:sc.title,amount:'',accountId:bankAccounts[0]?.id||''});setShowQuickTransferModal(true);}},
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,label:'Compartir contacto',color:'#374151',action:()=>{setShowChatMenu(false);const now=new Date();const time=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;const chatId=sc.id?.toString()||'';setChatMessages(prev=>({...prev,[chatId]:[...(prev[chatId]||[]),{id:Date.now().toString(),from:'me',text:`?? Contacto: ${sc.title}`,time,status:'pending'}]}));}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,label:'Compartir contacto',color:'#374151',action:()=>{setShowChatMenu(false);const now=new Date();const time=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;const chatId=sc.id?.toString()||'';setChatMessages(prev=>({...prev,[chatId]:[...(prev[chatId]||[]),{id:Date.now().toString(),from:'me',text:`👤 Contacto: ${sc.title}`,time,status:'pending'}]}));}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,label:'Crear grupo con este contacto',color:'#374151',action:()=>{setShowChatMenu(false);setShowCreateGroupModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,label:'Exportar chat',color:'#374151',action:()=>{setShowChatMenu(false);const chatId=sc.id?.toString()||'';const msgs=chatMessages[chatId]||[];const text=msgs.map(m=>`[${m.time}] ${m.from==='me'?'Yo':sc.title}: ${m.text}`).join('\n');const blob=new Blob([text],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`chat_${sc.title}.txt`;a.click();}},
                     ].map((item,i)=>(
@@ -4338,9 +4331,9 @@ const App: React.FC = () => {
                         <span style={{fontSize:'13px',color:item.color,fontWeight:'500'}}>{item.label}</span>
                       </button>
                     ))}
-                    {/* Secci�n peligrosa */}
+                    {/* Seccin peligrosa */}
                     {[
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>,label:'Vaciar chat',color:'#F59E0B',action:()=>{if(window.confirm('�Vaciar todos los mensajes?')){setChatMessages(prev=>({...prev,[sc.id?.toString()||'']:[]}));}setShowChatMenu(false);}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>,label:'Vaciar chat',color:'#F59E0B',action:()=>{if(window.confirm('Vaciar todos los mensajes?')){setChatMessages(prev=>({...prev,[sc.id?.toString()||'']:[]}));}setShowChatMenu(false);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,label:'Reportar',color:'#EF4444',action:()=>{setShowChatMenu(false);alert(`"${sc.title}" reportado.`);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,label:blockedChats.includes(sc.id?.toString()||'')?'Desbloquear':'Bloquear',color:'#EF4444',action:()=>{const id=sc.id?.toString()||'';setBlockedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
                     ].map((item,i,arr)=>(
@@ -4394,7 +4387,7 @@ const App: React.FC = () => {
                         e.currentTarget.addEventListener('touchmove', cancel, { once: true });
                       }}
                     >
-                      {/* -- LLAMADA estilo WhatsApp -- */}
+                      {/* -- LLAMADA -- */}
                       {(msg as any).type === 'call' ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 4px', minWidth: '200px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${(msg as any).callStatus === 'missed' ? '#ef4444' : '#00c8a0'}` }}>
@@ -4483,7 +4476,7 @@ const App: React.FC = () => {
                               const iconEl = document.getElementById(`play-icon-${msg.id}`);
                               if (!audio) return;
                               if (audio.paused) {
-                                // Pausar todos los dem�s
+                                // Pausar todos los dems
                                 document.querySelectorAll('audio').forEach(a => {
                                   if (a !== audio) {
                                     a.pause();
@@ -4537,7 +4530,7 @@ const App: React.FC = () => {
                                 audio.currentTime = pct * audio.duration;
                               }}
                             >
-                              {/* Fondo waveform est�tico */}
+                              {/* Fondo waveform esttico */}
                               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: '2px', padding: '0 2px' }}>
                                 {[2,4,7,5,9,6,3,8,5,7,4,6,3,5,7,4,8,5,3,6,4,7,5,8,3,5,7,4,6,3].map((h, i) => (
                                   <div key={i} style={{
@@ -4566,7 +4559,7 @@ const App: React.FC = () => {
                                   ))}
                                 </div>
                               </div>
-                              {/* Barra de progreso invisible para el c�lculo */}
+                              {/* Barra de progreso invisible para el clculo */}
                               <div id={`progress-${msg.id}`} style={{ display: 'none' }}
                                 ref={el => {
                                   if (el) {
@@ -4607,10 +4600,10 @@ const App: React.FC = () => {
                             <span style={{ fontSize: '11px', color: '#9ca3af' }}>Foto no disponible</span>
                           </div>
                         )
-                      ) : msg.text?.startsWith('??') || msg.text?.startsWith('??') ? (
+                      ) : msg.text?.startsWith('📄') || msg.text?.startsWith('📎') ? (
                         /* -- DOCUMENTO / ARCHIVO -- */
                         (() => {
-                          const raw = (msg.text || '').replace(/^?? |^?? /, '');
+                          const raw = (msg.text || '').replace(/^📄 |^📎 /, '');
                           const match = raw.match(/^(.+?) \((.+?)\)$/);
                           const fileName = match ? match[1] : raw;
                           const fileSize = match ? match[2] : '';
@@ -4633,10 +4626,10 @@ const App: React.FC = () => {
                             </div>
                           );
                         })()
-                      ) : msg.text?.startsWith('??') ? (
+                      ) : msg.text?.startsWith('🎥') ? (
                         /* -- VIDEO -- */
                         (() => {
-                          const raw = (msg.text || '').replace(/^?? /, '');
+                          const raw = (msg.text || '').replace(/^[^\s]+ /, '');
                           const match = raw.match(/^(.+?) \((.+?)\)$/);
                           const fileName = match ? match[1] : raw;
                           const fileSize = match ? match[2] : '';
@@ -4652,13 +4645,13 @@ const App: React.FC = () => {
                             </div>
                           );
                         })()
-                      ) : msg.text?.startsWith('??') ? (
-                        /* -- UBICACI�N -- */
+                      ) : msg.text?.startsWith('👁') ? (
+                        /* -- UBICACIN -- */
                         (() => {
                           const lines = (msg.text || '').split('\n');
-                          const label = lines[0].replace('?? ', '');
+                          const label = lines[0].replace('💸 ', '');
                           const link = lines[1] || '';
-                          // Extraer coordenadas del link para el mapa est�tico
+                          // Extraer coordenadas del link para el mapa esttico
                           const coordMatch = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
                           const lat = coordMatch?.[1] || '3.7520';
                           const lng = coordMatch?.[2] || '8.7735';
@@ -4691,19 +4684,19 @@ const App: React.FC = () => {
                                   </a>
                                   <a href={directionsUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
                                     style={{ flex: 1, background: '#e8f5e9', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', fontWeight: '600', color: '#2e7d32', textDecoration: 'none', textAlign: 'center' }}>
-                                    ?? C�mo llegar
+                                    ?? Cmo llegar
                                   </a>
                                 </div>
                               </div>
                             </div>
                           );
                         })()
-                      ) : msg.text?.startsWith('??') ? (
-                        /* -- CONTACTO � siempre abre modal con opciones -- */
+                      ) : msg.text?.startsWith('👁') ? (
+                        /* -- CONTACTO  siempre abre modal con opciones -- */
                         (() => {
                           const lines = (msg.text || '').split('\n');
-                          const name = lines[0].replace('?? ', '');
-                          const phone = lines[1]?.replace('?? ', '') || '';
+                          const name = lines[0].replace('💸 ', '');
+                          const phone = lines[1]?.replace('💸 ', '') || '';
                           const avatar = (msg as any).contactAvatar || '';
                           const found = allContacts.find(c => c.phone === phone || c.name === name);
                           const isAlreadyContact = !!found;
@@ -4741,11 +4734,11 @@ const App: React.FC = () => {
                                   <button onClick={() => {
                                     if (phone) {
                                       contactsAPI.add(undefined, phone, name)
-                                        .then(async () => { showToast(`? ${name} a�adido`, 'success'); await loadContacts(); })
-                                        .catch(() => showToast('No se pudo a�adir.', 'error'));
+                                        .then(async () => { showToast(`? ${name} aadido`, 'success'); await loadContacts(); })
+                                        .catch(() => showToast('No se pudo añadir.', 'error'));
                                     }
                                   }} style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontSize: '12px', fontWeight: '700', color: '#00c8a0', outline: 'none', textAlign: 'center' }}>
-                                    + A�adir
+                                    + Añadir
                                   </button>
                                 )}
                                 {isAlreadyContact && (
@@ -4765,13 +4758,13 @@ const App: React.FC = () => {
                         })()
                       ) : (
                         /* -- TEXTO NORMAL o DINERO -- */
-                        msg.text?.startsWith('??') ? (() => {
+                        msg.text?.startsWith('🎵') ? (() => {
                           // Burbuja de transferencia de dinero
                           const lines = (msg.text || '').split('\n');
-                          const amount = lines[1]?.replace('?? ', '') || '';
-                          const recipient = lines[2]?.replace('?? ', '') || '';
+                          const amount = lines[1]?.replace('💸 ', '') || '';
+                          const recipient = lines[2]?.replace('💸 ', '') || '';
                           const code = lines[3]?.replace('?? C?digo: ', '') || '';
-                          const status = lines[4]?.replace('?? ', '') || '';
+                          const status = lines[4]?.replace('💸 ', '') || '';
                           return (
                             <div style={{ minWidth: '220px' }}>
                               <div style={{ background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '10px', padding: '12px 14px', marginBottom: '6px' }}>
@@ -4841,13 +4834,13 @@ const App: React.FC = () => {
                             const msgId = Date.now().toString();
                             // Mostrar preview local inmediatamente
                             const localUrl = URL.createObjectURL(file);
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: '?? Foto', time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'image', imageUrl: localUrl } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: '📷 Foto', time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'image', imageUrl: localUrl } as any] }));
                             try {
                               // Subir al servidor
                               const result = await chatAPI.uploadFile(chatId, file);
                               const serverUrl = result.file_url;
                               // Enviar mensaje al backend con la URL real
-                              await chatAPI.sendMessage(chatId, { text: '?? Foto', type: 'image', file_url: serverUrl });
+                              await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: serverUrl });
                               // Actualizar mensaje local con URL del servidor
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, imageUrl: serverUrl, status: 'delivered' } : m) }));
                             } catch (e) {
@@ -4875,10 +4868,10 @@ const App: React.FC = () => {
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                             const size = (file.size/1024/1024).toFixed(1);
                             const msgId = Date.now().toString();
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `?? ${file.name} (${size} MB)`, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} MB)`, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              await chatAPI.sendMessage(chatId, { text: `?? ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
+                              await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, fileUrl: result.file_url, fileName: file.name, fileSize: size + ' MB', fileExt: 'mp4', status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir video', 'error'); }
                           };
@@ -4905,10 +4898,10 @@ const App: React.FC = () => {
                             const ext = file.name.split('.').pop()?.toLowerCase() || '';
                             const msgId = Date.now().toString();
                             // Mostrar pendiente
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `?? ${file.name} (${size} KB)`, time: tm, status: 'pending' as const, fileName: file.name, fileSize: size + ' KB', fileExt: ext } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} KB)`, time: tm, status: 'pending' as const, fileName: file.name, fileSize: size + ' KB', fileExt: ext } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              await chatAPI.sendMessage(chatId, { text: `?? ${file.name} (${size} KB)`, type: 'file', file_url: result.file_url });
+                              await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} KB)`, type: 'file', file_url: result.file_url });
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, fileUrl: result.file_url, status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir archivo', 'error'); }
                           };
@@ -4930,7 +4923,7 @@ const App: React.FC = () => {
                         }
                       },
                       {
-                        label: 'Ubicaci�n', color: '#ef4444', bg: '#FEE2E2',
+                        label: 'Ubicación', color: '#ef4444', bg: '#FEE2E2',
                         icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
                         action: () => {
                           setShowChatAttach(false);
@@ -4945,7 +4938,7 @@ const App: React.FC = () => {
                             pos => {
                               const lat = pos.coords.latitude.toFixed(6);
                               const lng = pos.coords.longitude.toFixed(6);
-                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Mi ubicaci�n\nhttps://maps.google.com/?q=${lat},${lng}`, time: tm, status: 'pending' as const }] }));
+                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Mi ubicación\nhttps://maps.google.com/?q=${lat},${lng}`, time: tm, status: 'pending' as const }] }));
                             },
                             () => {
                               setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `?? Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
@@ -4990,23 +4983,23 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Panel emojis a estilo WhatsApp */}
+              {/* Panel emojis a estilo EGCHAT */}
               {showChatEmojis && (() => {
                 const emojiCats: Record<string, {icon:string; emojis:string[]}> = {
-                  recientes: { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','??','??','??','??','??','??','??','??','??','??','??','??','??','??'] },
-                  caras:     { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??'] },
-                  gestos:    { icon:'??', emojis:['??','??','???','?','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??'] },
-                  personas:  { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','????????','??','??','??','??','??','??'] },
-                  animales:  { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?????','??','????','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','???','??'] },
-                  comida:    { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','??','??','??','??','??','??','??','??','??','??','??','??','??'] },
-                  viajes:    { icon:'??', emojis:['??','??','??','??','??','???','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','???','???','?','??','??','??','??','??','?','??','?','??','???','???','??','??','??','???','??','??','??','??','??','??','??','??','???','??','??','??','??','??','???','??','???','??','??','??','???','???','???','???','???','???','???','???','??','???','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','??','??','??','??','??','?','?','??','??','???','??','??','??','??','??','??','??','??','??','??'] },
-                  objetos:   { icon:'??', emojis:['?','??','??','??','??','???','???','???','???','???','???','??','??','??','??','??','??','??','??','??','???','???','??','??','??','??','??','??','??','??','??','?','???','?','?','??','??','??','??','??','???','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','???','???','??','??','??','??','??','???','??','??','??','??','???','???','??','??','??','??','???','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','???','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??'] },
-                  simbolos:  { icon:'??', emojis:['??','??','??','??','??','??','??','??','??','??','?????','?????','??','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','?','?','?','?','?','?','?','?','?','?','?','?','?','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??','??','??','??','???','???','??','??','???','??','?','?','??','?','??','??','??','??','??','??','??','??','??','??','??','??','?','?','?','?','??','??','??','??','??','??','??','??','??','??','??','?','??','??','?','??','??','??','??','??','??','??','?','???','??','??','???','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','0??','1??','2??','3??','4??','5??','6??','7??','8??','9??','??','??','#??','*??','??','??','??','??','??','??','??','?','?','?','?','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','?','?','??','??','??','??','�?','�?','�?','??','?','?','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','?','??','??','??','??','??','??','??','??','??','??','??','?','?','??','??','??','??','??','??','??','??','?','?','??','??','??','??','??','??','??','??','??','??','??','???','??','??','??','??','??','??','??'] },
-                  custom:    { icon:'?', emojis:[] },
+                  recientes: { icon:'🕐', emojis:['😀','😂','😍','🥰','😎','🤔','😭','😡','👍','❤️','🔥','✅','🎉','💯','🙏','😊','🤣','😅','😆','😋','😜','🤩','🥳','😴','🤯','🥺','😤','😏','🤗','😇'] },
+                  caras:     { icon:'😀', emojis:['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'] },
+                  gestos:    { icon:'👋', emojis:['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','👀','👁️','👅','👄','💋'] },
+                  personas:  { icon:'👤', emojis:['👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧝','🧛','🧟','🧞','🧜','🧚','👫','👬','👭','💏','💑','👨‍👩‍👦'] },
+                  animales:  { icon:'🐶', emojis:['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🦂','🐢','🐍','🦎','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔'] },
+                  comida:    { icon:'🍎', emojis:['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🧃','🥤','🧋','☕','🍵','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🥄','🍴','🍽️','🥢','🧂'] },
+                  viajes:    { icon:'✈️', emojis:['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🛹','🚏','⛽','🚨','🚥','🚦','🛑','🚧','⚓','⛵','🚤','🛥️','🛳️','⛴️','🚢','✈️','🛩️','🛫','🛬','🪂','💺','🚁','🚀','🛸','🌍','🌎','🌏','🗺️','🧭','🏔️','⛰️','🌋','🗻','🏕️','🏖️','🏜️','🏝️','🏞️','🏟️','🏛️','🏗️','🛖','🏘️','🏚️','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌','🛕','🕍','⛩️','🕋','⛲','⛺','🌁','🌃','🏙️','🌄','🌅','🌆','🌇','🌉','🎠','🎡','🎢','💈','🎪'] },
+                  objetos:   { icon:'💡', emojis:['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','💽','💾','💿','📀','🧮','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🧭','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🧯','💰','💴','💵','💶','💷','💸','💳','🪙','💹','📈','📉','📊','📋','📌','📍','📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️','🔒','🔓','🔏','🔐','🔑','🗝️','🔨','🪓','⛏️','⚒️','🛠️','🗡️','⚔️','🛡️','🔧','🪛','🔩','⚙️','🗜️','⚖️','🔗','⛓️','🪝','🧲','🪜','🧰','🧪','🧫','🧬','🔭','🔬','🩺','🩹','💊','💉','🩸','🌡️','🧹','🪣','🧺','🧻','🚽','🚰','🚿','🛁','🪥','🧼','🪒','🧴','🧷','🧹','🧺','🧻'] },
+                  simbolos:  { icon:'❤️', emojis:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧️','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔷','🔶','🔹','🔸','🔲','🔳','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♥️','♦️','🃏','🎴','🀄'] },
+                  custom:    { icon:'⭐', emojis:[] },
                 };
                 return (
                 <div style={{ background: '#f7f8fa', borderTop: '1px solid rgba(0,0,0,0.07)', flexShrink: 0 }}>
-                  {/* Barra b�squeda */}
+                  {/* Barra bsqueda */}
                   <div style={{ padding: '7px 10px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(249,250,251,0.88)', border: '1px solid rgba(0,0,0,0.07)', borderRadius: '6px', padding: '0 8px', height: '28px', gap: '6px' }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -5071,8 +5064,8 @@ const App: React.FC = () => {
                         ))}
                         <button onClick={() => {
                           const toCopy = [
-                            { id: Date.now().toString(), label: '??', title: 'De Juan', source: 'copied' as const, from: 'Juan' },
-                            { id: (Date.now()+1).toString(), label: '??', title: 'De Mar�a', source: 'copied' as const, from: 'Mar�a' },
+                            { id: Date.now().toString(), label: '🏅', title: 'De Juan', source: 'copied' as const, from: 'Juan' },
+                            { id: (Date.now()+1).toString(), label: '💪', title: 'De María', source: 'copied' as const, from: 'María' },
                           ];
                           setCustomEmojis(prev => [...prev, ...toCopy.filter(c => !prev.find(p => p.label === c.label))]);
                         }}
@@ -5098,7 +5091,7 @@ const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Barra categor�as � estilo WhatsApp */}
+                  {/* Barra categoras  estilo EGCHAT */}
                   <div style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,0.07)', overflowX: 'auto' }}>
                     {Object.entries(emojiCats).map(([key, cat]) => (
                       <button key={key} onClick={() => { setChatEmojiCategory(key); setEmojiSearch(''); setShowEmojiEditor(false); }}
@@ -5122,7 +5115,7 @@ const App: React.FC = () => {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                {/* Bot�n + */}
+                {/* Botón + */}
                 <button onClick={() => { setShowChatAttach(p => !p); setShowChatEmojis(false); }}
                   style={{ background: showChatAttach ? 'rgba(0,180,230,0.15)' : '#f5f6f7', border: `1px solid ${showChatAttach ? 'rgba(0,180,230,0.3)' : '#f3f4f6'}`, borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', color: showChatAttach ? '#00b4e6' : '#9ca3af', flexShrink: 0, transition: 'all 0.15s' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -5293,7 +5286,7 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* Secci�n: Contactos Favoritos - COLAPSABLE */}
+              {/* Seccin: Contactos Favoritos - COLAPSABLE */}
               <div style={{
                 marginBottom: '8px'
               }}>
@@ -5390,7 +5383,7 @@ const App: React.FC = () => {
                 )}
               </div>
 
-              {/* Secci�n: Grupos Favoritos - COLAPSABLE */}
+              {/* Seccin: Grupos Favoritos - COLAPSABLE */}
               <div style={{
                 marginBottom: '8px'
               }}>
@@ -5546,7 +5539,7 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Lista de conversaci�nes ? datos reales del backend */}
+            {/* Lista de conversacines ? datos reales del backend */}
             <div
               className="scroll-container"
               style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, paddingBottom: '100px' }}
@@ -5599,7 +5592,7 @@ const App: React.FC = () => {
                           avatarUrl: avatarUrl,
                           user_id: otherUserId, // para WebRTC
                         });
-                        // Auto-registrar contacto si es chat individual y no est� en la lista
+                        // Auto-registrar contacto si es chat individual y no est en la lista
                         if (!isGroup && otherParticipant) {
                           const alreadyInContacts = allContacts.some(
                             (c: any) => c.id?.toString() === otherUserId || c.user_id?.toString() === otherUserId
@@ -5641,7 +5634,7 @@ const App: React.FC = () => {
               {realChats.length === 0 && (
                 <div style={{ textAlign:'center', padding:'60px 20px', color:'#9ca3af' }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" style={{margin:'0 auto 16px',display:'block'}}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <div style={{ fontSize:'15px', fontWeight:'600', color:'#374151', marginBottom:'6px' }}>Sin conversaci�nes</div>
+                  <div style={{ fontSize:'15px', fontWeight:'600', color:'#374151', marginBottom:'6px' }}>Sin conversacines</div>
                   <div style={{ fontSize:'13px' }}>Toca <strong>+</strong> para iniciar un chat</div>
                 </div>
               )}
@@ -5942,7 +5935,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>{/* fin tarjeta est�tica */}
+            </div>{/* fin tarjeta esttica */}
 
             {/* Contenedor con scroll - desde Mis Cuentas */}
             <div
@@ -6205,7 +6198,7 @@ const App: React.FC = () => {
                       fontWeight: '600'
                     }}
                   >
-                    Ver todo ?
+                    Ver todo →
                   </button>
                 </div>
                 {transactionHistory
@@ -6264,7 +6257,7 @@ const App: React.FC = () => {
                     </div>
                     <div style={{ flex: 1, textAlign: 'left' }}>
                       <div style={{ fontSize: '12px', fontWeight: '700', color: '#0d0d0d', marginBottom: '2px' }}>
-                        {trans.type === 'sent' ? '? Enviado' : '? Recibido'}
+                        {trans.type === 'sent' ? '↗️ Enviado' : '↙️ Recibido'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#374151', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {trans.description}
@@ -6418,7 +6411,7 @@ const App: React.FC = () => {
                         {trans.description}
                       </div>
                       <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {trans.date} a {trans.status === 'completed' ? '? Completada' : trans.status === 'pending' ? '? Pendiente' : '? Fallida'}
+                        {trans.date} a {trans.status === 'completed' ? '✅ Completada' : trans.status === 'pending' ? '⏳ Pendiente' : '❌ Fallida'}
                       </div>
                     </div>
                     <div style={{
@@ -6564,7 +6557,7 @@ const App: React.FC = () => {
                           color: '#00c8a0',
                           avatarUrl: contact.avatarUrl || '',
                         });
-                        navigateTo('Mensajer�a');
+                        navigateTo('Mensajería');
                       }
                     } catch {}
                   }}
@@ -6626,7 +6619,7 @@ const App: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Informaci�n */}
+                  {/* información */}
                   <div style={{ flex: 1, textAlign: 'left' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '2px', color: '#0d0d0d' }}>
                       {contact.name}
@@ -6667,7 +6660,7 @@ const App: React.FC = () => {
                     color: contact.status === 'online' ? '#00c8a0' : contact.status === 'away' ? '#f59e0b' : '#9ca3af',
                     flexShrink: 0
                   }}>
-                    {contact.status === 'online' ? '?? En l�nea' : contact.status === 'away' ? '?? Ausente' : '? Desconectado'}
+                    {contact.status === 'online' ? '?? En línea' : contact.status === 'away' ? '?? Ausente' : '? Desconectado'}
                   </div>
                 </button>
               ))}
@@ -6840,7 +6833,7 @@ const App: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Informaci�n */}
+                  {/* información */}
                   <div style={{ flex: 1, textAlign: 'left' }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '2px', color: '#0d0d0d' }}>
                       {group.name}
@@ -7014,13 +7007,13 @@ const App: React.FC = () => {
                       style={{ width:'100%', accentColor:'#f59e0b', height:'4px' }}/>
                   </div>
 
-                  {/* vibraci�n */}
+                  {/* vibración */}
                   <div style={{ background:'#fff', borderRadius:'14px', padding:'16px', border:'1px solid rgba(0,0,0,0.07)', display:'flex', alignItems:'center', gap:'12px' }}>
                     <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"><path d="M2 12h1M21 12h1M4.22 4.22l.71.71M18.36 18.36l.71.71M4.22 19.78l.71-.71M18.36 5.64l.71-.71"/><circle cx="12" cy="12" r="4"/></svg>
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:'15px', fontWeight:'700', color:'#111827' }}>vibraci�n</div>
+                      <div style={{ fontSize:'15px', fontWeight:'700', color:'#111827' }}>vibración</div>
                       <div style={{ fontSize:'12px', color:'#9ca3af' }}>Al recibir mensajes y llamadas</div>
                     </div>
                     <div onClick={() => updateSoundSetting('vibrationEnabled', !soundSettings.vibrationEnabled)}
@@ -7083,11 +7076,11 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Tono de notificaci�n */}
+                  {/* Tono de notificación */}
                   <div style={{ background:'#fff', borderRadius:'14px', padding:'16px', border:'1px solid rgba(0,0,0,0.07)' }}>
                     <div style={{ fontSize:'13px', fontWeight:'700', color:'#374151', marginBottom:'12px', textTransform:'uppercase', letterSpacing:'0.3px', display:'flex', alignItems:'center', gap:'6px' }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                      Tono de notificaci�n
+                      Tono de notificación
                     </div>
                     <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                       {NOTIFICATION_TONES.map(tone => (
@@ -7145,7 +7138,7 @@ const App: React.FC = () => {
                               if (btn.type === 'message') updateSoundSetting('messageTone', id);
                               else if (btn.type === 'ringtone') updateSoundSetting('ringtone', id);
                               else updateSoundSetting('notificationTone', id);
-                              showToast(`? "${name}" a�adido`, 'success');
+                              showToast(`? "${name}" aadido`, 'success');
                             };
                             reader.readAsDataURL(file);
                           };
@@ -7198,7 +7191,7 @@ const App: React.FC = () => {
                                 const updated = customTones.filter(t => t.id !== tone.id);
                                 saveCustomTones(updated);
                                 // Si era el activo, volver al por defecto
-                                if (soundSettings.messageTone === tone.id) updateSoundSetting('messageTone', 'whatsapp');
+                                if (soundSettings.messageTone === tone.id) updateSoundSetting('messageTone', 'egatsapp');
                                 if (soundSettings.ringtone === tone.id) updateSoundSetting('ringtone', 'classic');
                                 if (soundSettings.notificationTone === tone.id) updateSoundSetting('notificationTone', 'pop');
                               }} style={{ background:'none', border:'none', cursor:'pointer', color:'#ef4444', padding:'4px', display:'flex' }}>
@@ -7281,7 +7274,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Informaci�n Personal */}
+                  {/* información Personal */}
                   <div style={{
                     background: 'rgba(250,250,250,0.88)',
                     border: '1px solid rgba(0,0,0,0.07)',
@@ -7289,7 +7282,7 @@ const App: React.FC = () => {
                     padding: '12px'
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                      Informaci�n Personal
+                      información Personal
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
@@ -7297,7 +7290,7 @@ const App: React.FC = () => {
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.email}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Tel�fono</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Teléfono</div>
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.phone}</div>
                       </div>
                       <div>
@@ -7309,7 +7302,7 @@ const App: React.FC = () => {
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.city}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Direcci�n</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>dirección</div>
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.address}</div>
                       </div>
                     </div>
@@ -7323,7 +7316,7 @@ const App: React.FC = () => {
                     padding: '12px'
                   }}>
                     <div style={{ fontSize: '14px', fontWeight: '600', color: userProfile.verificationStatus === 'verified' ? '#00c8a0' : '#f59e0b', marginBottom: '4px' }}>
-                      {userProfile.verificationStatus === 'verified' ? '? Verificado' : userProfile.verificationStatus === 'pending' ? '? Pendiente' : '? No Verificado'}
+                      {userProfile.verificationStatus === 'verified' ? '? Verificado' : userProfile.verificationStatus === 'pending' ? '⏳ Pendiente' : '? No Verificado'}
                     </div>
                     <div style={{ fontSize: '13px', color: '#374151' }}>
                       Miembro desde {userProfile.joinDate}
@@ -7353,7 +7346,7 @@ const App: React.FC = () => {
                       >
                         <span style={{display:'flex',alignItems:'center',gap:'10px'}}>
                           <svg width="18" height="18" viewBox="0 0 24 24" stroke="#6b7280" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                          Autenticaci�n de Dos Factores
+                          Autenticación de Dos Factores
                         </span>
                         <span style={{ color: userProfile.twoFactorEnabled ? '#00c8a0' : '#ef4444', fontSize:'13px', fontWeight:'700' }}>
                           {userProfile.twoFactorEnabled ? 'ON' : 'OFF'}
@@ -7386,7 +7379,7 @@ const App: React.FC = () => {
                             return;
                           }
                           if (Notification.permission === 'denied') {
-                            alert('Las notificaciones est�n bloqueadas. Ve a los ajustes del navegador ? Permisos del sitio ? Notificaciones ? Permitir para egchat-app.vercel.app');
+                            alert('Las notificaciones están bloqueadas. Ve a los ajustes del navegador ? Permisos del sitio ? Notificaciones ? Permitir para egchat-app.vercel.app');
                             return;
                           }
                           const perm = await Notification.requestPermission();
@@ -7436,7 +7429,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Acciones de perfil ? estilo app M�vil profesional */}
+                  {/* Acciones de perfil ? estilo app Móvil profesional */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
 
                     {/* Cambiar foto */}
@@ -7491,10 +7484,10 @@ const App: React.FC = () => {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
 
-                    {/* Cerrar sesi�n */}
+                    {/* Cerrar sesión */}
                     <button
                       onClick={async () => {
-                        if (confirm('�Est�s seguro de que deseas cerrar sesi�n?')) {
+                        if (confirm('Ests seguro de que deseas cerrar sesión?')) {
                           try {
                             await authAPI.logout();
                             localStorage.removeItem('user_avatar');
@@ -7515,7 +7508,7 @@ const App: React.FC = () => {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                       </div>
                       <div style={{ flex: 1, textAlign: 'left' }}>
-                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#ef4444' }}>Cerrar sesi�n</div>
+                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#ef4444' }}>Cerrar sesión</div>
                         <div style={{ fontSize: '12px', color: '#fca5a5', marginTop: '1px' }}>Salir de tu cuenta</div>
                       </div>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -7540,10 +7533,10 @@ const App: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {[
-                        { q: '�C�mo cambio mi PIN?', a: 'Ve a Perfil > Seguridad > Cambiar PIN' },
-                        { q: '�Cu�l es el l�mite de transferencia?', a: 'El l�mite diario es 2,000,000 XAF' },
-                        { q: '�C�mo activo 2FA?', a: 'Ve a Perfil > Seguridad > Autenticaci�n de Dos Factores' },
-                        { q: '�C�mo reporto una transacci�n?', a: 'Abre la transacci�n y selecciona "Reportar"' }
+                        { q: 'Cmo cambio mi PIN?', a: 'Ve a Perfil > Seguridad > Cambiar PIN' },
+                        { q: '¿Cuál es el lmite de transferencia?', a: 'El lmite diario es 2,000,000 XAF' },
+                        { q: 'Cmo activo 2FA?', a: 'Ve a Perfil > Seguridad > Autenticación de Dos Factores' },
+                        { q: 'Cmo reporto una transacción?', a: 'Abre la transacción y selecciona "Reportar"' }
                       ].map((item, idx) => (
                         <div key={idx} style={{
                           background: 'rgba(255, 255, 255, 0.02)',
@@ -7645,7 +7638,7 @@ const App: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Versi�n</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Versión</div>
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>1.0.0</div>
                       </div>
                       <div>
@@ -7752,18 +7745,18 @@ const App: React.FC = () => {
   // -- Polling llamadas entrantes ? solo se inicia una vez al autenticarse
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Esperar a que currentUserId est� disponible
+    // Esperar a que currentUserId est disponible
     const startPolling = () => {
       const uid = currentUserId.current;
       if (!uid) {
-        // Reintentar en 2s si el userId a?n no est� disponible
+        // Reintentar en 2s si el userId a?n no est disponible
         const t = setTimeout(startPolling, 2000);
         return () => clearTimeout(t);
       }
       const stop = webrtc.pollIncoming(uid, (call) => {
         setIncomingCall(prev => {
           if (prev) return prev;
-          startRingtone(); vibrate([500, 200, 500, 200, 500]); // ringtone + vibraci�n
+          startRingtone(); vibrate([500, 200, 500, 200, 500]); // ringtone + vibración
           return call;
         });
       });
@@ -7788,7 +7781,7 @@ const App: React.FC = () => {
           addedDate: c.created_at || new Date().toISOString(),
         }));
 
-        // Auto-sincronizar: a�adir personas con las que has chateado pero no est�n en contactos
+        // Auto-sincronizar: añadir personas con las que has chateado pero no están en contactos
         const chats = realChatsRef.current || [];
         const myId = currentUserId.current?.toString();
         const extraContacts: typeof backendContacts = [];
@@ -7831,18 +7824,18 @@ const App: React.FC = () => {
         if (p.id) currentUserId.current = p.id;
       } catch {}
     }
-    // Manejar link de a�adir contacto desde QR: /add?phone=...&name=...
+    // Manejar link de añadir contacto desde QR: /add?phone=...&name=...
     const urlParams = new URLSearchParams(window.location.search);
     const addPhone = urlParams.get('phone');
     const addName = urlParams.get('name');
     if (addPhone) {
       // Limpiar URL sin recargar
       window.history.replaceState({}, '', window.location.pathname);
-      // A�adir contacto autom?ticamente despu�s de login
+      // Añadir contacto autom?ticamente despus de login
       setTimeout(async () => {
         try {
           await contactsAPI.add(undefined, addPhone, addName || undefined);
-          showToast(`? ${addName || addPhone} a�adido a contactos`, 'success');
+          showToast(`? ${addName || addPhone} aadido a contactos`, 'success');
         } catch {}
       }, 2000);
     }
@@ -7873,7 +7866,7 @@ const App: React.FC = () => {
     chatAPI.getFavoriteChats().then((data: any[]) => {
       setFavoriteGroupIds((data || []).map((c: any) => c.id?.toString()));
     }).catch(() => {});
-    // Registrar Web Push (con peque?o delay para que el SW est� listo)
+    // Registrar Web Push (con peque?o delay para que el SW est listo)
     setTimeout(() => {
       if (typeof (window as any).__egchat_registerPush === 'function') {
         (window as any).__egchat_registerPush();
@@ -7884,7 +7877,7 @@ const App: React.FC = () => {
   // Escuchar evento de token expirado desde api.ts
   useEffect(() => {
     const handleExpired = () => {
-      // Solo cerrar sesi�n si realmente no hay token
+      // Solo cerrar sesión si realmente no hay token
       const token = localStorage.getItem('token') || localStorage.getItem('egchat_token_backup');
       if (!token) {
         setIsAuthenticated(false);
@@ -7897,7 +7890,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentView === 'Mensajer�a') loadChats();
+    if (currentView === 'Mensajería') loadChats();
   }, [currentView, loadChats]);
 
   // -- Polling: actualizar mensajes del chat abierto cada 3s ---
@@ -8009,7 +8002,7 @@ const App: React.FC = () => {
       )}
       
       {/* Header ? solo en home y vistas principales */}
-      {['home','Mensajer�a','monedero','servicios','ajustes'].includes(currentView) && renderHeader()}
+      {['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && renderHeader()}
       
       {/* Paneles desplegables */}
       {renderNotificationsPanel()}
@@ -8032,7 +8025,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Men� contextual de mensaje � dise�o premium EGChat */}
+      {/* Men contextual de mensaje  diseo premium EGChat */}
       {msgContextMenu && (
         <>
           {/* Overlay blur */}
@@ -8101,7 +8094,7 @@ const App: React.FC = () => {
               boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
               border: '1px solid rgba(255,255,255,0.8)',
             }}>
-              {['??','??','??','??','??','??','??'].map((emoji, i) => (
+              {['👍','❤️','😂','😮','😢','🙏','🔥'].map((emoji, i) => (
                 <button key={emoji} onClick={() => {
                   const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                   const t = new Date(); const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -8371,17 +8364,17 @@ const App: React.FC = () => {
                         const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                         const missedMsg: any = {
                           id: `call_${Date.now()}`, from: 'them' as const,
-                          text: `?? Llamada perdida`, time, status: 'delivered',
+                          text: `📵 Llamada perdida`, time, status: 'delivered',
                           type: 'call', callType: incomingCall.type, callStatus: 'missed',
                           callDuration: 0, contactId: incomingCall.callerId, contactName: callerName,
                         };
                         const key = callerChat.id?.toString();
                         setChatMessages(prev => ({ ...prev, [key]: [...(prev[key] || []), missedMsg] }));
                         chatAPI.sendMessage(key, { text: '?? Llamada perdida', type: 'text' }).catch(() => {});
-                        // Notificaci�n en campanita
+                        // notificación en campanita
                         const nt = new Date();
                         const ntime = `${nt.getHours().toString().padStart(2,'0')}:${nt.getMinutes().toString().padStart(2,'0')}`;
-                        setAppNotifications(prev => [{ id: Date.now().toString(), type: 'message' as const, title: `?? Llamada perdida de ${callerName}`, body: incomingCall.type === 'video' ? 'Videollamada perdida' : 'Llamada de voz perdida', time: ntime, read: false, chatId: key }, ...prev].slice(0, 50));
+                        setAppNotifications(prev => [{ id: Date.now().toString(), type: 'message' as const, title: `📵 Llamada perdida de ${callerName}`, body: incomingCall.type === 'video' ? 'Videollamada perdida' : 'Llamada de voz perdida', time: ntime, read: false, chatId: key }, ...prev].slice(0, 50));
                       }
                       setIncomingCall(null);
                     }}
@@ -8431,14 +8424,14 @@ const App: React.FC = () => {
       </div>
       
       {/* NAVEGACION inferior - solo en vistas principales */}
-      {!isMenuOpen && ['home','Mensajer�a','monedero','servicios','ajustes'].includes(currentView) && renderBottomNavigation()}
+      {!isMenuOpen && ['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && renderBottomNavigation()}
       
-      {/* Bot�n cat�logo wallpaper � dentro del men� radial, no aqu� */}
+      {/* Botón catlogo wallpaper  dentro del men radial, no aqu */}
 
-      {/* Toast de notificaci�n de mensaje nuevo */}
+      {/* Toast de notificación de mensaje nuevo */}
       {msgNotif && (
         <div
-          onClick={() => { setMsgNotif(null); setSelectedChat(null); setCurrentView('Mensajer�a'); }}
+          onClick={() => { setMsgNotif(null); setSelectedChat(null); setCurrentView('Mensajería'); }}
           style={{
             position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)',
             zIndex: 9999, background: '#1a1a2e', borderRadius: '16px',
@@ -8493,29 +8486,29 @@ const App: React.FC = () => {
               const name = url.searchParams.get('name');
               if (phone) {
                 const result = await contactsAPI.add(undefined, phone, name || undefined);
-                showToast(`? ${name || phone} a�adido a contactos`, 'success');
+                showToast(`? ${name || phone} aadido a contactos`, 'success');
                 // Recargar contactos
                 await loadContacts();
               } else {
                 showToast('QR no reconocido como contacto EGCHAT', 'error');
               }
             } catch {
-              showToast('QR no v�lido o no es un contacto EGCHAT', 'error');
+              showToast('QR no vlido o no es un contacto EGCHAT', 'error');
             }
           }}
         />
       )}
 
-      {/* Men� radial */}
+      {/* Men radial */}
       {renderRadialMenu()}
       
-      {/* Bot�n flotante */}
+      {/* Botón flotante */}
       {renderFloatingButton()}
       
       {/* Botan de home */}
       {renderHomeButton()}
 
-      {/* Bot�n flotante de IA - Draggable - Solo en Home */}
+      {/* Botón flotante de IA - Draggable - Solo en Home */}
       {currentView === 'home' && (
         <button 
           onMouseDown={(e: React.MouseEvent) => {
@@ -8938,7 +8931,7 @@ const App: React.FC = () => {
                   <option value="Corriente" style={{ background: '#FFFFFF', color: '#0d0d0d' }}>Corriente</option>
                   <option value="Ahorros" style={{ background: '#FFFFFF', color: '#0d0d0d' }}>Ahorros</option>
                   <option value="Namina" style={{ background: '#FFFFFF', color: '#0d0d0d' }}>Namina</option>
-                  <option value="Inversi�n" style={{ background: '#FFFFFF', color: '#0d0d0d' }}>Inversi�n</option>
+                  <option value="Inversión" style={{ background: '#FFFFFF', color: '#0d0d0d' }}>Inversión</option>
                 </select>
               </div>
 
@@ -9109,8 +9102,8 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* N�mero de contrato */}
-                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'6px' }}>N�mero de contrato / medidor</div>
+                  {/* Nmero de contrato */}
+                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'6px' }}>Nmero de contrato / medidor</div>
                   <div style={{ background:'#F9FAFB', borderRadius:'10px', padding:'0 14px', marginBottom:'6px', height:'52px', display:'flex', alignItems:'center', border:'1.5px solid #E5E7EB', gap:'10px' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     <input type="text" placeholder="Ej: 0012345678" value={svcData.contrato||''} onChange={(e)=>setSvcData((p:Record<string,string>)=>({...p,contrato:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'15px', color:'#111827', fontFamily:'inherit', fontWeight:'600' }}/>
@@ -9148,7 +9141,7 @@ const App: React.FC = () => {
                       {/* M?todo de pago */}
                       <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'8px' }}>M?todo de pago</div>
                       <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                        {[{id:'wallet',label:'EGCHAT Wallet',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                        {[{id:'wallet',label:'EGCHAT Wallet',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                           <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#1A3A6B':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1A3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
                             <span style={{ fontSize:'16px' }}>{m.icon}</span>{m.label}
                           </button>
@@ -9183,7 +9176,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ padding:'16px' }}>
-                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'6px' }}>N�mero de contrato / medidor</div>
+                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'6px' }}>Nmero de contrato / medidor</div>
                   <div style={{ background:'#F9FAFB', borderRadius:'10px', padding:'0 14px', marginBottom:'6px', height:'52px', display:'flex', alignItems:'center', border:'1.5px solid #E5E7EB', gap:'10px' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
                     <input type="text" placeholder="Ej: SNGE-00456" value={svcData.contrato||''} onChange={(e)=>setSvcData((p:Record<string,string>)=>({...p,contrato:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'15px', color:'#111827', fontFamily:'inherit', fontWeight:'600' }}/>
@@ -9214,7 +9207,7 @@ const App: React.FC = () => {
                         </div>
                       </div>
                       <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                        {[{id:'wallet',label:'EGCHAT Wallet',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                        {[{id:'wallet',label:'EGCHAT Wallet',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                           <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#0A4A8A':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#0A4A8A':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
                             <span style={{ fontSize:'16px' }}>{m.icon}</span>{m.label}
                           </button>
@@ -9276,10 +9269,10 @@ const App: React.FC = () => {
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
                   {[
-                    {id:'matricula',label:'Matr�cula Escolar',sub:'Colegios p�blicos y privados',price:'25,000',color:'#6B5BD6',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
+                    {id:'matricula',label:'Matrcula Escolar',sub:'Colegios pblicos y privados',price:'25,000',color:'#6B5BD6',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
                     {id:'universidad',label:'Universidad',sub:'UNGE, UNIGE y otras',price:'150,000',color:'#1485EE',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>},
-                    {id:'cursos',label:'Cursos y Formaci�n',sub:'Formaci�n profesional online',price:'50,000',color:'#00c8a0',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>},
-                    {id:'libros',label:'Material Escolar',sub:'Libros y �tiles escolares',price:'15,000',color:'#F59E0B',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>},
+                    {id:'cursos',label:'Cursos y Formacin',sub:'Formacin profesional online',price:'50,000',color:'#00c8a0',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>},
+                    {id:'libros',label:'Material Escolar',sub:'Libros y tiles escolares',price:'15,000',color:'#F59E0B',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>},
                   ].map((e) => (
                     <button key={e.id} onClick={() => { setSvcStep('form-edu'); setSvcData({type:e.id,typeLabel:e.label,price:e.price}); }}
                       style={{ width:'100%', background:'#fff', border:'1px solid #F0F2F5', borderRadius:'12px', padding:'13px 14px', cursor:'pointer', outline:'none', display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}
@@ -9297,7 +9290,7 @@ const App: React.FC = () => {
                 <div style={{ background:'linear-gradient(135deg,#4C1D95,#6B5BD6)', borderRadius:'12px', padding:'14px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'12px' }}>
                   <div style={{ flex:1 }}><div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)', marginTop:'2px' }}>Precio referencia: {svcData.price} XAF</div></div>
                 </div>
-                {[{key:'student',placeholder:'Nombre del estudiante',type:'text',icon:'??'},{key:'institution',placeholder:'Centro educativo',type:'text',icon:'??'},{key:'ref',placeholder:'N�mero de referencia / matr�cula',type:'text',icon:'??'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'??'}].map((f) => (
+                {[{key:'student',placeholder:'Nombre del estudiante',type:'text',icon:'👤'},{key:'institution',placeholder:'Centro educativo',type:'text',icon:'📋'},{key:'ref',placeholder:'Nmero de referencia / matrcula',type:'text',icon:'📋'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                     <span style={{ fontSize:'16px' }}>{f.icon}</span>
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9305,7 +9298,7 @@ const App: React.FC = () => {
                 ))}
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                  {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                  {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EDE9FE':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#6B5BD6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#6B5BD6':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                       <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                     </button>
@@ -9334,7 +9327,7 @@ const App: React.FC = () => {
                     {id:'bus',label:'Bus Urbano',sub:'Malabo / Bata - Rutas urbanas',price:'200',color:'#00c8a0',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>},
                     {id:'taxi',label:'Taxi Compartido',sub:'Rutas fijas interurbanas',price:'500',color:'#F59E0B',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>},
                     {id:'ferry',label:'Ferry Malabo-Bata',sub:'Traves?a mar?tima - 8h',price:'15000',color:'#1485EE',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v6"/><path d="M12 10v4"/><path d="M12 3v4"/></svg>},
-                    {id:'abono',label:'Abono Mensual',sub:'Transporte ilimitado 30 d�as',price:'8000',color:'#6B5BD6',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>},
+                    {id:'abono',label:'Abono Mensual',sub:'Transporte ilimitado 30 das',price:'8000',color:'#6B5BD6',icon:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>},
                   ].map((t) => (
                     <button key={t.id} onClick={() => { setSvcStep('form-transp'); setSvcData({type:t.id,typeLabel:t.label,price:t.price}); }}
                       style={{ width:'100%', background:'#fff', border:'1px solid #F0F2F5', borderRadius:'12px', padding:'13px 14px', cursor:'pointer', outline:'none', display:'flex', alignItems:'center', gap:'12px', marginBottom:'8px', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}
@@ -9353,7 +9346,7 @@ const App: React.FC = () => {
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div>
                   <div style={{ fontSize:'18px', fontWeight:'900', color:'#fff' }}>{parseInt(svcData.price||'0').toLocaleString()} XAF</div>
                 </div>
-                {[{key:'name',placeholder:'Nombre completo',type:'text',icon:'??'},{key:'qty',placeholder:'Cantidad de billetes',type:'number',icon:'??'}].map((f) => (
+                {[{key:'name',placeholder:'Nombre completo',type:'text',icon:'👤'},{key:'qty',placeholder:'Cantidad de billetes',type:'number',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                     <span style={{ fontSize:'16px' }}>{f.icon}</span>
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9367,7 +9360,7 @@ const App: React.FC = () => {
                 )}
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                  {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                  {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#F0FDF9':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00c8a0':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#065F46':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                       <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                     </button>
@@ -9413,7 +9406,7 @@ const App: React.FC = () => {
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div>
                   <div style={{ fontSize:'16px', fontWeight:'900', color:'#fff' }}>{svcData.price}</div>
                 </div>
-                {[{key:'sender',placeholder:'Remitente (nombre)',type:'text',icon:'??'},{key:'dest',placeholder:'Destinatario (nombre)',type:'text',icon:'??'},{key:'address',placeholder:'Direcci�n de entrega completa',type:'text',icon:'??'},{key:'phone',placeholder:'Tel�fono de contacto',type:'tel',icon:'??'}].map((f) => (
+                {[{key:'sender',placeholder:'Remitente (nombre)',type:'text',icon:'👤'},{key:'dest',placeholder:'Destinatario (nombre)',type:'text',icon:'👤'},{key:'address',placeholder:'dirección de entrega completa',type:'text',icon:'📋'},{key:'phone',placeholder:'Teléfono de contacto',type:'tel',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                     <span style={{ fontSize:'16px' }}>{f.icon}</span>
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9421,7 +9414,7 @@ const App: React.FC = () => {
                 ))}
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                  {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                  {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#FEF2F2':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#C62828':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#C62828':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                       <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                     </button>
@@ -9440,7 +9433,7 @@ const App: React.FC = () => {
                   <div style={{ width:'52px', height:'52px', borderRadius:'12px', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                     <img src="/assets/services/dgi.svg" alt="DGI" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
                   </div>
-                  <div><div style={{ fontSize:'16px', fontWeight:'800', color:'#fff' }}>DGI</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Direcci�n General de Impuestos</div></div>
+                  <div><div style={{ fontSize:'16px', fontWeight:'800', color:'#fff' }}>DGI</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>dirección General de Impuestos</div></div>
                 </div>
                 <div style={{ padding:'12px 16px 0', fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Tipo de declaraci?n / pago</div>
                 {[
@@ -9465,20 +9458,20 @@ const App: React.FC = () => {
               <div style={{ padding:'14px 16px 24px' }}>
                 <div style={{ background:'linear-gradient(135deg,#1B3A6B,#2A5298)', borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div>
-                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>Direcci�n General de Impuestos ? GQ</div>
+                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>dirección General de Impuestos ? GQ</div>
                 </div>
-                {[{key:'nif',placeholder:'NIF / DNI del contribuyente',type:'text',icon:'??'},{key:'ref',placeholder:'Referencia de pago / expediente',type:'text',icon:'??'},{key:'period',placeholder:'Per?odo fiscal (ej: 2025)',type:'text',icon:'??'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'??'}].map((f) => (
+                {[{key:'nif',placeholder:'NIF / DNI del contribuyente',type:'text',icon:'👤'},{key:'ref',placeholder:'Referencia de pago / expediente',type:'text',icon:'📋'},{key:'period',placeholder:'Per?odo fiscal (ej: 2025)',type:'text',icon:'📋'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                     <span style={{ fontSize:'16px' }}>{f.icon}</span>
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
                   </div>
                 ))}
                 <div style={{ background:'#FEF3C7', borderRadius:'10px', padding:'10px 14px', marginBottom:'12px', fontSize:'12px', color:'#92400E', display:'flex', gap:'8px', alignItems:'flex-start' }}>
-                  <span>??</span><span>El pago de impuestos genera un justificante oficial. Guarda el n�mero de referencia.</span>
+                  <span>??</span><span>El pago de impuestos genera un justificante oficial. Guarda el nmero de referencia.</span>
                 </div>
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                  {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                  {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#1B3A6B':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1B3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                       <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                     </button>
@@ -9500,15 +9493,15 @@ const App: React.FC = () => {
                     super: { title:'Supermercados', sub:'Compra online - Entrega a domicilio', grad:'linear-gradient(135deg,#065F46,#00c8a0)',
                       items:[{id:'a',label:'Supermercado Central',sub:'Malabo Centro - Entrega 1h',price:'Gratis >5,000',color:'#00c8a0'},{id:'b',label:'Hiper Bata',sub:'Bata - Entrega 2h',price:'Gratis >8,000',color:'#00c8a0'},{id:'c',label:'Tienda Familiar',sub:'Barrio - Entrega 30min',price:'500 XAF',color:'#F59E0B'},{id:'d',label:'Mercado Central',sub:'Malabo - Productos frescos',price:'Gratis >3,000',color:'#00c8a0'}]},
                     comida: { title:'Comida a Domicilio', sub:'Restaurantes y cocinas - Entrega r?pida', grad:'linear-gradient(135deg,#C0392B,#E74C3C)',
-                      items:[{id:'a',label:'Comida R?pida',sub:'Hamburguesas, pollo - 30 min',price:'500 XAF',color:'#E74C3C'},{id:'b',label:'Cocina Africana',sub:'Platos t?picos GQ - 45 min',price:'300 XAF',color:'#F59E0B'},{id:'c',label:'Comida Internacional',sub:'Italiana, china, ?rabe - 60 min',price:'800 XAF',color:'#1485EE'},{id:'d',label:'Comida Casera',sub:'Men� del d�a - 40 min',price:'200 XAF',color:'#00c8a0'}]},
+                      items:[{id:'a',label:'Comida R?pida',sub:'Hamburguesas, pollo - 30 min',price:'500 XAF',color:'#E74C3C'},{id:'b',label:'Cocina Africana',sub:'Platos t?picos GQ - 45 min',price:'300 XAF',color:'#F59E0B'},{id:'c',label:'Comida Internacional',sub:'Italiana, china, ?rabe - 60 min',price:'800 XAF',color:'#1485EE'},{id:'d',label:'Comida Casera',sub:'Men del da - 40 min',price:'200 XAF',color:'#00c8a0'}]},
                     restaurante: { title:'Restaurantes', sub:'Reservas y pedidos para llevar', grad:'linear-gradient(135deg,#92400E,#F59E0B)',
-                      items:[{id:'a',label:'Reserva de Mesa',sub:'Para hoy o ma?ana',price:'Gratis',color:'#F59E0B'},{id:'b',label:'Pedido para Llevar',sub:'Listo en 20 min',price:'Sin cargo',color:'#00c8a0'},{id:'c',label:'Men� Empresarial',sub:'Grupos +10 personas',price:'Consultar',color:'#1485EE'}]},
-                    tienda: { title:'Tiendas Online', sub:'Ropa, electr�nica, hogar ? Env?o a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
-                      items:[{id:'a',label:'Ropa y Moda',sub:'Env?o a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electr�nica',sub:'Garant?a incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoraci?n',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
+                      items:[{id:'a',label:'Reserva de Mesa',sub:'Para hoy o ma?ana',price:'Gratis',color:'#F59E0B'},{id:'b',label:'Pedido para Llevar',sub:'Listo en 20 min',price:'Sin cargo',color:'#00c8a0'},{id:'c',label:'Men Empresarial',sub:'Grupos +10 personas',price:'Consultar',color:'#1485EE'}]},
+                    tienda: { title:'Tiendas Online', sub:'Ropa, electrnica, hogar ? Env?o a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
+                      items:[{id:'a',label:'Ropa y Moda',sub:'Env?o a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electrnica',sub:'Garant?a incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoraci?n',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
                     lavanderia: { title:'Lavander?a', sub:'Recogida y entrega a domicilio', grad:'linear-gradient(135deg,#0A4A8A,#00b4e6)',
                       items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h ? Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorer?a',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
-                    belleza: { title:'Belleza y Bienestar', sub:'Peluquer?as, est�tica y spa', grad:'linear-gradient(135deg,#831843,#EC4899)',
-                      items:[{id:'a',label:'Peluquer?a',sub:'Corte, peinado, color',price:'5,000 XAF',color:'#EC4899'},{id:'b',label:'Est�tica',sub:'Manicura, pedicura, depilaci?n',price:'8,000 XAF',color:'#F59E0B'},{id:'c',label:'Spa & Masajes',sub:'Relajaci?n y bienestar',price:'15,000 XAF',color:'#6B5BD6'},{id:'d',label:'Barber?a',sub:'Corte y arreglo de barba',price:'3,000 XAF',color:'#00b4e6'}]},
+                    belleza: { title:'Belleza y Bienestar', sub:'Peluquer?as, esttica y spa', grad:'linear-gradient(135deg,#831843,#EC4899)',
+                      items:[{id:'a',label:'Peluquer?a',sub:'Corte, peinado, color',price:'5,000 XAF',color:'#EC4899'},{id:'b',label:'Esttica',sub:'Manicura, pedicura, depilaci?n',price:'8,000 XAF',color:'#F59E0B'},{id:'c',label:'Spa & Masajes',sub:'Relajaci?n y bienestar',price:'15,000 XAF',color:'#6B5BD6'},{id:'d',label:'Barber?a',sub:'Corte y arreglo de barba',price:'3,000 XAF',color:'#00b4e6'}]},
                   };
                   const c = cfg[showSvcModal!] || cfg.super;
                   return (
@@ -9544,7 +9537,7 @@ const App: React.FC = () => {
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#111827' }}>{svcData.typeLabel}</div>
                   <div style={{ fontSize:'12px', fontWeight:'700', color:svcData.color||'#00c8a0' }}>{svcData.price}</div>
                 </div>
-                {[{key:'name',placeholder:'Tu nombre completo',type:'text',icon:'??'},{key:'address',placeholder:'Direcci�n de entrega',type:'text',icon:'??'},{key:'phone',placeholder:'Tel�fono de contacto',type:'tel',icon:'??'},{key:'notes',placeholder:'Notas del pedido (opcional)',type:'text',icon:'??'}].map((f) => (
+                {[{key:'name',placeholder:'Tu nombre completo',type:'text',icon:'👤'},{key:'address',placeholder:'dirección de entrega',type:'text',icon:'📋'},{key:'phone',placeholder:'Teléfono de contacto',type:'tel',icon:'📋'},{key:'notes',placeholder:'Notas del pedido (opcional)',type:'text',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                     <span style={{ fontSize:'16px' }}>{f.icon}</span>
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9552,7 +9545,7 @@ const App: React.FC = () => {
                 ))}
                 <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                  {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                  {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#F0FDF9':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00c8a0':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#065F46':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                       <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                     </button>
@@ -9577,7 +9570,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
-                  {[{key:'origin',placeholder:'Punto de recogida',type:'text',icon:'??'},{key:'dest',placeholder:'Destino',type:'text',icon:'??'},{key:'phone',placeholder:'Tu tel�fono',type:'tel',icon:'??'}].map((f) => (
+                  {[{key:'origin',placeholder:'Punto de recogida',type:'text',icon:'👤'},{key:'dest',placeholder:'Destino',type:'text',icon:'📋'},{key:'phone',placeholder:'Tu teléfono',type:'tel',icon:'📋'}].map((f) => (
                     <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                       <span style={{ fontSize:'16px' }}>{f.icon}</span>
                       <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9587,7 +9580,7 @@ const App: React.FC = () => {
                     <div style={{ background:'#FFFBEB', borderRadius:'12px', padding:'14px', marginBottom:'12px', border:'1px solid #FDE68A' }}>
                       <div style={{ fontSize:'11px', color:'#92400E', marginBottom:'6px', fontWeight:'600' }}>Precio estimado</div>
                       <div style={{ display:'flex', gap:'8px' }}>
-                        {[{label:'Econ?mico',price:'1,500 XAF'},{label:'Est�ndar',price:'2,500 XAF'},{label:'Premium',price:'4,000 XAF'}].map(t=>(
+                        {[{label:'Econ?mico',price:'1,500 XAF'},{label:'Estndar',price:'2,500 XAF'},{label:'Premium',price:'4,000 XAF'}].map(t=>(
                           <button key={t.label} onClick={()=>setSvcData(p=>({...p,taxiType:t.label,taxiPrice:t.price}))} style={{ flex:1, background:svcData.taxiType===t.label?'#F59E0B':'#fff', border:`1.5px solid ${svcData.taxiType===t.label?'#F59E0B':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'10px', fontWeight:'700', color:svcData.taxiType===t.label?'#fff':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
                             <span style={{ fontSize:'13px', fontWeight:'800' }}>{t.price}</span>{t.label}
                           </button>
@@ -9631,7 +9624,7 @@ const App: React.FC = () => {
                 <div style={{ padding:'14px 16px 0' }}>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'14px' }}>
                     {[
-                      {id:'h1',label:'Hotel Bah�a',sub:'Malabo - 4*',price:'45,000 XAF/noche',color:'#00b4e6'},
+                      {id:'h1',label:'Hotel Baha',sub:'Malabo - 4*',price:'45,000 XAF/noche',color:'#00b4e6'},
                       {id:'h2',label:'Hotel Impala',sub:'Malabo - 3*',price:'28,000 XAF/noche',color:'#1485EE'},
                       {id:'h3',label:'Hotel Bata',sub:'Bata - 3*',price:'25,000 XAF/noche',color:'#00c8a0'},
                       {id:'h4',label:'Aparthotel GQ',sub:'Malabo - Apartamentos',price:'35,000 XAF/noche',color:'#6B5BD6'},
@@ -9643,7 +9636,7 @@ const App: React.FC = () => {
                       </button>
                     ))}
                   </div>
-                  {[{key:'checkin',placeholder:'Fecha entrada (DD/MM/AAAA)',type:'text',icon:'??'},{key:'checkout',placeholder:'Fecha salida (DD/MM/AAAA)',type:'text',icon:'??'},{key:'guests',placeholder:'N�mero de hu?spedes',type:'number',icon:'??'},{key:'name',placeholder:'Nombre del titular',type:'text',icon:'??'}].map((f) => (
+                  {[{key:'checkin',placeholder:'Fecha entrada (DD/MM/AAAA)',type:'text',icon:'📋'},{key:'checkout',placeholder:'Fecha salida (DD/MM/AAAA)',type:'text',icon:'📋'},{key:'guests',placeholder:'Nmero de hu?spedes',type:'number',icon:'📋'},{key:'name',placeholder:'Nombre del titular',type:'text',icon:'📋'}].map((f) => (
                     <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                       <span style={{ fontSize:'16px' }}>{f.icon}</span>
                       <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9651,7 +9644,7 @@ const App: React.FC = () => {
                   ))}
                   <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
                   <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                    {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'cash',label:'Efectivo',icon:'??'}].map(m=>(
+                    {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                       <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#0A4A8A':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                         <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                       </button>
@@ -9681,7 +9674,7 @@ const App: React.FC = () => {
                       <button key={t} onClick={()=>setSvcData(p=>({...p,tripType:t}))} style={{ flex:1, background:svcData.tripType===t?'#00b4e6':'#fff', border:`1.5px solid ${svcData.tripType===t?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px', fontSize:'12px', fontWeight:'700', color:svcData.tripType===t?'#fff':'#6B7280', cursor:'pointer' }}>{t}</button>
                     ))}
                   </div>
-                  {[{key:'from',placeholder:'Origen (SSG, BSG, LBV...)',type:'text',icon:'??'},{key:'to',placeholder:'Destino',type:'text',icon:'??'},{key:'date',placeholder:'Fecha de salida (DD/MM/AAAA)',type:'text',icon:'??'},{key:'pax',placeholder:'N�mero de pasajeros',type:'number',icon:'??'},{key:'name',placeholder:'Nombre del pasajero principal',type:'text',icon:'??'}].map((f) => (
+                  {[{key:'from',placeholder:'Origen (SSG, BSG, LBV...)',type:'text',icon:'📋'},{key:'to',placeholder:'Destino',type:'text',icon:'📋'},{key:'date',placeholder:'Fecha de salida (DD/MM/AAAA)',type:'text',icon:'📋'},{key:'pax',placeholder:'Nmero de pasajeros',type:'number',icon:'📋'},{key:'name',placeholder:'Nombre del pasajero principal',type:'text',icon:'📋'}].map((f) => (
                     <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
                       <span style={{ fontSize:'16px' }}>{f.icon}</span>
                       <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
@@ -9701,7 +9694,7 @@ const App: React.FC = () => {
                   )}
                   <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
                   <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                    {[{id:'wallet',label:'EGCHAT',icon:'??'},{id:'bank',label:'Banco',icon:'??'},{id:'card',label:'Tarjeta',icon:'??'}].map(m=>(
+                    {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'card',label:'Tarjeta',icon:'📋'}].map(m=>(
                       <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1B3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                         <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
                       </button>
@@ -9752,7 +9745,7 @@ const App: React.FC = () => {
                     <div style={{ fontSize:'20px', fontWeight:'800', color:'#07C160' }}>{(parseInt(svcData.liters||'0') * 650).toLocaleString()} XAF</div>
                   </div>
                 )}
-                <button onClick={() => { if(svcData.plate && svcData.liters){ const total=parseInt(svcData.liters||'0')*650; setUserBalance(b=>b-total); setSvcStep('success'); setSvcData(p=>({...p,action:`${svcData.typeLabel} � ${svcData.liters}L � Matr�cula ${svcData.plate} � ${total.toLocaleString()} XAF`})); } }} style={{ width:'100%', background:svcData.plate&&svcData.liters?'linear-gradient(135deg,#92400E,#F59E0B)':'#E5E7EB', border:'none', borderRadius:'10px', padding:'13px', color:svcData.plate&&svcData.liters?'#fff':'#9CA3AF', fontSize:'14px', fontWeight:'700', cursor:svcData.plate&&svcData.liters?'pointer':'default', outline:'none' }}>Pagar Combustible</button>
+                <button onClick={() => { if(svcData.plate && svcData.liters){ const total=parseInt(svcData.liters||'0')*650; setUserBalance(b=>b-total); setSvcStep('success'); setSvcData(p=>({...p,action:`${svcData.typeLabel}  ${svcData.liters}L  Matrcula ${svcData.plate}  ${total.toLocaleString()} XAF`})); } }} style={{ width:'100%', background:svcData.plate&&svcData.liters?'linear-gradient(135deg,#92400E,#F59E0B)':'#E5E7EB', border:'none', borderRadius:'10px', padding:'13px', color:svcData.plate&&svcData.liters?'#fff':'#9CA3AF', fontSize:'14px', fontWeight:'700', cursor:svcData.plate&&svcData.liters?'pointer':'default', outline:'none' }}>Pagar Combustible</button>
               </div>
             )}
             {/* NOTICIAS */}
@@ -9785,7 +9778,7 @@ const App: React.FC = () => {
                 <div style={{ background:'linear-gradient(135deg,#576B95,#1485EE)', borderRadius:'16px', padding:'20px', marginBottom:'16px', color:'#fff' }}>
                   <div style={{ fontSize:'10px', opacity:0.8, marginBottom:'12px', letterSpacing:'1px' }}>REPUBLICA DE GUINEA ECUATORIAL</div>
                   <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
-                    <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>??</div>
+                    <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>🔔</div>
                     <div>
                       <div style={{ fontSize:'16px', fontWeight:'800' }}>USUARIO EGCHAT</div>
                       <div style={{ fontSize:'11px', opacity:0.8 }}>DNI: GQ-2024-XXXXX</div>
@@ -9866,12 +9859,12 @@ const App: React.FC = () => {
                 </div>
                 <div style={{ fontSize:'20px', fontWeight:'800', color:'#111827', marginBottom:'8px' }}>?Solicitud enviada!</div>
                 <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'20px', lineHeight:'1.5', padding:'0 16px' }}>
-                  {svcData.action || 'La operaci�n se ha procesado correctamente'}
+                  {svcData.action || 'La operación se ha procesado correctamente'}
                 </div>
                 <div style={{ background:'#F0FDF9', borderRadius:'14px', padding:'16px', marginBottom:'24px', textAlign:'left', border:'1px solid #A7F3D0' }}>
                   <div style={{ fontSize:'11px', fontWeight:'700', color:'#065F46', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Referencia</div>
                   <div style={{ fontSize:'13px', fontWeight:'800', color:'#111827', fontFamily:'monospace' }}>EGC-{Date.now().toString().slice(-8)}</div>
-                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>Guarda este n�mero para seguimiento</div>
+                  <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'4px' }}>Guarda este nmero para seguimiento</div>
                 </div>
                 <button onClick={() => { setShowSvcModal(null); setSvcStep('main'); setSvcData({}); }}
                   style={{ width:'100%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', border:'none', borderRadius:'12px', padding:'14px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', outline:'none' }}>
@@ -9919,7 +9912,7 @@ const App: React.FC = () => {
                   { id:'local',  svg:<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>, label:'Transferencia Local',    sub:'Entre cuentas del mismo banco',  color:'#1485EE' },
                   { id:'inter',  svg:<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>, label:'Transferencia Interna',   sub:'Entre bancos de Guinea Ec.',     color:'#07C160' },
                   { id:'intl',   svg:<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, label:'Transferencia CEMAC',     sub:'Camerun, Gabon, Congo...',       color:'#576B95' },
-                  { id:'mobile', svg:<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>, label:'Pago M�vil',              sub:'Enviar a numero de telefono',    color:'#FA9D3B' },
+                  { id:'mobile', svg:<svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>, label:'Pago Móvil',              sub:'Enviar a numero de telefono',    color:'#FA9D3B' },
                 ].map((t) => (
                   <button key={t.id} onClick={() => { setFinStep('transfer-form'); setFinData({ type: t.id, typeLabel: t.label }); }}
                     style={{ width:'100%', background:'#fff', border:'none', borderRadius:'10px', padding:'12px 14px', cursor:'pointer', outline:'none', display:'flex', alignItems:'center', gap:'12px', marginBottom:'6px' }}
@@ -9936,8 +9929,8 @@ const App: React.FC = () => {
                 <div style={{ marginTop:'16px', background:'#fff', borderRadius:'10px', padding:'12px 14px' }}>
                   <div style={{ fontSize:'11px', color:'#9ca3af', marginBottom:'4px' }}>Saldo disponible</div>
                   <div style={{ fontSize:'22px', fontWeight:'800', color:'#0d0d0d', cursor:'pointer', userSelect:'none' }} onClick={() => toggleBalanceVisible('fin-transfer')}>
-                    {isBalanceVisible('fin-transfer') ? <>{userBalance.toLocaleString()} <span style={{ fontSize:'13px', fontWeight:'500', color:'#9ca3af' }}>XAF</span></> : <span style={{ letterSpacing:'4px', color:'#d1d5db' }}>������</span>}
-                    <span style={{ fontSize:'11px', color:'#9ca3af', marginLeft:'6px' }}>{isBalanceVisible('fin-transfer') ? '??' : '??'}</span>
+                    {isBalanceVisible('fin-transfer') ? <>{userBalance.toLocaleString()} <span style={{ fontSize:'13px', fontWeight:'500', color:'#9ca3af' }}>XAF</span></> : <span style={{ letterSpacing:'4px', color:'#d1d5db' }}>● ● ● ●</span>}
+                    <span style={{ fontSize:'11px', color:'#9ca3af', marginLeft:'6px' }}>{isBalanceVisible('fin-transfer') ? '🙈' : '👁'}</span>
                   </div>
                 </div>
               </div>
@@ -10132,10 +10125,10 @@ const App: React.FC = () => {
             {/* INVERSIONES */}
             {showFinModal === 'invest' && finStep === 'main' && (
               <div style={{ padding:'12px 16px 24px' }}>
-                <div style={{ fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Productos de inversi�n</div>
+                <div style={{ fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Productos de inversión</div>
                 {[
-                  { id:'plazo',  label:'Deposito a Plazo',   sub:'3-24 meses',       rate:'+6% anual',  color:'#07C160' },
-                  { id:'fondos', label:'Fondos de Inversi�n', sub:'Cartera diversif.', rate:'+8-12% anual',color:'#1485EE' },
+                  { id:'plazo',  label:'Depósito a Plazo',   sub:'3-24 meses',       rate:'+6% anual',  color:'#07C160' },
+                  { id:'fondos', label:'Fondos de Inversión', sub:'Cartera diversif.', rate:'+8-12% anual',color:'#1485EE' },
                   { id:'bonos',  label:'Bonos del Estado',   sub:'Renta fija CEMAC',  rate:'+5% anual',  color:'#576B95' },
                   { id:'acciones',label:'Acciones BVMAC',   sub:'Bolsa de Libreville',rate:'Variable',  color:'#FA9D3B' },
                 ].map((inv) => (
@@ -10156,8 +10149,8 @@ const App: React.FC = () => {
                 <div style={{ background:'#fff', borderRadius:'10px', padding:'12px 14px', marginTop:'8px' }}>
                   <div style={{ fontSize:'11px', color:'#9ca3af', marginBottom:'4px' }}>Saldo disponible para invertir</div>
                   <div style={{ fontSize:'22px', fontWeight:'800', color:'#0d0d0d', cursor:'pointer', userSelect:'none' }} onClick={() => toggleBalanceVisible('fin-invest')}>
-                    {isBalanceVisible('fin-invest') ? <>{userBalance.toLocaleString()} <span style={{ fontSize:'13px', fontWeight:'500', color:'#9ca3af' }}>XAF</span></> : <span style={{ letterSpacing:'4px', color:'#d1d5db' }}>������</span>}
-                    <span style={{ fontSize:'11px', color:'#9ca3af', marginLeft:'6px' }}>{isBalanceVisible('fin-invest') ? '??' : '??'}</span>
+                    {isBalanceVisible('fin-invest') ? <>{userBalance.toLocaleString()} <span style={{ fontSize:'13px', fontWeight:'500', color:'#9ca3af' }}>XAF</span></> : <span style={{ letterSpacing:'4px', color:'#d1d5db' }}>● ● ● ●</span>}
+                    <span style={{ fontSize:'11px', color:'#9ca3af', marginLeft:'6px' }}>{isBalanceVisible('fin-invest') ? '🙈' : '👁'}</span>
                   </div>
                 </div>
               </div>
@@ -10268,7 +10261,7 @@ const App: React.FC = () => {
                   {showFinModal === 'loan' && 'Solicitud enviada'}
                   {showFinModal === 'insurance' && 'Seguro contratado'}
                   {showFinModal === 'bills' && 'Pago realizado'}
-                  {showFinModal === 'invest' && 'Inversi�n activada'}
+                  {showFinModal === 'invest' && 'Inversión activada'}
                   {showFinModal === 'cards' && 'Operacion completada'}
                 </div>
                 <div style={{ fontSize:'13px', color:'#9ca3af', marginBottom:'24px' }}>
@@ -10434,8 +10427,8 @@ const App: React.FC = () => {
             try {
               await contactsAPI.add(cp.id, phone || undefined, name || undefined);
               await loadContacts();
-              showToast(`? ${name} a�adido a contactos`, 'success');
-            } catch { showToast('No se pudo a�adir el contacto', 'error'); }
+              showToast(`? ${name} aadido a contactos`, 'success');
+            } catch { showToast('No se pudo añadir el contacto', 'error'); }
           }}
           onSendMoney={(contact) => { setQuickTransferData({ contactId: contact.id?.toString() || '', contactName: contact.title || contact.name, amount: '', accountId: bankAccounts[0]?.id || '' }); setShowQuickTransferModal(true); }}
           onStartCall={(type, contact) => startCall(type, contact)}
@@ -10485,7 +10478,7 @@ const App: React.FC = () => {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               Nuevo Chat
             </div>
-            <div style={{fontSize:'12px',color:'#6b7280',marginBottom:'12px'}}>Busca por n�mero de tel�fono o nombre</div>
+            <div style={{fontSize:'12px',color:'#6b7280',marginBottom:'12px'}}>Busca por nmero de teléfono o nombre</div>
 
             {/* Buscar desde contactos existentes */}
             {allContacts.length > 0 && (
@@ -10499,7 +10492,7 @@ const App: React.FC = () => {
                         const chat = await chatAPI.createPrivate(c.id);
                         if (chat?.id) {
                           setSelectedChat({ id: chat.id, type: 'individual', title: c.name, subtitle: 'Chat', time: '', status: c.status, initials: c.avatar, color: '#00c8a0', avatarUrl: c.avatarUrl, user_id: c.id });
-                          setCurrentView('Mensajer�a'); setShowNewChatModal(false); setNewChatPhone(''); loadChats();
+                          setCurrentView('Mensajería'); setShowNewChatModal(false); setNewChatPhone(''); loadChats();
                         }
                       } catch(err: any) { showToast(err?.message || 'Error al crear chat', 'error'); }
                       finally { setNewChatSearching(false); }
@@ -10519,7 +10512,7 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div style={{fontSize:'11px',color:'#9ca3af',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>O busca por tel�fono</div>
+            <div style={{fontSize:'11px',color:'#9ca3af',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>O busca por teléfono</div>
             <div style={{display:'flex',alignItems:'center',background:'#f9fafb',border:'1.5px solid #e5e7eb',borderRadius:'10px',padding:'0 14px',height:'48px',gap:'10px',marginBottom:'12px'}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               <input
@@ -10544,7 +10537,7 @@ const App: React.FC = () => {
                 try {
                   const users = await chatAPI.searchUsers(newChatPhone.trim());
                   if (!users || users.length === 0) {
-                    showToast('Usuario no encontrado. Verifica el n�mero.', 'error');
+                    showToast('Usuario no encontrado. Verifica el nmero.', 'error');
                     setNewChatSearching(false);
                     return;
                   }
@@ -10559,7 +10552,7 @@ const App: React.FC = () => {
                       initials, color: '#00c8a0', phone: targetUser.phone,
                       user_id: targetUser.id,
                     });
-                    setCurrentView('Mensajer�a'); setShowNewChatModal(false); setNewChatPhone(''); loadChats();
+                    setCurrentView('Mensajería'); setShowNewChatModal(false); setNewChatPhone(''); loadChats();
                   }
                 } catch(err: any) {
                   showToast(err?.message || 'Error al crear el chat. El servidor puede estar iniciando.', 'error');
@@ -10608,7 +10601,7 @@ const App: React.FC = () => {
                   <div style={{textAlign:'center',padding:'50px 0',color:'#9CA3AF'}}>
                     <div style={{fontSize:'40px',marginBottom:'12px'}}>?</div>
                     <div style={{fontSize:'14px',fontWeight:'600',color:'#374151',marginBottom:'6px'}}>Sin mensajes destacados</div>
-                    <div style={{fontSize:'12px'}}>Toca ? en Cu�lquier mensaje para destacarlo</div>
+                    <div style={{fontSize:'12px'}}>Toca ? en Cuálquier mensaje para destacarlo</div>
                   </div>
                 ) : starredMsgs.map(msg => (
                   <div key={msg.id} style={{background:'#fff',borderRadius:'12px',padding:'12px 14px',marginBottom:'8px',border:'1px solid #FEF3C7',boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>

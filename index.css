@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -393,7 +393,7 @@ input:focus {
 }
 
 /* ═══════════════════════════════════════════════════════
-   EGCHAT DESIGN SYSTEM — WeChat/WhatsApp Mobile Style
+   EGCHAT DESIGN SYSTEM — EGCHAT Mobile Style
    Colores suaves, tipografía limpia, formato móvil
    ═══════════════════════════════════════════════════════ */
 
@@ -430,7 +430,7 @@ input:focus {
   --radius-lg:  16px;
   --radius-xl:  20px;
 
-  /* ── Tipografía escala WhatsApp ── */
+  /* ── Tipografía escala EGCHAT ── */
   --font-xs:    11px;   /* timestamps, badges */
   --font-sm:    12px;   /* meta, labels iconos, hora */
   --font-base:  14px;   /* texto mensajes, subtítulos */
@@ -451,7 +451,7 @@ body { background: var(--bg-primary) !important; }
   border: 1px solid var(--border-light);
 }
 
-/* Inputs estilo WeChat */
+/* Inputs estilo EGCHAT */
 .eg-input {
   background: var(--bg-input);
   border: none;
@@ -498,7 +498,7 @@ body { background: var(--bg-primary) !important; }
   font-family: inherit;
 }
 
-/* Lista item estilo WeChat */
+/* Lista item estilo EGCHAT */
 .eg-list-item {
   display: flex;
   align-items: center;
@@ -648,11 +648,11 @@ button:active, .eg-list-item:active {
 }
 
 /* ═══════════════════════════════════════════════════════
-   ESCALA TIPOGRÁFICA GLOBAL — WhatsApp standard
+   ESCALA TIPOGRÁFICA GLOBAL — EGCHAT standard
    Sube todos los textos pequeños al mínimo legible
    ═══════════════════════════════════════════════════════ */
 
-/* Base: 15px como WhatsApp (en vez de 14px del body) */
+/* Base: 15px como EGCHAT (en vez de 14px del body) */
 body {
   font-size: 15px !important;
   line-height: 1.4 !important;
@@ -668,7 +668,7 @@ span, p, div, label, li, td, th, button {
   font-size: max(var(--current-font-size, inherit), 12px);
 }
 
-/* ── Clases semánticas WhatsApp ── */
+/* ── clases semánticas EGCHAT ── */
 
 /* Nombre principal en lista de chats */
 .wa-name {

@@ -557,7 +557,7 @@ const WebModal:React.FC<{co:Co;onClose:()=>void;userBalance:number;onDebit:(amou
 
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,background:'#fff',display:'flex',flexDirection:'column'}}>
-      {/* Barra superior estilo WhatsApp */}
+      {/* Barra superior estilo EGCHAT */}
       <div style={{background:co.color,padding:'56px 10px 10px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
         <button onClick={onClose} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'50%',width:'32px',height:'32px'}}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -745,7 +745,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
   // ── Lista de empresas ──────────────────────────────────────────────────────
   if(!sel)return(
     <div style={{height:'100%',background:'#f0f2f5',display:'flex',flexDirection:'column',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',overflow:'hidden'}}>
-      {/* Header estilo WhatsApp */}
+      {/* Header estilo EGCHAT */}
       <div style={{background:'#075e54',padding:'56px 16px 12px',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           <button onClick={onBack} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex'}}>
