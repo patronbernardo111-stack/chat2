@@ -3760,7 +3760,7 @@ const App: React.FC = () => {
         right: 0,
         background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'space-around',
         paddingTop: '8px',
         paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
@@ -4072,10 +4072,10 @@ const App: React.FC = () => {
         <div style={{ fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Apps</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
           {[
-            { id: 'estados',  label: 'Estados',   color: '#7c3aed', icon: renderIcon('estados',  42) },
-            { id: 'apuestas', label: 'Juegos',     color: '#b45309', icon: renderIcon('apuestas', 42) },
-            { id: 'cemac',    label: 'CEMAC',      color: '#065f46', icon: renderIcon('cemac',    42) },
-            { id: 'mitaxi',   label: 'MiTaxi',     color: '#92400e', icon: renderIcon('mitaxi',   42) },
+            { id: 'estados',  label: 'ESTADOS',  color: '#7c3aed', icon: renderIcon('estados',  42), img: '/assets/apps/estados.png' },
+            { id: 'apuestas', label: 'JUEGOS',   color: '#b45309', icon: renderIcon('apuestas', 42), img: '/assets/apps/apuestas.png' },
+            { id: 'cemac',    label: 'CEMAC',    color: '#065f46', icon: renderIcon('cemac',    42), img: '/assets/apps/cemac.png' },
+            { id: 'mitaxi',   label: 'MITAXI',   color: '#92400e', icon: renderIcon('mitaxi',   42), img: '/assets/apps/mitaxi.png' },
           ].map(item => (
             <button
               key={item.id}
@@ -4845,7 +4845,7 @@ const App: React.FC = () => {
                             const msgId = Date.now().toString();
                             // Mostrar preview local inmediatamente
                             const localUrl = URL.createObjectURL(file);
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: '📷 Foto', time: tm, status: 'pending' as const, type: 'image', imageUrl: localUrl } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: '📷 Foto', time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'image', imageUrl: localUrl } as any] }));
                             try {
                               // Subir al servidor
                               const result = await chatAPI.uploadFile(chatId, file);
@@ -4879,7 +4879,7 @@ const App: React.FC = () => {
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                             const size = (file.size/1024/1024).toFixed(1);
                             const msgId = Date.now().toString();
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} MB)`, time: tm, status: 'pending' as const } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} MB)`, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
                               await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
@@ -5189,7 +5189,7 @@ const App: React.FC = () => {
                         const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
                         const msgId = Date.now().toString();
                         const localUrl = URL.createObjectURL(blob);
-                        const newMsg = { id: msgId, from: 'me' as const, text: `🎤 Mensaje de voz`, time, status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
+                        const newMsg = { id: msgId, from: 'me' as const, text: `🎤 Mensaje de voz`, time, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
                         addMsg(newMsg);
                         // Subir al servidor para que persista
                         const chatId = sc?.id?.toString() || '';
