@@ -4065,7 +4065,7 @@ const App: React.FC = () => {
 
       {/* Accesos r?pidos ? 4 apps */}
       <div style={{ marginTop: '12px' }}>
-        <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
+        <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', justifyItems: 'center' }}>
           {[
             { id: 'estados',  label: 'Estados',  img: '/assets/apps/estados.png' },
@@ -4106,7 +4106,7 @@ const App: React.FC = () => {
                   pointerEvents: 'none',
                 }} />
               </div>
-              <span style={{ fontSize: 'clamp(10px, 2.8vw, 13px)', color: 'rgba(255,255,255,0.95)', fontWeight: '700', textAlign: 'center', lineHeight: '1.2', maxWidth: 'clamp(52px, 14vw, 72px)', textShadow: '0 1px 3px rgba(0,0,0,0.5)', letterSpacing: '0.1px' }}>{item.label}</span>
+              <span style={{ fontSize: 'clamp(10px, 2.8vw, 13px)', color: '#1a1a1a', fontWeight: '700', textAlign: 'center', lineHeight: '1.2', maxWidth: 'clamp(52px, 14vw, 72px)', letterSpacing: '0.1px' }}>{item.label}</span>
             </button>
           ))}
         </div>
