@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Verificar Build al Guardar",
+  "description": "Ejecuta tsc --noEmit para verificar que no hay errores de TypeScript cada vez que se guarda App.tsx",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "App.tsx",
+      "*.tsx",
+      "*.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm run lint"
+  }
+}

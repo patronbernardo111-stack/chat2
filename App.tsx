@@ -974,7 +974,7 @@ const App: React.FC = () => {
       setAudioChunks(chunks);
     } catch (error) {
       console.error('Error al acceder al microfono:', error);
-      showToast('No se pudo acceder al micr?fono. Verifica los permisos.', 'error');
+      showToast('No se pudo acceder al micrófono. Verifica los permisos.', 'error');
     }
   };
 
@@ -1327,7 +1327,7 @@ const App: React.FC = () => {
       }
       // capacidades
       else if (lowerMessage.includes('capacidades') || lowerMessage.includes('que puedes hacer')) {
-        assistantResponse = `🤖 MIS CAPACIDADES\n\n💰 DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n?? ANLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
+        assistantResponse = `🤖 MIS CAPACIDADES\n\n💰 DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n📊 ANÁLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
       }
       // Ayuda
       else if (lowerMessage.includes('ayuda') || lowerMessage.includes('help')) {
@@ -3754,9 +3754,19 @@ const App: React.FC = () => {
     return (
       <>
         {/* Tab bar */}
+        {/* Safe area fill — same gradient as nav bar, covers iPhone home indicator zone */}
         <div style={{
           position: 'fixed',
           bottom: 0,
+          left: 0,
+          right: 0,
+          height: 'env(safe-area-inset-bottom, 0px)',
+          background: '#00b4e6',
+          zIndex: 999,
+        }} />
+        <div style={{
+          position: 'fixed',
+          bottom: 'env(safe-area-inset-bottom, 0px)',
           left: 0,
           right: 0,
           background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
@@ -3767,7 +3777,7 @@ const App: React.FC = () => {
           borderTop: '0.5px solid rgba(255,255,255,0.25)',
           boxShadow: '0 -1px 0 rgba(0,0,0,0.1)',
           paddingTop: '6px',
-          paddingBottom: 'env(safe-area-inset-bottom, 8px)',
+          paddingBottom: '8px',
           minHeight: '49px',
         }}>
           {navItems.map((item) => (
@@ -3824,7 +3834,7 @@ const App: React.FC = () => {
     );
   };
 
-  // Renderizar vista principal - P?GINA DE INICIO CON SOPORTE DE LAYOUTS
+  // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
       paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))',
@@ -4349,7 +4359,7 @@ const App: React.FC = () => {
 
               {/* Spacer for fixed header */}
               <div style={{ height: '60px', flexShrink: 0 }} />
-              {/* Barra b?squeda en el chat */}
+              {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
                   <div style={{flex:1,background:'#F3F4F6',borderRadius:'10px',padding:'0 12px',height:'36px',display:'flex',alignItems:'center',gap:'8px'}}>
@@ -4922,7 +4932,7 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const t = new Date();
                           const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `👤 ${myName}\n?? ${myPhone}`, time: tm, status: 'pending' as const, type: 'contact' as any, contactAvatar: myAvatar } as any] }));
+                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `👤 ${myName}\n📞 ${myPhone}`, time: tm, status: 'pending' as const, type: 'contact' as any, contactAvatar: myAvatar } as any] }));
                         }
                       },
                       {
@@ -4966,7 +4976,7 @@ const App: React.FC = () => {
                           try { subtractBalance(amount); } catch {}
                           setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), {
                             id: Date.now().toString(), from: 'me' as const,
-                            text: `📌 Transferencia\n?? ${amount.toLocaleString()} XAF\n?? ${sc.title}\n?? C?digo: ${code}\n?? ? Enviado`,
+                            text: `📌 Transferencia\n💰 ${amount.toLocaleString()} XAF\n👤 ${sc.title}\n🔑 Código: ${code}\n✅ Enviado`,
                             time: tm, status: 'pending' as const
                           }] }));
                         }
@@ -5150,7 +5160,7 @@ const App: React.FC = () => {
                   </svg>
                 </button>
 
-                {/* Micr?fono ? toca para grabar, toca de nuevo para enviar */}
+                {/* Micrófono — toca para grabar, toca de nuevo para enviar */}
                 <button
                   onClick={async () => {
                     if (isRecordingAudio) {
@@ -5205,12 +5215,12 @@ const App: React.FC = () => {
                       setIsRecordingAudio(true);
                       setChatRecordingTime(0);
                       chatRecordTimerRef.current = setInterval(() => setChatRecordingTime(t => t + 1), 1000);
-                    } catch { showToast('No se pudo acceder al micr?fono', 'error'); }
+                    } catch { showToast('No se pudo acceder al micrófono', 'error'); }
                   }}
                   style={{ background: isRecordingAudio ? '#ef4444' : 'none', border: 'none', borderRadius: '50%', color: isRecordingAudio ? '#fff' : '#9ca3af', cursor: 'pointer', outline: 'none', padding: '8px', display: 'flex', flexShrink: 0, position: 'relative' }}>
                   {isRecordingAudio && (
                     <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', color: '#ef4444', fontWeight: '700', whiteSpace: 'nowrap', background: '#fff', padding: '2px 6px', borderRadius: '6px', boxShadow: '0 1px 4px rgba(0,0,0,0.15)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                      ? {String(Math.floor(chatRecordingTime/60)).padStart(2,'0')}:{String(chatRecordingTime%60).padStart(2,'0')}
+                      🔴 {String(Math.floor(chatRecordingTime/60)).padStart(2,'0')}:{String(chatRecordingTime%60).padStart(2,'0')}
                     </span>
                   )}
                   {isRecordingAudio ? (
@@ -5238,7 +5248,7 @@ const App: React.FC = () => {
           }}>
             {/* Header - Ultra minimalista */}
             <div style={{ marginBottom: '8px', flexShrink: 0 }}>
-              {/* Barra de b?squeda + bot?n nuevo chat */}
+              {/* Barra de búsqueda + botón nuevo chat */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                   <input
