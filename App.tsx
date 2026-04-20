@@ -3753,89 +3753,76 @@ const App: React.FC = () => {
     ];
 
     return (
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-around',
-        paddingTop: '8px',
-        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
-        paddingLeft: '4px',
-        paddingRight: '4px',
-        zIndex: 1000,
-        boxShadow: '0 -2px 12px rgba(0,180,230,0.35)',
+      <>
+        {/* Barra de botones — altura fija 52px, siempre visible */}
+        <div style={{
+          position: 'fixed',
+          bottom: 'env(safe-area-inset-bottom, 0px)',
+          left: 0,
+          right: 0,
+          height: '52px',
+          background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          zIndex: 1000,
+          boxShadow: '0 -2px 12px rgba(0,180,230,0.35)',
         }}>
-        
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,200,160,0.5)', pointerEvents: 'none', zIndex: 1 }} />
-        
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,180,230,0.5)', pointerEvents: 'none', zIndex: 1 }} />
-        {/* Lnea superior */}
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: '2px', background: 'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow: '0 0 8px rgba(255,255,255,0.8)', pointerEvents: 'none', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00c8a0, #fff 30%, #000 50%, #fff 70%, #00c8a0)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00b4e6, #fff 30%, #000 50%, #fff 70%, #00b4e6)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: '2px', background: 'linear-gradient(90deg, #00c8a0, #fff 20%, #000 35%, #fff 50%, #000 65%, #fff 80%, #00b4e6)', boxShadow: '0 0 8px rgba(255,255,255,0.8)', pointerEvents: 'none' }} />
 
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            className="bottom-nav-button"
-            onClick={() => {
-              if (item.id === 'servicios') {
-                if (currentView === 'servicios') { setCurrentView(previousView); }
-                else { setPreviousView(currentView); setCurrentView('servicios'); }
-              } else {
-                setCurrentView(item.id);
-              }
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.75)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '2px',
-              padding: '6px 8px',
-              paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
-              borderRadius: '0',
-              position: 'relative',
-              outline: 'none',
-              flex: 1,
-              height: '100%',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {/* Indicador activo ? punto blanco abajo */}
-            {currentView === item.id && (
-              <div style={{ position:'absolute', bottom:2, left:'50%', transform:'translateX(-50%)', width:5, height:5, borderRadius:'50%', background:'#fff' }} />
-            )}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.8)',
-              transition: 'all 0.15s ease',
-            }}>
-              {renderIcon(item.icon, 28)}
-            </div>
-            <span style={{
-              fontSize: '13px',
-              fontWeight: currentView === item.id ? '700' : '500',
-              textAlign: 'center',
-              color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.75)',
-              letterSpacing: '0.1px',
-            }}>
-              {item.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    );
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              className="bottom-nav-button"
+              onClick={() => {
+                if (item.id === 'servicios') {
+                  if (currentView === 'servicios') { setCurrentView(previousView); }
+                  else { setPreviousView(currentView); setCurrentView('servicios'); }
+                } else {
+                  setCurrentView(item.id);
+                }
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                padding: '0 8px',
+                outline: 'none',
+                flex: 1,
+                height: '100%',
+                position: 'relative',
+              }}
+            >
+              {currentView === item.id && (
+                <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
+              )}
+              <div style={{ color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {renderIcon(item.icon, 20)}
+              </div>
+              <span style={{ fontSize: '10px', fontWeight: currentView === item.id ? '700' : '500', color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.8)', lineHeight: 1 }}>
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+        {/* Relleno del safe area en iPhone — mismo color que la barra */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 'env(safe-area-inset-bottom, 0px)',
+          background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
+          zIndex: 1000,
+        }} />
+      </>
   };
 
   // Renderizar vista principal - P?GINA DE INICIO CON SOPORTE DE LAYOUTS
@@ -4280,17 +4267,28 @@ const App: React.FC = () => {
                       <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
                     </svg>
                   </button>
-                  {/* C?mara */}
+                  {/* Cámara */}
                   <button onClick={() => { setLiveCameraChatId(sc.id?.toString()||''); setShowLiveCamera(true); }}
                     style={{ background: 'transparent', border: 'none', color: '#54656f', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </button>
+                  {/* Galería / imagen */}
+                  <button onClick={() => setShowWallpaperCatalog(true)}
+                    style={{ background: 'transparent', border: 'none', color: '#54656f', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}
+                    title="Fondo de pantalla">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
                     </svg>
                   </button>
                   {/* Tres puntos */}
                   <button onClick={e => { e.stopPropagation(); setShowChatMenu(p => !p); }}
                     style={{ background: 'transparent', border: 'none', color: '#54656f', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                   </button>
                 </div>
               </div>
