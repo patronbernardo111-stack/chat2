@@ -2623,7 +2623,7 @@ const App: React.FC = () => {
             webrtc.toggleMute();
             setIsMuted(m => !m);
           }} style={{ width: '56px', height: '56px', borderRadius: '50%', background: isMuted ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: `2px solid ${isMuted ? '#f87171' : 'rgba(255,255,255,0.3)'}`, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {isMuted ? <><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></> : <><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></>}
             </svg>
           </button>
@@ -2642,7 +2642,7 @@ const App: React.FC = () => {
               setIsCameraOff(c => !c);
               localStream?.getVideoTracks().forEach(t => { t.enabled = isCameraOff; });
             }} style={{ width: '56px', height: '56px', borderRadius: '50%', background: isCameraOff ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: `2px solid ${isCameraOff ? '#f87171' : 'rgba(255,255,255,0.3)'}`, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {isCameraOff ? <><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></> : <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></>}
               </svg>
             </button>
@@ -2651,7 +2651,7 @@ const App: React.FC = () => {
           {/* Altavoz (solo audio) */}
           {type === 'audio' && (
             <button style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
               </svg>
             </button>
@@ -4234,34 +4234,34 @@ const App: React.FC = () => {
           return (
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Header conversacin */}
-              <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 8px 6px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => setShowContactProfile(sc)}>
-                  <Avatar name={sc.title} size={48} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
+                <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={() => setShowContactProfile(sc)}>
+                  <Avatar name={sc.title} size={36} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
-                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0 }} onClick={() => setShowContactProfile(sc)}>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#0d0d0d' }}>{sc.title}</div>
-                  <div style={{ fontSize: '12px', color: sc.isGroup ? '#a855f7' : sc.status === 'online' ? '#00c8a0' : sc.status === 'away' ? '#f59e0b' : '#9ca3af' }}>
+                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '8px' }} onClick={() => setShowContactProfile(sc)}>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sc.title}</div>
+                  <div style={{ fontSize: '11px', color: sc.isGroup ? '#a855f7' : sc.status === 'online' ? '#00c8a0' : sc.status === 'away' ? '#f59e0b' : '#9ca3af' }}>
                     {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? 'En línea' : sc.status === 'away' ? 'Ausente' : 'Desconectado'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', flexShrink: 0 }}>
                   {/* Llamada de audio */}
                   <button onClick={() => startCall('audio', sc)}
                     style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                     </svg>
                   </button>
                   {/* Videollamada */}
                   <button onClick={() => startCall('video', sc)}
                     style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="23 7 16 12 23 17 23 7"/>
                       <rect x="1" y="5" width="15" height="14" rx="2"/>
                     </svg>
@@ -4269,7 +4269,7 @@ const App: React.FC = () => {
                   {/* Camara */}
                   <button onClick={() => { setLiveCameraChatId(sc.id?.toString()||''); setShowLiveCamera(true); }}
                     style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                       <circle cx="12" cy="13" r="4"/>
                     </svg>
@@ -4277,7 +4277,7 @@ const App: React.FC = () => {
                   {/* Galeria */}
                   <button onClick={() => setShowWallpaperCatalog(true)}
                     style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2"/>
                       <circle cx="8.5" cy="8.5" r="1.5"/>
                       <polyline points="21 15 16 10 5 21"/>
@@ -4286,7 +4286,7 @@ const App: React.FC = () => {
                   {/* Tres puntos */}
                   <button onClick={e => { e.stopPropagation(); setShowChatMenu(p => !p); }}
                     style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
                     </svg>
                   </button>                </div>
@@ -4618,7 +4618,7 @@ const App: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', padding: '4px 0', cursor: fileUrl ? 'pointer' : 'default' }}
                               onClick={() => { if (fileUrl) { const a = document.createElement('a'); a.href = fileUrl; a.download = fileName; a.click(); } }}>
                               <div style={{ width: '44px', height: '52px', borderRadius: '8px', background: extColor + '18', border: `1.5px solid ${extColor}40`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={extColor} strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={extColor} strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span style={{ fontSize: '7px', fontWeight: '800', color: extColor, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{ext}</span>
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -9831,7 +9831,7 @@ const App: React.FC = () => {
               <div style={{ padding:'12px 16px 24px' }}>
                 <div style={{ background:'#fef2f2', borderRadius:'12px', padding:'14px', marginBottom:'16px', display:'flex', alignItems:'center', gap:'12px' }}>
                   <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#FA5151', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                   </div>
                   <div><div style={{ fontSize:'14px', fontWeight:'700', color:'#FA5151' }}>Servicios de Emergencia</div><div style={{ fontSize:'12px', color:'#9ca3af' }}>Disponibles 24/7</div></div>
                 </div>
