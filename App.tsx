@@ -3761,7 +3761,7 @@ const App: React.FC = () => {
           left: 0,
           right: 0,
           height: 'env(safe-area-inset-bottom, 0px)',
-          background: '#00b4e6',
+          background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
           zIndex: 999,
         }} />
         <div style={{
@@ -3771,7 +3771,7 @@ const App: React.FC = () => {
           right: 0,
           background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-around',
           zIndex: 1000,
           borderTop: '0.5px solid rgba(255,255,255,0.25)',
@@ -4065,30 +4065,48 @@ const App: React.FC = () => {
 
       {/* Accesos r?pidos ? 4 apps */}
       <div style={{ marginTop: '12px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Apps</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+        <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', justifyItems: 'center' }}>
           {[
-            { id: 'estados',  label: 'ESTADOS',  color: '#7c3aed', icon: renderIcon('estados',  42), img: '/assets/apps/estados.png' },
-            { id: 'apuestas', label: 'JUEGOS',   color: '#b45309', icon: renderIcon('apuestas', 42), img: '/assets/apps/apuestas.png' },
-            { id: 'cemac',    label: 'CEMAC',    color: '#065f46', icon: renderIcon('cemac',    42), img: '/assets/apps/cemac.png' },
-            { id: 'mitaxi',   label: 'MITAXI',   color: '#92400e', icon: renderIcon('mitaxi',   42), img: '/assets/apps/mitaxi.png' },
+            { id: 'estados',  label: 'Estados',  img: '/assets/apps/estados.png' },
+            { id: 'apuestas', label: 'Juegos',   img: '/assets/apps/apuestas.png' },
+            { id: 'cemac',    label: 'Cemac',    img: '/assets/apps/cemac.png' },
+            { id: 'mitaxi',   label: 'MiTaxi',   img: '/assets/apps/mitaxi.png' },
           ].map(item => (
             <button
               key={item.id}
               onClick={() => { setPreviousView(currentView); setCurrentView(item.id); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '4px 0', transition: 'transform 0.15s ease' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '4px 0', width: '100%', transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)', WebkitTapHighlightColor: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
             >
+              {/* App icon container — estilo iOS, responsive */}
               <div style={{
-                width: '80px', height: '80px', borderRadius: '22px',
-                background: 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: item.color,
+                position: 'relative',
+                width: 'clamp(52px, 14vw, 72px)',
+                height: 'clamp(52px, 14vw, 72px)',
+                borderRadius: 'clamp(13px, 3.5vw, 18px)',
+                overflow: 'hidden',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.22), 0 2px 4px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.25)',
+                flexShrink: 0,
               }}>
-                {item.icon}
+                <img
+                  src={item.img}
+                  alt={item.label}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+                {/* Reflejo superior — efecto gloss */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0,
+                  height: '45%',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)',
+                  borderRadius: 'clamp(13px, 3.5vw, 18px) clamp(13px, 3.5vw, 18px) 0 0',
+                  pointerEvents: 'none',
+                }} />
               </div>
-              <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600', textAlign: 'center', lineHeight: '1.2', maxWidth: '80px' }}>{item.label}</span>
+              <span style={{ fontSize: 'clamp(10px, 2.8vw, 13px)', color: 'rgba(255,255,255,0.95)', fontWeight: '700', textAlign: 'center', lineHeight: '1.2', maxWidth: 'clamp(52px, 14vw, 72px)', textShadow: '0 1px 3px rgba(0,0,0,0.5)', letterSpacing: '0.1px' }}>{item.label}</span>
             </button>
           ))}
         </div>

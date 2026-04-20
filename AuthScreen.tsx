@@ -132,9 +132,34 @@ export default function AuthScreen({onAuth}:Props) {
     i.onchange=()=>{
       const f=i.files?.[0];
       if(f){
-        const r=new FileReader();
-        r.onload=e=>setAvatar(e.target?.result as string);
-        r.readAsDataURL(f);
+        const reader=new FileReader();
+        reader.onload=e=>{
+          const dataUrl = e.target?.result as string;
+          // Comprimir imagen grande a máx 800x800 para evitar errores
+          const img = new Image();
+          img.onload = () => {
+            const MAX = 800;
+            let w = img.width, h = img.height;
+            if(w > MAX || h > MAX){
+              if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
+              else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d')!;
+            // Recorte centrado (zoom automático para llenar el cuadrado)
+            const size = Math.min(img.width, img.height);
+            const sx = (img.width - size) / 2;
+            const sy = (img.height - size) / 2;
+            canvas.width = MAX; canvas.height = MAX;
+            ctx.drawImage(img, sx, sy, size, size, 0, 0, MAX, MAX);
+            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            setAvatar(compressed);
+            setErr('');
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(f);
       }
     };
     i.click();
@@ -266,15 +291,91 @@ export default function AuthScreen({onAuth}:Props) {
       <div style={{flex:1,padding:'0 20px 28px',overflowY:'auto'}}>
         {step===1&&<>
           <div style={{marginBottom:'12px'}}><label style={lbl}>Nombre Completo</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Tu nombre" style={inp}/></div>
-          <div style={{marginBottom:'20px',textAlign:'center',padding:'12px'}}>
-            <div onClick={pickImg} style={{width:'84px',height:'84px',borderRadius:'50%',background:avatar?'transparent':'#F3F4F6',border:'3px solid #E5E7EB',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',cursor:'pointer'}}>
-              {avatar?<img src={avatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'26px',fontWeight:'900',color:'#9CA3AF'}}>📷</span>}
+
+          {/* Foto de perfil — OBLIGATORIA con zoom/recorte */}
+          <div style={{marginBottom:'20px'}}>
+            <label style={{...lbl, marginBottom:'8px'}}>Foto de Perfil <span style={{color:'#ef4444'}}>*</span></label>
+            <div
+              onClick={pickImg}
+              style={{
+                width:'100%', height:'200px',
+                borderRadius:'16px',
+                background: avatar ? 'transparent' : '#F3F4F6',
+                border: avatar ? '3px solid #22c55e' : '3px dashed #D1D5DB',
+                overflow:'hidden',
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                cursor:'pointer', position:'relative',
+                transition:'all 0.2s ease',
+              }}
+            >
+              {avatar ? (
+                <>
+                  <img
+                    src={avatar}
+                    alt="Foto de perfil"
+                    style={{
+                      width:'100%', height:'100%',
+                      objectFit:'cover',
+                      objectPosition:'center',
+                    }}
+                  />
+                  {/* Overlay para cambiar */}
+                  <div style={{
+                    position:'absolute', inset:0,
+                    background:'rgba(0,0,0,0.35)',
+                    display:'flex', flexDirection:'column',
+                    alignItems:'center', justifyContent:'center',
+                    opacity:0, transition:'opacity 0.2s',
+                  }}
+                    onMouseEnter={e=>(e.currentTarget.style.opacity='1')}
+                    onMouseLeave={e=>(e.currentTarget.style.opacity='0')}
+                  >
+                    <span style={{fontSize:'28px'}}>📷</span>
+                    <span style={{color:'#fff', fontSize:'13px', fontWeight:'700', marginTop:'4px'}}>Cambiar foto</span>
+                  </div>
+                  {/* Badge OK */}
+                  <div style={{position:'absolute',top:'8px',right:'8px',background:'#22c55e',borderRadius:'50%',width:'28px',height:'28px',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.2)'}}>
+                    <span style={{color:'#fff',fontSize:'14px'}}>✓</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span style={{fontSize:'48px',marginBottom:'8px'}}>📷</span>
+                  <span style={{fontSize:'15px',fontWeight:'700',color:'#374151'}}>Subir foto de perfil</span>
+                  <span style={{fontSize:'12px',color:'#9CA3AF',marginTop:'4px'}}>Toca para seleccionar</span>
+                  <span style={{fontSize:'11px',color:'#ef4444',marginTop:'6px',fontWeight:'600'}}>Obligatorio para continuar</span>
+                </>
+              )}
             </div>
-            <p style={{fontSize:'12px',color:'#6B7280',marginTop:'8px'}}>Toca para subir foto</p>
+            {avatar && (
+              <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
+                <button
+                  onClick={e=>{e.stopPropagation();pickImg();}}
+                  style={{flex:1,background:'#F3F4F6',border:'none',borderRadius:'8px',padding:'8px',fontSize:'12px',fontWeight:'600',color:'#374151',cursor:'pointer'}}
+                >
+                  📷 Cambiar foto
+                </button>
+                <button
+                  onClick={e=>{e.stopPropagation();setAvatar('');}}
+                  style={{background:'#FEF2F2',border:'none',borderRadius:'8px',padding:'8px 12px',fontSize:'12px',fontWeight:'600',color:'#ef4444',cursor:'pointer'}}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <p style={{fontSize:'11px',color:'#9CA3AF',marginTop:'6px',textAlign:'center'}}>
+              JPG, PNG o GIF · La imagen se ajusta automáticamente
+            </p>
           </div>
-          <button onClick={()=>setStep(2)} disabled={!name.trim()} style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',boxShadow:'0 4px 16px rgba(34, 197, 94, 0.3)',border:'none',transition:'all 0.2s ease',opacity:name.trim()?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+
+          <button
+            onClick={()=>{ if(!avatar){setErr('La foto de perfil es obligatoria');return;} setErr(''); setStep(2); }}
+            disabled={!name.trim()}
+            style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',boxShadow:'0 4px 16px rgba(34, 197, 94, 0.3)',border:'none',transition:'all 0.2s ease',opacity:name.trim()?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
+          >
             <UserPlus size={18}/>
-            {name.trim() ? 'Continuar' : 'Escribe tu nombre primero'}
+            {!name.trim() ? 'Escribe tu nombre primero' : !avatar ? 'Sube tu foto para continuar' : 'Continuar →'}
           </button>
         </>}
         {step===2&&<>
