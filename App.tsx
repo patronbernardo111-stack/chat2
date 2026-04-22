@@ -18,6 +18,7 @@ import { Lia25View } from './Lia25View';
 import { AvatarCropModal } from './AvatarCropModal';
 import { QRScanner } from './QRScanner';
 import { QRCodeSVG } from 'qrcode.react';
+import { RestaurantesModule, VuelosModule, GasolinerasModule } from './ServiciosDiarios';
 import { useWebRTC } from './useWebRTC';
 import { playMessageReceived, playMessageSent, playNotification, startRingtone, stopRingtone, startDialingTone, stopDialingTone, playCallConnected, playCallEnded, playError, playSuccess, vibrate, unlockAudio, getSoundSettings, saveSoundSettings, MESSAGE_TONES, RINGTONES, NOTIFICATION_TONES, type SoundSettings } from './useSounds';
 
@@ -1540,7 +1541,10 @@ const App: React.FC = () => {
       case 'salud':
         return (
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 0 1 2-2h3"/>
+            <path d="M19 3H9a2 2 0 0 0-2 2v3h14V5a2 2 0 0 0-2-2z"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+            <line x1="11" y1="14" x2="17" y2="14"/>
           </svg>
         );
       case 'edu':
@@ -1584,10 +1588,14 @@ const App: React.FC = () => {
       case 'estados':
         return (
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="9"/>
-            <circle cx="12" cy="12" r="5.5"/>
-            <circle cx="12" cy="12" r="2" stroke="none"/>
-            <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M16.9 16.9l1.5 1.5M5.6 18.4l1.4-1.4M16.9 7.1l1.5-1.5"/>
+            <circle cx="12" cy="8" r="3.5"/>
+            <path d="M12 4.5 A7.5 7.5 0 1 1 11.99 4.5" strokeDasharray="3.5 1.5" strokeWidth="2"/>
+            <circle cx="6" cy="19" r="2.2"/>
+            <circle cx="12" cy="19" r="2.2"/>
+            <circle cx="18" cy="19" r="2.2"/>
+            <line x1="6" y1="16.8" x2="6" y2="14"/>
+            <line x1="12" y1="16.8" x2="12" y2="14"/>
+            <line x1="18" y1="16.8" x2="18" y2="14"/>
           </svg>
         );
       case 'apuestas':
@@ -3126,12 +3134,12 @@ const App: React.FC = () => {
                 <svg width="48" height="48" viewBox="0 0 24 24" stroke="rgba(0,180,230,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
                 </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>Apunta la c?mara al QR del contacto</span>
+                <span style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>Apunta la camara al QR del contacto</span>
               </div>
               <button onClick={() => { setShowAddContact(false); setShowQRScannerCamera(true); }}
                 style={{ background: '#00b4e6', border: 'none', borderRadius: '10px', padding: '12px 24px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                Activar c?mara
+                Activar camara
               </button>
             </div>
           )}
@@ -3140,135 +3148,156 @@ const App: React.FC = () => {
     );
   };
 
-  // Modal: Crear grupo ? funcional con API real
+  // Modal: Crear grupo — funcional con API real
   const renderCreateGroupModal = () => {
     if (!showCreateGroup) return null;
     const contacts = allContacts.length > 0 ? allContacts : [];
+    const canCreate = groupName.trim().length >= 2 && groupMembers.length >= 1;
+
+    const doCreate = async () => {
+      if (!canCreate) return;
+      const memberIds = groupMembers.map(m => m.id);
+      let groupId = Date.now().toString();
+      try {
+        const chat = await chatAPI.createGroup(groupName.trim(), memberIds);
+        if (chat?.id) groupId = chat.id;
+      } catch { /* usar ID local */ }
+
+      const newGroup = {
+        id: groupId,
+        name: groupName.trim(),
+        description: '',
+        members: groupMembers.length + 1,
+        avatar: 'friends',
+        avatarUrl: '',
+        createdDate: new Date().toLocaleDateString('es-ES'),
+        lastMessage: 'Grupo creado',
+        unread: 0,
+        is_favorite: false,
+      };
+      // Añadir a allGroups Y a realChats para que aparezca en la lista de mensajes
+      setAllGroups(prev => [newGroup, ...prev]);
+      setRealChats((prev: any[]) => [{
+        id: groupId, type: 'group', name: groupName.trim(),
+        avatar_url: '', participants: groupMembers.map(m => ({ user_id: m.id, full_name: m.name })),
+        last_message: null, unread_count: 0, updated_at: new Date().toISOString(),
+      }, ...prev]);
+
+      const sc = {
+        id: groupId, type: 'group', title: groupName.trim(),
+        subtitle: 'Grupo creado', time: '', status: 'online',
+        initials: groupName.trim().slice(0,2).toUpperCase(),
+        color: '#a855f7', isGroup: true, members: groupMembers.length + 1,
+      };
+      setSelectedChat(sc);
+      setCurrentView('Mensajería');
+      setShowCreateGroup(false);
+      setGroupName('');
+      setGroupMembers([]);
+      showToast(`Grupo "${groupName.trim()}" creado`, 'success');
+    };
+
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}
+      <div style={{ position:'fixed', inset:0, zIndex:1200, background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', display:'flex', alignItems:'flex-end' }}
         onClick={() => setShowCreateGroup(false)}>
-        <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#FFFFFF', borderRadius: '20px 20px 0 0', padding: '20px 16px 32px', maxHeight: '88vh', overflowY: 'auto' }}>
-          <div style={{ width: '36px', height: '4px', background: '#e5e7eb', borderRadius: '2px', margin: '0 auto 16px' }}/>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Crear grupo
+        <div onClick={e => e.stopPropagation()} style={{ width:'100%', background:'#fff', borderRadius:'20px 20px 0 0', padding:'0 0 32px', maxHeight:'92vh', overflowY:'auto' }}>
+
+          {/* Handle */}
+          <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 0' }}>
+            <div style={{ width:'36px', height:'4px', background:'#E5E7EB', borderRadius:'2px' }}/>
           </div>
 
-          {/* Nombre */}
-          <input value={groupName} onChange={e => setGroupName(e.target.value)}
-            placeholder="Nombre del grupo (obligatorio)"
-            style={{ width: '100%', background: '#f9fafb', border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '12px 14px', color: '#111827', fontSize: '15px', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: '14px' }}/>
-
-          {/* Miembros seleccionados */}
-          {groupMembers.length > 0 && (
-            <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {groupMembers.map(m => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f3e8ff', border: '1px solid #d8b4fe', borderRadius: '20px', padding: '4px 10px 4px 6px' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700', color: '#fff' }}>
-                    {m.initials || m.name?.slice(0,2).toUpperCase()}
-                  </div>
-                  <span style={{ fontSize: '13px', color: '#7c3aed', fontWeight: '600' }}>{m.name.split(' ')[0]}</span>
-                  <button onClick={() => setGroupMembers(prev => prev.filter(x => x.id !== m.id))}
-                    style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', outline: 'none', padding: 0, fontSize: '14px', lineHeight: 1 }}>?</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Lista contactos */}
-          <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Añadir participantes ({contacts.length} contactos)
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px', maxHeight: '280px', overflowY: 'auto' }}>
-            {contacts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', fontSize: '13px' }}>
-                No tienes contactos a?n. A?ade contactos primero.
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px 12px' }}>
+            <div style={{ fontSize:'17px', fontWeight:'800', color:'#111827', display:'flex', alignItems:'center', gap:'8px' }}>
+              <div style={{ width:'32px', height:'32px', borderRadius:'10px', background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
-            ) : contacts.map(c => {
-              const isAdded = groupMembers.some(m => m.id === c.id);
-              return (
-                <button key={c.id}
-                  onClick={() => {
-                    if (isAdded) setGroupMembers(prev => prev.filter(m => m.id !== c.id));
-                    else setGroupMembers(prev => [...prev, { id: c.id, name: c.name, initials: c.avatar || c.name?.slice(0,2).toUpperCase(), color: '#a855f7' }]);
-                  }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: isAdded ? '#f3e8ff' : '#fafafa', border: `1.5px solid ${isAdded ? '#d8b4fe' : '#f0f0f0'}`, borderRadius: '12px', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg,#a855f7,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0, }}>
-                    {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : (c.avatar || c.name?.slice(0,2).toUpperCase())}
-                  </div>
-                  <div style={{ flex: 1, textAlign: 'left' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{c.name}</div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af' }}>{c.phone}</div>
-                  </div>
-                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isAdded ? '#a855f7' : '#f3f4f6', border: `2px solid ${isAdded ? '#a855f7' : '#e5e7eb'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {isAdded && <svg width="12" height="12" viewBox="0 0 24 24" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                  </div>
-                </button>
-              );
-            })}
+              Nuevo grupo
+            </div>
+            <button onClick={() => setShowCreateGroup(false)} style={{ background:'#F3F4F6', border:'none', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
 
-          <button
-            disabled={!groupName.trim() || groupMembers.length === 0}
-            onClick={async () => {
-              if (!groupName.trim() || groupMembers.length === 0) return;
-              try {
-                const memberIds = groupMembers.map(m => m.id);
-                const chat = await chatAPI.createGroup(groupName.trim(), memberIds);
-                const newGroup = {
-                  id: chat.id || Date.now().toString(),
-                  name: groupName.trim(),
-                  description: '',
-                  members: groupMembers.length + 1,
-                  avatar: 'friends',
-                  avatarUrl: '',
-                  createdDate: new Date().toLocaleDateString('es-ES'),
-                  lastMessage: 'Grupo creado',
-                  unread: 0,
-                  is_favorite: false,
-                };
-                setAllGroups(prev => [newGroup, ...prev]);
-                // Abrir el chat del grupo
-                setSelectedChat({
-                  id: newGroup.id, type: 'group', title: newGroup.name,
-                  subtitle: 'Grupo creado', time: '', status: 'online',
-                  initials: newGroup.name.slice(0,2).toUpperCase(),
-                  color: '#a855f7', isGroup: true, members: newGroup.members,
-                });
-                setCurrentView('Mensajería');
-                setShowCreateGroup(false);
-                setGroupName('');
-                setGroupMembers([]);
-              } catch {
-                // Crear grupo local si falla el backend
-                const newGroup = {
-                  id: Date.now().toString(),
-                  name: groupName.trim(),
-                  description: '',
-                  members: groupMembers.length + 1,
-                  avatar: 'friends',
-                  avatarUrl: '',
-                  createdDate: new Date().toLocaleDateString('es-ES'),
-                  lastMessage: 'Grupo creado',
-                  unread: 0,
-                  is_favorite: false,
-                };
-                setAllGroups(prev => [newGroup, ...prev]);
-                setSelectedChat({
-                  id: newGroup.id, type: 'group', title: newGroup.name,
-                  subtitle: 'Grupo creado', time: '', status: 'online',
-                  initials: newGroup.name.slice(0,2).toUpperCase(),
-                  color: '#a855f7', isGroup: true, members: newGroup.members,
-                });
-                setCurrentView('Mensajería');
-                setShowCreateGroup(false);
-                setGroupName('');
-                setGroupMembers([]);
-              }
-            }}
-            style={{ width: '100%', background: groupName.trim() && groupMembers.length > 0 ? 'linear-gradient(135deg,#a855f7,#6366f1)' : '#e5e7eb', border: 'none', borderRadius: '12px', padding: '14px', color: groupName.trim() && groupMembers.length > 0 ? '#fff' : '#9ca3af', fontSize: '15px', fontWeight: '700', cursor: groupName.trim() && groupMembers.length > 0 ? 'pointer' : 'default', outline: 'none', transition: 'all 0.2s' }}>
-            {groupMembers.length > 0 ? `✓ Crear grupo (${groupMembers.length + 1} miembros)` : 'Selecciona al menos 1 contacto'}
-          </button>
+          <div style={{ padding:'0 16px' }}>
+            {/* Nombre del grupo */}
+            <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>Nombre del grupo *</div>
+            <input value={groupName} onChange={e => setGroupName(e.target.value)}
+              placeholder="Ej: Familia, Trabajo, Amigos..."
+              maxLength={50}
+              style={{ width:'100%', background:'#F9FAFB', border:`1.5px solid ${groupName.trim().length>=2?'#a855f7':'#E5E7EB'}`, borderRadius:'12px', padding:'12px 14px', color:'#111827', fontSize:'15px', outline:'none', fontFamily:'inherit', boxSizing:'border-box', marginBottom:'4px', transition:'border 0.2s' }}/>
+            <div style={{ fontSize:'11px', color:'#9CA3AF', textAlign:'right', marginBottom:'14px' }}>{groupName.length}/50</div>
+
+            {/* Miembros seleccionados */}
+            {groupMembers.length > 0 && (
+              <div style={{ marginBottom:'12px' }}>
+                <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>
+                  Participantes seleccionados ({groupMembers.length})
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
+                  {groupMembers.map(m => (
+                    <div key={m.id} style={{ display:'flex', alignItems:'center', gap:'5px', background:'#F3E8FF', border:'1px solid #D8B4FE', borderRadius:'20px', padding:'4px 10px 4px 6px' }}>
+                      <div style={{ width:'22px', height:'22px', borderRadius:'50%', background:'#a855f7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', fontWeight:'700', color:'#fff' }}>
+                        {m.initials || m.name?.slice(0,2).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize:'13px', color:'#7C3AED', fontWeight:'600' }}>{m.name.split(' ')[0]}</span>
+                      <button onClick={() => setGroupMembers(prev => prev.filter(x => x.id !== m.id))}
+                        style={{ background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', outline:'none', padding:0, fontSize:'16px', lineHeight:1, display:'flex', alignItems:'center' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lista de contactos */}
+            <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>
+              Anadir participantes ({contacts.length} contactos disponibles)
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'4px', marginBottom:'16px', maxHeight:'260px', overflowY:'auto' }}>
+              {contacts.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'24px', color:'#9CA3AF', fontSize:'13px' }}>
+                  <div style={{ fontSize:'32px', marginBottom:'8px' }}>👥</div>
+                  No tienes contactos aun. Anade contactos primero.
+                </div>
+              ) : contacts.map(c => {
+                const isAdded = groupMembers.some(m => m.id === c.id);
+                return (
+                  <button key={c.id}
+                    onClick={() => {
+                      if (isAdded) setGroupMembers(prev => prev.filter(m => m.id !== c.id));
+                      else setGroupMembers(prev => [...prev, { id: c.id, name: c.name, initials: c.avatar || c.name?.slice(0,2).toUpperCase() || '??', color: '#a855f7' }]);
+                    }}
+                    style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 12px', background: isAdded ? '#F3E8FF' : '#FAFAFA', border:`1.5px solid ${isAdded ? '#D8B4FE' : '#F0F0F0'}`, borderRadius:'12px', cursor:'pointer', outline:'none', transition:'all 0.15s' }}>
+                    <div style={{ width:'42px', height:'42px', borderRadius:'50%', background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'14px', fontWeight:'700', color:'#fff', flexShrink:0, overflow:'hidden' }}>
+                      {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : (c.avatar || c.name?.slice(0,2).toUpperCase())}
+                    </div>
+                    <div style={{ flex:1, textAlign:'left' }}>
+                      <div style={{ fontSize:'14px', fontWeight:'600', color:'#111827' }}>{c.name}</div>
+                      <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{c.phone}</div>
+                    </div>
+                    <div style={{ width:'26px', height:'26px', borderRadius:'50%', background: isAdded ? '#a855f7' : '#F3F4F6', border:`2px solid ${isAdded ? '#a855f7' : '#E5E7EB'}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.15s' }}>
+                      {isAdded && <svg width="12" height="12" viewBox="0 0 24 24" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Botón crear */}
+            <button
+              disabled={!canCreate}
+              onClick={doCreate}
+              style={{ width:'100%', background: canCreate ? 'linear-gradient(135deg,#a855f7,#6366f1)' : '#E5E7EB', border:'none', borderRadius:'14px', padding:'15px', color: canCreate ? '#fff' : '#9CA3AF', fontSize:'15px', fontWeight:'700', cursor: canCreate ? 'pointer' : 'default', outline:'none', transition:'all 0.2s', boxShadow: canCreate ? '0 4px 16px rgba(168,85,247,0.35)' : 'none' }}>
+              {canCreate
+                ? `Crear grupo · ${groupMembers.length + 1} miembros`
+                : groupName.trim().length < 2
+                  ? 'Escribe el nombre del grupo'
+                  : 'Selecciona al menos 1 contacto'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -3460,7 +3489,7 @@ const App: React.FC = () => {
 
     const layouts = [
       { id: 'default',   label: 'Estándar',    desc: 'Balance + tarjetas',       icon: '🏠' },
-      { id: 'compact',   label: 'Compacto',    desc: 'Solo accesos r?pidos',      icon: '?' },
+      { id: 'compact',   label: 'Compacto',    desc: 'Solo accesos rapidos',      icon: '?' },
       { id: 'cards',     label: 'Tarjetas',    desc: 'Grid de servicios grande',  icon: '🏠' },
       { id: 'minimal',   label: 'Minimal',     desc: 'Solo saldo y botones',      icon: '?' },
       { id: 'news',      label: 'Noticias',    desc: 'Noticias en portada',       icon: '📰' },
@@ -3478,10 +3507,10 @@ const App: React.FC = () => {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e5e7eb' }} />
           </div>
 
-          {/* T?tulo */}
+          {/* Titulo */}
           <div style={{ fontSize: '15px', fontWeight: '700', color: '#0d0d0d', marginBottom: '16px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Dise?o de pantalla principal
+            Diseno de pantalla principal
           </div>
 
           {/* Grid de layouts */}
@@ -4164,7 +4193,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Accesos r?pidos ? 4 apps */}
+      {/* Accesos rapidos ? 4 apps */}
       <div style={{ marginTop: '12px' }}>
         <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', justifyItems: 'center' }}>
@@ -4278,7 +4307,6 @@ const App: React.FC = () => {
             <Btn label="Agua" icon="rain" color="#1485EE" onClick={() => { setShowSvcModal('agua'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Salud" icon="salud" color="#C0392B" onClick={() => setShowSaludModal(true)} />
             <Btn label="Educación" icon="edu" color="#6B5BD6" onClick={() => { setShowSvcModal('edu'); setSvcStep('main'); setSvcData({}); }} />
-            <Btn label="Transporte" icon="transp" color="#2E9E6B" onClick={() => { setShowSvcModal('transp'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Correos" icon="mensajes" color="#C47D2A" onClick={() => { setShowSvcModal('correos'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Impuestos" icon="gobierno" color="#C0392B" onClick={() => { setShowSvcModal('impuestos'); setSvcStep('main'); setSvcData({}); }} />
           </Section>
@@ -4287,15 +4315,13 @@ const App: React.FC = () => {
           <Section title="Servicios Diarios">
             <Btn label="Supermercado" icon="comercio" color="#2E9E6B" onClick={() => setShowSuperModal(true)} />
             <Btn label="Comida" icon="money" color="#C0392B" onClick={() => { setShowSvcModal('comida'); setSvcStep('main'); setSvcData({}); }} />
-            <Btn label="Taxi" icon="taxi" color="#C47D2A" onClick={() => { setShowSvcModal('taxi'); setSvcStep('main'); setSvcData({}); }} />
-            <Btn label="Farmacia" icon="farmacia" color="#2E9E6B" onClick={() => { setSaludInitTab('farmacias'); setShowSaludModal(true); }} />
             <Btn label="Restaurante" icon="restaurante" color="#C47D2A" onClick={() => { setShowSvcModal('restaurante'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Hotel" icon="hotel" color="#1485EE" onClick={() => { setShowSvcModal('hotel'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Vuelos" icon="vuelos" color="#6B5BD6" onClick={() => { setShowSvcModal('vuelos'); setSvcStep('main'); setSvcData({}); }} />
+            <Btn label="Gasolinera" icon="gasolinera" color="#C47D2A" onClick={() => { setShowSvcModal('gasolinera'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Tienda" icon="tienda" color="#2E9E6B" onClick={() => { setShowSvcModal('tienda'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Lavandería" icon="lavanderia" color="#1485EE" onClick={() => { setShowSvcModal('lavanderia'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Belleza" icon="belleza" color="#C0392B" onClick={() => { setShowSvcModal('belleza'); setSvcStep('main'); setSvcData({}); }} />
-            <Btn label="Gasolinera" icon="gasolinera" color="#C47D2A" onClick={() => { setShowSvcModal('gasolinera'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Noticias" icon="noticias" color="#6B5BD6" onClick={() => { setShowSvcModal('noticias'); setSvcStep('main'); setSvcData({}); }} />
           </Section>
 
@@ -4371,7 +4397,7 @@ const App: React.FC = () => {
                   <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={() => setShowContactProfile(sc)}>
-                  <Avatar name={sc.title} size={36} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
+                  <Avatar name={sc.title} size={48} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
                 <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '8px' }} onClick={() => setShowContactProfile(sc)}>
                   <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sc.title}</div>
@@ -4453,7 +4479,7 @@ const App: React.FC = () => {
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,label:'Enviar dinero',color:'#374151',action:()=>{setShowChatMenu(false);setQuickTransferData({contactId:sc.id?.toString()||'',contactName:sc.title,amount:'',accountId:bankAccounts[0]?.id||''});setShowQuickTransferModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,label:'Compartir contacto',color:'#374151',action:()=>{setShowChatMenu(false);const now=new Date();const time=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;const chatId=sc.id?.toString()||'';setChatMessages(prev=>({...prev,[chatId]:[...(prev[chatId]||[]),{id:Date.now().toString(),from:'me',text:`👤 Contacto: ${sc.title}`,time,status:'pending'}]}));}},
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,label:'Crear grupo con este contacto',color:'#374151',action:()=>{setShowChatMenu(false);setShowCreateGroupModal(true);}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,label:'Crear grupo con este contacto',color:'#374151',action:()=>{setShowChatMenu(false);setGroupMembers([{id:sc.id?.toString()||'',name:sc.title,initials:sc.initials||sc.title?.slice(0,2).toUpperCase()||'??',color:'#a855f7'}]);setShowCreateGroup(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,label:'Exportar chat',color:'#374151',action:()=>{setShowChatMenu(false);const chatId=sc.id?.toString()||'';const msgs=chatMessages[chatId]||[];const text=msgs.map(m=>`[${m.time}] ${m.from==='me'?'Yo':sc.title}: ${m.text}`).join('\n');const blob=new Blob([text],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`chat_${sc.title}.txt`;a.click();}},
                     ].map((item,i)=>(
                       <button key={i} onClick={item.action} style={{width:'100%',background:'none',border:'none',padding:'10px 14px',display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',outline:'none',borderBottom:'1px solid rgba(0,0,0,0.06)',textAlign:'left'}}
@@ -4891,7 +4917,7 @@ const App: React.FC = () => {
                               </div>
                               {/* Separador */}
                               <div style={{ height: '1px', background: 'rgba(0,0,0,0.08)', margin: '0 -12px' }}/>
-                              {/* Acciones r?pidas */}
+                              {/* Acciones rapidas */}
                               <div style={{ display: 'flex', gap: '8px', padding: '8px 0 2px' }}>
                                 <button onClick={() => setShowContactProfile(contactProfile)}
                                   style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', fontSize: '12px', fontWeight: '700', color: '#6b7280', outline: 'none', textAlign: 'center' }}>
@@ -4948,9 +4974,9 @@ const App: React.FC = () => {
                               </div>
                               {code && (
                                 <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '8px 10px', border: '1px solid #e5e7eb' }}>
-                                  <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '3px', fontWeight: '600', textTransform: 'uppercase' }}>C?digo de confirmaci?n</div>
+                                  <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '3px', fontWeight: '600', textTransform: 'uppercase' }}>Codigo de confirmacion</div>
                                   <div style={{ fontSize: '16px', fontWeight: '800', color: '#111827', letterSpacing: '3px', fontFamily: 'monospace' }}>{code}</div>
-                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>Comparte este c?digo con el destinatario</div>
+                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>Comparte este codigo con el destinatario</div>
                                 </div>
                               )}
                               {status && <div style={{ fontSize: '11px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>{status}</div>}
@@ -5289,7 +5315,7 @@ const App: React.FC = () => {
                 </button>
 
                 {/* Input */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f0f2f5', border: 'none', borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#ffffff', border: '1.5px solid #E5E7EB', borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
                   <input
                     type="text"
                     value={currentChatInput}
@@ -6896,8 +6922,9 @@ const App: React.FC = () => {
             {/* Botan Crear Grupo */}
             <button
               onClick={() => {
-                setShowCreateGroupModal(true);
-                setNewGroupData({ name: '', description: '', selectedMembers: [] });
+                setGroupName('');
+                setGroupMembers([]);
+                setShowCreateGroup(true);
               }}
               style={{
                 width: '100%',
@@ -7395,7 +7422,7 @@ const App: React.FC = () => {
 
               {currentSettingsTab === 'perfil' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Tarjeta de perfil ? dise?o profesional centrado */}
+                  {/* Tarjeta de perfil ? diseno profesional centrado */}
                   <div style={{
                     background: 'linear-gradient(135deg, #f0fdf9 0%, #e0f7fa 100%)',
                     border: '1px solid rgba(0,200,160,0.15)',
@@ -7420,7 +7447,7 @@ const App: React.FC = () => {
                           : <span>{userProfile.avatar || 'U'}</span>
                         }
                       </div>
-                      {/* Bot?n c?mara */}
+                      {/* Bot?n camara */}
                       <button onClick={() => {
                         const inp = document.createElement('input');
                         inp.type = 'file'; inp.accept = 'image/*';
@@ -8290,7 +8317,7 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Reacciones r?pidas */}
+            {/* Reacciones rapidas */}
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               backdropFilter: 'blur(20px)',
@@ -8323,93 +8350,74 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            {/* Opciones principales */}
-            <div style={{
-              background: 'rgba(255,255,255,0.97)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              border: '1px solid rgba(255,255,255,0.8)',
-            }}>
+            {/* ── Acciones principales ── */}
+            <div style={{ background:'#fff', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.13)', border:'1px solid #F0F2F5' }}>
               {[
                 {
-                  icon: (
-                    <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#667eea,#764ba2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </div>
-                  ),
-                  label: 'Copiar',
-                  sub: 'Copiar texto',
-                  action: () => { navigator.clipboard?.writeText(msgContextMenu.msg.text || ''); showToast('✓ Copiado', 'success'); setMsgContextMenu(null); }
+                  color:'#00c8a0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                  label:'Copiar', sub:'Copiar texto al portapapeles',
+                  action:() => { navigator.clipboard?.writeText(msgContextMenu.msg.text || ''); showToast('Copiado', 'success'); setMsgContextMenu(null); }
                 },
                 {
-                  icon: (
-                    <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#11998e,#38ef7d)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-                    </div>
-                  ),
-                  label: 'Responder',
-                  sub: 'Citar mensaje',
-                  action: () => { setCurrentChatInput(`> ${msgContextMenu.msg.text?.slice(0,40) || ''}...\n`); setMsgContextMenu(null); }
+                  color:'#1485EE', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>,
+                  label:'Responder', sub:'Citar y responder este mensaje',
+                  action:() => { setCurrentChatInput(`> ${msgContextMenu.msg.text?.slice(0,50) || ''}...\n`); setMsgContextMenu(null); }
+                },
+                ...(msgContextMenu.msg.from === 'me' ? [{
+                  color:'#6B5BD6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+                  label:'Editar', sub:'Modificar el texto enviado',
+                  action:() => { setCurrentChatInput(msgContextMenu.msg.text || ''); showToast('Edita el mensaje y reenvía', 'info'); setMsgContextMenu(null); }
+                }] : []),
+                {
+                  color:'#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                  label:'Destacar', sub:'Guardar en mensajes importantes',
+                  action:() => { const cid=selectedChat?.id?.toString()||selectedChat?.title||''; setStarredMessages(prev=>({...prev,[cid]:[...(prev[cid]||[]),msgContextMenu.msg.id]})); showToast('Mensaje destacado', 'success'); setMsgContextMenu(null); }
                 },
                 {
-                  icon: (
-                    <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#f7971e,#ffd200)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" stroke="#fff" strokeWidth="0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    </div>
-                  ),
-                  label: 'Destacar',
-                  sub: 'Guardar mensaje',
-                  action: () => {
-                    const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
-                    setStarredMessages(prev => ({ ...prev, [cid]: [...(prev[cid]||[]), msgContextMenu.msg.id] }));
-                    showToast('★ Mensaje destacado', 'success'); setMsgContextMenu(null);
-                  }
+                  color:'#0EA5E9', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+                  label:'Reenviar', sub:'Compartir con otro contacto',
+                  action:() => { showToast('Proximamente disponible', 'info'); setMsgContextMenu(null); }
                 },
                 {
-                  icon: (
-                    <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#4facfe,#00f2fe)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </div>
-                  ),
-                  label: 'Reenviar',
-                  sub: 'Compartir mensaje',
-                  action: () => { showToast('Pr?ximamente', 'info'); setMsgContextMenu(null); }
+                  color:'#8B5CF6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+                  label:'Seleccionar', sub:'Seleccionar varios mensajes',
+                  action:() => { showToast('Modo seleccion activado', 'info'); setMsgContextMenu(null); }
+                },
+                {
+                  color:'#EC4899', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                  label:'Info del mensaje', sub:'Ver estado de entrega y lectura',
+                  action:() => { showToast(`Enviado · ${msgContextMenu.msg.time || ''}`, 'info'); setMsgContextMenu(null); }
+                },
+                {
+                  color:'#2E9E6B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+                  label:'Fijar mensaje', sub:'Mostrar en la parte superior del chat',
+                  action:() => { showToast('Mensaje fijado', 'success'); setMsgContextMenu(null); }
                 },
               ].map((item, i, arr) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width: '100%', background: 'none', border: 'none',
-                  padding: '12px 16px',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                  borderBottom: i < arr.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
-                  transition: 'background 0.15s',
+                  width:'100%', background:'none', border:'none',
+                  padding:'11px 16px',
+                  display:'flex', alignItems:'center', gap:'13px',
+                  cursor:'pointer', textAlign:'left', fontFamily:'inherit',
+                  borderBottom: i < arr.length-1 ? '1px solid #F7F8FA' : 'none',
+                  transition:'background 0.12s',
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                  {item.icon}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{item.label}</div>
-                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '1px' }}>{item.sub}</div>
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#F9FAFB'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:item.color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    {item.icon}
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:'14px', fontWeight:'600', color:'#111827' }}>{item.label}</div>
+                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'1px' }}>{item.sub}</div>
+                  </div>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               ))}
             </div>
 
-            {/* Eliminar ? separado y rojo */}
-            <div style={{
-              background: 'rgba(255,255,255,0.97)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              border: '1px solid rgba(255,255,255,0.8)',
-              marginTop: '8px',
-            }}>
+            {/* ── Eliminar ── */}
+            <div style={{ background:'#fff', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid #FEE2E2', marginTop:'8px' }}>
               <button onClick={() => {
                 const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                 setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgContextMenu.msg.id) }));
@@ -8417,43 +8425,31 @@ const App: React.FC = () => {
                   chatAPI.deleteMessage(msgContextMenu.msg.id).catch(() => {});
                 }
                 showToast('Mensaje eliminado', 'info'); setMsgContextMenu(null);
-              }} style={{
-                width: '100%', background: 'none', border: 'none',
-                padding: '13px 16px',
-                display: 'flex', alignItems: 'center', gap: '12px',
-                cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                transition: 'background 0.15s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.05)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                <div style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,#ff416c,#ff4b2b)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#FEF2F2'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
+                <div style={{ width:36, height:36, borderRadius:10, background:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#ef4444' }}>
-                    {msgContextMenu.msg.from === 'me' ? 'Eliminar' : 'Eliminar para m?'}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#fca5a5', marginTop: '1px' }}>No se puede deshacer</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'14px', fontWeight:'600', color:'#EF4444' }}>{msgContextMenu.msg.from === 'me' ? 'Eliminar para todos' : 'Eliminar para mi'}</div>
+                  <div style={{ fontSize:'11px', color:'#FCA5A5', marginTop:'1px' }}>Esta accion no se puede deshacer</div>
                 </div>
               </button>
             </div>
 
-            {/* Cancelar */}
+            {/* ── Cancelar ── */}
             <button onClick={() => setMsgContextMenu(null)} style={{
-              width: '100%', marginTop: '8px',
-              background: 'rgba(255,255,255,0.97)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.8)',
-              borderRadius: '20px',
-              padding: '14px',
-              fontSize: '15px', fontWeight: '600', color: '#374151',
-              cursor: 'pointer', fontFamily: 'inherit',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              transition: 'background 0.15s',
+              width:'100%', marginTop:'8px',
+              background:'#fff', border:'1px solid #F0F2F5',
+              borderRadius:'18px', padding:'14px',
+              fontSize:'15px', fontWeight:'700', color:'#374151',
+              cursor:'pointer', fontFamily:'inherit',
+              boxShadow:'0 2px 12px rgba(0,0,0,0.08)',
+              transition:'background 0.12s',
             }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(243,244,246,0.97)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.97)'}>
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#F9FAFB'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='#fff'}>
               Cancelar
             </button>
           </div>
@@ -8715,7 +8711,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* QR Scanner con c?mara real */}
+      {/* QR Scanner con camara real */}
       {showQRScannerCamera && (
         <QRScanner
           onClose={() => setShowQRScannerCamera(false)}
@@ -9321,7 +9317,7 @@ const App: React.FC = () => {
                   </div>
                   {/* Pasos del proceso */}
                   <div style={{ display:'flex', alignItems:'center', gap:'0' }}>
-                    {['Contrato','Factura','Pago','Confirmaci?n'].map((s,i)=>(
+                    {['Contrato','Factura','Pago','Confirmacion'].map((s,i)=>(
                       <React.Fragment key={s}>
                         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
                           <div style={{ width:'22px', height:'22px', borderRadius:'50%', background: i===0?'#FFD700':'rgba(255,255,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'800', color: i===0?'#1A3A6B':'rgba(255,255,255,0.6)' }}>{i+1}</div>
@@ -9380,8 +9376,8 @@ const App: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* M?todo de pago */}
-                      <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'8px' }}>M?todo de pago</div>
+                      {/* Metodo de pago */}
+                      <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', marginBottom:'8px' }}>Metodo de pago</div>
                       <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                         {[{id:'wallet',label:'EGCHAT Wallet',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                           <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#1A3A6B':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1A3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
@@ -9409,7 +9405,7 @@ const App: React.FC = () => {
                     </div>
                     <div>
                       <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>SNGE</div>
-                      <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Sociedad Nacional de Gesti?n del Agua</div>
+                      <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Sociedad Nacional de Gestion del Agua</div>
                       <div style={{ display:'flex', alignItems:'center', gap:'4px', marginTop:'4px' }}>
                         <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#4FC3F7' }}/>
                         <span style={{ fontSize:'10px', color:'#4FC3F7', fontWeight:'600' }}>Servicio disponible</span>
@@ -9538,7 +9534,7 @@ const App: React.FC = () => {
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
                   </div>
                 ))}
-                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
+                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>Metodo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                   {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EDE9FE':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#6B5BD6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#6B5BD6':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9600,7 +9596,7 @@ const App: React.FC = () => {
                     <span style={{ fontSize:'18px', fontWeight:'900', color:'#00c8a0' }}>{(parseInt(svcData.price||'0')*parseInt(svcData.qty||'1')).toLocaleString()} XAF</span>
                   </div>
                 )}
-                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
+                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>Metodo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                   {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#F0FDF9':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00c8a0':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#065F46':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9623,7 +9619,7 @@ const App: React.FC = () => {
                   </div>
                   <div><div style={{ fontSize:'16px', fontWeight:'800', color:'#fff' }}>Correos GQ</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Correos de Guinea Ecuatorial</div></div>
                 </div>
-                <div style={{ padding:'12px 16px 0', fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Selecciona el tipo de env?o</div>
+                <div style={{ padding:'12px 16px 0', fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Selecciona el tipo de envio</div>
                 {[
                   {id:'carta',label:'Carta Nacional',sub:'Entrega en 2-3 dias',price:'500 XAF',color:'#FA9D3B'},
                   {id:'paquete',label:'Paquete Nacional',sub:'Hasta 5kg',price:'2,000 XAF',color:'#07C160'},
@@ -9654,7 +9650,7 @@ const App: React.FC = () => {
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
                   </div>
                 ))}
-                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
+                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>Metodo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                   {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#FEF2F2':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#C62828':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#C62828':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9662,9 +9658,9 @@ const App: React.FC = () => {
                     </button>
                   ))}
                 </div>
-                <button onClick={() => { if(svcData.sender && svcData.dest && svcData.payMethod){ const priceNum=parseInt((svcData.price||'0').replace(/[^0-9]/g,'')); setUserBalance(b=>b-priceNum); setSvcStep('success'); setSvcData(p=>({...p,action:`Env?o ${svcData.typeLabel} de ${svcData.sender} a ${svcData.dest}`})); } }}
+                <button onClick={() => { if(svcData.sender && svcData.dest && svcData.payMethod){ const priceNum=parseInt((svcData.price||'0').replace(/[^0-9]/g,'')); setUserBalance(b=>b-priceNum); setSvcStep('success'); setSvcData(p=>({...p,action:`Envio ${svcData.typeLabel} de ${svcData.sender} a ${svcData.dest}`})); } }}
                   style={{ width:'100%', background:svcData.sender&&svcData.dest&&svcData.payMethod?'linear-gradient(135deg,#C62828,#E53935)':'#E5E7EB', border:'none', borderRadius:'12px', padding:'14px', color:svcData.sender&&svcData.dest&&svcData.payMethod?'#fff':'#9CA3AF', fontSize:'14px', fontWeight:'700', cursor:svcData.sender&&svcData.dest&&svcData.payMethod?'pointer':'default', outline:'none' }}>
-                  Confirmar env?o ? {svcData.price}
+                  Confirmar envio ? {svcData.price}
                 </button>
               </div>
             )}
@@ -9711,7 +9707,7 @@ const App: React.FC = () => {
                 <div style={{ background:'#FEF3C7', borderRadius:'10px', padding:'10px 14px', marginBottom:'12px', fontSize:'12px', color:'#92400E', display:'flex', gap:'8px', alignItems:'flex-start' }}>
                   <span>ℹ️</span><span>El pago de impuestos genera un justificante oficial. Guarda el nmero de referencia.</span>
                 </div>
-                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
+                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>Metodo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                   {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#1B3A6B':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1B3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9726,19 +9722,19 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* SERVICIOS DIARIOS - formulario generico para: super, comida, restaurante, tienda, lavanderia, belleza */}
-            {(['super','comida','restaurante','tienda','lavanderia','belleza'] as string[]).includes(showSvcModal!) && svcStep === 'main' && (
+            {/* SERVICIOS DIARIOS - formulario generico para: super, comida, tienda, lavanderia, belleza */}
+            {(['super','comida','tienda','lavanderia','belleza'] as string[]).includes(showSvcModal!) && svcStep === 'main' && (
               <div style={{ padding:'0 0 24px' }}>
                 {/* Header din?mico por servicio */}
                 {(() => {
                   const cfg: Record<string,{title:string;sub:string;grad:string;items:{id:string;label:string;sub:string;price:string;color:string}[]}> = {
                     super: { title:'Supermercados', sub:'Compra online - Entrega a domicilio', grad:'linear-gradient(135deg,#065F46,#00c8a0)',
                       items:[{id:'a',label:'Supermercado Central',sub:'Malabo Centro - Entrega 1h',price:'Gratis >5,000',color:'#00c8a0'},{id:'b',label:'Hiper Bata',sub:'Bata - Entrega 2h',price:'Gratis >8,000',color:'#00c8a0'},{id:'c',label:'Tienda Familiar',sub:'Barrio - Entrega 30min',price:'500 XAF',color:'#F59E0B'},{id:'d',label:'Mercado Central',sub:'Malabo - Productos frescos',price:'Gratis >3,000',color:'#00c8a0'}]},
-                    comida: { title:'Comida a Domicilio', sub:'Restaurantes y cocinas - Entrega r?pida', grad:'linear-gradient(135deg,#C0392B,#E74C3C)',
-                      items:[{id:'a',label:'Comida R?pida',sub:'Hamburguesas, pollo - 30 min',price:'500 XAF',color:'#E74C3C'},{id:'b',label:'Cocina Africana',sub:'Platos t?picos GQ - 45 min',price:'300 XAF',color:'#F59E0B'},{id:'c',label:'Comida Internacional',sub:'Italiana, china, ?rabe - 60 min',price:'800 XAF',color:'#1485EE'},{id:'d',label:'Comida Casera',sub:'Men del da - 40 min',price:'200 XAF',color:'#00c8a0'}]},
+                    comida: { title:'Comida a Domicilio', sub:'Restaurantes y cocinas - Entrega rapida', grad:'linear-gradient(135deg,#C0392B,#E74C3C)',
+                      items:[{id:'a',label:'Comida Rapida',sub:'Hamburguesas, pollo - 30 min',price:'500 XAF',color:'#E74C3C'},{id:'b',label:'Cocina Africana',sub:'Platos tipicos GQ - 45 min',price:'300 XAF',color:'#F59E0B'},{id:'c',label:'Comida Internacional',sub:'Italiana, china, arabe - 60 min',price:'800 XAF',color:'#1485EE'},{id:'d',label:'Comida Casera',sub:'Menu del dia - 40 min',price:'200 XAF',color:'#00c8a0'}]},
                     restaurante: { title:'Restaurantes', sub:'Reservas y pedidos para llevar', grad:'linear-gradient(135deg,#92400E,#F59E0B)',
-                      items:[{id:'a',label:'Reserva de Mesa',sub:'Para hoy o ma?ana',price:'Gratis',color:'#F59E0B'},{id:'b',label:'Pedido para Llevar',sub:'Listo en 20 min',price:'Sin cargo',color:'#00c8a0'},{id:'c',label:'Men Empresarial',sub:'Grupos +10 personas',price:'Consultar',color:'#1485EE'}]},
-                    tienda: { title:'Tiendas Online', sub:'Ropa, electrnica, hogar ? Env?o a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
+                      items:[{id:'a',label:'Reserva de Mesa',sub:'Para hoy o manana',price:'Gratis',color:'#F59E0B'},{id:'b',label:'Pedido para Llevar',sub:'Listo en 20 min',price:'Sin cargo',color:'#00c8a0'},{id:'c',label:'Menu Empresarial',sub:'Grupos +10 personas',price:'Consultar',color:'#1485EE'}]},
+                    tienda: { title:'Tiendas Online', sub:'Ropa, electronica, hogar - Envio a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
                       items:[{id:'a',label:'Ropa y Moda',sub:'Envío a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electrónica',sub:'Garantía incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoración',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
                     lavanderia: { title:'Lavandería', sub:'Recogida y entrega a domicilio', grad:'linear-gradient(135deg,#0A4A8A,#00b4e6)',
                       items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h · Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorería',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
@@ -9773,7 +9769,7 @@ const App: React.FC = () => {
                 })()}
               </div>
             )}
-            {(['super','comida','restaurante','tienda','lavanderia','belleza'] as string[]).includes(showSvcModal!) && svcStep === 'form-daily' && (
+            {(['super','comida','tienda','lavanderia','belleza'] as string[]).includes(showSvcModal!) && svcStep === 'form-daily' && (
               <div style={{ padding:'14px 16px 24px' }}>
                 <div style={{ background:'#fff', borderRadius:'12px', padding:'13px 14px', marginBottom:'14px', border:'1px solid #F0F2F5', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#111827' }}>{svcData.typeLabel}</div>
@@ -9785,7 +9781,7 @@ const App: React.FC = () => {
                     <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
                   </div>
                 ))}
-                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
+                <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>Metodo de pago</div>
                 <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                   {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                     <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#F0FDF9':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00c8a0':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#065F46':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9800,6 +9796,10 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* RESTAURANTES */}
+            {showSvcModal === 'restaurante' && svcStep === 'main' && (
+              <RestaurantesModule />
+            )}
             {/* TAXI */}
             {showSvcModal === 'taxi' && svcStep === 'main' && (
               <div style={{ padding:'0 0 24px' }}>
@@ -9822,7 +9822,7 @@ const App: React.FC = () => {
                     <div style={{ background:'#FFFBEB', borderRadius:'12px', padding:'14px', marginBottom:'12px', border:'1px solid #FDE68A' }}>
                       <div style={{ fontSize:'11px', color:'#92400E', marginBottom:'6px', fontWeight:'600' }}>Precio estimado</div>
                       <div style={{ display:'flex', gap:'8px' }}>
-                        {[{label:'Econ?mico',price:'1,500 XAF'},{label:'Estndar',price:'2,500 XAF'},{label:'Premium',price:'4,000 XAF'}].map(t=>(
+                        {[{label:'Economico',price:'1,500 XAF'},{label:'Estndar',price:'2,500 XAF'},{label:'Premium',price:'4,000 XAF'}].map(t=>(
                           <button key={t.label} onClick={()=>setSvcData(p=>({...p,taxiType:t.label,taxiPrice:t.price}))} style={{ flex:1, background:svcData.taxiType===t.label?'#F59E0B':'#fff', border:`1.5px solid ${svcData.taxiType===t.label?'#F59E0B':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'10px', fontWeight:'700', color:svcData.taxiType===t.label?'#fff':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
                             <span style={{ fontSize:'13px', fontWeight:'800' }}>{t.price}</span>{t.label}
                           </button>
@@ -9884,7 +9884,7 @@ const App: React.FC = () => {
                       <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
                     </div>
                   ))}
-                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>M?todo de pago</div>
+                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'12px 0 8px' }}>Metodo de pago</div>
                   <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
                     {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'cash',label:'Efectivo',icon:'💵'}].map(m=>(
                       <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#0A4A8A':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
@@ -9901,94 +9901,11 @@ const App: React.FC = () => {
             )}
             {/* VUELOS */}
             {showSvcModal === 'vuelos' && svcStep === 'main' && (
-              <div style={{ padding:'0 0 24px' }}>
-                <div style={{ background:'linear-gradient(135deg,#1B3A6B,#00b4e6)', padding:'20px 16px' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-                    <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19.5 2.5S18 2 16.5 3.5L13 7 4.8 5.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-                    </div>
-                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Vuelos</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Malabo (SSG) ? Bata (BSG) ? Internacional</div></div>
-                  </div>
-                </div>
-                <div style={{ padding:'14px 16px 0' }}>
-                  <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
-                    {['Ida','Ida y vuelta'].map(t=>(
-                      <button key={t} onClick={()=>setSvcData(p=>({...p,tripType:t}))} style={{ flex:1, background:svcData.tripType===t?'#00b4e6':'#fff', border:`1.5px solid ${svcData.tripType===t?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px', fontSize:'12px', fontWeight:'700', color:svcData.tripType===t?'#fff':'#6B7280', cursor:'pointer' }}>{t}</button>
-                    ))}
-                  </div>
-                  {[{key:'from',placeholder:'Origen (SSG, BSG, LBV...)',type:'text',icon:'📋'},{key:'to',placeholder:'Destino',type:'text',icon:'📋'},{key:'date',placeholder:'Fecha de salida (DD/MM/AAAA)',type:'text',icon:'📋'},{key:'pax',placeholder:'Nmero de pasajeros',type:'number',icon:'📋'},{key:'name',placeholder:'Nombre del pasajero principal',type:'text',icon:'📋'}].map((f) => (
-                    <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
-                      <span style={{ fontSize:'16px' }}>{f.icon}</span>
-                      <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'13px', color:'#111827', fontFamily:'inherit' }} />
-                    </div>
-                  ))}
-                  {svcData.from && svcData.to && (
-                    <div style={{ background:'#EFF5FD', borderRadius:'12px', padding:'12px 14px', marginBottom:'12px', border:'1px solid #BFDBFE' }}>
-                      <div style={{ fontSize:'11px', color:'#1B3A6B', fontWeight:'600', marginBottom:'6px' }}>Vuelos disponibles</div>
-                      <div style={{ display:'flex', gap:'8px' }}>
-                        {[{label:'Ceiba Airlines',price:'85,000 XAF'},{label:'Air France',price:'320,000 XAF'},{label:'Iberia',price:'290,000 XAF'}].map(v=>(
-                          <button key={v.label} onClick={()=>setSvcData(p=>({...p,airline:v.label,flightPrice:v.price}))} style={{ flex:1, background:svcData.airline===v.label?'#00b4e6':'#fff', border:`1.5px solid ${svcData.airline===v.label?'#00b4e6':'#E5E7EB'}`, borderRadius:'8px', padding:'8px 4px', fontSize:'9px', fontWeight:'700', color:svcData.airline===v.label?'#fff':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
-                            <span style={{ fontSize:'12px', fontWeight:'800' }}>{v.price}</span>{v.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ fontSize:'12px', fontWeight:'600', color:'#9CA3AF', margin:'4px 0 8px' }}>M?todo de pago</div>
-                  <div style={{ display:'flex', gap:'8px', marginBottom:'14px' }}>
-                    {[{id:'wallet',label:'EGCHAT',icon:'💳'},{id:'bank',label:'Banco',icon:'🏦'},{id:'card',label:'Tarjeta',icon:'📋'}].map(m=>(
-                      <button key={m.id} onClick={()=>setSvcData((p:Record<string,string>)=>({...p,payMethod:m.id}))} style={{ flex:1, background:svcData.payMethod===m.id?'#EFF5FD':'#F9FAFB', border:`1.5px solid ${svcData.payMethod===m.id?'#00b4e6':'#E5E7EB'}`, borderRadius:'10px', padding:'10px 4px', fontSize:'10px', fontWeight:'700', color:svcData.payMethod===m.id?'#1B3A6B':'#6B7280', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
-                        <span style={{ fontSize:'18px' }}>{m.icon}</span>{m.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={() => { if(svcData.from && svcData.to && svcData.date && svcData.name && svcData.airline && svcData.payMethod){ setSvcStep('success'); setSvcData(p=>({...p,action:`Vuelo ${svcData.airline} ? ${svcData.from}?${svcData.to} ? ${svcData.date} ? ${svcData.flightPrice}`})); } }}
-                    style={{ width:'100%', background:svcData.from&&svcData.to&&svcData.date&&svcData.name&&svcData.airline&&svcData.payMethod?'linear-gradient(135deg,#1B3A6B,#00b4e6)':'#E5E7EB', border:'none', borderRadius:'12px', padding:'14px', color:svcData.from&&svcData.to&&svcData.date&&svcData.name&&svcData.airline&&svcData.payMethod?'#fff':'#9CA3AF', fontSize:'14px', fontWeight:'700', cursor:svcData.from&&svcData.to&&svcData.date&&svcData.name&&svcData.airline&&svcData.payMethod?'pointer':'default', outline:'none' }}>
-                    Reservar vuelo {svcData.flightPrice?`? ${svcData.flightPrice}`:''}
-                  </button>
-                </div>
-              </div>
+              <VuelosModule />
             )}
             {/* GASOLINERA */}
             {showSvcModal === 'gasolinera' && svcStep === 'main' && (
-              <div style={{ padding:'12px 16px 24px' }}>
-                <div style={{ fontSize:'11px', color:'#888', fontWeight:'600', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Pago de combustible</div>
-                {[
-                  {id:'gasolina',label:'Gasolina 95',price:'650 XAF/L',color:'#FA9D3B'},
-                  {id:'diesel',label:'Diesel',price:'580 XAF/L',color:'#576B95'},
-                  {id:'gas',label:'Gas Licuado (GLP)',price:'450 XAF/L',color:'#07C160'},
-                ].map((g) => (
-                  <button key={g.id} onClick={() => { setSvcStep('form-gas'); setSvcData({type:g.id,typeLabel:g.label,price:g.price}); }}
-                    style={{ width:'100%', background:'#fff', border:'none', borderRadius:'10px', padding:'12px 14px', cursor:'pointer', outline:'none', display:'flex', alignItems:'center', gap:'12px', marginBottom:'6px' }}
-                    onMouseEnter={(e)=>{e.currentTarget.style.background='#f9fafb';}} onMouseLeave={(e)=>{e.currentTarget.style.background='#fff';}}>
-                    <div style={{ width:'42px', height:'42px', borderRadius:'12px', background:g.color+'18', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" stroke={g.color} strokeWidth="2" strokeLinecap="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg>
-                    </div>
-                    <div style={{ flex:1, textAlign:'left' }}><div style={{ fontSize:'14px', fontWeight:'600', color:'#0d0d0d' }}>{g.label}</div><div style={{ fontSize:'12px', color:'#07C160', fontWeight:'600' }}>{g.price}</div></div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                ))}
-              </div>
-            )}
-            {showSvcModal === 'gasolinera' && svcStep === 'form-gas' && (
-              <div style={{ padding:'12px 16px 24px' }}>
-                <div style={{ background:'#fff', borderRadius:'10px', padding:'10px 14px', marginBottom:'12px' }}>
-                  <div style={{ fontSize:'13px', fontWeight:'600', color:'#0d0d0d' }}>{svcData.typeLabel}</div>
-                  <div style={{ fontSize:'12px', color:'#07C160', fontWeight:'600' }}>{svcData.price}</div>
-                </div>
-                {[{key:'plate',placeholder:'Matricula del vehiculo',type:'text'},{key:'liters',placeholder:'Litros a cargar',type:'number'},{key:'station',placeholder:'Gasolinera (opcional)',type:'text'}].map((f) => (
-                  <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'48px' }}>
-                    <input type={f.type} placeholder={f.placeholder} value={svcData[f.key]||''} onChange={(e) => setSvcData((p:Record<string,string>) => ({...p,[f.key]:e.target.value}))} style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'14px', color:'#0d0d0d', fontFamily:'inherit' }} />
-                  </div>
-                ))}
-                {svcData.liters && (
-                  <div style={{ background:'#f0fdf4', borderRadius:'10px', padding:'12px 14px', marginBottom:'12px' }}>
-                    <div style={{ fontSize:'11px', color:'#9ca3af', marginBottom:'4px' }}>Total estimado</div>
-                    <div style={{ fontSize:'20px', fontWeight:'800', color:'#07C160' }}>{(parseInt(svcData.liters||'0') * 650).toLocaleString()} XAF</div>
-                  </div>
-                )}
-                <button onClick={() => { if(svcData.plate && svcData.liters){ const total=parseInt(svcData.liters||'0')*650; setUserBalance(b=>b-total); setSvcStep('success'); setSvcData(p=>({...p,action:`${svcData.typeLabel}  ${svcData.liters}L  Matrcula ${svcData.plate}  ${total.toLocaleString()} XAF`})); } }} style={{ width:'100%', background:svcData.plate&&svcData.liters?'linear-gradient(135deg,#92400E,#F59E0B)':'#E5E7EB', border:'none', borderRadius:'10px', padding:'13px', color:svcData.plate&&svcData.liters?'#fff':'#9CA3AF', fontSize:'14px', fontWeight:'700', cursor:svcData.plate&&svcData.liters?'pointer':'default', outline:'none' }}>Pagar Combustible</button>
-              </div>
+              <GasolinerasModule onDebit={(n) => setUserBalance((b:number) => b - n)} />
             )}
             {/* NOTICIAS */}
             {showSvcModal === 'noticias' && svcStep === 'main' && (
@@ -10696,7 +10613,7 @@ const App: React.FC = () => {
       {showCardWithdrawalModal && <RetiroMonederoModal onClose={() => setShowCardWithdrawalModal(false)} />}
 
 
-      {/* -- C?MARA EN VIVO -------------------------------------------------- */}
+      {/* -- camara EN VIVO -------------------------------------------------- */}
       {showLiveCamera && (
         <CameraModal
           chatId={liveCameraChatId}
@@ -10896,6 +10813,11 @@ const App: React.FC = () => {
 
 
 export default App;
+
+
+
+
+
 
 
 

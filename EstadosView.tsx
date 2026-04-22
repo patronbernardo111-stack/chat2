@@ -1111,9 +1111,9 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           ) : (
-            /* Cámara activa */
+            /* Cámara activa — controles tipo TikTok */
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-              <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', filter: VIDEO_FILTERS.find(f => f.id === videoFilter)?.css || 'none' }} />
 
               {/* Barra de progreso */}
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.2)' }}>
@@ -1128,30 +1128,86 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
                 </div>
               )}
 
-              {/* Controles inferiores — por encima de la barra de nav (70px) */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: '86px', paddingTop: '20px', background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
-                {/* Descartar toma actual (solo si hay algo grabado parcialmente) */}
-                <button
-                  onClick={() => { setRecordSeconds(0); chunks.current = []; }}
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', opacity: isRecording ? 0.3 : 1 }}
-                  disabled={isRecording}
-                >
+              {/* Overlay emoji seleccionado */}
+              {videoOverlay && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '72px', pointerEvents: 'none', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))' }}>{videoOverlay}</div>}
+
+              {/* Controles laterales derecha — estilo TikTok */}
+              <div style={{ position: 'absolute', right: '12px', top: '110px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                {/* Voltear cámara */}
+                <button onClick={async () => {
+                  if (!cameraStream) return;
+                  const currentFacing = (cameraStream.getVideoTracks()[0].getSettings() as any).facingMode || 'user';
+                  cameraStream.getTracks().forEach(t => t.stop());
+                  try {
+                    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacing === 'user' ? 'environment' : 'user' }, audio: true });
+                    setCameraStream(s);
+                  } catch {}
+                }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.45)', border: '1.5px solid rgba(255,255,255,0.25)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', color: '#fff' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                  <span style={{ fontSize: '8px', fontWeight: '700' }}>Voltear</span>
+                </button>
+
+                {/* Velocidad */}
+                <button onClick={() => setVideoSpeed(s => s === 1 ? 0.5 : s === 0.5 ? 2 : 1)} style={{ width: '44px', height: '44px', borderRadius: '50%', background: videoSpeed !== 1 ? 'rgba(0,200,160,0.4)' : 'rgba(0,0,0,0.45)', border: `1.5px solid ${videoSpeed !== 1 ? '#00c8a0' : 'rgba(255,255,255,0.25)'}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', color: videoSpeed !== 1 ? '#00c8a0' : '#fff' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '900' }}>{videoSpeed}x</span>
+                  <span style={{ fontSize: '8px', fontWeight: '700' }}>Vel.</span>
+                </button>
+
+                {/* Filtros rápidos */}
+                <button onClick={() => { const idx = VIDEO_FILTERS.findIndex(f => f.id === videoFilter); setVideoFilter(VIDEO_FILTERS[(idx + 1) % VIDEO_FILTERS.length].id); }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: videoFilter !== 'none' ? 'rgba(139,92,246,0.4)' : 'rgba(0,0,0,0.45)', border: `1.5px solid ${videoFilter !== 'none' ? '#8b5cf6' : 'rgba(255,255,255,0.25)'}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', color: videoFilter !== 'none' ? '#c4b5fd' : '#fff' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                  <span style={{ fontSize: '8px', fontWeight: '700' }}>{VIDEO_FILTERS.find(f => f.id === videoFilter)?.label || 'Filtro'}</span>
+                </button>
+
+                {/* Sticker / Emoji overlay */}
+                <button onClick={() => { const emojis = ['🔥','✨','🌊','🎵','💫','🇬🇶','❤️','😍','💪','🌍']; const idx = emojis.indexOf(videoOverlay); setVideoOverlay(idx === -1 ? emojis[0] : idx === emojis.length - 1 ? '' : emojis[idx + 1]); }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: videoOverlay ? 'rgba(245,158,11,0.4)' : 'rgba(0,0,0,0.45)', border: `1.5px solid ${videoOverlay ? '#f59e0b' : 'rgba(255,255,255,0.25)'}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', color: '#fff', fontSize: videoOverlay ? '20px' : '14px' }}>
+                  {videoOverlay || <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><span style={{ fontSize: '8px', fontWeight: '700' }}>Sticker</span></>}
+                </button>
+
+                {/* Temporizador */}
+                <button onClick={() => { /* Cuenta regresiva 3s antes de grabar */
+                  let count = 3;
+                  const el = document.createElement('div');
+                  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;pointer-events:none;';
+                  el.innerHTML = `<div style="font-size:120px;font-weight:900;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,0.5);animation:none">${count}</div>`;
+                  document.body.appendChild(el);
+                  const t = setInterval(() => {
+                    count--;
+                    if (count <= 0) { clearInterval(t); document.body.removeChild(el); startRec(); }
+                    else (el.firstChild as HTMLElement).textContent = String(count);
+                  }, 1000);
+                }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.45)', border: '1.5px solid rgba(255,255,255,0.25)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', color: '#fff' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style={{ fontSize: '8px', fontWeight: '700' }}>3s</span>
+                </button>
+              </div>
+
+              {/* Filtros en tiempo real — barra inferior izquierda */}
+              {!isRecording && (
+                <div style={{ position: 'absolute', left: '12px', bottom: '110px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {VIDEO_FILTERS.slice(0, 5).map(f => (
+                    <button key={f.id} onClick={() => setVideoFilter(f.id)} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0,0,0,0.5)', border: `2px solid ${videoFilter === f.id ? '#00c8a0' : 'rgba(255,255,255,0.2)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: videoFilter === f.id ? '#00c8a0' : '#aaa', fontSize: '9px', fontWeight: '700', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: 'linear-gradient(135deg,#1a1a2e,#16213e)', filter: f.css }} />
+                      <span>{f.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Controles inferiores */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: '86px', paddingTop: '20px', background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '32px' }}>
+                {/* Descartar */}
+                <button onClick={() => { setRecordSeconds(0); chunks.current = []; }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', opacity: isRecording ? 0.3 : 1 }} disabled={isRecording}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
 
                 {/* Botón grabar principal */}
-                <button
-                  onClick={isRecording ? stopRec : startRec}
-                  style={{ width: '72px', height: '72px', borderRadius: '50%', background: isRecording ? '#ef4444' : '#fff', border: `5px solid ${isRecording ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.4)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isRecording ? '#fff' : '#111', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
-                >
+                <button onClick={isRecording ? stopRec : startRec} style={{ width: '76px', height: '76px', borderRadius: '50%', background: isRecording ? '#ef4444' : '#fff', border: `5px solid ${isRecording ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.35)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isRecording ? '#fff' : '#111', boxShadow: '0 4px 24px rgba(0,0,0,0.5)', transition: 'all 0.15s' }}>
                   {isRecording ? Icon.stop : Icon.rec}
                 </button>
 
-                {/* Ver toma / confirmar */}
-                <button
-                  onClick={() => { if (isRecording) stopRec(); }}
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', background: isRecording ? 'rgba(0,200,160,0.2)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${isRecording ? '#00c8a0' : 'rgba(255,255,255,0.2)'}`, cursor: isRecording ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isRecording ? '#00c8a0' : '#444' }}
-                >
+                {/* Confirmar */}
+                <button onClick={() => { if (isRecording) stopRec(); }} style={{ width: '44px', height: '44px', borderRadius: '50%', background: isRecording ? 'rgba(0,200,160,0.25)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${isRecording ? '#00c8a0' : 'rgba(255,255,255,0.2)'}`, cursor: isRecording ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isRecording ? '#00c8a0' : '#444' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
               </div>
