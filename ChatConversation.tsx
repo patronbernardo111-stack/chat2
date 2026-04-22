@@ -229,7 +229,7 @@ export const ChatConversation: React.FC<Props> = ({
         </button>
 
         <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={onOpenProfile}>
-          <Avatar name={chat.title} size={40} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
+          <Avatar name={chat.title} size={48} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={onOpenProfile}>
