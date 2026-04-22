@@ -222,7 +222,7 @@ export const ChatConversation: React.FC<Props> = ({
       }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '4px 4px 4px 2px',
+        padding: '10px 6px 10px 2px',
       }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
