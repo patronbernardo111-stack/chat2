@@ -32,7 +32,7 @@
     
     <!-- Forzar limpieza de SW y cache antigua -->
     <script>
-      const BUILD = '20260418-2000';
+      const BUILD = '20260422-1200';
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
           regs.forEach(r => r.unregister());

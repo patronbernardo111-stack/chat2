@@ -1096,23 +1096,23 @@ const App: React.FC = () => {
     const presentations: Record<string, Array<{ title: string; content: string; bullets: string[] }>> = {
       'negocios': [
         {
-          title: 'Introduccian al Negocio',
-          content: 'Visian general y objetivos',
-          bullets: ['Misian clara', 'Objetivos medibles', 'Estrategia definida']
+          title: 'Introducción al Negocio',
+          content: 'Visión general y objetivos',
+          bullets: ['Misión clara', 'Objetivos medibles', 'Estrategia definida']
         },
         {
           title: 'ANALISIS de Mercado',
-          content: 'Investigacian y oportunidades',
+          content: 'Investigación y oportunidades',
           bullets: ['Mercado objetivo', 'Competencia', 'Oportunidades de crecimiento']
         },
         {
           title: 'Propuesta de Valor',
           content: 'Lo que nos diferencia',
-          bullets: ['Ventajas competitivas', 'Beneficios anicos', 'Propuesta diferenciadora']
+          bullets: ['Ventajas competitivas', 'Beneficios únicos', 'Propuesta diferenciadora']
         },
         {
-          title: 'Plan de accin',
-          content: 'Estrategia de implementaci?n',
+          title: 'Plan de acción',
+          content: 'Estrategia de implementación',
           bullets: ['Fases del proyecto', 'Timeline', 'Recursos necesarios']
         },
         {
@@ -1123,13 +1123,13 @@ const App: React.FC = () => {
       ],
       'tecnologia': [
         {
-          title: 'Introduccian Tecnolagica',
-          content: 'Visian de la solucian',
-          bullets: ['Problema identificado', 'Solucian propuesta', 'Impacto esperado']
+          title: 'Introducción Tecnológica',
+          content: 'Visión de la solución',
+          bullets: ['Problema identificado', 'Solución propuesta', 'Impacto esperado']
         },
         {
           title: 'Arquitectura del Sistema',
-          content: 'Componentes tacnicos',
+          content: 'Componentes técnicos',
           bullets: ['Frontend', 'Backend', 'Base de datos']
         },
         {
@@ -1139,24 +1139,24 @@ const App: React.FC = () => {
         },
         {
           title: 'Roadmap de Desarrollo',
-          content: 'Plan de implementaci?n',
-          bullets: ['Fase 1: MVP', 'Fase 2: Expansi?n', 'Fase 3: Optimizaci?n']
+          content: 'Plan de implementación',
+          bullets: ['Fase 1: MVP', 'Fase 2: Expansión', 'Fase 3: Optimización']
         },
         {
           title: 'Conclusiones',
           content: 'Resumen y praximos pasos',
-          bullets: ['Beneficios clave', 'Llamada a la accin', 'Contacto']
+          bullets: ['Beneficios clave', 'Llamada a la acción', 'Contacto']
         }
       ],
       'educacion': [
         {
-          title: 'Introduccian al Tema',
+          title: 'Introducción al Tema',
           content: 'Contexto y relevancia',
-          bullets: ['?Por qu es importante?', 'Objetivos de aprendizaje', 'Estructura del curso']
+          bullets: ['¿Por qué es importante?', 'Objetivos de aprendizaje', 'Estructura del curso']
         },
         {
           title: 'Conceptos Fundamentales',
-          content: 'Bases tearicas',
+          content: 'Bases teóricas',
           bullets: ['Definiciones clave', 'Principios basicos', 'Aplicaciones']
         },
         {
@@ -1249,7 +1249,7 @@ const App: React.FC = () => {
         slides.forEach((slide, idx) => {
           assistantResponse += `${idx + 1}. ${slide.title}\n`;
         });
-        assistantResponse += `\n? Presentacin lista. Escribe "mostrar presentacion" para verla.`;
+        assistantResponse += `\n✓ Presentación lista. Escribe "mostrar presentacion" para verla.`;
       }
       // ANALISIS de documentos - FUNCIONA CON ARCHIVOS
       else if ((lowerMessage.includes('analizar') || lowerMessage.includes('ANALISIS')) && uploadedFiles.length > 0) {
@@ -1278,9 +1278,9 @@ const App: React.FC = () => {
           const recipient = match[2];
           if (amount <= userBalance) {
             setUserBalance(userBalance - amount);
-            assistantResponse = `? TRANSFERENCIA COMPLETADA\n\nMonto: ${amount.toLocaleString()} XAF\nDestinatario: ${recipient}\nNuevo saldo: ${(userBalance - amount).toLocaleString()} XAF`;
+            assistantResponse = `✓ TRANSFERENCIA COMPLETADA\n\nMonto: ${amount.toLocaleString()} XAF\nDestinatario: ${recipient}\nNuevo saldo: ${(userBalance - amount).toLocaleString()} XAF`;
           } else {
-            assistantResponse = `? SALDO INSUFICIENTE\n\nNecesitas: ${amount.toLocaleString()} XAF\nTienes: ${userBalance.toLocaleString()} XAF\nFalta: ${(amount - userBalance).toLocaleString()} XAF`;
+            assistantResponse = `⚠ SALDO INSUFICIENTE\n\nNecesitas: ${amount.toLocaleString()} XAF\nTienes: ${userBalance.toLocaleString()} XAF\nFalta: ${(amount - userBalance).toLocaleString()} XAF`;
           }
         }
       }
@@ -1327,7 +1327,7 @@ const App: React.FC = () => {
       }
       // capacidades
       else if (lowerMessage.includes('capacidades') || lowerMessage.includes('que puedes hacer')) {
-        assistantResponse = `🤖 MIS CAPACIDADES\n\n💰 DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n📊 ANÁLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n? GENERACIN:\n- Presentaciones\n- Contenido\n- Reportes\n\n?? AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n?? NAVEGACIN:\n- Abrir vistas\n- Gestionar app\n\nQu necesitas?`;
+        assistantResponse = `🤖 MIS CAPACIDADES\n\n💰 DINERO:\n- Consultar saldo\n- Transferencias\n- Historial\n\n📊 ANÁLISIS:\n- Documentos\n- Sentimiento\n- Palabras clave\n\n📝 GENERACIÓN:\n- Presentaciones\n- Contenido\n- Reportes\n\n🎙 AUDIO:\n- Grabar comandos\n- Reproducir respuestas\n\n🧭 NAVEGACIÓN:\n- Abrir vistas\n- Gestionar app\n\n¿Qué necesitas?`;
       }
       // Ayuda
       else if (lowerMessage.includes('ayuda') || lowerMessage.includes('help')) {
@@ -1335,7 +1335,7 @@ const App: React.FC = () => {
       }
       // Fallback
       else {
-        assistantResponse = `? Entendido: "${userMessage}"\n\nPuedo ayudarte con:\n- Consultar saldo\n- Transferencias\n- Generar presentaciones\n- Analizar documentos\n- Ver noticias\n- Navegar la app\n\nQu deseas hacer?`;
+        assistantResponse = `✓ Entendido: "${userMessage}"\n\nPuedo ayudarte con:\n- Consultar saldo\n- Transferencias\n- Generar presentaciones\n- Analizar documentos\n- Ver noticias\n- Navegar la app\n\n¿Qué deseas hacer?`;
       }
 
       const newAssistantMessage = {
@@ -2449,7 +2449,8 @@ const App: React.FC = () => {
         // Fallback si WebRTC falla
         setActiveCall({ type, contact, status: 'calling' });
         setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
-        setTimeout(() => setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null), 2000);
+        // Solo pasar a 'connected' si la llamada sigue activa (no fue colgada)
+        setTimeout(() => setActiveCall(prev => prev && prev.contact?.id === contact?.id ? { ...prev, status: 'connected' } : prev), 2000);
       }
     } else {
       // Fallback simulado para chats demo
@@ -2462,7 +2463,8 @@ const App: React.FC = () => {
       } catch {}
       setActiveCall({ type, contact, status: 'calling' });
       setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
-      setTimeout(() => setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null), 2000);
+      // Solo pasar a 'connected' si la llamada sigue activa (no fue colgada)
+      setTimeout(() => setActiveCall(prev => prev && prev.contact?.id === contact?.id ? { ...prev, status: 'connected' } : prev), 2000);
     }
   };
 
@@ -2473,9 +2475,8 @@ const App: React.FC = () => {
     const key = chatId;
     const t = new Date();
     const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-    const durationStr = duration > 0 ? ` ? ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
-    const icon = type === 'video' ? '📹' : '📞';
-    const statusText = status === 'missed' ? '📵 Llamada perdida' : status === 'outgoing' ? `${icon} Llamada saliente${durationStr}` : `${icon} Llamada${durationStr}`;
+    const durationStr = duration > 0 ? ` · ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
+    const statusText = status === 'missed' ? 'Llamada perdida' : status === 'outgoing' ? `Llamada saliente${durationStr}` : `Llamada${durationStr}`;
     const msgId = `call_${Date.now()}`;
     const callMsg: any = {
       id: msgId,
@@ -2503,11 +2504,38 @@ const App: React.FC = () => {
       const status = activeCall.status === 'connected' ? 'completed' : 'outgoing';
       addCallRecord(activeCall.type, status, callDuration, activeCall.contact);
     }
-    try { webrtc.endCall(); } catch {}
-    if (localStream) { localStream.getTracks().forEach(t => { try { t.stop(); } catch {} }); setLocalStream(null); }
-    if (remoteVideoRef.current) { remoteVideoRef.current.srcObject = null; }
-    if (localVideoRef.current) { localVideoRef.current.srcObject = null; }
-    setActiveCall(null); setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
+    try { webrtc.endCall(); } catch (e) { console.warn('endCall error:', e); }
+    // Limpiar todos los streams y estado completamente
+    if (localStream) { 
+      localStream.getTracks().forEach(t => { 
+        try { t.stop(); } catch {} 
+      }); 
+      setLocalStream(null); 
+    }
+    if (webrtc.localStream) {
+      webrtc.localStream.getTracks().forEach(t => {
+        try { t.stop(); } catch {}
+      });
+    }
+    // Limpiar video elements
+    if (remoteVideoRef.current) { 
+      remoteVideoRef.current.srcObject = null; 
+      remoteVideoRef.current.pause();
+    }
+    if (localVideoRef.current) { 
+      localVideoRef.current.srcObject = null;
+      localVideoRef.current.pause();
+    }
+    // Limpiar audio element
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+      remoteAudioRef.current.pause();
+    }
+    // Forzar cierre inmediato de la ventana de llamada
+    setActiveCall(null); 
+    setCallDuration(0); 
+    setIsMuted(false); 
+    setIsCameraOff(false);
   };
 
   // Temporizador de llamada
@@ -2521,9 +2549,10 @@ const App: React.FC = () => {
   const formatCallDuration = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   // Pantalla de llamada activa
-  // Refs estables para los elementos de video (evitan parpadeo)
+  // Refs estables para los elementos de video/audio (evitan parpadeo)
   const remoteVideoRef = React.useRef<HTMLVideoElement | null>(null);
   const localVideoRef = React.useRef<HTMLVideoElement | null>(null);
+  const remoteAudioRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Callback refs que asignan el stream en cuanto el elemento se monta
   const setRemoteVideoRef = React.useCallback((el: HTMLVideoElement | null) => {
@@ -2551,6 +2580,14 @@ const App: React.FC = () => {
     }
   }, [webrtc.remoteStream]);
 
+  // Sincronizar audio remoto cuando llega el stream (fix: audio no suena tras reconexión)
+  React.useEffect(() => {
+    if (remoteAudioRef.current && webrtc.remoteStream) {
+      remoteAudioRef.current.srcObject = webrtc.remoteStream;
+      remoteAudioRef.current.play().catch(() => {});
+    }
+  }, [webrtc.remoteStream]);
+
   React.useEffect(() => {
     const s = webrtc.localStream || localStream;
     if (localVideoRef.current && s) {
@@ -2563,8 +2600,8 @@ const App: React.FC = () => {
     if (!activeCall) return null;
     const { type, contact, status } = activeCall;
     const color = contact?.color || '#00c8a0';
-    // Nombre correcto: title > name > subtitle (evitar IDs)
-    const rawName = contact?.title || contact?.name || contact?.subtitle || '';
+    // Nombre correcto: priorizar full_name de users, luego title/name/subtitle (evitar IDs)
+    const rawName = contact?.users?.full_name || contact?.full_name || contact?.title || contact?.name || contact?.subtitle || '';
     const name = rawName && !rawName.match(/^[0-9a-f-]{20,}$/i) ? rawName : 'Contacto';
     const initials = name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'EG';
 
@@ -2585,6 +2622,20 @@ const App: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Audio remoto - Elemento oculto para reproducción de audio */}
+        <audio
+          ref={(el) => {
+            remoteAudioRef.current = el;
+            if (el && webrtc.remoteStream) {
+              el.srcObject = webrtc.remoteStream;
+              el.play().catch(() => {});
+            }
+          }}
+          autoPlay
+          playsInline
+          style={{ display: 'none' }}
+        />
 
         {/* Video local (esquina) */}
         {type === 'video' && !isCameraOff && (
@@ -2617,22 +2668,35 @@ const App: React.FC = () => {
         </div>
 
         {/* Controles */}
-        <div style={{ position: 'absolute', bottom: '60px', width: '100%', display: 'flex', justifyContent: 'center', gap: '20px', zIndex: 5 }}>
+        <div style={{ position: 'absolute', bottom: '60px', width: '100%', display: 'flex', justifyContent: 'center', gap: '28px', zIndex: 5, paddingLeft: '16px', paddingRight: '16px' }}>
           {/* Silenciar */}
           <button onClick={() => {
             webrtc.toggleMute();
             setIsMuted(m => !m);
-          }} style={{ width: '56px', height: '56px', borderRadius: '50%', background: isMuted ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: `2px solid ${isMuted ? '#f87171' : 'rgba(255,255,255,0.3)'}`, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              {isMuted ? <><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></> : <><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></>}
-            </svg>
+          }} title={isMuted ? "Activar micrófono" : "Silenciar"} style={{ width: '60px', height: '60px', borderRadius: '50%', background: isMuted ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: isMuted ? '1.5px solid rgba(239,68,68,0.5)' : '1.5px solid rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', transition: 'all 0.2s ease', backdropFilter: 'blur(12px)', flexDirection: 'column', gap: '4px' }}>
+            {isMuted ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            )}
           </button>
 
-          {/* Colgar */}
-          <button onClick={endCall} style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ef4444', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', boxShadow: '0 4px 16px rgba(239,68,68,0.5)' }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.26 9.91 19.79 19.79 0 0 1 1.19 1.28 2 2 0 0 1 3.17-.72h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.15 7.19"/>
-              <line x1="23" y1="1" x2="1" y2="23"/>
+          {/* Colgar - Botón Principal */}
+          <button onClick={endCall} title="Terminar llamada" style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff3b30, #c0392b)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', boxShadow: '0 6px 24px rgba(255,59,48,0.5)', transition: 'all 0.2s ease' }}>
+            {/* Ícono teléfono colgado - rotado 135° estilo moderno */}
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" transform="rotate(135 12 12)"/>
             </svg>
           </button>
 
@@ -2641,18 +2705,30 @@ const App: React.FC = () => {
             <button onClick={() => {
               setIsCameraOff(c => !c);
               localStream?.getVideoTracks().forEach(t => { t.enabled = isCameraOff; });
-            }} style={{ width: '56px', height: '56px', borderRadius: '50%', background: isCameraOff ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: `2px solid ${isCameraOff ? '#f87171' : 'rgba(255,255,255,0.3)'}`, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {isCameraOff ? <><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></> : <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></>}
-              </svg>
+            }} title={isCameraOff ? "Activar cámara" : "Desactivar cámara"} style={{ width: '60px', height: '60px', borderRadius: '50%', background: isCameraOff ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: isCameraOff ? '1.5px solid rgba(239,68,68,0.5)' : '1.5px solid rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', transition: 'all 0.2s ease', backdropFilter: 'blur(12px)' }}>
+              {isCameraOff ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                  <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/>
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2"/>
+                </svg>
+              )}
             </button>
           )}
 
           {/* Altavoz (solo audio) */}
           {type === 'audio' && (
-            <button style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <button onClick={() => {
+              // Toggle speaker
+            }} title="Altavoz" style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', transition: 'all 0.2s ease', backdropFilter: 'blur(12px)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
               </svg>
             </button>
           )}
@@ -2719,7 +2795,7 @@ const App: React.FC = () => {
       { key: 'name', label: 'Nombre completo', icon: 'contactos' },
       { key: 'email', label: 'Email', icon: 'message-square' },
       { key: 'phone', label: 'Teléfono', icon: 'phone' },
-      { key: 'country', label: 'Pas', icon: 'world' },
+      { key: 'country', label: 'País', icon: 'world' },
       { key: 'city', label: 'Ciudad', icon: 'building' },
       { key: 'address', label: 'dirección', icon: 'briefcase' },
     ];
@@ -2782,7 +2858,7 @@ const App: React.FC = () => {
                 <div style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '6px', fontFamily: 'monospace' }}>ID: {userProfile.id ? userProfile.id.slice(0,8).toUpperCase() : '?'}</div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '13px', fontWeight: '600', color: '#00c8a0', background: 'rgba(0,200,160,0.15)', border: '1px solid rgba(0,200,160,0.3)', borderRadius: '10px', padding: '2px 8px' }}>
-                    ? Verificado
+                    ✓ Verificado
                   </span>
                   <span style={{ fontSize: '13px', color: '#6b7280', background: 'rgba(249,250,251,0.88)', borderRadius: '10px', padding: '2px 8px' }}>
                     Desde {userProfile.joinDate}
@@ -2910,7 +2986,10 @@ const App: React.FC = () => {
       { id:'salir',           label:'Cerrar sesión',        sub:'Salir de tu cuenta',           icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>, color:'#EF4444' },
     ];
     return (
-      <div style={{ position:'fixed', top:'56px', right:'8px', width:'230px', background:'rgba(255,255,255,0.35)', backdropFilter:'blur(28px) saturate(200%)', WebkitBackdropFilter:'blur(28px) saturate(200%)', borderRadius:'16px', border:'1.5px solid rgba(255,255,255,0.6)', boxShadow:'0 8px 32px rgba(0,0,0,0.15)', zIndex:1001, overflow:'hidden' }}>
+      <>
+        {/* Overlay para cerrar al tocar fuera */}
+        <div style={{ position:'fixed', inset:0, zIndex:1000 }} onClick={() => setShowMenu(false)} />
+        <div style={{ position:'fixed', top:'56px', right:'8px', width:'230px', background:'rgba(255,255,255,0.35)', backdropFilter:'blur(28px) saturate(200%)', WebkitBackdropFilter:'blur(28px) saturate(200%)', borderRadius:'16px', border:'1.5px solid rgba(255,255,255,0.6)', boxShadow:'0 8px 32px rgba(0,0,0,0.15)', zIndex:1001, overflow:'hidden' }}>
         {/* Header del men  solo avatar, sin nombre */}
         <div style={{ padding:'12px 14px 10px', borderBottom:'1px solid rgba(0,0,0,0.06)', display:'flex', alignItems:'center', gap:'10px' }}>
           <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:'800', color:'#fff', flexShrink:0, overflow:'hidden' }}>
@@ -2921,7 +3000,7 @@ const App: React.FC = () => {
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:'12px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{userProfile.name}</div>
-            <div style={{ fontSize:'10px', color:'#00c8a0', fontWeight:'600' }}>? En línea</div>
+            <div style={{ fontSize:'10px', color:'#00c8a0', fontWeight:'600' }}>● En línea</div>
           </div>
         </div>
         {/* Items */}
@@ -2958,6 +3037,7 @@ const App: React.FC = () => {
           </button>
         ))}
       </div>
+      </>
     );
   };
 
@@ -2997,7 +3077,7 @@ const App: React.FC = () => {
                   try {
                     const phone = newContactPhone.startsWith('+') ? newContactPhone : '+240' + newContactPhone.replace(/\D/g, '').slice(-9);
                     await contactsAPI.add(undefined, phone, newContactName.trim() || undefined);
-                    showToast('? Contacto aadido', 'success');
+                    showToast('✓ Contacto añadido', 'success');
                     setShowAddContact(false);
                     setNewContactPhone(''); setNewContactName('');
                     await loadContacts();
@@ -3166,7 +3246,7 @@ const App: React.FC = () => {
               }
             }}
             style={{ width: '100%', background: groupName.trim() && groupMembers.length > 0 ? 'linear-gradient(135deg,#a855f7,#6366f1)' : '#e5e7eb', border: 'none', borderRadius: '12px', padding: '14px', color: groupName.trim() && groupMembers.length > 0 ? '#fff' : '#9ca3af', fontSize: '15px', fontWeight: '700', cursor: groupName.trim() && groupMembers.length > 0 ? 'pointer' : 'default', outline: 'none', transition: 'all 0.2s' }}>
-            {groupMembers.length > 0 ? `? Crear grupo (${groupMembers.length + 1} miembros)` : 'Selecciona al menos 1 contacto'}
+            {groupMembers.length > 0 ? `✓ Crear grupo (${groupMembers.length + 1} miembros)` : 'Selecciona al menos 1 contacto'}
           </button>
         </div>
       </div>
@@ -4156,8 +4236,8 @@ const App: React.FC = () => {
         <div className="scroll-container" style={{ flex: 1, overflowY: 'scroll', paddingBottom: '100px' }}>
           <div style={{ height: '8px', background: '#F7F8FA' }} />
 
-          {/* B?SICOS */}
-          <Section title="B?sicos">
+          {/* BÁSICOS */}
+          <Section title="Básicos">
             <Btn label="Recarga Tel." icon="recharge" color="#07C160" onClick={() => { setShowRechargeModal(true); }} />
             <Btn label="Internet" icon="world" color="#1485EE" onClick={() => { setShowInternetModal(true); }} />
             <Btn label="Canales" icon="services" color="#8B5CF6" onClick={() => { setCanalesScreen('home'); setShowCanalesModal(true); }} />
@@ -4171,12 +4251,12 @@ const App: React.FC = () => {
             <Btn label="Historial" icon="historial" color="#5A7090" onClick={() => setCurrentView('historial-completo')} />
           </Section>
 
-          {/* SERVICIOS P?BLICOS */}
-          <Section title="Servicios Pblicos">
+          {/* SERVICIOS PÚBLICOS */}
+          <Section title="Servicios Públicos">
             <Btn label="Electricidad" icon="electricidad" color="#C47D2A" onClick={() => { setShowSvcModal('elec'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Agua" icon="rain" color="#1485EE" onClick={() => { setShowSvcModal('agua'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Salud" icon="salud" color="#C0392B" onClick={() => setShowSaludModal(true)} />
-            <Btn label="Educaci?n" icon="edu" color="#6B5BD6" onClick={() => { setShowSvcModal('edu'); setSvcStep('main'); setSvcData({}); }} />
+            <Btn label="Educación" icon="edu" color="#6B5BD6" onClick={() => { setShowSvcModal('edu'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Transporte" icon="transp" color="#2E9E6B" onClick={() => { setShowSvcModal('transp'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Correos" icon="mensajes" color="#C47D2A" onClick={() => { setShowSvcModal('correos'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Impuestos" icon="gobierno" color="#C0392B" onClick={() => { setShowSvcModal('impuestos'); setSvcStep('main'); setSvcData({}); }} />
@@ -4192,7 +4272,7 @@ const App: React.FC = () => {
             <Btn label="Hotel" icon="hotel" color="#1485EE" onClick={() => { setShowSvcModal('hotel'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Vuelos" icon="vuelos" color="#6B5BD6" onClick={() => { setShowSvcModal('vuelos'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Tienda" icon="tienda" color="#2E9E6B" onClick={() => { setShowSvcModal('tienda'); setSvcStep('main'); setSvcData({}); }} />
-            <Btn label="Lavander?a" icon="lavanderia" color="#1485EE" onClick={() => { setShowSvcModal('lavanderia'); setSvcStep('main'); setSvcData({}); }} />
+            <Btn label="Lavandería" icon="lavanderia" color="#1485EE" onClick={() => { setShowSvcModal('lavanderia'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Belleza" icon="belleza" color="#C0392B" onClick={() => { setShowSvcModal('belleza'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Gasolinera" icon="gasolinera" color="#C47D2A" onClick={() => { setShowSvcModal('gasolinera'); setSvcStep('main'); setSvcData({}); }} />
             <Btn label="Noticias" icon="noticias" color="#6B5BD6" onClick={() => { setShowSvcModal('noticias'); setSvcStep('main'); setSvcData({}); }} />
@@ -4652,7 +4732,7 @@ const App: React.FC = () => {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{fileName}</div>
                                 <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{fileSize}{fileSize ? ' ? ' : ''}{ext.toUpperCase()}</div>
-                                <div style={{ fontSize: '11px', color: extColor, marginTop: '3px', fontWeight: '600' }}>{fileUrl ? '? Descargar' : 'Archivo'}</div>
+                                <div style={{ fontSize: '11px', color: extColor, marginTop: '3px', fontWeight: '600' }}>{fileUrl ? '↓ Descargar' : 'Archivo'}</div>
                               </div>
                             </div>
                           );
@@ -4749,7 +4829,7 @@ const App: React.FC = () => {
                                 <div style={{ flex: 1 }}>
                                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>{name}</div>
                                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '1px' }}>{phone}</div>
-                                  {isAlreadyContact && <div style={{ fontSize: '11px', color: '#00c8a0', fontWeight: '600', marginTop: '2px' }}>? En tus contactos</div>}
+                                  {isAlreadyContact && <div style={{ fontSize: '11px', color: '#00c8a0', fontWeight: '600', marginTop: '2px' }}>✓ En tus contactos</div>}
                                 </div>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                               </div>
@@ -4987,7 +5067,7 @@ const App: React.FC = () => {
                           const amountStr = window.prompt(`Enviar dinero a ${sc.title}\n\nIngresa el monto en XAF:`);
                           if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) return;
                           const amount = Number(amountStr);
-                          if (amount > userBalance) { showToast('? Saldo insuficiente', 'error'); return; }
+                          if (amount > userBalance) { showToast('⚠ Saldo insuficiente', 'error'); return; }
                           const code = Math.floor(100000 + Math.random() * 900000).toString();
                           const t = new Date();
                           const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -5800,7 +5880,7 @@ const App: React.FC = () => {
               </h2>
             </div>
 
-            {/* Tarjeta de Balance Principal - EST?TICA */}
+          {/* Tarjeta de Balance Principal - ESTÁTICA */}
             <div style={{ padding: '0 14px', flexShrink: 0 }}>
               <div style={{
                 background: 'linear-gradient(135deg, #1A3A6B 0%, #0E5F8A 50%, #0A7A8A 100%)',
@@ -6706,7 +6786,7 @@ const App: React.FC = () => {
                     color: contact.status === 'online' ? '#00c8a0' : contact.status === 'away' ? '#f59e0b' : '#9ca3af',
                     flexShrink: 0
                   }}>
-                    {contact.status === 'online' ? '📌 En línea' : contact.status === 'away' ? '📌 Ausente' : '? Desconectado'}
+                    {contact.status === 'online' ? '● En línea' : contact.status === 'away' ? '● Ausente' : '○ Desconectado'}
                   </div>
                 </button>
               ))}
@@ -7228,9 +7308,9 @@ const App: React.FC = () => {
                                 if (tone.type === 'message') updateSoundSetting('messageTone', tone.id);
                                 else if (tone.type === 'ringtone') updateSoundSetting('ringtone', tone.id);
                                 else updateSoundSetting('notificationTone', tone.id);
-                                showToast(`? "${tone.name}" activado`, 'success');
+                                showToast(`♪ "${tone.name}" activado`, 'success');
                               }} style={{ background: isActive ? color : '#f3f4f6', border:'none', borderRadius:'6px', padding:'5px 8px', cursor:'pointer', fontSize:'11px', fontWeight:'700', color: isActive ? '#fff' : '#374151' }}>
-                                {isActive ? '? Activo' : 'Usar'}
+                                {isActive ? '✓ Activo' : 'Usar'}
                               </button>
                               {/* Eliminar */}
                               <button onClick={() => {
@@ -7340,7 +7420,7 @@ const App: React.FC = () => {
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.phone}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Pa?s</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>País</div>
                         <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>{userProfile.country}</div>
                       </div>
                       <div>
@@ -7362,7 +7442,7 @@ const App: React.FC = () => {
                     padding: '12px'
                   }}>
                     <div style={{ fontSize: '14px', fontWeight: '600', color: userProfile.verificationStatus === 'verified' ? '#00c8a0' : '#f59e0b', marginBottom: '4px' }}>
-                      {userProfile.verificationStatus === 'verified' ? '? Verificado' : userProfile.verificationStatus === 'pending' ? '⏳ Pendiente' : '? No Verificado'}
+                      {userProfile.verificationStatus === 'verified' ? '✓ Verificado' : userProfile.verificationStatus === 'pending' ? '⏳ Pendiente' : '○ No Verificado'}
                     </div>
                     <div style={{ fontSize: '13px', color: '#374151' }}>
                       Miembro desde {userProfile.joinDate}
@@ -7425,14 +7505,14 @@ const App: React.FC = () => {
                             return;
                           }
                           if (Notification.permission === 'denied') {
-                            alert('Las notificaciones están bloqueadas. Ve a los ajustes del navegador ? Permisos del sitio ? Notificaciones ? Permitir para egchat-app.vercel.app');
+                    alert('Las notificaciones están bloqueadas. Ve a los ajustes del navegador → Permisos del sitio → Notificaciones → Permitir para egchat-app.vercel.app');
                             return;
                           }
                           const perm = await Notification.requestPermission();
                           if (perm === 'granted') {
                             if (typeof (window as any).__egchat_registerPush === 'function') {
                               await (window as any).__egchat_registerPush();
-                              showToast('? Notificaciones push activadas', 'success');
+                              showToast('✓ Notificaciones push activadas', 'success');
                             }
                           } else {
                             showToast('Permiso denegado', 'error');
@@ -7783,8 +7863,10 @@ const App: React.FC = () => {
       setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
     }
     if (webrtc.callState === 'ended') {
-      stopDialingTone(); stopRingtone(); playCallEnded();
-      setActiveCall(null); setCallDuration(0);
+      stopDialingTone(); stopRingtone();
+      // Solo limpiar si no fue ya limpiado por endCall()
+      setActiveCall(prev => { if (prev) playCallEnded(); return null; });
+      setCallDuration(0);
     }
   }, [webrtc.callState]);
 
@@ -8178,7 +8260,7 @@ const App: React.FC = () => {
                   ),
                   label: 'Copiar',
                   sub: 'Copiar texto',
-                  action: () => { navigator.clipboard?.writeText(msgContextMenu.msg.text || ''); showToast('? Copiado', 'success'); setMsgContextMenu(null); }
+                  action: () => { navigator.clipboard?.writeText(msgContextMenu.msg.text || ''); showToast('✓ Copiado', 'success'); setMsgContextMenu(null); }
                 },
                 {
                   icon: (
@@ -8201,7 +8283,7 @@ const App: React.FC = () => {
                   action: () => {
                     const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                     setStarredMessages(prev => ({ ...prev, [cid]: [...(prev[cid]||[]), msgContextMenu.msg.id] }));
-                    showToast('? Mensaje destacado', 'success'); setMsgContextMenu(null);
+                    showToast('★ Mensaje destacado', 'success'); setMsgContextMenu(null);
                   }
                 },
                 {
@@ -9310,7 +9392,7 @@ const App: React.FC = () => {
                     <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     </div>
-                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Educaci?n</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Pagos educativos ? Guinea Ecuatorial</div></div>
+                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Educación</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Pagos educativos · Guinea Ecuatorial</div></div>
                   </div>
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
@@ -9365,7 +9447,7 @@ const App: React.FC = () => {
                     <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                     </div>
-                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Transporte</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Billetes y abonos ? Guinea Ecuatorial</div></div>
+                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Transporte</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Billetes y abonos · Guinea Ecuatorial</div></div>
                   </div>
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
@@ -9504,7 +9586,7 @@ const App: React.FC = () => {
               <div style={{ padding:'14px 16px 24px' }}>
                 <div style={{ background:'linear-gradient(135deg,#1B3A6B,#2A5298)', borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div>
-                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>dirección General de Impuestos ? GQ</div>
+                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>Dirección General de Impuestos · GQ</div>
                 </div>
                 {[{key:'nif',placeholder:'NIF / DNI del contribuyente',type:'text',icon:'👤'},{key:'ref',placeholder:'Referencia de pago / expediente',type:'text',icon:'📋'},{key:'period',placeholder:'Per?odo fiscal (ej: 2025)',type:'text',icon:'📋'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
@@ -9543,11 +9625,11 @@ const App: React.FC = () => {
                     restaurante: { title:'Restaurantes', sub:'Reservas y pedidos para llevar', grad:'linear-gradient(135deg,#92400E,#F59E0B)',
                       items:[{id:'a',label:'Reserva de Mesa',sub:'Para hoy o ma?ana',price:'Gratis',color:'#F59E0B'},{id:'b',label:'Pedido para Llevar',sub:'Listo en 20 min',price:'Sin cargo',color:'#00c8a0'},{id:'c',label:'Men Empresarial',sub:'Grupos +10 personas',price:'Consultar',color:'#1485EE'}]},
                     tienda: { title:'Tiendas Online', sub:'Ropa, electrnica, hogar ? Env?o a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
-                      items:[{id:'a',label:'Ropa y Moda',sub:'Env?o a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electrnica',sub:'Garant?a incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoraci?n',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
-                    lavanderia: { title:'Lavander?a', sub:'Recogida y entrega a domicilio', grad:'linear-gradient(135deg,#0A4A8A,#00b4e6)',
-                      items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h ? Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorer?a',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
-                    belleza: { title:'Belleza y Bienestar', sub:'Peluquer?as, esttica y spa', grad:'linear-gradient(135deg,#831843,#EC4899)',
-                      items:[{id:'a',label:'Peluquer?a',sub:'Corte, peinado, color',price:'5,000 XAF',color:'#EC4899'},{id:'b',label:'Esttica',sub:'Manicura, pedicura, depilaci?n',price:'8,000 XAF',color:'#F59E0B'},{id:'c',label:'Spa & Masajes',sub:'Relajaci?n y bienestar',price:'15,000 XAF',color:'#6B5BD6'},{id:'d',label:'Barber?a',sub:'Corte y arreglo de barba',price:'3,000 XAF',color:'#00b4e6'}]},
+                      items:[{id:'a',label:'Ropa y Moda',sub:'Envío a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electrónica',sub:'Garantía incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoración',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
+                    lavanderia: { title:'Lavandería', sub:'Recogida y entrega a domicilio', grad:'linear-gradient(135deg,#0A4A8A,#00b4e6)',
+                      items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h · Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorería',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
+                    belleza: { title:'Belleza y Bienestar', sub:'Peluquerías, estética y spa', grad:'linear-gradient(135deg,#831843,#EC4899)',
+                      items:[{id:'a',label:'Peluquería',sub:'Corte, peinado, color',price:'5,000 XAF',color:'#EC4899'},{id:'b',label:'Estética',sub:'Manicura, pedicura, depilación',price:'8,000 XAF',color:'#F59E0B'},{id:'c',label:'Spa & Masajes',sub:'Relajación y bienestar',price:'15,000 XAF',color:'#6B5BD6'},{id:'d',label:'Barbería',sub:'Corte y arreglo de barba',price:'3,000 XAF',color:'#00b4e6'}]},
                   };
                   const c = cfg[showSvcModal!] || cfg.super;
                   return (
@@ -9903,7 +9985,7 @@ const App: React.FC = () => {
                 <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', boxShadow:'0 8px 24px rgba(0,200,160,0.3)' }}>
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <div style={{ fontSize:'20px', fontWeight:'800', color:'#111827', marginBottom:'8px' }}>?Solicitud enviada!</div>
+                <div style={{ fontSize:'20px', fontWeight:'800', color:'#111827', marginBottom:'8px' }}>¡Solicitud enviada!</div>
                 <div style={{ fontSize:'13px', color:'#9CA3AF', marginBottom:'20px', lineHeight:'1.5', padding:'0 16px' }}>
                   {svcData.action || 'La operación se ha procesado correctamente'}
                 </div>

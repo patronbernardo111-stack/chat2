@@ -62,6 +62,7 @@ export type CallState = 'idle' | 'calling' | 'ringing' | 'connected' | 'ended';
 export function useWebRTC() {
   const pc = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const callIdRef = useRef<string>('');
   const roleRef = useRef<'caller' | 'callee'>('caller');
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -109,10 +110,15 @@ export function useWebRTC() {
       rtcpMuxPolicy: 'require',
     });
 
-    // Recibir stream remoto
+  // Recibir stream remoto
     p.ontrack = (e) => {
       const stream = e.streams[0] || new MediaStream([e.track]);
       setRemoteStream(stream);
+      // Reproducir audio remoto automáticamente
+      if (e.track.kind === 'audio' && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = stream;
+        remoteAudioRef.current.play().catch(err => console.warn('Audio playback failed:', err));
+      }
     };
 
     // Monitorear estado de conexión
@@ -388,9 +394,20 @@ export function useWebRTC() {
     return () => { cleanup(); };
   }, [cleanup]);
 
+  // Exponer referencia de audio remoto
+  const getRemoteAudioRef = useCallback(() => {
+    if (!remoteAudioRef.current) {
+      remoteAudioRef.current = new Audio();
+      remoteAudioRef.current.autoplay = true;
+      remoteAudioRef.current.playsInline = true;
+    }
+    return remoteAudioRef.current;
+  }, []);
+
   return {
     callState, callType, isMuted, isCamOff,
     localStream, remoteStream,
     startCall, answerCall, endCall, toggleMute, toggleCamera, pollIncoming,
+    getRemoteAudioRef,
   };
 }
