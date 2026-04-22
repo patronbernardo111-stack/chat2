@@ -221,8 +221,8 @@ export const ChatConversation: React.FC<Props> = ({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '8px 8px 8px 4px',
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '4px 4px 4px 2px',
       }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -239,23 +239,23 @@ export const ChatConversation: React.FC<Props> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '2px' }}>
+        <div style={{ display: 'flex', gap: '0px', marginLeft: 'auto' }}>
           {onStartCall && (
             <>
-              <button onClick={() => onStartCall('audio')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+              <button onClick={() => onStartCall('audio')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               </button>
-              <button onClick={() => onStartCall('video')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+              <button onClick={() => onStartCall('video')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
               </button>
             </>
           )}
           {onOpenCamera && (
-            <button onClick={onOpenCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+            <button onClick={onOpenCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>
           )}
-          <button onClick={() => setShowMenu(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+          <button onClick={() => setShowMenu(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
         </div>
