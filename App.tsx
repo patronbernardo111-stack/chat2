@@ -1588,14 +1588,15 @@ const App: React.FC = () => {
       case 'estados':
         return (
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="8" r="3.5"/>
-            <path d="M12 4.5 A7.5 7.5 0 1 1 11.99 4.5" strokeDasharray="3.5 1.5" strokeWidth="2"/>
-            <circle cx="6" cy="19" r="2.2"/>
-            <circle cx="12" cy="19" r="2.2"/>
-            <circle cx="18" cy="19" r="2.2"/>
-            <line x1="6" y1="16.8" x2="6" y2="14"/>
-            <line x1="12" y1="16.8" x2="12" y2="14"/>
-            <line x1="18" y1="16.8" x2="18" y2="14"/>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="M4.93 4.93l1.41 1.41"/>
+            <path d="M17.66 17.66l1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="M4.93 19.07l1.41-1.41"/>
+            <path d="M17.66 6.34l1.41-1.41"/>
           </svg>
         );
       case 'apuestas':
