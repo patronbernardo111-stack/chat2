@@ -19,6 +19,7 @@ import { AvatarCropModal } from './AvatarCropModal';
 import { QRScanner } from './QRScanner';
 import { QRCodeSVG } from 'qrcode.react';
 import { RestaurantesModule, VuelosModule, GasolinerasModule } from './ServiciosDiarios';
+import { GroupProfileModal } from './GroupProfileModal';
 import { useWebRTC } from './useWebRTC';
 import { playMessageReceived, playMessageSent, playNotification, startRingtone, stopRingtone, startDialingTone, stopDialingTone, playCallConnected, playCallEnded, playError, playSuccess, vibrate, unlockAudio, getSoundSettings, saveSoundSettings, MESSAGE_TONES, RINGTONES, NOTIFICATION_TONES, type SoundSettings } from './useSounds';
 
@@ -1589,14 +1590,7 @@ const App: React.FC = () => {
         return (
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2"/>
-            <path d="M12 20v2"/>
-            <path d="M4.93 4.93l1.41 1.41"/>
-            <path d="M17.66 17.66l1.41 1.41"/>
-            <path d="M2 12h2"/>
-            <path d="M20 12h2"/>
-            <path d="M4.93 19.07l1.41-1.41"/>
-            <path d="M17.66 6.34l1.41-1.41"/>
+            <circle cx="12" cy="12" r="9" strokeDasharray="2.5 2" strokeWidth="1.5"/>
           </svg>
         );
       case 'apuestas':
@@ -3306,68 +3300,110 @@ const App: React.FC = () => {
 
   // Catalogo de wallpapers
   const wallpapers = [
-    // -- ESTaTICOS ------------------------------------------------------
-    { id: 'none',    label: 'Sin fondo',         type: 'none',   emoji: '', category: 'static' },
+    // -- SIN FONDO ------------------------------------------------------
+    { id: 'none', label: 'Sin fondo', type: 'none', emoji: '', category: 'static' },
+    // -- CRISTALINOS / SUAVES -------------------------------------------
     {
-      id: 'static-malabo', label: 'Malabo de Noche', type: 'css', category: 'static', emoji: '',
+      id: 'crystal-mint', label: 'Menta Cristal', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #e0fdf4 0%, #ccfbf1 30%, #a7f3d0 60%, #d1fae5 100%)',
+      overlay: `radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.6) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(0,200,160,0.15) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-sky', label: 'Cielo Suave', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #eff6ff 0%, #dbeafe 35%, #bfdbfe 65%, #e0f2fe 100%)',
+      overlay: `radial-gradient(ellipse at 60% 10%, rgba(255,255,255,0.7) 0%, transparent 50%), radial-gradient(ellipse at 20% 90%, rgba(147,197,253,0.3) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-rose', label: 'Rosa Pétalo', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #fff1f2 0%, #ffe4e6 35%, #fecdd3 65%, #fce7f3 100%)',
+      overlay: `radial-gradient(ellipse at 40% 20%, rgba(255,255,255,0.65) 0%, transparent 50%), radial-gradient(ellipse at 80% 75%, rgba(251,113,133,0.12) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-lavender', label: 'Lavanda', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #f5f3ff 0%, #ede9fe 35%, #ddd6fe 65%, #f0e6ff 100%)',
+      overlay: `radial-gradient(ellipse at 50% 15%, rgba(255,255,255,0.6) 0%, transparent 50%), radial-gradient(ellipse at 25% 80%, rgba(167,139,250,0.15) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-peach', label: 'Melocotón', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #fff7ed 0%, #ffedd5 35%, #fed7aa 65%, #fef3c7 100%)',
+      overlay: `radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.65) 0%, transparent 50%), radial-gradient(ellipse at 75% 70%, rgba(251,146,60,0.12) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-aqua', label: 'Aqua Cristal', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #ecfeff 0%, #cffafe 35%, #a5f3fc 65%, #e0f7fa 100%)',
+      overlay: `radial-gradient(ellipse at 55% 15%, rgba(255,255,255,0.65) 0%, transparent 50%), radial-gradient(ellipse at 20% 85%, rgba(6,182,212,0.15) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-sand', label: 'Arena Clara', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #fefce8 0%, #fef9c3 35%, #fef08a 55%, #fefce8 100%)',
+      overlay: `radial-gradient(ellipse at 40% 20%, rgba(255,255,255,0.6) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(234,179,8,0.1) 0%, transparent 45%)`
+    },
+    {
+      id: 'crystal-white', label: 'Blanco Puro', type: 'css', category: 'crystal',
+      bg: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)',
+      overlay: `radial-gradient(ellipse at 50% 50%, rgba(0,200,160,0.05) 0%, transparent 70%)`
+    },
+    // -- ESTÁTICOS OSCUROS ----------------------------------------------
+    {
+      id: 'static-malabo', label: 'Malabo Noche', type: 'css', category: 'static',
       bg: 'linear-gradient(170deg, #020617 0%, #0f172a 45%, #1e1b4b 75%, #0f172a 100%)',
       overlay: `radial-gradient(ellipse at 50% 85%, rgba(0,200,160,0.18) 0%, transparent 55%), radial-gradient(ellipse at 20% 30%, rgba(0,180,230,0.12) 0%, transparent 40%)`,
       stars: true
     },
     {
-      id: 'static-sunset', label: 'Atardecer GQ', type: 'css', category: 'static', emoji: '',
+      id: 'static-sunset', label: 'Atardecer GQ', type: 'css', category: 'static',
       bg: 'linear-gradient(170deg, #1e3a5f 0%, #7c2d12 25%, #c2410c 50%, #ea580c 70%, #fbbf24 90%, #fef3c7 100%)',
       overlay: `radial-gradient(ellipse at 50% 95%, rgba(251,191,36,0.3) 0%, transparent 50%)`
     },
     {
-      id: 'static-forest', label: 'Selva Ecuatorial', type: 'css', category: 'static', emoji: '',
+      id: 'static-forest', label: 'Selva Ecuatorial', type: 'css', category: 'static',
       bg: 'linear-gradient(170deg, #052e16 0%, #14532d 30%, #166534 60%, #15803d 80%, #052e16 100%)',
       overlay: `radial-gradient(ellipse at 30% 20%, rgba(74,222,128,0.2) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(0,200,160,0.15) 0%, transparent 40%)`
     },
     {
-      id: 'static-ocean', label: 'Ocano Atlntico', type: 'css', category: 'static', emoji: '',
+      id: 'static-ocean', label: 'Océano Atlántico', type: 'css', category: 'static',
       bg: 'linear-gradient(170deg, #0c4a6e 0%, #0369a1 35%, #0284c7 60%, #0ea5e9 80%, #38bdf8 100%)',
       overlay: `radial-gradient(ellipse at 50% 100%, rgba(56,189,248,0.25) 0%, transparent 50%)`
     },
     {
-      id: 'static-aurora', label: 'Aurora con Logo', type: 'css', category: 'static', emoji: '',
+      id: 'static-aurora', label: 'Aurora con Logo', type: 'css', category: 'static',
       bg: 'linear-gradient(135deg, #0f172a 0%, #064e3b 30%, #1e3a5f 60%, #0f172a 100%)',
       overlay: `radial-gradient(ellipse at 50% 40%, rgba(0,200,160,0.35) 0%, transparent 55%), radial-gradient(ellipse at 30% 60%, rgba(0,180,230,0.25) 0%, transparent 45%)`,
       logo: true
     },
-    // -- DINMICOS ------------------------------------------------------
+    // -- DINÁMICOS ------------------------------------------------------
     {
-      id: 'dyn-rain-bata', label: 'Lluvia en Paseo Bata', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-rain-bata', label: 'Lluvia en Bata', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(170deg, #0f2027 0%, #203a43 45%, #2c5364 100%)',
       overlay: `radial-gradient(ellipse at 30% 70%, rgba(100,180,255,0.12) 0%, transparent 50%)`,
       rain: true, logo: true
     },
     {
-      id: 'dyn-rain-malabo', label: 'Lluvia en Malabo', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-rain-malabo', label: 'Lluvia Malabo', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(170deg, #0a0a1a 0%, #1a2a4a 50%, #0d1b2a 100%)',
       overlay: `radial-gradient(ellipse at 60% 40%, rgba(0,180,230,0.15) 0%, transparent 50%)`,
       rain: true, lightning: true, logo: true
     },
     {
-      id: 'dyn-kids-school', label: 'Niños Estudiando', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-kids-school', label: 'Niños Estudiando', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(170deg, #1a3a2e 0%, #2d6a4f 40%, #1e5a38 70%, #0f3020 100%)',
       overlay: `radial-gradient(ellipse at 50% 30%, rgba(100,255,150,0.15) 0%, transparent 55%)`,
       floating: true, logo: true
     },
     {
-      id: 'dyn-nanobanana', label: 'NanoBanana Fiesta', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-nanobanana', label: 'NanoBanana Fiesta', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(135deg, #1a0533 0%, #2d1b69 35%, #1e3a5f 65%, #0f2027 100%)',
       overlay: `radial-gradient(ellipse at 40% 50%, rgba(168,85,247,0.2) 0%, transparent 50%), radial-gradient(ellipse at 70% 30%, rgba(0,180,230,0.15) 0%, transparent 40%)`,
       particles: true, logo: true
     },
     {
-      id: 'dyn-maritime', label: 'Paseo Martimo', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-maritime', label: 'Paseo Marítimo', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(170deg, #0c1445 0%, #1a3a6e 40%, #0369a1 70%, #0ea5e9 100%)',
       overlay: `radial-gradient(ellipse at 50% 80%, rgba(14,165,233,0.2) 0%, transparent 50%)`,
       waves: true, logo: true
     },
     {
-      id: 'dyn-stars-logo', label: 'Cosmos EGCHAT', type: 'css', category: 'dynamic', emoji: '',
+      id: 'dyn-stars-logo', label: 'Cosmos EGCHAT', type: 'css', category: 'dynamic',
       bg: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%)',
       overlay: `radial-gradient(ellipse at 50% 50%, rgba(0,200,160,0.12) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(0,180,230,0.1) 0%, transparent 40%)`,
       stars: true, logo: true, logoGlow: true
@@ -3376,42 +3412,69 @@ const App: React.FC = () => {
 
   const renderWallpaperCatalog = () => {
     if (!showWallpaperCatalog) return null;
-    const statics = wallpapers.filter(w => w.category === 'static' || w.type === 'none');
+    const crystals = wallpapers.filter(w => w.category === 'crystal');
+    const statics = wallpapers.filter(w => w.category === 'static');
     const dynamics = wallpapers.filter(w => w.category === 'dynamic');
+    const noneWp = wallpapers.filter(w => w.type === 'none');
 
     const handleFileUploadWallpaper = async () => {
-      try {
-        const result = await (window as any).electronAPI?.openFileDialog();
-        if (!result) return;
+      // Primero intentar Electron, si no usar input file web
+      if ((window as any).electronAPI?.openFileDialog) {
+        try {
+          const result = await (window as any).electronAPI.openFileDialog();
+          if (!result) return;
+          const id = `custom-${Date.now()}`;
+          const label = result.path.split(/[\\/]/).pop().replace(/\.[^.]+$/, '').slice(0, 20);
+          setCustomWallpapers(prev => [...prev, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]);
+          setSelectedWallpaper(id);
+          setShowWallpaperCatalog(false);
+          return;
+        } catch {}
+      }
+      // Web: usar input file
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*';
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
         const id = `custom-${Date.now()}`;
-        const label = result.path.split(/[\\/]/).pop().replace(/\.[^.]+$/, '').slice(0, 20);
-        setCustomWallpapers(prev => [...prev, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]);
+        const label = file.name.replace(/\.[^.]+$/, '').slice(0, 20);
+        const type = file.type.startsWith('video') ? 'video' : 'image';
+        setCustomWallpapers(prev => [...prev, { id, label, url, type }]);
         setSelectedWallpaper(id);
         setShowWallpaperCatalog(false);
-      } catch (err) {
-        console.error('Error abriendo archivo:', err);
-      }
+      };
+      input.click();
     };
 
+    const WpThumb = ({ w }: { w: typeof wallpapers[0] }) => (
+      <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); setShowWallpaperCatalog(false); }}
+        title={w.label}
+        style={{ border: selectedWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
+        <div style={{ height: '90px', background: w.type === 'none'
+          ? 'repeating-conic-gradient(#e5e7eb 0% 25%, #f9fafb 0% 50%) 0 0 / 16px 16px'
+          : (w as any).bg || '#1a1a2e', position: 'relative' }}>
+          {(w as any).overlay && <div style={{ position: 'absolute', inset: 0, background: (w as any).overlay }} />}
+          {w.category === 'dynamic' && <div style={{ position: 'absolute', top: '3px', left: '3px', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '3px', padding: '1px 4px', fontSize: '7px', fontWeight: '700', color: 'white', zIndex: 2 }}>VIVO</div>}
+          {selectedWallpaper === w.id && (
+            <div style={{ position: 'absolute', top: '4px', right: '4px', width: '18px', height: '18px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '4px 4px 5px', background: selectedWallpaper === w.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {w.label}
+        </div>
+      </button>
+    );
+
     const Section = ({ title, items }: { title: string; items: typeof wallpapers }) => (
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px' }}>{title}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-          {items.map(w => (
-            <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); setShowWallpaperCatalog(false); }}
-              title={w.label}
-              style={{ border: selectedWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
-              <div style={{ height: '130px', background: w.type === 'none' ? '#f3f4f6' : (w as any).bg || '#1a1a2e', position: 'relative', }}>
-                {(w as any).overlay && <div style={{ position: 'absolute', inset: 0, background: (w as any).overlay }} />}
-                {w.category === 'dynamic' && <div style={{ position: 'absolute', top: '2px', left: '2px', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '3px', padding: '1px 3px', fontSize: '6px', fontWeight: '700', color: 'white', zIndex: 2 }}>VIVO</div>}
-              </div>
-              {selectedWallpaper === w.id && (
-                <div style={{ position: 'absolute', top: '2px', right: '2px', width: '12px', height: '12px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                  <svg width="7" height="7" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-              )}
-            </button>
-          ))}
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '7px' }}>{title}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '7px' }}>
+          {items.map(w => <WpThumb key={w.id} w={w} />)}
         </div>
       </div>
     );
@@ -3419,66 +3482,79 @@ const App: React.FC = () => {
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end' }}
         onClick={() => setShowWallpaperCatalog(false)}>
-        <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: 'rgba(255,255,255,0.35)', backdropFilter: 'blur(28px) saturate(200%)', WebkitBackdropFilter: 'blur(28px) saturate(200%)', borderRadius: '20px 20px 0 0', padding: '14px 14px 24px', maxHeight: '80vh', overflowY: 'auto', border: '1.5px solid rgba(255,255,255,0.6)', borderBottom: 'none' }}>
+        <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: 'rgba(255,255,255,0.35)', backdropFilter: 'blur(28px) saturate(200%)', WebkitBackdropFilter: 'blur(28px) saturate(200%)', borderRadius: '20px 20px 0 0', padding: '14px 14px 28px', maxHeight: '85vh', overflowY: 'auto', border: '1.5px solid rgba(255,255,255,0.6)', borderBottom: 'none' }}>
+          {/* Handle */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e5e7eb' }} />
           </div>
+          {/* Título */}
           <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', marginBottom: '14px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             Fondo de pantalla
           </div>
 
-          {/* Seccin: Mis fondos personalizados */}
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px' }}>Mis fondos</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-              {/* Botan aaadir */}
+          {/* Mis fondos personalizados */}
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '7px' }}>Mis fondos</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '7px' }}>
+              {/* Botón + para subir imagen/video */}
               <button
                 onClick={handleFileUploadWallpaper}
-                title="Aaadir imagen o vadeo"
-                style={{ border: '1.5px dashed rgba(0,200,160,0.6)', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,200,160,0.06)', cursor: 'pointer', outline: 'none', padding: 0, width: '100%' }}
+                title="Añadir imagen o vídeo"
+                style={{ border: '1.5px dashed rgba(0,200,160,0.6)', borderRadius: '10px', overflow: 'hidden', background: 'rgba(0,200,160,0.06)', cursor: 'pointer', outline: 'none', padding: 0, width: '100%' }}
               >
-                <div style={{ height: '130px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
+                <div style={{ height: '90px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#00c8a0' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
                   </svg>
+                  <span style={{ fontSize: '9px', fontWeight: '700', color: '#00c8a0' }}>Añadir</span>
                 </div>
-                </button>
-
+                <div style={{ padding: '4px 4px 5px', background: 'rgba(0,200,160,0.04)', fontSize: '9px', fontWeight: '600', color: '#00c8a0', textAlign: 'center' }}>
+                  Galería
+                </div>
+              </button>
               {/* Fondos personalizados subidos */}
               {customWallpapers.map(cw => (
                 <div key={cw.id} style={{ position: 'relative' }}>
                   <button onClick={() => { setSelectedWallpaper(cw.id); setShowWallpaperCatalog(false); }}
                     title={cw.label}
-                    style={{ width: '100%', border: selectedWallpaper === cw.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none' }}>
-                    <div style={{ height: '130px', position: 'relative', overflow: 'hidden', background: '#111' }}>
+                    style={{ width: '100%', border: selectedWallpaper === cw.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none' }}>
+                    <div style={{ height: '90px', position: 'relative', overflow: 'hidden', background: '#111' }}>
                       {cw.type === 'video'
                         ? <video src={cw.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline />
                         : <img src={cw.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={cw.label} />
                       }
                       {cw.type === 'video' && (
-                        <div style={{ position: 'absolute', top: '2px', left: '2px', background: 'rgba(0,0,0,0.45)', borderRadius: '3px', padding: '1px 3px', fontSize: '6px', fontWeight: '700', color: 'white' }}></div>
+                        <div style={{ position: 'absolute', top: '3px', left: '3px', background: 'rgba(0,0,0,0.55)', borderRadius: '3px', padding: '1px 4px', fontSize: '7px', fontWeight: '700', color: 'white' }}>VID</div>
+                      )}
+                      {selectedWallpaper === cw.id && (
+                        <div style={{ position: 'absolute', top: '4px', right: '4px', width: '18px', height: '18px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
                       )}
                     </div>
-                    {selectedWallpaper === cw.id && (
-                      <div style={{ position: 'absolute', top: '2px', right: '2px', width: '12px', height: '12px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
-                        <svg width="7" height="7" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      </div>
-                    )}
+                    <div style={{ padding: '4px 4px 5px', background: selectedWallpaper === cw.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cw.label}
+                    </div>
                   </button>
-                  {/* Botan eliminar */}
+                  {/* Botón eliminar */}
                   <button onClick={() => { setCustomWallpapers(prev => prev.filter(w => w.id !== cw.id)); if (selectedWallpaper === cw.id) setSelectedWallpaper('none'); }}
-                    style={{ position: 'absolute', bottom: '18px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>
-                    <svg width="6" height="6" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    style={{ position: 'absolute', top: '4px', left: '4px', width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>
+                    <svg width="7" height="7" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <Section title="Estticos" items={statics} />
-          <Section title="Dinmicos y Animados" items={dynamics} />
+          {/* Sin fondo */}
+          <Section title="Sin fondo" items={noneWp} />
+          {/* Cristalinos */}
+          <Section title="✨ Cristalinos y Suaves" items={crystals} />
+          {/* Estáticos oscuros */}
+          <Section title="🌙 Oscuros" items={statics} />
+          {/* Dinámicos */}
+          <Section title="⚡ Vivos y Animados" items={dynamics} />
         </div>
       </div>
     );
@@ -3551,11 +3627,12 @@ const App: React.FC = () => {
   const getChatAreaBg = (): React.CSSProperties => {
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
-      return { position: 'relative', overflow: 'hidden' };
+      return { position: 'relative', overflow: 'hidden', background: 'transparent' };
     }
     const wp = wallpapers.find(w => w.id === selectedWallpaper) as any;
-    if (!wp || wp.type === 'none') return { background: '#f0f2f5' };
-    return { background: (wp as any).bg || '#f0f2f5', position: 'relative', overflow: 'hidden' };
+    if (!wp || wp.type === 'none') return { background: '#efeae2' };
+    // El fondo real lo pone renderWallpaperBg (position:absolute), aquí solo transparente
+    return { background: 'transparent', position: 'relative', overflow: 'hidden' };
   };
 
   // Renderiza elementos animados del wallpaper dentro del rea de mensajes
@@ -3585,7 +3662,7 @@ const App: React.FC = () => {
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
       return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           {custom.type === 'video'
             ? <video src={custom.url} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <img src={custom.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -3597,7 +3674,7 @@ const App: React.FC = () => {
     const wp = wallpapers.find(w => w.id === selectedWallpaper) as any;
     if (!wp || wp.type === 'none') return null;
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, background: wp.bg, overflow: 'hidden', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, background: wp.bg, overflow: 'hidden', pointerEvents: 'none' }}>
         {wp.overlay && <div style={{ position: 'absolute', inset: 0, background: wp.overlay }} />}
         {wp.rain && (
           <div style={{ position: 'absolute', inset: 0, }}>
@@ -4388,7 +4465,66 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+              {/* Wallpaper del chat - cubre toda la ventana del chat */}
+              {selectedWallpaper !== 'none' && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                  {(() => {
+                    const custom = customWallpapers.find(w => w.id === selectedWallpaper);
+                    if (custom) {
+                      return (
+                        <>
+                          {custom.type === 'video'
+                            ? <video src={custom.url} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <img src={custom.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          }
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)' }} />
+                        </>
+                      );
+                    }
+                    const wp = wallpapers.find(w => w.id === selectedWallpaper) as any;
+                    if (!wp || wp.type === 'none') return null;
+                    return (
+                      <div style={{ position: 'absolute', inset: 0, background: wp.bg, overflow: 'hidden' }}>
+                        {wp.overlay && <div style={{ position: 'absolute', inset: 0, background: wp.overlay }} />}
+                        {wp.rain && (
+                          <div style={{ position: 'absolute', inset: 0 }}>
+                            {Array.from({ length: 55 }).map((_, i) => (
+                              <div key={i} style={{ position: 'absolute', left: `${(i * 1.9) % 100}%`, top: `-${10 + (i * 7) % 30}%`, width: '1px', height: `${18 + (i * 3) % 22}px`, background: 'linear-gradient(to bottom, transparent, rgba(150,210,255,0.7))', animation: `rainDrop ${0.55 + (i % 5) * 0.12}s linear ${(i * 0.07) % 2}s infinite`, transform: 'rotate(12deg)' }} />
+                            ))}
+                          </div>
+                        )}
+                        {wp.lightning && <div style={{ position: 'absolute', inset: 0, animation: 'lightning 4s ease-in-out infinite', background: 'rgba(200,220,255,0)', pointerEvents: 'none' }} />}
+                        {wp.stars && Array.from({ length: 70 }).map((_, i) => (
+                          <div key={i} style={{ position: 'absolute', left: `${(i * 14.3) % 100}%`, top: `${(i * 9.7) % 65}%`, width: `${1 + (i % 3)}px`, height: `${1 + (i % 3)}px`, borderRadius: '50%', background: 'white', opacity: 0.3 + (i % 7) * 0.1, animation: `pulse ${1.5 + (i % 4) * 0.5}s ease-in-out ${(i * 0.13) % 2}s infinite` }} />
+                        ))}
+                        {wp.particles && Array.from({ length: 20 }).map((_, i) => (
+                          <div key={i} style={{ position: 'absolute', left: `${(i * 5.3) % 100}%`, top: `${(i * 7.1) % 100}%`, width: `${4 + (i % 4) * 2}px`, height: `${4 + (i % 4) * 2}px`, borderRadius: '50%', background: i % 2 === 0 ? 'rgba(0,200,160,0.6)' : 'rgba(0,180,230,0.6)', animation: `pulse ${2 + (i % 3)}s ease-in-out ${(i * 0.2) % 2}s infinite`, filter: 'blur(1px)' }} />
+                        ))}
+                        {wp.waves && (
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px' }}>
+                            {[0, 1, 2].map(i => (
+                              <div key={i} style={{ position: 'absolute', bottom: `${i * 20}px`, left: '-50%', width: '200%', height: '60px', background: `rgba(14,165,233,${0.15 - i * 0.04})`, borderRadius: '50%', animation: `wave ${3 + i}s ease-in-out ${i * 0.5}s infinite alternate` }} />
+                            ))}
+                          </div>
+                        )}
+                        {wp.floating && Array.from({ length: 12 }).map((_, i) => (
+                          <div key={i} style={{ position: 'absolute', left: `${(i * 8.5) % 90}%`, top: `${20 + (i * 6.3) % 60}%`, fontSize: `${10 + (i % 3) * 4}px`, animation: `pulse ${2 + (i % 3)}s ease-in-out ${(i * 0.3) % 2}s infinite`, opacity: 0.6 }}>
+                            {['📚', '✏️', '🎒', '📐', '🌿'][i % 5]}
+                          </div>
+                        ))}
+                        {wp.logo && (
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', opacity: 0.15, pointerEvents: 'none' }}>
+                            <img src="/logo-transparent.png" alt="" style={{ width: '140px', height: '140px', borderRadius: '50%', filter: wp.logoGlow ? 'drop-shadow(0 0 30px rgba(0,200,160,0.9))' : 'drop-shadow(0 0 10px rgba(255,255,255,0.3))' }} />
+                            <div style={{ fontSize: '28px', fontWeight: '900', color: 'white', letterSpacing: '4px' }}>EGCHAT</div>
+                          </div>
+                        )}
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }} />
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
               {/* Header conversacin */}
               <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                 <button
@@ -4504,7 +4640,7 @@ const App: React.FC = () => {
               )}
 
               {/* Spacer for fixed header */}
-              <div style={{ height: '60px', flexShrink: 0 }} />
+              <div style={{ height: '60px', flexShrink: 0, position: 'relative', zIndex: 1 }} />
               {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
@@ -4520,9 +4656,8 @@ const App: React.FC = () => {
               {/* Mensajes */}
               <div
                 className="scroll-container"
-                style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', background: '#efeae2' }}
+                style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: selectedWallpaper === 'none' ? '#efeae2' : 'transparent' }}
               >
-                {renderChatWallpaperContent()}
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px' }}>
                     <div
@@ -5307,7 +5442,9 @@ const App: React.FC = () => {
                 paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                position: 'relative',
+                zIndex: 1,
               }}>
                 {/* Botón + */}
                 <button onClick={() => { setShowChatAttach(p => !p); setShowChatEmojis(false); }}
@@ -8191,12 +8328,11 @@ const App: React.FC = () => {
         minHeight: '100vh',
         height: '100vh',
         overflow: 'hidden',
-        background: selectedWallpaper === 'none' ? '#f0f2f5' : 'transparent',
+        background: '#f0f2f5',
         position: 'relative'
       }}
     >
-      {/* Wallpaper de fondo */}
-      {renderWallpaperBg()}
+      {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
       {renderLayoutPanel()}
       {/* Bandas laterales fijas  de arriba a abajo, toda la pantalla */}
@@ -8230,11 +8366,8 @@ const App: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: selectedWallpaper === 'none' 
-              ? 'rgba(0,0,0,0.45)' 
-              : 'rgba(0,0,0,0.35)',
+            background: 'rgba(0,0,0,0.45)',
             zIndex: 998,
-            backdropFilter: selectedWallpaper === 'none' ? 'none' : 'blur(2px)'
           }} 
         />
       )}
@@ -8320,7 +8453,7 @@ const App: React.FC = () => {
 
             {/* Reacciones rapidas */}
             <div style={{
-              background: 'rgba(255,255,255,0.95)',
+              background: 'rgba(255,255,255,0.85)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               borderRadius: '20px',
@@ -8329,8 +8462,8 @@ const App: React.FC = () => {
               display: 'flex',
               justifyContent: 'space-around',
               alignItems: 'center',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-              border: '1px solid rgba(255,255,255,0.8)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              border: '1px solid rgba(255,255,255,0.7)',
             }}>
               {['👍','❤️','😂','😮','😢','🙏','🔥'].map((emoji, i) => (
                 <button key={emoji} onClick={() => {
@@ -8352,45 +8485,45 @@ const App: React.FC = () => {
             </div>
 
             {/* ── Acciones principales ── */}
-            <div style={{ background:'#fff', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.13)', border:'1px solid #F0F2F5' }}>
+            <div style={{ background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.13)', border:'1px solid rgba(255,255,255,0.7)' }}>
               {[
                 {
-                  color:'#00c8a0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                  color:'#00c8a0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
                   label:'Copiar', sub:'Copiar texto al portapapeles',
                   action:() => { navigator.clipboard?.writeText(msgContextMenu.msg.text || ''); showToast('Copiado', 'success'); setMsgContextMenu(null); }
                 },
                 {
-                  color:'#1485EE', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>,
+                  color:'#1485EE', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>,
                   label:'Responder', sub:'Citar y responder este mensaje',
                   action:() => { setCurrentChatInput(`> ${msgContextMenu.msg.text?.slice(0,50) || ''}...\n`); setMsgContextMenu(null); }
                 },
                 ...(msgContextMenu.msg.from === 'me' ? [{
-                  color:'#6B5BD6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+                  color:'#6B5BD6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
                   label:'Editar', sub:'Modificar el texto enviado',
                   action:() => { setCurrentChatInput(msgContextMenu.msg.text || ''); showToast('Edita el mensaje y reenvía', 'info'); setMsgContextMenu(null); }
                 }] : []),
                 {
-                  color:'#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                  color:'#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
                   label:'Destacar', sub:'Guardar en mensajes importantes',
                   action:() => { const cid=selectedChat?.id?.toString()||selectedChat?.title||''; setStarredMessages(prev=>({...prev,[cid]:[...(prev[cid]||[]),msgContextMenu.msg.id]})); showToast('Mensaje destacado', 'success'); setMsgContextMenu(null); }
                 },
                 {
-                  color:'#0EA5E9', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+                  color:'#0EA5E9', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
                   label:'Reenviar', sub:'Compartir con otro contacto',
                   action:() => { showToast('Proximamente disponible', 'info'); setMsgContextMenu(null); }
                 },
                 {
-                  color:'#8B5CF6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
+                  color:'#8B5CF6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
                   label:'Seleccionar', sub:'Seleccionar varios mensajes',
                   action:() => { showToast('Modo seleccion activado', 'info'); setMsgContextMenu(null); }
                 },
                 {
-                  color:'#EC4899', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                  color:'#EC4899', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
                   label:'Info del mensaje', sub:'Ver estado de entrega y lectura',
                   action:() => { showToast(`Enviado · ${msgContextMenu.msg.time || ''}`, 'info'); setMsgContextMenu(null); }
                 },
                 {
-                  color:'#2E9E6B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+                  color:'#2E9E6B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
                   label:'Fijar mensaje', sub:'Mostrar en la parte superior del chat',
                   action:() => { showToast('Mensaje fijado', 'success'); setMsgContextMenu(null); }
                 },
@@ -8400,12 +8533,12 @@ const App: React.FC = () => {
                   padding:'11px 16px',
                   display:'flex', alignItems:'center', gap:'13px',
                   cursor:'pointer', textAlign:'left', fontFamily:'inherit',
-                  borderBottom: i < arr.length-1 ? '1px solid #F7F8FA' : 'none',
+                  borderBottom: i < arr.length-1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
                   transition:'background 0.12s',
                 }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#F9FAFB'}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(0,0,0,0.04)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                  <div style={{ width:36, height:36, borderRadius:10, background:item.color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color: item.color }}>
                     {item.icon}
                   </div>
                   <div style={{ flex:1 }}>
@@ -8418,7 +8551,7 @@ const App: React.FC = () => {
             </div>
 
             {/* ── Eliminar ── */}
-            <div style={{ background:'#fff', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid #FEE2E2', marginTop:'8px' }}>
+            <div style={{ background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid rgba(254,226,226,0.8)', marginTop:'8px' }}>
               <button onClick={() => {
                 const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                 setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgContextMenu.msg.id) }));
@@ -8427,10 +8560,10 @@ const App: React.FC = () => {
                 }
                 showToast('Mensaje eliminado', 'info'); setMsgContextMenu(null);
               }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#FEF2F2'}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.06)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                <div style={{ width:36, height:36, borderRadius:10, background:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                <div style={{ width:36, height:36, borderRadius:10, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#EF4444' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:'14px', fontWeight:'600', color:'#EF4444' }}>{msgContextMenu.msg.from === 'me' ? 'Eliminar para todos' : 'Eliminar para mi'}</div>
@@ -8442,15 +8575,16 @@ const App: React.FC = () => {
             {/* ── Cancelar ── */}
             <button onClick={() => setMsgContextMenu(null)} style={{
               width:'100%', marginTop:'8px',
-              background:'#fff', border:'1px solid #F0F2F5',
+              background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
+              border:'1px solid rgba(255,255,255,0.7)',
               borderRadius:'18px', padding:'14px',
               fontSize:'15px', fontWeight:'700', color:'#374151',
               cursor:'pointer', fontFamily:'inherit',
               boxShadow:'0 2px 12px rgba(0,0,0,0.08)',
               transition:'background 0.12s',
             }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='#F9FAFB'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='#fff'}>
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(249,250,251,0.95)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.85)'}>
               Cancelar
             </button>
           </div>
@@ -10561,8 +10695,8 @@ const App: React.FC = () => {
       {showSuperModal && <SupermercadosModal onClose={() => setShowSuperModal(false)} userBalance={userBalance} onDebit={(n: number) => setUserBalance((p: number) => p - n)} />}
 
 
-      {/* -- PERFIL DE CONTACTO ---------------------------------------------- */}
-      {showContactProfile && (
+      {/* -- PERFIL DE CONTACTO / GRUPO --------------------------------------- */}
+      {showContactProfile && !showContactProfile.isGroup && (
         <ContactProfileModal
           contact={showContactProfile}
           onClose={() => setShowContactProfile(null)}
@@ -10587,7 +10721,7 @@ const App: React.FC = () => {
             try {
               await contactsAPI.add(cp.id, phone || undefined, name || undefined);
               await loadContacts();
-              showToast(`? ${name} aadido a contactos`, 'success');
+              showToast(`${name} anadido a contactos`, 'success');
             } catch { showToast('No se pudo añadir el contacto', 'error'); }
           }}
           onSendMoney={(contact) => { setQuickTransferData({ contactId: contact.id?.toString() || '', contactName: contact.title || contact.name, amount: '', accountId: bankAccounts[0]?.id || '' }); setShowQuickTransferModal(true); }}
@@ -10604,6 +10738,36 @@ const App: React.FC = () => {
               }
             } catch {}
           }}
+        />
+      )}
+      {showContactProfile && showContactProfile.isGroup && (
+        <GroupProfileModal
+          group={showContactProfile}
+          onClose={() => setShowContactProfile(null)}
+          allContacts={allContacts}
+          mutedChats={mutedChats}
+          pinnedChats={pinnedChats}
+          onMuteToggle={(id) => setMutedChats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])}
+          onPinToggle={(id) => setPinnedChats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])}
+          onClearChat={(id) => setChatMessages(prev => ({ ...prev, [id]: [] }))}
+          onOpenWallpaper={() => setShowWallpaperCatalog(true)}
+          onUpdateGroup={(id, data) => {
+            setAllGroups(prev => prev.map(g => g.id === id ? { ...g, ...data } : g));
+            setSelectedChat((prev: any) => prev?.id === id ? { ...prev, ...data, title: data.name || prev.title } : prev);
+          }}
+          onAddContactFromGroup={async (member) => {
+            try {
+              await contactsAPI.add(member.id, member.phone || undefined, member.name || undefined);
+              await loadContacts();
+            } catch {}
+          }}
+          onLeaveGroup={(id) => {
+            setAllGroups(prev => prev.filter(g => g.id !== id));
+            setRealChats((prev: any[]) => prev.filter((c: any) => c.id !== id));
+            setSelectedChat(null);
+            showToast('Has salido del grupo', 'info');
+          }}
+          showToast={showToast}
         />
       )}
 
