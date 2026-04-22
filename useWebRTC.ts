@@ -1,4 +1,4 @@
-// ─── useWebRTC — señalización via HTTP polling (v2 - robusto) ────────────────
+// ─── useWebRTC — señalización via HTTP polling ────────────────────────────────
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { authAPI } from './api';
 
@@ -13,33 +13,11 @@ const ICE_SERVERS = [
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
-  // TURN servers - múltiples para mayor fiabilidad
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  // TURN adicional de Metered
-  {
-    urls: 'turn:a.relay.metered.ca:80',
-    username: 'e8dd65f0a7c3e0a7e8dd65f0',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:a.relay.metered.ca:443',
-    username: 'e8dd65f0a7c3e0a7e8dd65f0',
-    credential: 'openrelayproject',
-  },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:a.relay.metered.ca:80', username: 'e8dd65f0a7c3e0a7e8dd65f0', credential: 'openrelayproject' },
+  { urls: 'turn:a.relay.metered.ca:443', username: 'e8dd65f0a7c3e0a7e8dd65f0', credential: 'openrelayproject' },
 ];
 
 async function sigFetch(path: string, method = 'GET', body?: object) {
@@ -67,6 +45,7 @@ export function useWebRTC() {
   const roleRef = useRef<'caller' | 'callee'>('caller');
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const iceSentRef = useRef<Set<string>>(new Set());
+  const endedRef = useRef<boolean>(false);
 
   const [callState, setCallState] = useState<CallState>('idle');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -76,13 +55,11 @@ export function useWebRTC() {
   const [isCamOff, setIsCamOff] = useState(false);
 
   const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
+    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
   }, []);
 
-  const cleanup = useCallback(() => {
+  // Libera recursos sin tocar callState
+  const cleanupResources = useCallback(() => {
     stopPolling();
     if (pc.current) {
       pc.current.ontrack = null;
@@ -98,104 +75,80 @@ export function useWebRTC() {
     iceSentRef.current.clear();
     setRemoteStream(null);
     setLocalStream(null);
-    setCallState('idle');
   }, [stopPolling]);
 
-  // Crear PeerConnection con handlers correctos
-  const createPC = useCallback(() => {
-    const p = new RTCPeerConnection({
-      iceServers: ICE_SERVERS,
-      // Ancho de banda adaptable — el navegador ajusta según la red
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require',
-    });
+  // Limpieza completa (al desmontar)
+  const cleanup = useCallback(() => {
+    cleanupResources();
+    setCallState('idle');
+  }, [cleanupResources]);
 
-  // Recibir stream remoto
+  const createPC = useCallback(() => {
+    const p = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' });
+
     p.ontrack = (e) => {
       const stream = e.streams[0] || new MediaStream([e.track]);
       setRemoteStream(stream);
-      // Reproducir audio remoto automáticamente
       if (e.track.kind === 'audio' && remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = stream;
-        remoteAudioRef.current.play().catch(err => console.warn('Audio playback failed:', err));
+        remoteAudioRef.current.play().catch(() => {});
       }
     };
 
-    // Monitorear estado de conexión
     p.onconnectionstatechange = () => {
       if (p.connectionState === 'connected') {
         setCallState('connected');
-        stopPolling();
-        // Ajustar bitrate máximo tras conectar (ancho de banda adaptable)
         p.getSenders().forEach(async sender => {
           if (!sender.track) return;
           const params = sender.getParameters();
-          if (!params.encodings || params.encodings.length === 0) {
-            params.encodings = [{}];
-          }
+          if (!params.encodings?.length) params.encodings = [{}];
           if (sender.track.kind === 'video') {
-            // Video: máx 2.5 Mbps, mín 200 kbps
             params.encodings[0].maxBitrate = 2_500_000;
-            params.encodings[0].minBitrate = 200_000;
             params.encodings[0].maxFramerate = 30;
-          } else if (sender.track.kind === 'audio') {
-            // Audio: máx 128 kbps
+          } else {
             params.encodings[0].maxBitrate = 128_000;
           }
           try { await sender.setParameters(params); } catch {}
         });
-      } else if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
-        cleanup();
       }
+      // No llamar cleanup en failed/disconnected — puede ser transitorio
     };
 
     return p;
-  }, [cleanup, stopPolling]);
+  }, []);
 
-  // Enviar ICE candidate al servidor (evitar duplicados)
   const sendIceCandidate = useCallback(async (candidate: RTCIceCandidate, role: string) => {
     const key = candidate.candidate;
     if (!key || iceSentRef.current.has(key)) return;
     iceSentRef.current.add(key);
-    try {
-      await sigFetch('/call/ice', 'POST', {
-        callId: callIdRef.current,
-        candidate: candidate.toJSON(),
-        role,
-      });
-    } catch {}
+    try { await sigFetch('/call/ice', 'POST', { callId: callIdRef.current, candidate: candidate.toJSON(), role }); } catch {}
   }, []);
 
-  // ── CALLER: iniciar llamada ──────────────────────────────────────────────────
+  const triggerEnded = useCallback(() => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    setCallState('ended');
+    setTimeout(() => setCallState('idle'), 150);
+    cleanupResources();
+  }, [cleanupResources]);
+
+  // ── CALLER ──────────────────────────────────────────────────────────────────
   const startCall = useCallback(async (type: 'audio' | 'video', targetUserId: string) => {
+    endedRef.current = false;
     cleanup();
     setCallType(type);
-
-    // Restricciones de video adaptables — intenta 720p, acepta menos si no hay ancho de banda
-    const videoConstraints: MediaTrackConstraints = {
-      facingMode: 'user',
-      width:  { ideal: 1280, min: 320, max: 1920 },
-      height: { ideal: 720,  min: 240, max: 1080 },
-      frameRate: { ideal: 30, min: 15, max: 60 },
-    };
 
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia(
         type === 'video'
-          ? { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: videoConstraints }
-          : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }
+          ? { audio: { echoCancellation: true, noiseSuppression: true }, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }
+          : { audio: { echoCancellation: true, noiseSuppression: true }, video: false }
       );
-    } catch (err) {
-      // Fallback a resolución más baja si falla
+    } catch {
       try {
-        stream = await navigator.mediaDevices.getUserMedia(
-          type === 'video'
-            ? { audio: true, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } }
-            : { audio: true, video: false }
-        );
-      } catch (err2) {
-        console.error('getUserMedia error:', err2);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' ? { facingMode: 'user' } : false });
+      } catch (err) {
         throw new Error('No se pudo acceder al micrófono/cámara');
       }
     }
@@ -209,98 +162,64 @@ export function useWebRTC() {
 
     const p = createPC();
     pc.current = p;
-
-    // Añadir tracks ANTES de crear offer
     stream.getTracks().forEach(t => p.addTrack(t, stream));
+    p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'caller'); };
 
-    // Configurar ICE candidate handler ANTES de createOffer
-    p.onicecandidate = (e) => {
-      if (e.candidate) sendIceCandidate(e.candidate, 'caller');
-    };
-
-    // Crear y enviar offer
-    const offer = await p.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: type === 'video',
-    });
+    const offer = await p.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === 'video' });
     await p.setLocalDescription(offer);
-
-    // Esperar trickle ICE (500ms es suficiente con TURN)
     await new Promise(r => setTimeout(r, 500));
-
-    await sigFetch('/call/offer', 'POST', {
-      callId,
-      offer: p.localDescription,
-      targetUserId,
-      type,
-    });
+    await sigFetch('/call/offer', 'POST', { callId, offer: p.localDescription, targetUserId, type });
 
     setCallState('calling');
 
-    // Polling para recibir answer + ICE candidates del callee
     let pollCount = 0;
     let answerSet = false;
     let calleeCandidatesApplied = 0;
 
     pollingRef.current = setInterval(async () => {
+      if (endedRef.current) return;
       try {
         pollCount++;
         const session = await sigFetch(`/call/${callId}`);
+        if (!session || session.ended) { triggerEnded(); return; }
 
-        // Aplicar answer si aún no se ha hecho
         if (!answerSet && session.answer && p.signalingState === 'have-local-offer') {
           await p.setRemoteDescription(new RTCSessionDescription(session.answer));
           answerSet = true;
         }
-
-        // Aplicar ICE candidates del callee
         if (answerSet) {
-          const calleeCandidates = session.calleeCandidates || [];
-          for (let i = calleeCandidatesApplied; i < calleeCandidates.length; i++) {
-            try { await p.addIceCandidate(new RTCIceCandidate(calleeCandidates[i])); } catch {}
+          const cands = session.calleeCandidates || [];
+          for (let i = calleeCandidatesApplied; i < cands.length; i++) {
+            try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
           }
-          calleeCandidatesApplied = calleeCandidates.length;
+          calleeCandidatesApplied = cands.length;
         }
-
-        // Timeout: 45 segundos sin respuesta
-        if (pollCount > 30 && !answerSet) {
-          cleanup();
-        }
-      } catch {
-        // No limpiar en errores de red transitorios
+        // Timeout 45s sin respuesta
+        if (pollCount > 30 && !answerSet) triggerEnded();
+      } catch (err: any) {
+        // 404 = sesión terminada en Supabase
+        if (err?.message?.includes('404') || err?.message?.includes('Signal error 404')) triggerEnded();
       }
     }, 1500);
+  }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
-  }, [cleanup, createPC, sendIceCandidate]);
-
-  // ── CALLEE: responder llamada ────────────────────────────────────────────────
+  // ── CALLEE ──────────────────────────────────────────────────────────────────
   const answerCall = useCallback(async (callId: string, offer: RTCSessionDescriptionInit, type: 'audio' | 'video') => {
+    endedRef.current = false;
     cleanup();
     setCallType(type);
-
-    const videoConstraints: MediaTrackConstraints = {
-      facingMode: 'user',
-      width:  { ideal: 1280, min: 320, max: 1920 },
-      height: { ideal: 720,  min: 240, max: 1080 },
-      frameRate: { ideal: 30, min: 15, max: 60 },
-    };
 
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia(
         type === 'video'
-          ? { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: videoConstraints }
-          : { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false }
+          ? { audio: { echoCancellation: true, noiseSuppression: true }, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }
+          : { audio: { echoCancellation: true, noiseSuppression: true }, video: false }
       );
-    } catch (err) {
+    } catch {
       try {
-        stream = await navigator.mediaDevices.getUserMedia(
-          type === 'video'
-            ? { audio: true, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } }
-            : { audio: true, video: false }
-        );
-      } catch (err2) {
-        console.error('getUserMedia error (callee):', err2);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' ? { facingMode: 'user' } : false });
+      } catch {
         throw new Error('No se pudo acceder al micrófono/cámara');
       }
     }
@@ -312,29 +231,15 @@ export function useWebRTC() {
 
     const p = createPC();
     pc.current = p;
-
-    // Añadir tracks ANTES de crear answer
     stream.getTracks().forEach(t => p.addTrack(t, stream));
+    p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'callee'); };
 
-    // Configurar ICE candidate handler ANTES de setRemoteDescription
-    p.onicecandidate = (e) => {
-      if (e.candidate) sendIceCandidate(e.candidate, 'callee');
-    };
-
-    // Aplicar offer del caller
     await p.setRemoteDescription(new RTCSessionDescription(offer));
-
-    // Crear answer
     const answer = await p.createAnswer();
     await p.setLocalDescription(answer);
-
-    // Esperar trickle ICE
     await new Promise(r => setTimeout(r, 500));
-
-    // Enviar answer
     await sigFetch('/call/answer', 'POST', { callId, answer: p.localDescription });
 
-    // Aplicar ICE candidates del caller que ya llegaron
     const session = await sigFetch(`/call/${callId}`);
     let callerCandidatesApplied = 0;
     for (const c of (session.callerCandidates || [])) {
@@ -344,26 +249,30 @@ export function useWebRTC() {
 
     setCallState('connected');
 
-    // Seguir aplicando ICE candidates del caller que lleguen tarde
     pollingRef.current = setInterval(async () => {
+      if (endedRef.current) return;
       try {
         const s = await sigFetch(`/call/${callId}`);
-        const callerCandidates = s.callerCandidates || [];
-        for (let i = callerCandidatesApplied; i < callerCandidates.length; i++) {
-          try { await p.addIceCandidate(new RTCIceCandidate(callerCandidates[i])); } catch {}
+        if (!s || s.ended) { triggerEnded(); return; }
+        const cands = s.callerCandidates || [];
+        for (let i = callerCandidatesApplied; i < cands.length; i++) {
+          try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
         }
-        callerCandidatesApplied = callerCandidates.length;
-      } catch { stopPolling(); }
-    }, 2000);
-
-  }, [cleanup, createPC, sendIceCandidate, stopPolling]);
+        callerCandidatesApplied = cands.length;
+      } catch (err: any) {
+        if (err?.message?.includes('404') || err?.message?.includes('Signal error 404')) triggerEnded();
+      }
+    }, 1500);
+  }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
   const endCall = useCallback(async () => {
+    endedRef.current = true;
     if (callIdRef.current) {
       try { await sigFetch(`/call/${callIdRef.current}`, 'DELETE'); } catch {}
     }
-    cleanup();
-  }, [cleanup]);
+    cleanupResources();
+    setCallState('idle');
+  }, [cleanupResources]);
 
   const toggleMute = useCallback(() => {
     localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
@@ -375,39 +284,46 @@ export function useWebRTC() {
     setIsCamOff(p => !p);
   }, []);
 
-  // Polling para llamadas entrantes
+  // Polling llamadas entrantes
   const pollIncoming = useCallback((myUserId: string, onIncoming: (call: any) => void) => {
     if (!myUserId) return () => {};
+    let lastCallId: string | null = null;
     const check = async () => {
       try {
         const calls = await sigFetch(`/call/incoming/${myUserId}`);
-        if (Array.isArray(calls) && calls.length > 0) onIncoming(calls[0]);
+        if (Array.isArray(calls) && calls.length > 0) {
+          const call = calls[0];
+          if (call.callId !== lastCallId) { lastCallId = call.callId; onIncoming(call); }
+        } else {
+          lastCallId = null;
+        }
       } catch {}
     };
     check();
-    const id = setInterval(check, 3000);
+    const id = setInterval(check, 2000);
     return () => clearInterval(id);
   }, []);
 
-  // Limpiar al desmontar
-  useEffect(() => {
-    return () => { cleanup(); };
-  }, [cleanup]);
+  useEffect(() => { return () => { cleanup(); }; }, [cleanup]);
 
-  // Exponer referencia de audio remoto
   const getRemoteAudioRef = useCallback(() => {
     if (!remoteAudioRef.current) {
       remoteAudioRef.current = new Audio();
       remoteAudioRef.current.autoplay = true;
-      remoteAudioRef.current.playsInline = true;
+      (remoteAudioRef.current as any).playsInline = true;
     }
     return remoteAudioRef.current;
   }, []);
+
+  const setRemoteAudioElement = useCallback((el: HTMLAudioElement | null) => {
+    remoteAudioRef.current = el;
+    if (el && remoteStream) { el.srcObject = remoteStream; el.play().catch(() => {}); }
+  }, [remoteStream]);
 
   return {
     callState, callType, isMuted, isCamOff,
     localStream, remoteStream,
     startCall, answerCall, endCall, toggleMute, toggleCamera, pollIncoming,
-    getRemoteAudioRef,
+    getRemoteAudioRef, setRemoteAudioElement,
   };
 }

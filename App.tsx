@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const webrtc = useWebRTC();
   // -- Llamada entrante ------------------------------------------
   const [incomingCall, setIncomingCall] = useState<{callId:string; callerId:string; type:'audio'|'video'; offer:any} | null>(null);
+  const incomingCallIdRef = useRef<string | null>(null); // ref global para el callId entrante actual
   // -- Grabación de voz en chat ----------------------------------
   const chatRecorderRef = useRef<MediaRecorder | null>(null);
   const chatAudioChunksRef = useRef<Blob[]>([]);
@@ -81,12 +82,26 @@ const App: React.FC = () => {
           text: m.text || '', time: new Date(m.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
           created_at: m.created_at,
           status: (m.status||'delivered') as 'pending'|'delivered'|'read',
+          // Mensajes de llamada
+          ...(m.type === 'call' ? {
+            type: 'call',
+            callType: m.call_type || (m.text?.includes('Video') ? 'video' : 'audio'),
+            callStatus: m.call_status || (m.text?.includes('perdida') ? 'missed' : m.text?.includes('saliente') ? 'outgoing' : 'completed'),
+            callDuration: m.call_duration || 0,
+          } : {}),
           // Archivos e imágenes del backend
           ...(m.file_url ? {
             fileUrl: m.type !== 'image' && m.type !== 'audio' ? m.file_url : undefined,
             imageUrl: m.type === 'image' ? m.file_url : undefined,
             audioUrl: m.type === 'audio' ? m.file_url : undefined,
             type: m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : (m.type === 'file' ? 'file' : m.type),
+          } : {}),
+          // Fallback: detectar llamadas por texto si el backend no guarda type
+          ...(m.type !== 'call' && !m.file_url && m.text && (m.text.includes('Llamada') || m.text.includes('📵') || m.text.includes('📞')) ? {
+            type: 'call',
+            callType: m.text.includes('Video') || m.text.includes('video') ? 'video' : 'audio',
+            callStatus: m.text.includes('perdida') ? 'missed' : m.text.includes('saliente') ? 'outgoing' : 'completed',
+            callDuration: 0,
           } : {}),
         }));
         setChatMessages((prev: any) => {
@@ -2261,10 +2276,10 @@ const App: React.FC = () => {
               {appNotifications.length > 0 && (
                 <button onClick={() => setAppNotifications(prev => prev.map(n => ({ ...n, read: true })))}
                   style={{ background: 'none', border: 'none', color: '#00c8a0', fontSize: '11px', fontWeight: '600', cursor: 'pointer', outline: 'none' }}>
-                  Maríar todas
+                  Marcar todas
                 </button>
               )}
-              <button onClick={() => setShowNotifications(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', outline: 'none', padding: '0', fontSize: '16px' }}>?</button>
+              <button onClick={() => setShowNotifications(false)} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', outline: 'none', padding: '0', fontSize: '18px', lineHeight: 1 }}>&#x2715;</button>
             </div>
           </div>
 
@@ -2274,7 +2289,7 @@ const App: React.FC = () => {
               <div style={{ padding: '32px 16px', textAlign: 'center' }}>
                 <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔔</div>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>Sin notificaciones</div>
-                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Las notificaciones de mensajes, pagos y ms aparecern aqu</div>
+                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Las notificaciones de mensajes, pagos y más aparecerán aquí</div>
               </div>
             ) : appNotifications.map((n, i) => (
               <div key={n.id}
@@ -2476,7 +2491,8 @@ const App: React.FC = () => {
     const t = new Date();
     const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
     const durationStr = duration > 0 ? ` · ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
-    const statusText = status === 'missed' ? 'Llamada perdida' : status === 'outgoing' ? `Llamada saliente${durationStr}` : `Llamada${durationStr}`;
+    const prefix = type === 'video' ? 'Video' : '';
+    const statusText = status === 'missed' ? `${prefix}Llamada perdida` : status === 'outgoing' ? `${prefix}Llamada saliente${durationStr}` : `${prefix}Llamada recibida${durationStr}`;
     const msgId = `call_${Date.now()}`;
     const callMsg: any = {
       id: msgId,
@@ -2494,7 +2510,10 @@ const App: React.FC = () => {
     setChatMessages(prev => ({ ...prev, [key]: [...(prev[key] || []), callMsg] }));
     // Enviar al backend como mensaje de texto
     if (chatId.length > 10) {
-      chatAPI.sendMessage(chatId, { text: statusText, type: 'text' }).catch(() => {});
+      chatAPI.sendMessage(chatId, { 
+        text: statusText, 
+        type: 'text',
+      } as any).catch(() => {});
     }
   }, [selectedChat]);
 
@@ -2627,6 +2646,8 @@ const App: React.FC = () => {
         <audio
           ref={(el) => {
             remoteAudioRef.current = el;
+            // Inyectar en el hook WebRTC para que ontrack también lo use
+            webrtc.setRemoteAudioElement(el);
             if (el && webrtc.remoteStream) {
               el.srcObject = webrtc.remoteStream;
               el.play().catch(() => {});
@@ -4499,43 +4520,78 @@ const App: React.FC = () => {
                       }}
                     >
                       {/* -- LLAMADA -- */}
-                      {(msg as any).type === 'call' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 4px', minWidth: '200px' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${(msg as any).callStatus === 'missed' ? '#ef4444' : '#00c8a0'}` }}>
-                            {(msg as any).callStatus === 'missed' ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round">
-                                <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8"/>
-                                <line x1="23" y1="1" x2="1" y2="23"/>
-                              </svg>
-                            ) : (msg as any).callType === 'video' ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="1.8" strokeLinecap="round">
+                      {(msg as any).type === 'call' ? (() => {
+                        const isMissed = (msg as any).callStatus === 'missed';
+                        const isVideo = (msg as any).callType === 'video';
+                        const isOutgoing = (msg as any).callStatus === 'outgoing';
+                        const iconColor = isMissed ? '#ef4444' : '#00c8a0';
+                        const bgColor = isMissed ? 'rgba(239,68,68,0.1)' : isVideo ? 'rgba(99,102,241,0.1)' : 'rgba(0,200,160,0.1)';
+                        const borderColor = isMissed ? 'rgba(239,68,68,0.3)' : isVideo ? 'rgba(99,102,241,0.4)' : 'rgba(0,200,160,0.3)';
+                        return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 4px', minWidth: '210px' }}>
+                          {/* Icono circular */}
+                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: bgColor, border: `1.5px solid ${borderColor}` }}>
+                            {isMissed ? (
+                              /* Llamada perdida — teléfono tachado */
+                              isVideo ? (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="1" y1="1" x2="23" y2="23"/>
+                                  <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/>
+                                </svg>
+                              ) : (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8"/>
+                                  <line x1="23" y1="1" x2="1" y2="23"/>
+                                </svg>
+                              )
+                            ) : isVideo ? (
+                              /* Videollamada — cámara */
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polygon points="23 7 16 12 23 17 23 7"/>
                                 <rect x="1" y="5" width="15" height="14" rx="2"/>
                               </svg>
                             ) : (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="1.8" strokeLinecap="round">
+                              /* Audio llamada — teléfono */
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                               </svg>
                             )}
                           </div>
+                          {/* Texto */}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: (msg as any).callStatus === 'missed' ? '#ef4444' : '#111827', marginBottom: '2px' }}>
-                              {(msg as any).callStatus === 'missed' ? 'Llamada perdida' : (msg as any).callStatus === 'outgoing' ? 'Llamada saliente' : 'Llamada recibida'}
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: isMissed ? '#ef4444' : '#111827', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              {/* Flecha dirección */}
+                              {!isMissed && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOutgoing ? '#6b7280' : '#00c8a0'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  {isOutgoing
+                                    ? <><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></>
+                                    : <><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></>
+                                  }
+                                </svg>
+                              )}
+                              {isMissed ? (isVideo ? 'Videollamada perdida' : 'Llamada perdida') : isOutgoing ? (isVideo ? 'Videollamada saliente' : 'Llamada saliente') : (isVideo ? 'Videollamada recibida' : 'Llamada recibida')}
                             </div>
                             <div style={{ fontSize: '12px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {(msg as any).callType === 'video' ? 'Videollamada' : 'Llamada de voz'}
+                              {isVideo ? (
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                              ) : (
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                              )}
+                              {isVideo ? 'Videollamada' : 'Llamada de voz'}
                               {(msg as any).callDuration > 0 && ` · ${String(Math.floor((msg as any).callDuration/60)).padStart(2,'0')}:${String((msg as any).callDuration%60).padStart(2,'0')}`}
                             </div>
                           </div>
                           <button onClick={() => { if (selectedChat) startCall((msg as any).callType || 'audio', selectedChat); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', color: '#00c8a0', flexShrink: 0 }}>
-                            {(msg as any).callType === 'video' ? (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                            style={{ background: isVideo ? 'rgba(99,102,241,0.1)' : 'rgba(0,200,160,0.1)', border: `1px solid ${isVideo ? 'rgba(99,102,241,0.3)' : 'rgba(0,200,160,0.3)'}`, borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isVideo ? '#6366f1' : '#00c8a0', flexShrink: 0 }}>
+                            {isVideo ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
                             ) : (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                             )}
-                          </button>                        </div>
-                      ) : (msg as any).type === 'audio' && (msg as any).audioUrl ? (
+                          </button>
+                        </div>
+                        );
+                      })() : (msg as any).type === 'audio' && (msg as any).audioUrl ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '240px', maxWidth: '280px', padding: '6px 4px' }}>
                           {/* Audio element oculto */}
                           <audio
@@ -7859,40 +7915,82 @@ const App: React.FC = () => {
   // -- Sincronizar estado WebRTC con activeCall ------------------
   useEffect(() => {
     if (webrtc.callState === 'connected' && activeCall) {
-      stopDialingTone(); stopRingtone(); playCallConnected(); // llamada conectada
+      stopDialingTone(); stopRingtone(); playCallConnected();
       setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
     }
     if (webrtc.callState === 'ended') {
+      // Solo actuar si hay algo que cerrar
+      const hasActiveCall = !!activeCall;
+      const hasIncoming = !!incomingCallIdRef.current;
+      if (!hasActiveCall && !hasIncoming) return;
       stopDialingTone(); stopRingtone();
-      // Solo limpiar si no fue ya limpiado por endCall()
+      if (localStream) { localStream.getTracks().forEach(t => { try { t.stop(); } catch {} }); setLocalStream(null); }
+      if (webrtc.localStream) { webrtc.localStream.getTracks().forEach(t => { try { t.stop(); } catch {} }); }
+      if (remoteVideoRef.current) { remoteVideoRef.current.srcObject = null; remoteVideoRef.current.pause(); }
+      if (localVideoRef.current) { localVideoRef.current.srcObject = null; localVideoRef.current.pause(); }
+      if (remoteAudioRef.current) { remoteAudioRef.current.srcObject = null; remoteAudioRef.current.pause(); }
       setActiveCall(prev => { if (prev) playCallEnded(); return null; });
+      incomingCallIdRef.current = null;
+      setIncomingCall(null);
       setCallDuration(0);
+      setIsMuted(false);
+      setIsCameraOff(false);
     }
   }, [webrtc.callState]);
 
   // -- Polling llamadas entrantes ? solo se inicia una vez al autenticarse
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Esperar a que currentUserId est disponible
     const startPolling = () => {
       const uid = currentUserId.current;
       if (!uid) {
-        // Reintentar en 2s si el userId a?n no est disponible
         const t = setTimeout(startPolling, 2000);
         return () => clearTimeout(t);
       }
+
+      // Ref local para el callId entrante actual (sin depender del estado React)
+      let currentIncomingCallId: string | null = null;
+
       const stop = webrtc.pollIncoming(uid, (call) => {
-        setIncomingCall(prev => {
-          if (prev) return prev;
-          startRingtone(); vibrate([500, 200, 500, 200, 500]); // ringtone + vibración
-          return call;
-        });
+        if (incomingCallIdRef.current) return; // ya hay una llamada activa
+        incomingCallIdRef.current = call.callId;
+        setIncomingCall(call);
+        startRingtone(); vibrate([500, 200, 500, 200, 500]);
       });
-      return stop;
+
+      // Detectar cuando el caller cancela antes de aceptar
+      const BASE_URL = ((import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com/api').replace(/\/+$/, '');
+      const cancelCheckInterval = setInterval(async () => {
+        if (!incomingCallIdRef.current) return;
+        try {
+          const token = authAPI.getToken();
+          const r = await fetch(`${BASE_URL}/call/${incomingCallIdRef.current}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (r.status === 404) {
+            stopRingtone();
+            incomingCallIdRef.current = null;
+            setIncomingCall(null);
+          } else {
+            const session = await r.json().catch(() => ({}));
+            if (session?.ended) {
+              stopRingtone();
+              incomingCallIdRef.current = null;
+              setIncomingCall(null);
+            }
+          }
+        } catch {}
+      }, 2000);
+
+      return () => {
+        stop();
+        clearInterval(cancelCheckInterval);
+        incomingCallIdRef.current = null;
+      };
     };
     const cleanup = startPolling();
     return () => { if (typeof cleanup === 'function') cleanup(); };
-  }, [isAuthenticated]); // solo depende de isAuthenticated
+  }, [isAuthenticated]);
 
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
   const loadContacts = React.useCallback(async () => {
@@ -8440,15 +8538,35 @@ const App: React.FC = () => {
       {incomingCall && !activeCall && (
         <div style={{ position:'fixed', inset:0, zIndex:3000, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
           {(() => {
-            // Buscar el contacto que llama por su user_id
-            const callerContact = allContacts.find(c =>
-              c.id?.toString() === incomingCall.callerId ||
-              (realChats as any[]).some((ch: any) =>
-                ch.participants?.some((p: any) => p.user_id?.toString() === incomingCall.callerId)
-              )
-            );
-            const callerName = callerContact?.name || 'Llamada entrante';
-            const callerAvatar = callerContact?.avatarUrl || '';
+            // Buscar nombre del llamante: primero en participantes de chats, luego en contactos
+            const callerId = incomingCall.callerId?.toString();
+            const myId = currentUserId.current?.toString();
+            let callerName = '';
+            let callerAvatar = '';
+
+            // 1. Buscar en participantes de chats reales — excluir al usuario propio
+            for (const ch of (realChats as any[])) {
+              if (ch.type === 'group') continue;
+              const p = ch.participants?.find((p: any) =>
+                (p.user_id?.toString() === callerId || p.id?.toString() === callerId) &&
+                p.user_id?.toString() !== myId
+              );
+              if (p) {
+                callerName = p.users?.full_name || p.full_name || p.name || '';
+                callerAvatar = p.users?.avatar_url || p.avatar_url || '';
+                if (callerName) break;
+              }
+            }
+
+            // 2. Fallback: buscar en allContacts
+            if (!callerName) {
+              const c = (allContacts as any[]).find(c =>
+                c.id?.toString() === callerId || c.user_id?.toString() === callerId
+              );
+              if (c) { callerName = c.name || c.title || ''; callerAvatar = c.avatarUrl || ''; }
+            }
+
+            if (!callerName) callerName = 'Llamada entrante';
             const callerInitials = callerName.split(' ').map((w: string) => w[0]).join('').slice(0,2).toUpperCase();
             return (
               <div style={{ background:'linear-gradient(160deg,#1a1a2e,#16213e)', borderRadius:'24px', padding:'32px 24px', textAlign:'center', width:'280px', boxShadow:'0 20px 60px rgba(0,0,0,0.5)' }}>
@@ -8481,11 +8599,23 @@ const App: React.FC = () => {
                 </div>
                 <div style={{ display:'flex', gap:'24px', justifyContent:'center' }}>
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px' }}>
-                    <button onClick={() => {
+                    <button onClick={async () => {
                       stopRingtone(); playCallEnded(); vibrate(200);
+                      // Notificar al servidor que la llamada fue rechazada (para que el caller lo detecte)
+                      const rejectedCallId = incomingCall.callId;
+                      incomingCallIdRef.current = null;
+                      setIncomingCall(null);
+                      try {
+                        const token = authAPI.getToken();
+                        const BASE_URL = ((import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com/api').replace(/\/+$/, '');
+                        await fetch(`${BASE_URL}/call/${rejectedCallId}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                      } catch {}
                       // Registrar llamada perdida en el chat del llamante
                       const callerChat = realChats.find((ch: any) =>
-                        ch.participants?.some((p: any) => p.user_id?.toString() === incomingCall.callerId)
+                        ch.participants?.some((p: any) => p.user_id?.toString() === incomingCall.callerId?.toString())
                       );
                       if (callerChat) {
                         const t = new Date();
@@ -8504,7 +8634,6 @@ const App: React.FC = () => {
                         const ntime = `${nt.getHours().toString().padStart(2,'0')}:${nt.getMinutes().toString().padStart(2,'0')}`;
                         setAppNotifications(prev => [{ id: Date.now().toString(), type: 'message' as const, title: `📵 Llamada perdida de ${callerName}`, body: incomingCall.type === 'video' ? 'Videollamada perdida' : 'Llamada de voz perdida', time: ntime, read: false, chatId: key }, ...prev].slice(0, 50));
                       }
-                      setIncomingCall(null);
                     }}
                       style={{ width:'64px', height:'64px', borderRadius:'50%', background:'#ef4444', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(239,68,68,0.4)' }}>
                       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
@@ -8516,6 +8645,7 @@ const App: React.FC = () => {
                       stopRingtone(); playCallConnected(); vibrate(100);
                       const contact = { id: incomingCall.callerId, title: callerName, status: 'online', avatarUrl: callerAvatar };
                       setActiveCall({ type: incomingCall.type, contact, status: 'calling' });
+                      incomingCallIdRef.current = null;
                       setIncomingCall(null);
                       await webrtc.answerCall(incomingCall.callId, incomingCall.offer, incomingCall.type);
                       setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
