@@ -1,5 +1,5 @@
-// Service Worker v20260422 — Web Push + cache
-const CACHE = 'egchat-v20260422';
+// Service Worker v20260422b — Web Push + cache
+const CACHE = 'egchat-v20260422b';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => {
