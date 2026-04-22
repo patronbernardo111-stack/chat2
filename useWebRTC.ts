@@ -128,7 +128,6 @@ export function useWebRTC() {
     if (endedRef.current) return;
     endedRef.current = true;
     setCallState('ended');
-    setTimeout(() => setCallState('idle'), 150);
     cleanupResources();
   }, [cleanupResources]);
 
@@ -285,7 +284,7 @@ export function useWebRTC() {
   }, []);
 
   // Polling llamadas entrantes
-  const pollIncoming = useCallback((myUserId: string, onIncoming: (call: any) => void) => {
+  const pollIncoming = useCallback((myUserId: string, onIncoming: (call: any) => void, onCancelled?: () => void) => {
     if (!myUserId) return () => {};
     let lastCallId: string | null = null;
     const check = async () => {
@@ -295,7 +294,11 @@ export function useWebRTC() {
           const call = calls[0];
           if (call.callId !== lastCallId) { lastCallId = call.callId; onIncoming(call); }
         } else {
-          lastCallId = null;
+          // Si había una llamada activa y ya no aparece → el caller canceló
+          if (lastCallId !== null) {
+            lastCallId = null;
+            onCancelled?.();
+          }
         }
       } catch {}
     };

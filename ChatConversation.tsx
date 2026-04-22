@@ -215,11 +215,14 @@ export const ChatConversation: React.FC<Props> = ({
 
       {/* Header */}
       <div style={{
+        background: '#fff',
+        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        flexShrink: 0, zIndex: 10,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}>
+      <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '8px 8px 8px 4px',
-        paddingTop: 'calc(8px + env(safe-area-inset-top, 44px))',
-        background: '#fff', borderBottom: '1px solid rgba(0,0,0,0.08)',
-        flexShrink: 0, zIndex: 10,
       }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -256,6 +259,7 @@ export const ChatConversation: React.FC<Props> = ({
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
         </div>
+      </div>
       </div>
 
       {/* Área de mensajes — patrón EGCHAT */}

@@ -7913,13 +7913,17 @@ const App: React.FC = () => {
   };
 
   // -- Sincronizar estado WebRTC con activeCall ------------------
+  const prevCallStateRef = React.useRef<string>('idle');
   useEffect(() => {
+    const prev = prevCallStateRef.current;
+    prevCallStateRef.current = webrtc.callState;
+
     if (webrtc.callState === 'connected' && activeCall) {
       stopDialingTone(); stopRingtone(); playCallConnected();
       setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
     }
-    if (webrtc.callState === 'ended') {
-      // Solo actuar si hay algo que cerrar
+    if (webrtc.callState === 'ended' && prev !== 'idle') {
+      // Solo actuar si hay algo que cerrar Y si venimos de un estado activo (no de idle)
       const hasActiveCall = !!activeCall;
       const hasIncoming = !!incomingCallIdRef.current;
       if (!hasActiveCall && !hasIncoming) return;
@@ -7956,35 +7960,15 @@ const App: React.FC = () => {
         incomingCallIdRef.current = call.callId;
         setIncomingCall(call);
         startRingtone(); vibrate([500, 200, 500, 200, 500]);
+      }, () => {
+        // El caller canceló antes de que aceptáramos
+        stopRingtone();
+        incomingCallIdRef.current = null;
+        setIncomingCall(null);
       });
-
-      // Detectar cuando el caller cancela antes de aceptar
-      const BASE_URL = ((import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com/api').replace(/\/+$/, '');
-      const cancelCheckInterval = setInterval(async () => {
-        if (!incomingCallIdRef.current) return;
-        try {
-          const token = authAPI.getToken();
-          const r = await fetch(`${BASE_URL}/call/${incomingCallIdRef.current}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (r.status === 404) {
-            stopRingtone();
-            incomingCallIdRef.current = null;
-            setIncomingCall(null);
-          } else {
-            const session = await r.json().catch(() => ({}));
-            if (session?.ended) {
-              stopRingtone();
-              incomingCallIdRef.current = null;
-              setIncomingCall(null);
-            }
-          }
-        } catch {}
-      }, 2000);
 
       return () => {
         stop();
-        clearInterval(cancelCheckInterval);
         incomingCallIdRef.current = null;
       };
     };
