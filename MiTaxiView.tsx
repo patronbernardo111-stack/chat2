@@ -89,7 +89,9 @@ const VEHICLE_CATEGORIES: VehicleCategory[] = [
   ]},
 ];
 
-// ─── MAPA CON LEAFLET + OPENSTREETMAP ──────────────────────────────────────
+// ─── MAPA CON GOOGLE MAPS ────────────────────────────────────────────────────
+const GOOGLE_MAPS_KEY = 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY';
+
 const RealMap: React.FC<{
   origin?: Location | null; destination?: Location | null;
   driver?: Driver | null; status: string;
@@ -123,526 +125,137 @@ const RealMap: React.FC<{
     return () => clearInterval(iv);
   }, [driver, status, origin]);
 
-  // Inicializar mapa Leaflet
+  // Cargar Google Maps API
+  const loadGoogleMaps = (): Promise<any> => {
+    return new Promise((resolve) => {
+      if ((window as any).google?.maps) { resolve((window as any).google.maps); return; }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=geometry`;
+      script.async = true;
+      script.onload = () => resolve((window as any).google.maps);
+      document.head.appendChild(script);
+    });
+  };
+
+  // Inicializar mapa
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-
-    // Añadir CSS de Leaflet dinámicamente
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-
-    import('leaflet').then((L) => {
-      const map = L.map(mapContainer.current!, {
-        center: [originLat, originLng],
+    loadGoogleMaps().then((gmaps) => {
+      const map = new gmaps.Map(mapContainer.current!, {
+        center: { lat: originLat, lng: originLng },
         zoom: 15,
+        mapTypeId: 'roadmap',
+        disableDefaultUI: false,
         zoomControl: true,
-        attributionControl: false,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+        ],
       });
-
-      // Mapa de calles estilo moderno (CartoDB Positron Dark / Voyager)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '© CartoDB © OpenStreetMap',
-        subdomains: 'abcd',
-      }).addTo(map);
-
       mapRef.current = map;
-
       if (onLocationSelect) {
-        map.on('click', (e: any) => onLocationSelect(e.latlng.lat, e.latlng.lng));
+        map.addListener('click', (e: any) => onLocationSelect(e.latLng.lat(), e.latLng.lng()));
       }
     });
-
-    return () => {
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    };
+    return () => { mapRef.current = null; };
   }, []);
 
-  // Actualizar marcadores cuando cambian datos
+  // Actualizar marcadores
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
-
-    import('leaflet').then((L) => {
-      // Limpiar marcadores anteriores
-      markersRef.current.forEach(m => m.remove());
+    loadGoogleMaps().then((gmaps) => {
+      // Limpiar marcadores
+      markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
-      if (routeRef.current) { routeRef.current.remove(); routeRef.current = null; }
+      if (routeRef.current) { routeRef.current.setMap(null); routeRef.current = null; }
 
-      const makeIcon = (emoji: string, color: string) => L.divIcon({
-        html: `<div style="width:38px;height:38px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1">${emoji}</div>`,
-        className: '',
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-      });
-
-      const addMarker = (lat: number, lng: number, emoji: string, color: string, popup?: string) => {
-        const m = L.marker([lat, lng], { icon: makeIcon(emoji, color) }).addTo(map);
-        if (popup) m.bindPopup(popup);
+      const makeMarker = (lat: number, lng: number, emoji: string, title: string) => {
+        const m = new gmaps.Marker({
+          position: { lat, lng },
+          map,
+          title,
+          label: { text: emoji, fontSize: '20px', fontFamily: 'Arial' },
+          icon: {
+            path: gmaps.SymbolPath.CIRCLE,
+            scale: 18,
+            fillColor: '#fff',
+            fillOpacity: 1,
+            strokeColor: '#1d4ed8',
+            strokeWeight: 2,
+          },
+        });
         markersRef.current.push(m);
         return m;
       };
 
-      // Pin usuario — punto azul pulsante
-      const userIcon = L.divIcon({
-        html: `<div style="width:22px;height:22px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.25)"></div>`,
-        className: '',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11],
+      // Pin usuario
+      new gmaps.Marker({
+        position: { lat: originLat, lng: originLng },
+        map,
+        title: 'Tu ubicación',
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#4A90E2',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 3,
+        },
+        zIndex: 999,
       });
-      const userM = L.marker([originLat, originLng], { icon: userIcon }).addTo(map);
-      userM.bindPopup('<b>Tu ubicación</b>');
-      markersRef.current.push(userM);
 
-      // Centrar mapa en usuario
-      map.setView([originLat, originLng], 14);
+      // Centrar en usuario
+      map.setCenter({ lat: originLat, lng: originLng });
 
       // Destino
-      if (destination) addMarker(destination.lat, destination.lng, '��', '#FFD700', '<b>Destino</b>');
+      if (destination) makeMarker(destination.lat, destination.lng, '🏁', 'Destino');
 
       // Conductor
-      if (driverPos) addMarker(driverPos.lat, driverPos.lng, '🚕', '#facc15', `<b>${driver?.name || 'Tu conductor'}</b><br>${driver?.car || ''}`);
+      if (driverPos) makeMarker(driverPos.lat, driverPos.lng, '🚕', driver?.name || 'Conductor');
 
       // Vehículos cercanos
       if (!destination && !driverPos) {
         const vehicles = [
-          { lat: originLat+0.003, lng: originLng+0.004, name:'Marcos N.', car:'Toyota Corolla', rating:'4.9', type:'taxi', eta:'2 min', emoji:'🚕', color:'#FFD700' },
-          { lat: originLat-0.004, lng: originLng+0.002, name:'Jose O.', car:'Hyundai Elantra', rating:'4.7', type:'comfort', eta:'4 min', emoji:'🚗', color:'#22C55E' },
-          { lat: originLat+0.002, lng: originLng-0.005, name:'Luis M.', car:'Kia K5 SUV', rating:'4.8', type:'suv', eta:'6 min', emoji:'🚙', color:'#8B5CF6' },
-          { lat: originLat-0.002, lng: originLng-0.003, name:'Ana M.', car:'Nissan Versa', rating:'4.9', type:'mujer', eta:'5 min', emoji:'🚗', color:'#EC4899' },
-          { lat: originLat+0.005, lng: originLng+0.001, name:'Pedro E.', car:'Honda CB500', rating:'4.6', type:'moto', eta:'3 min', emoji:'🏍️', color:'#F97316' },
-          { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', car:'Toyota Hiace', rating:'4.7', type:'xl', eta:'7 min', emoji:'🚐', color:'#3B82F6' },
+          { lat: originLat+0.003, lng: originLng+0.004, name:'Marcos N.', type:'taxi', emoji:'🚕' },
+          { lat: originLat-0.004, lng: originLng+0.002, name:'Jose O.', type:'comfort', emoji:'🚗' },
+          { lat: originLat+0.002, lng: originLng-0.005, name:'Luis M.', type:'suv', emoji:'🚙' },
+          { lat: originLat-0.002, lng: originLng-0.003, name:'Ana M.', type:'mujer', emoji:'🚗' },
+          { lat: originLat+0.005, lng: originLng+0.001, name:'Pedro E.', type:'moto', emoji:'🏍️' },
+          { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', type:'xl', emoji:'🚐' },
         ];
-        // Map rideType ids to vehicle types
         const typeMap: Record<string,string> = { basic:'taxi', comfort:'comfort', suv:'suv', xl:'xl', minivan:'xl', mujer:'mujer', moto:'moto', cargo:'xl' };
         const mappedFilter = vehicleFilter ? (typeMap[vehicleFilter] || vehicleFilter) : null;
         const filtered = mappedFilter && mappedFilter !== 'all' ? vehicles.filter(v => v.type === mappedFilter) : vehicles;
-        filtered.forEach(v => addMarker(v.lat, v.lng, v.emoji, v.color,
-          `<b>${v.name}</b><br><small>${v.car}</small><br>⭐ ${v.rating} · ⏱ ${v.eta}`));
+        filtered.forEach(v => makeMarker(v.lat, v.lng, v.emoji, v.name));
       }
 
-      // Ruta
+      // Ruta con Google Directions
       if (destination) {
-        fetch(`https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`)
-          .then(r => r.json()).then(data => {
-            const coords = data.routes?.[0]?.geometry?.coordinates;
-            if (!coords) return;
-            const latlngs = coords.map((c: [number,number]) => [c[1], c[0]]);
-            routeRef.current = L.polyline(latlngs, { color: '#00B4D8', weight: 5, opacity: 0.85 }).addTo(map);
-            map.fitBounds(routeRef.current.getBounds(), { padding: [40, 40] });
-          }).catch(() => {
-            routeRef.current = L.polyline([[originLat, originLng],[destination.lat, destination.lng]], { color: '#00B4D8', weight: 5 }).addTo(map);
-          });
+        const directionsService = new gmaps.DirectionsService();
+        const directionsRenderer = new gmaps.DirectionsRenderer({
+          map,
+          suppressMarkers: true,
+          polylineOptions: { strokeColor: '#00B4D8', strokeWeight: 5, strokeOpacity: 0.85 },
+        });
+        routeRef.current = directionsRenderer;
+        directionsService.route({
+          origin: { lat: originLat, lng: originLng },
+          destination: { lat: destination.lat, lng: destination.lng },
+          travelMode: gmaps.TravelMode.DRIVING,
+        }, (result: any, status: any) => {
+          if (status === 'OK') {
+            directionsRenderer.setDirections(result);
+          }
+        });
       }
     });
   }, [originLat, originLng, destination, driverPos, vehicleFilter]);
 
   return <div ref={mapContainer} style={{ width: '100%', height, borderRadius: '16px' }} />;
 };
-// Input simple para direcciones
-const AddressInput: React.FC<{
-  onSelect: (loc: Location) => void; placeholder: string; value?: string;
-}> = ({ onSelect, placeholder, value }) => {
-  const [inputValue, setInputValue] = useState(value || '');
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      // Simular geocodificación simple
-      const zone = ZONES.find(z => z.name.toLowerCase().includes(inputValue.toLowerCase()));
-      if (zone) {
-        onSelect({ lat: zone.lat, lng: zone.lng, address: zone.name });
-      } else {
-        // Ubicación por defecto si no se encuentra
-        onSelect({ lat: 3.7523, lng: 8.7737, address: inputValue });
-      }
-    }
-  };
-  
-  return (
-    <form onSubmit={handleSubmit} style={{ width:'100%' }}>
-      <input 
-        type="text" 
-        placeholder={placeholder} 
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onBlur={handleSubmit}
-        style={{ 
-          width:'100%', 
-          padding:'12px 14px', 
-          background:'rgba(255,255,255,0.05)', 
-          border:'1px solid #E8EEF5', 
-          borderRadius:'10px', 
-          color:'#fff', 
-          fontSize:'14px', 
-          outline:'none', 
-          fontFamily:'inherit', 
-          boxSizing:'border-box' 
-        }}
-      />
-    </form>
-  );
-};
-
-// Geolocalización real del navegador con fallback a Malabo
-// ─── ICONOS ───────────────────────────────────────────────────────────────────
-const TaxiIcon = ({ size=24, color='#FFD700', filled=false }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5 11L6 7C6.5 5 8 4 10 4H14C16 4 17.5 5 18 7L19 11V17C19 17.55 18.55 18 18 18H17C16.45 18 16 17.55 16 17V16H8V17C8 17.55 7.55 18 7 18H6C5.45 18 5 17.55 5 17V11Z" fill={filled?color:'none'} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="7.5" cy="18.5" r="1.5" fill={color}/>
-    <circle cx="16.5" cy="18.5" r="1.5" fill={color}/>
-    <path d="M7 11H17V7.5C17 6.67 16.33 6 15.5 6H8.5C7.67 6 7 6.67 7 7.5V11Z" fill={filled?'rgba(255,255,255,0.3)':'none'} stroke={color} strokeWidth="1.5"/>
-    <rect x="10" y="3" width="4" height="2" rx="0.5" fill={color}/>
-  </svg>
-);
-const UserIcon = ({ size=24, color='#4A90E2', filled=false }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="8" r="4" fill={filled?color:'none'} stroke={color} strokeWidth="2"/>
-    <path d="M4 20C4 16.69 7.58 14 12 14C16.42 14 20 16.69 20 20" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-const LocationIcon = ({ size=24, color='#FF4444', filled=false }: { size?:number; color?:string; filled?:boolean }) => (  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill={filled?color:'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <circle cx="12" cy="9" r="2.5" fill={filled?'white':'none'} stroke={color} strokeWidth="2"/>
-  </svg>
-);
-// ─── ICONOS DE VEHÍCULOS SVG ÚNICOS (SILUETA SÓLIDA ESTILO UBER) ────────────
-const UberMotoIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="18" cy="46" r="13" fill={color}/>
-    <circle cx="18" cy="46" r="5" fill="#fff"/>
-    <circle cx="82" cy="46" r="13" fill={color}/>
-    <circle cx="82" cy="46" r="5" fill="#fff"/>
-    <path d="M18 46 L28 20 L48 16 L62 16 L72 30 L82 30" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/>
-    <ellipse cx="50" cy="17" rx="14" ry="5" fill={color}/>
-    <path d="M72 30 L80 20 L90 20" fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"/>
-    <rect x="30" y="11" width="28" height="7" rx="3.5" fill={color}/>
-  </svg>
-);
-const UberTaxiIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5 44 L5 32 Q5 28 9 26 L20 14 Q26 10 36 10 L64 10 Q74 10 80 16 L90 28 L95 28 L95 44 Z" fill={color}/>
-    <path d="M22 14 L16 26 L46 26 L46 12 Q38 10 30 12 Z" fill="rgba(255,255,255,0.2)"/>
-    <rect x="48" y="12" width="22" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="72" y="16" width="12" height="10" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="24" cy="44" r="12" fill="#fff"/><circle cx="24" cy="44" r="7" fill={color}/><circle cx="24" cy="44" r="3" fill="#fff"/>
-    <circle cx="76" cy="44" r="12" fill="#fff"/><circle cx="76" cy="44" r="7" fill={color}/><circle cx="76" cy="44" r="3" fill="#fff"/>
-  </svg>
-);
-const UberComfortIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 44 L4 34 Q4 30 8 28 L18 14 Q24 8 36 8 L68 8 Q80 8 86 16 L94 30 L96 30 L96 44 Z" fill={color}/>
-    <path d="M20 14 L14 28 L48 28 L48 10 Q40 8 32 10 Z" fill="rgba(255,255,255,0.2)"/>
-    <rect x="50" y="10" width="24" height="18" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="76" y="14" width="12" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="24" cy="44" r="12" fill="#fff"/><circle cx="24" cy="44" r="7" fill={color}/><circle cx="24" cy="44" r="3" fill="#fff"/>
-    <circle cx="78" cy="44" r="12" fill="#fff"/><circle cx="78" cy="44" r="7" fill={color}/><circle cx="78" cy="44" r="3" fill="#fff"/>
-    <path d="M50 3 L51.5 6.5 L55 6.5 L52.5 8.5 L53.5 12 L50 10 L46.5 12 L47.5 8.5 L45 6.5 L48.5 6.5Z" fill="#FFD700"/>
-  </svg>
-);
-const UberSUVIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 48 L4 20 Q4 14 10 12 L22 6 Q28 4 38 4 L72 4 Q82 4 88 10 L94 20 L96 20 L96 48 Z" fill={color}/>
-    <rect x="14" y="8" width="28" height="18" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="46" y="8" width="28" height="18" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="78" y="12" width="12" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="20" y="2" width="60" height="3" rx="1.5" fill={color}/>
-    <circle cx="24" cy="48" r="13" fill="#fff"/><circle cx="24" cy="48" r="8" fill={color}/><circle cx="24" cy="48" r="3.5" fill="#fff"/>
-    <circle cx="78" cy="48" r="13" fill="#fff"/><circle cx="78" cy="48" r="8" fill={color}/><circle cx="78" cy="48" r="3.5" fill="#fff"/>
-  </svg>
-);
-const UberVanIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 48 L4 14 Q4 8 10 6 L20 4 L80 4 Q90 4 94 12 L96 24 L96 48 Z" fill={color}/>
-    <rect x="8" y="8" width="18" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="30" y="8" width="18" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="52" y="8" width="18" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="74" y="12" width="14" height="10" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="22" cy="48" r="12" fill="#fff"/><circle cx="22" cy="48" r="7" fill={color}/><circle cx="22" cy="48" r="3" fill="#fff"/>
-    <circle cx="78" cy="48" r="12" fill="#fff"/><circle cx="78" cy="48" r="7" fill={color}/><circle cx="78" cy="48" r="3" fill="#fff"/>
-  </svg>
-);
-const UberMiniVanIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 48 L4 30 Q4 18 14 12 L28 6 Q36 4 46 4 L70 4 Q82 4 88 12 L94 24 L96 28 L96 48 Z" fill={color}/>
-    <path d="M10 30 Q10 16 22 10 L22 28 Z" fill="rgba(255,255,255,0.2)"/>
-    <rect x="26" y="8" width="22" height="18" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="52" y="10" width="22" height="16" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="78" y="14" width="12" height="12" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="24" cy="48" r="12" fill="#fff"/><circle cx="24" cy="48" r="7" fill={color}/><circle cx="24" cy="48" r="3" fill="#fff"/>
-    <circle cx="76" cy="48" r="12" fill="#fff"/><circle cx="76" cy="48" r="7" fill={color}/><circle cx="76" cy="48" r="3" fill="#fff"/>
-  </svg>
-);
-const UberMujerIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M5 44 L5 32 Q5 28 9 26 L20 14 Q26 10 36 10 L64 10 Q74 10 80 16 L90 28 L95 28 L95 44 Z" fill={color}/>
-    <path d="M22 14 L16 26 L46 26 L46 12 Q38 10 30 12 Z" fill="rgba(255,255,255,0.2)"/>
-    <rect x="48" y="12" width="22" height="14" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <rect x="72" y="16" width="12" height="10" rx="2" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="24" cy="44" r="12" fill="#fff"/><circle cx="24" cy="44" r="7" fill={color}/><circle cx="24" cy="44" r="3" fill="#fff"/>
-    <circle cx="76" cy="44" r="12" fill="#fff"/><circle cx="76" cy="44" r="7" fill={color}/><circle cx="76" cy="44" r="3" fill="#fff"/>
-    <circle cx="90" cy="7" r="5" fill="none" stroke={color} strokeWidth="2.5"/>
-    <line x1="90" y1="12" x2="90" y2="17" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-    <line x1="87" y1="15" x2="93" y2="15" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
-  </svg>
-);
-const UberCargoIcon = ({ size=40, color='#1A2B4A' }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 48 L4 20 Q4 14 10 12 L24 8 L24 48 Z" fill={color}/>
-    <rect x="8" y="14" width="12" height="12" rx="2" fill="rgba(255,255,255,0.3)"/>
-    <rect x="26" y="6" width="70" height="42" rx="3" fill={color}/>
-    <line x1="26" y1="6" x2="26" y2="48" stroke="#fff" strokeWidth="2" opacity="0.2"/>
-    <circle cx="16" cy="48" r="12" fill="#fff"/><circle cx="16" cy="48" r="7" fill={color}/><circle cx="16" cy="48" r="3" fill="#fff"/>
-    <circle cx="72" cy="48" r="12" fill="#fff"/><circle cx="72" cy="48" r="7" fill={color}/><circle cx="72" cy="48" r="3" fill="#fff"/>
-    <circle cx="88" cy="48" r="10" fill="#fff"/><circle cx="88" cy="48" r="6" fill={color}/><circle cx="88" cy="48" r="2.5" fill="#fff"/>
-  </svg>
-);
-const getVehicleIcon = (id: string, size=36, color='#1A2B4A', filled=false) => {
-  switch(id) {
-    case 'moto':    return <UberMotoIcon size={size} color={color}/>;
-    case 'basic':   return <UberTaxiIcon size={size} color={color}/>;
-    case 'comfort': return <UberComfortIcon size={size} color={color}/>;
-    case 'suv':     return <UberSUVIcon size={size} color={color}/>;
-    case 'xl':      return <UberVanIcon size={size} color={color}/>;
-    case 'minivan': return <UberMiniVanIcon size={size} color={color}/>;
-    case 'mujer':   return <UberMujerIcon size={size} color={color}/>;
-    case 'cargo':   return <UberCargoIcon size={size} color={color}/>;
-    default:        return <UberTaxiIcon size={size} color={color}/>;
-  }
-};
-const StarIcon = ({ size=20, filled=false, color='#FFB800' }: { size?:number; filled?:boolean; color?:string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-const ShieldIcon = ({ size=16, color='#00c8a0' }: { size?:number; color?:string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
-    <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3z"/>
-  </svg>
-);
-const SafetyIcon = ({ size=20 }: { size?:number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-  </svg>
-);
-const NavigationIcon = ({ size=24, color='#4A90E2', rotation=0 }: { size?:number; color?:string; rotation?:number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform:`rotate(${rotation}deg)` }}>
-    <path d="M12 2L20 7V17L12 22L4 17V7L12 2Z" fill={color} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
-// ─── SERVICE CARD ─────────────────────────────────────────────────────────────
-const ServiceCard: React.FC<{
-  title: string; subtitle: string; price: string; time: string;
-  rating: number; onSelect: () => void; selected?: boolean; iconColor?: string;
-  capacity?: number; luggage?: number; premium?: boolean;
-}> = ({ title, subtitle, price, time, rating, onSelect, selected=false, iconColor='#FFD700', capacity, luggage, premium }) => (
-  <button onClick={onSelect} style={{
-    width:'100%', background: selected ? '#FFFBF0' : '#fff',
-    border: `2px solid ${selected ? '#FFD700' : 'transparent'}`,
-    borderRadius:'16px', padding:'14px 16px', marginBottom:'10px',
-    cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center',
-    justifyContent:'space-between', fontFamily:'inherit',
-    boxShadow:'0 2px 8px rgba(0,0,0,0.08)', transition:'all 0.15s',
-  }}>
-    <div style={{ display:'flex', alignItems:'center', flex:1, gap:'12px' }}>
-      <div style={{ width:'56px', height:'56px', borderRadius:'14px', background:`${iconColor}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, position:'relative', cursor:'help' }}
-        title={title}
-        onMouseEnter={e => {
-          const tip = document.createElement('div');
-          tip.id = 'vehicle-tip';
-          tip.textContent = title;
-          tip.style.cssText = 'position:fixed;background:#1E293B;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
-          document.body.appendChild(tip);
-          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-          tip.style.left = (r.left + r.width/2 - tip.offsetWidth/2) + 'px';
-          tip.style.top = (r.top - 36) + 'px';
-        }}
-        onMouseLeave={() => { const t = document.getElementById('vehicle-tip'); if(t) t.remove(); }}
-      >
-        {getVehicleIcon(
-          title==='MiMoto'?'moto':title==='Comfort'?'comfort':title==='SUV'?'suv':title==='Van XL'?'xl':title==='Minivan'?'minivan':title==='MujerGQ'?'mujer':title==='Cargo'?'cargo':'basic',
-          36, iconColor, selected
-        )}
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px' }}>
-          <span style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>{title}</span>
-          {premium && <span style={{ background:'#FFD70020', color:'#B8860B', fontSize:'9px', fontWeight:'700', padding:'1px 6px', borderRadius:'4px' }}>PREMIUM</span>}
-        </div>
-        <div style={{ fontSize:'12px', color:'#8A9BB5', marginBottom:'4px' }}>{subtitle}</div>
-        <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-          <StarIcon size={12} filled color="#FFB800"/>
-          <span style={{ fontSize:'12px', fontWeight:'600', color:'#1A2B4A' }}>{rating}</span>
-          <span style={{ fontSize:'12px', color:'#8A9BB5' }}>• {time}</span>
-          {capacity && <span style={{ fontSize:'12px', color:'#8A9BB5' }}>• 👤{capacity}</span>}
-        </div>
-      </div>
-    </div>
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'6px', flexShrink:0 }}>
-      <span style={{ fontSize:'17px', fontWeight:'700', color:'#1A2B4A' }}>{price}</span>
-      {selected && <div style={{ width:'20px', height:'20px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <CheckIcon size={12}/>
-      </div>}
-    </div>
-  </button>
-);
-
-// ─── BOTÓN PROFESIONAL ────────────────────────────────────────────────────────
-type BtnType = 'primary' | 'secondary' | 'outline';
-const PBtn: React.FC<{
-  title: string; onPress: () => void; type?: BtnType;
-  icon?: React.ReactNode; disabled?: boolean; fullWidth?: boolean;
-}> = ({ title, onPress, type='primary', icon, disabled=false, fullWidth=true }) => {
-  const styles: Record<BtnType, React.CSSProperties> = {
-    primary: {
-      background: disabled ? 'rgba(0,200,160,0.3)' : 'linear-gradient(135deg,#00c8a0,#00b4e6)',
-      color: '#fff',
-      boxShadow: disabled ? 'none' : '0 4px 16px rgba(255,215,0,0.35)',
-    },
-    secondary: {
-      background: disabled ? 'rgba(30,41,59,0.5)' : '#1E293B',
-      color: '#fff',
-      boxShadow: disabled ? 'none' : '0 4px 12px rgba(0,0,0,0.25)',
-    },
-    outline: {
-      background: 'transparent',
-      color: disabled ? 'rgba(255,215,0,0.4)' : '#FFD700',
-      border: `2px solid ${disabled ? 'rgba(255,215,0,0.3)' : '#FFD700'}`,
-    },
-  };
-  return (
-    <button
-      onClick={disabled ? undefined : onPress}
-      disabled={disabled}
-      style={{
-        width: fullWidth ? '100%' : 'auto',
-        padding: '15px 28px',
-        borderRadius: '12px',
-        border: type === 'outline' ? `2px solid ${disabled ? 'rgba(255,215,0,0.3)' : '#FFD700'}` : 'none',
-        fontSize: '15px',
-        fontWeight: '700',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        fontFamily: 'inherit',
-        opacity: disabled ? 0.6 : 1,
-        transition: 'all 0.15s',
-        ...styles[type],
-      }}
-    >
-      {icon && <span style={{ display:'flex', alignItems:'center' }}>{icon}</span>}
-      {title}
-    </button>
-  );
-};
-
-const WalletIcon = ({ size=24, color='#10B981', filled=false }: { size?:number; color?:string; filled?:boolean }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="6" width="18" height="12" rx="2" fill={filled?color:'none'} stroke={color} strokeWidth="2"/>
-    <path d="M3 10H21" stroke={color} strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="17" cy="14" r="1.5" fill={color}/>
-  </svg>
-);
-const CheckIcon = ({ size=20 }: { size?:number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-);
-
-// ─── CENTRO DE SEGURIDAD ─────────────────────────────────────────────────────
-const SafetyCenter: React.FC<{ onClose: () => void; driver?: Driver | null }> = ({ onClose, driver }) => {
-  const [shareLocation, setShareLocation] = useState(false);
-  const [emergencyContact, setEmergencyContact] = useState('');
-  const [contactSaved, setContactSaved] = useState(false);
-
-  const callEmergency = () => {
-    if (window.confirm('¿Llamar al 112 - Emergencias?')) {
-      try { const {shell} = (window as any).require('electron'); shell.openExternal('tel:112'); }
-      catch { alert('Llamando al 112 - Emergencias...'); }
-    }
-  };
-
-  const saveContact = () => {
-    if (emergencyContact.trim()) { setContactSaved(true); setTimeout(() => setContactSaved(false), 2000); }
-  };
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:1000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
-      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{ background:'#F7F8FA', borderRadius:'20px 20px 0 0', width:'100%', maxWidth:'420px', maxHeight:'88vh', overflow:'auto', paddingBottom:'24px' }}>
-        {/* Handle */}
-        <div style={{ display:'flex', justifyContent:'center', paddingTop:'10px', paddingBottom:'4px' }}>
-          <div style={{ width:'36px', height:'4px', borderRadius:'2px', background:'#D1D5DB' }}/>
-        </div>
-        {/* Header */}
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 16px 12px', borderBottom:'1px solid #F0F2F5', background:'#fff' }}>
-          <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:'#FEF2F2', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <ShieldIcon size={20} color="#EF4444"/>
-          </div>
-          <div style={{ flex:1, fontSize:'16px', fontWeight:'700', color:'#111827' }}>Centro de Seguridad</div>
-          <button onClick={onClose} style={{ background:'#EAECEF', border:'none', borderRadius:'50%', width:'30px', height:'30px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#6B7280', fontSize:'14px' }}>✕</button>
-        </div>
-
-        <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:'10px' }}>
-          {/* Botón emergencia */}
-          <button onClick={callEmergency} style={{ width:'100%', padding:'16px', background:'linear-gradient(135deg,#dc2626,#ef4444)', border:'none', borderRadius:'16px', cursor:'pointer', boxShadow:'0 4px 16px rgba(220,38,38,0.3)' }}>
-            <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff', marginBottom:'3px' }}>🚨 EMERGENCIA 🚨</div>
-            <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.85)' }}>Contactar a las autoridades — 112</div>
-          </button>
-
-          {/* Info conductor */}
-          {driver && (
-            <div style={{ background:'#fff', borderRadius:'14px', padding:'14px', border:'1px solid #F0F2F5' }}>
-              <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', marginBottom:'10px', textTransform:'uppercase', letterSpacing:'0.5px' }}>Conductor</div>
-              {[['Nombre',driver.name],['Vehículo',driver.car],['Matrícula',driver.plate],['Teléfono',driver.phone]].map(([l,v]) => (
-                <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid #F9FAFB' }}>
-                  <span style={{ fontSize:'12px', color:'#9CA3AF' }}>{l}</span>
-                  <span style={{ fontSize:'12px', fontWeight:'600', color:'#111827' }}>{v}</span>
-                </div>
-              ))}
-              <button onClick={() => { try { const {shell}=(window as any).require('electron'); shell.openExternal(`tel:${driver.phone}`); } catch { alert(`Llamando a ${driver.name}...`); }}}
-                style={{ width:'100%', marginTop:'10px', padding:'10px', background:'#F0FDF9', border:'1px solid #A7F3D0', borderRadius:'10px', color:'#065F46', fontSize:'13px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                Llamar al conductor
-              </button>
-            </div>
-          )}
-
-          {/* Compartir ubicación */}
-          <div style={{ background:'#fff', borderRadius:'14px', padding:'14px', border:'1px solid #F0F2F5', display:'flex', alignItems:'center', gap:'12px' }}>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:'14px', fontWeight:'600', color:'#111827', marginBottom:'2px' }}>Compartir ubicación</div>
-              <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{shareLocation ? '✅ Compartiendo en tiempo real' : 'Activa para compartir tu ubicación'}</div>
-            </div>
-            <div onClick={() => setShareLocation(p => !p)} style={{ width:'44px', height:'24px', borderRadius:'12px', background: shareLocation ? '#00c8a0' : '#D1D5DB', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
-              <div style={{ position:'absolute', top:'2px', left: shareLocation ? '22px' : '2px', width:'20px', height:'20px', borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
-            </div>
-          </div>
-
-          {/* Contacto de emergencia */}
-          <div style={{ background:'#fff', borderRadius:'14px', padding:'14px', border:'1px solid #F0F2F5' }}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'#374151', marginBottom:'10px' }}>Contacto de emergencia</div>
-            <div style={{ background:'#F9FAFB', borderRadius:'10px', padding:'0 12px', height:'46px', display:'flex', alignItems:'center', border:'1px solid #E5E7EB', marginBottom:'10px' }}>
-              <input type="tel" placeholder="+240 XXX XXX XXX" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)}
-                style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:'14px', color:'#111827', fontFamily:'inherit' }}/>
-            </div>
-            <button onClick={saveContact} style={{ width:'100%', padding:'11px', background: contactSaved ? '#F0FDF9' : '#FFFBEB', border:`1px solid ${contactSaved ? '#A7F3D0' : '#FDE68A'}`, borderRadius:'10px', color: contactSaved ? '#065F46' : '#92400E', fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>
-              {contactSaved ? '✅ Contacto guardado' : 'Guardar contacto'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ─── PANEL DE NAVEGACIÓN TURN-BY-TURN ────────────────────────────────────────
 const NavPanel: React.FC<{ origin?: Location | null; destination?: Location | null }> = ({ origin, destination }) => {
   const [steps, setSteps] = React.useState<{instruction: string; distance: string; direction: string}[]>([]);
