@@ -5902,18 +5902,17 @@ const App: React.FC = () => {
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:'15px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name}</div>
-                        <div style={{ fontSize:'13px', color:'#6b7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px' }}>
+                        <div style={{ fontSize:'13px', color:'#6b7280', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:'2px', display:'flex', alignItems:'center', gap:'4px' }}>
                           {(() => {
-                            if (!lastMsg) return 'Sin mensajes';
-                            // Clean call message previews
-                            if (lastMsg.includes('Llamada perdida')) return '📵 Llamada perdida';
-                            if (lastMsg.includes('Llamada saliente')) return '📞 Llamada saliente';
-                            if (lastMsg.includes('Llamada')) return '📞 Llamada';
-                            if (lastMsg.includes('Mensaje de voz')) return '🎤 Mensaje de voz';
-                            if (lastMsg.includes('Foto')) return '📷 Foto';
-                            if (lastMsg.includes('Video')) return '🎥 Video';
-                            // Remove any corrupted ?? sequences
-                            return lastMsg.replace(/\?\?/g, '').trim() || 'Sin mensajes';
+                            if (!lastMsg) return <span>Sin mensajes</span>;
+                            if (lastMsg.includes('Llamada perdida')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 13"/><line x1="1" y1="1" x2="23" y2="23"/></svg><span style={{color:'#ef4444'}}>Llamada perdida</span></>;
+                            if (lastMsg.includes('Llamada saliente')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Llamada saliente</span></>;
+                            if (lastMsg.includes('Llamada')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Llamada</span></>;
+                            if (lastMsg.includes('Videollamada')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span>Videollamada</span></>;
+                            if (lastMsg.includes('Mensaje de voz')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Mensaje de voz</span></>;
+                            if (lastMsg.includes('Foto') || lastMsg.includes('📷') || lastMsg.includes('📌')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Foto</span></>;
+                            if (lastMsg.includes('Video') || lastMsg.includes('🎥')) return <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span>Video</span></>;
+                            return <span>{lastMsg.replace(/\?\?/g, '').trim() || 'Sin mensajes'}</span>;
                           })()}
                         </div>
                       </div>
