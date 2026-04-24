@@ -215,7 +215,7 @@ export const ChatConversation: React.FC<Props> = ({
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#f0f2f5', zIndex: 500 }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#f0f2f5', zIndex: 1100 }}>
 
       {/* Header */}
       <div style={{
