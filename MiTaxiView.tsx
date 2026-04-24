@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGPS } from './useGPS';
+import { playSuccess, playNotification, vibrate } from './useSounds';
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type Screen = 'home' | 'booking' | 'vehicle-select' | 'searching' | 'matched' | 'onway' | 'arrived' | 'qr-pay' | 'rating' | 'completed'
@@ -159,7 +160,14 @@ const RealMap: React.FC<{
       };
 
       // Marcador origen
-      addMarker(originLat, originLng, '📍', '#00c8a0', '<b>Tu ubicación</b>');
+      // Marcador usuario — punto azul pulsante
+      const userEl = document.createElement('div');
+      userEl.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.3);animation:pulse-user 1.5s infinite;cursor:pointer';
+      if (!document.getElementById('taxi-pulse-style')) { const s = document.createElement('style'); s.id = 'taxi-pulse-style'; s.textContent = '@keyframes pulse-user{0%,100%{box-shadow:0 0 0 6px rgba(74,144,226,0.3)}50%{box-shadow:0 0 0 14px rgba(74,144,226,0.08)}}'; document.head.appendChild(s); }
+      const userMarker = new Marker({ element: userEl }).setLngLat([originLng, originLat]);
+      userMarker.setPopup(new Popup({ offset: 20 }).setHTML('<b>Tu ubicación</b>'));
+      userMarker.addTo(map);
+      markersRef.current.push(userMarker);
 
       // Marcador destino
       if (destination) {
@@ -705,7 +713,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
     if (screen !== 'searching') return;
     setSearchTimer(0);
     const iv = setInterval(() => setSearchTimer(p => p+1), 1000);
-    const to = setTimeout(() => { clearInterval(iv); setDriver(DRIVERS[Math.floor(Math.random()*DRIVERS.length)]); setScreen('matched'); }, 2500);
+    const to = setTimeout(() => { clearInterval(iv); const d = DRIVERS[Math.floor(Math.random()*DRIVERS.length)]; setDriver(d); setScreen('matched'); try { playSuccess(0.8); vibrate([200,100,200,100,200]); } catch{} }, 2500);
     return () => { clearInterval(iv); clearTimeout(to); };
   }, [screen]);
 
@@ -1808,7 +1816,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
               </div>
             </div>
             <div style={{ display:'flex', gap:'8px' }}>
-              <PBtn title="Aceptar viaje" onPress={() => { setActiveRequest(req); setRequests(p => p.filter(r => r.id!==req.id)); setScreen('driver-trip'); }} type="primary" icon={<TaxiIcon size={16} color="#1E293B" filled/>} fullWidth={false}/>
+              <PBtn title="Aceptar viaje" onPress={() => { setActiveRequest(req); setRequests(p => p.filter(r => r.id!==req.id)); setScreen('driver-trip'); try { playSuccess(0.9); vibrate([300,100,300]); } catch{}; }} type="primary" icon={<TaxiIcon size={16} color="#1E293B" filled/>} fullWidth={false}/>
               <button onClick={() => setRequests(p => p.filter(r => r.id!==req.id))}
                 style={{ flex:1, padding:'12px', background:'#EEF2F7', border:'none', borderRadius:'10px', color:'#8A9BB5', fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>Rechazar</button>
             </div>
