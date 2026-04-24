@@ -198,7 +198,7 @@ const RealMap: React.FC<{
       markersRef.current.push(userM);
 
       // Centrar mapa en usuario
-      map.setView([originLat, originLng], 17);
+      map.setView([originLat, originLng], 15);
 
       // Destino
       if (destination) addMarker(destination.lat, destination.lng, '��', '#FFD700', '<b>Destino</b>');
