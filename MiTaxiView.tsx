@@ -89,7 +89,7 @@ const VEHICLE_CATEGORIES: VehicleCategory[] = [
   ]},
 ];
 
-// ─── MAPA REAL CON OPENSTREETMAP + LEAFLET ───────────────────────────────────
+// ─── MAPA CON LEAFLET + OPENSTREETMAP ──────────────────────────────────────
 const RealMap: React.FC<{
   origin?: Location | null; destination?: Location | null;
   driver?: Driver | null; status: string;
@@ -98,13 +98,12 @@ const RealMap: React.FC<{
 }> = ({ origin, destination, driver, status, onLocationSelect, height='100%', vehicleFilter }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [driverPos, setDriverPos] = useState(driver?.location ?? null);
   const markersRef = useRef<any[]>([]);
-  const routeLayerRef = useRef(false);
+  const routeRef = useRef<any>(null);
+  const [driverPos, setDriverPos] = useState(driver?.location ?? null);
 
   const originLat = origin?.lat ?? 3.7523;
-  const originLng = origin?.lng ?? 8.7371;
+  const originLng = origin?.lng ?? 8.7737;
 
   // Animar conductor hacia origen
   useEffect(() => {
@@ -112,8 +111,7 @@ const RealMap: React.FC<{
     setDriverPos(driver.location);
     if (status !== 'onway' && status !== 'matched') return;
     if (!origin) return;
-    const steps = 40;
-    let step = 0;
+    const steps = 40; let step = 0;
     const startLat = driver.location.lat, startLng = driver.location.lng;
     const endLat = origin.lat, endLng = origin.lng;
     const iv = setInterval(() => {
@@ -125,69 +123,90 @@ const RealMap: React.FC<{
     return () => clearInterval(iv);
   }, [driver, status, origin]);
 
-  // Inicializar mapa MapTiler
+  // Inicializar mapa Leaflet
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-    loadMaptiler().then(({ Map, config, MapStyle }) => {
-      config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
-      const map = new Map({
-        container: mapContainer.current!,
-        style: MapStyle.STREETS,
-        center: [originLng, originLat],
-        zoom: 14,
+
+    // Añadir CSS de Leaflet dinámicamente
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    import('leaflet').then((L) => {
+      const map = L.map(mapContainer.current!, {
+        center: [originLat, originLng],
+        zoom: 15,
+        zoomControl: true,
+        attributionControl: false,
       });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap',
+      }).addTo(map);
+
       mapRef.current = map;
-      map.on('load', () => setMapLoaded(true));
+
       if (onLocationSelect) {
-        map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
+        map.on('click', (e: any) => onLocationSelect(e.latlng.lat, e.latlng.lng));
       }
     });
-    return () => { mapRef.current?.remove(); mapRef.current = null; };
+
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
   }, []);
 
-  // Actualizar marcadores y ruta cuando cambian datos
+  // Actualizar marcadores cuando cambian datos
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
+    if (!mapRef.current) return;
     const map = mapRef.current;
 
-    loadMaptiler().then(({ Marker, Popup, LngLatBounds }) => {
+    import('leaflet').then((L) => {
       // Limpiar marcadores anteriores
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
+      if (routeRef.current) { routeRef.current.remove(); routeRef.current = null; }
 
-      const addMarker = (lat: number, lng: number, emoji: string, color: string, popupHtml?: string) => {
-        const el = document.createElement('div');
-        el.style.cssText = `width:38px;height:38px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer`;
-        el.textContent = emoji;
-        const m = new Marker({ element: el }).setLngLat([lng, lat]);
-        if (popupHtml) m.setPopup(new Popup({ offset: 25 }).setHTML(popupHtml));
-        m.addTo(map);
+      const makeIcon = (emoji: string, color: string) => L.divIcon({
+        html: `<div style="width:38px;height:38px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1">${emoji}</div>`,
+        className: '',
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+      });
+
+      const addMarker = (lat: number, lng: number, emoji: string, color: string, popup?: string) => {
+        const m = L.marker([lat, lng], { icon: makeIcon(emoji, color) }).addTo(map);
+        if (popup) m.bindPopup(popup);
         markersRef.current.push(m);
         return m;
       };
 
-      // Marcador origen
-      // Marcador usuario — punto azul pulsante
-      const userEl = document.createElement('div');
-      userEl.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.3);animation:pulse-user 1.5s infinite;cursor:pointer';
-      if (!document.getElementById('taxi-pulse-style')) { const s = document.createElement('style'); s.id = 'taxi-pulse-style'; s.textContent = '@keyframes pulse-user{0%,100%{box-shadow:0 0 0 6px rgba(74,144,226,0.3)}50%{box-shadow:0 0 0 14px rgba(74,144,226,0.08)}}'; document.head.appendChild(s); }
-      const userMarker = new Marker({ element: userEl }).setLngLat([originLng, originLat]);
-      userMarker.setPopup(new Popup({ offset: 20 }).setHTML('<b>Tu ubicación</b>'));
-      userMarker.addTo(map);
-      markersRef.current.push(userMarker);
+      // Pin usuario — punto azul pulsante
+      const userIcon = L.divIcon({
+        html: `<div style="width:22px;height:22px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.25)"></div>`,
+        className: '',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      const userM = L.marker([originLat, originLng], { icon: userIcon }).addTo(map);
+      userM.bindPopup('<b>Tu ubicación</b>');
+      markersRef.current.push(userM);
 
-      // Marcador destino
-      if (destination) {
-        addMarker(destination.lat, destination.lng, '🏁', '#FFD700', '<b>Destino</b>');
-      }
+      // Centrar mapa en usuario
+      map.setView([originLat, originLng], map.getZoom());
 
-      // Marcador conductor
-      if (driverPos) {
-        addMarker(driverPos.lat, driverPos.lng, '🚕', '#facc15',
-          `<b>${driver?.name || 'Tu conductor'}</b><br>${driver?.car || ''}`);
-      }
+      // Destino
+      if (destination) addMarker(destination.lat, destination.lng, '��', '#FFD700', '<b>Destino</b>');
 
-      // Vehículos disponibles (cuando no hay viaje activo)
+      // Conductor
+      if (driverPos) addMarker(driverPos.lat, driverPos.lng, '🚕', '#facc15', `<b>${driver?.name || 'Tu conductor'}</b><br>${driver?.car || ''}`);
+
+      // Vehículos cercanos
       if (!destination && !driverPos) {
         const vehicles = [
           { lat: originLat+0.003, lng: originLng+0.004, name:'Marcos N.', car:'Toyota Corolla', rating:'4.9', type:'taxi', eta:'2 min', emoji:'🚕', color:'#FFD700' },
@@ -197,74 +216,29 @@ const RealMap: React.FC<{
           { lat: originLat+0.005, lng: originLng+0.001, name:'Pedro E.', car:'Honda CB500', rating:'4.6', type:'moto', eta:'3 min', emoji:'🏍️', color:'#F97316' },
           { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', car:'Toyota Hiace', rating:'4.7', type:'xl', eta:'7 min', emoji:'🚐', color:'#3B82F6' },
         ];
-        const filtered = vehicleFilter && vehicleFilter !== 'all'
-          ? vehicles.filter(v => v.type === vehicleFilter)
-          : vehicles;
-        filtered.forEach(v => {
-          addMarker(v.lat, v.lng, v.emoji, v.color,
-            `<div style="font-family:sans-serif;min-width:130px"><b style="font-size:13px">${v.name}</b><br><span style="color:#666;font-size:11px">${v.car}</span><br><span style="color:#f59e0b">⭐ ${v.rating}</span> · <span style="color:#10B981">⏱ ${v.eta}</span></div>`
-          );
-        });
+        const filtered = vehicleFilter && vehicleFilter !== 'all' ? vehicles.filter(v => v.type === vehicleFilter) : vehicles;
+        filtered.forEach(v => addMarker(v.lat, v.lng, v.emoji, v.color,
+          `<b>${v.name}</b><br><small>${v.car}</small><br>⭐ ${v.rating} · ⏱ ${v.eta}`));
       }
 
-      // Ruta con OSRM
+      // Ruta
       if (destination) {
-        // Eliminar ruta anterior
-        if (routeLayerRef.current) {
-          try { map.removeLayer('route-line'); map.removeSource('route'); } catch {}
-          routeLayerRef.current = false;
-        }
-        const from = `${originLng},${originLat}`;
-        const to = `${destination.lng},${destination.lat}`;
-        fetch(`https://router.project-osrm.org/route/v1/driving/${from};${to}?overview=full&geometries=geojson`)
-          .then(r => r.json())
-          .then(data => {
-            const geometry = data.routes?.[0]?.geometry;
-            if (!geometry) return;
-            map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
-            map.addLayer({ id: 'route-line', type: 'line', source: 'route',
-              layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: { 'line-color': '#00B4D8', 'line-width': 5, 'line-opacity': 0.85 }
-            });
-            routeLayerRef.current = true;
-            // Ajustar vista
-            const coords = geometry.coordinates;
-            const bounds = coords.reduce(
-              (b: any, c: [number,number]) => b.extend(c),
-              new LngLatBounds(coords[0], coords[0])
-            );
-            map.fitBounds(bounds, { padding: 60, duration: 1000 });
-          })
-          .catch(() => {
-            // Fallback línea recta
-            map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {},
-              geometry: { type: 'LineString', coordinates: [[originLng,originLat],[destination.lng,destination.lat]] }
-            }});
-            map.addLayer({ id: 'route-line', type: 'line', source: 'route',
-              layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: { 'line-color': '#00B4D8', 'line-width': 5 }
-            });
-            routeLayerRef.current = true;
+        fetch(`https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`)
+          .then(r => r.json()).then(data => {
+            const coords = data.routes?.[0]?.geometry?.coordinates;
+            if (!coords) return;
+            const latlngs = coords.map((c: [number,number]) => [c[1], c[0]]);
+            routeRef.current = L.polyline(latlngs, { color: '#00B4D8', weight: 5, opacity: 0.85 }).addTo(map);
+            map.fitBounds(routeRef.current.getBounds(), { padding: [40, 40] });
+          }).catch(() => {
+            routeRef.current = L.polyline([[originLat, originLng],[destination.lat, destination.lng]], { color: '#00B4D8', weight: 5 }).addTo(map);
           });
       }
     });
-  }, [mapLoaded, origin, destination, driverPos, vehicleFilter]);
+  }, [originLat, originLng, destination, driverPos, vehicleFilter]);
 
-  return (
-    <div style={{ position: 'relative', width: '100%', height }}>
-      <div ref={mapContainer} style={{ width: '100%', height: '100%', borderRadius: '16px' }} />
-      {!mapLoaded && (
-        <div style={{ position:'absolute', inset:0, background:'#1a2035', borderRadius:'16px',
-          display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'8px' }}>
-          <div style={{ width:'32px', height:'32px', border:'3px solid #00c8a0', borderTopColor:'transparent',
-            borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>Cargando mapa...</span>
-        </div>
-      )}
-    </div>
-  );
+  return <div ref={mapContainer} style={{ width: '100%', height, borderRadius: '16px' }} />;
 };
-
 // Input simple para direcciones
 const AddressInput: React.FC<{
   onSelect: (loc: Location) => void; placeholder: string; value?: string;
