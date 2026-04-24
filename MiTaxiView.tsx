@@ -714,7 +714,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
 
   const finalPrice = Math.round(BASE_PRICE * rideType.multiplier * (promoApplied ? 0.85 : 1));
 
-  useEffect(() => { if (userLocation && !origin) setOrigin(userLocation); }, [userLocation]);
+  useEffect(() => { if (gpsPos) setOrigin({ lat: gpsPos.lat, lng: gpsPos.lng, address: gpsPos.city || `, ` }); }, [gpsPos?.lat, gpsPos?.lng, gpsPos?.city]);
 
   useEffect(() => {
     if (screen !== 'searching') return;
@@ -795,6 +795,11 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
           </div>
         </div>
       </div>
+
+      {/* GPS badge */}
+      {gpsLoading && <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(245,158,11,0.9)', borderRadius:'12px', padding:'5px 12px' }}><span style={{ fontSize:'11px', color:'#fff', fontWeight:'700' }}>📡 Obteniendo GPS...</span></div>}
+      {gpsError && <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(239,68,68,0.9)', borderRadius:'12px', padding:'5px 12px', cursor:'pointer' }} onClick={() => window.location.reload()}><span style={{ fontSize:'11px', color:'#fff', fontWeight:'700' }}>📍 Activar GPS</span></div>}
+      {gpsPos && !gpsLoading && <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(0,200,160,0.9)', borderRadius:'12px', padding:'5px 12px' }}><span style={{ fontSize:'11px', color:'#fff', fontWeight:'700' }}>✓ GPS activo</span></div>}
 
       {/* Badge conductores disponibles */}
       <div style={{ position:'absolute', top:'110px', left:'50%', transform:'translateX(-50%)', zIndex:20 }}>
