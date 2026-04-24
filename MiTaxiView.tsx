@@ -170,16 +170,11 @@ const RealMap: React.FC<{
       // Centrar mapa en posición real del usuario
       map.flyTo({ center: [originLng, originLat], zoom: 15, duration: 800 });
 
-      // // PIN usuario — marcador grande y visible
-      const userEl = document.createElement('div');
-      userEl.innerHTML = '<div style="position:relative;width:36px;height:36px">' +
-        '<div style="position:absolute;inset:0;border-radius:50%;background:#4A90E2;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.5)"></div>' +
-        '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#fff"></div>' +
-        '</div>';
-      userEl.style.cssText = 'width:36px;height:36px;cursor:pointer';
-      const userMarker = new Marker({ element: userEl, anchor: 'center' }).setLngLat([originLng, originLat]);
-      userMarker.setPopup(new Popup({ offset: 20 }).setHTML('<b>Tu ubicación</b>'));
-      userMarker.addTo(map);
+      // // PIN usuario — marcador nativo MapTiler (más fiable)
+      const userMarker = new Marker({ color: '#4A90E2', scale: 1.2 })
+        .setLngLat([originLng, originLat])
+        .setPopup(new Popup({ offset: 30 }).setHTML('<b>📍 Tu ubicación</b>'))
+        .addTo(map);
       markersRef.current.push(userMarker);
 
       // Marcador destino

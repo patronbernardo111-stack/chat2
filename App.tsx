@@ -4419,9 +4419,9 @@ const App: React.FC = () => {
 
           return (
             <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
-              {/* Wallpaper del chat - cubre toda la ventana del chat */}
+              {/* Wallpaper del chat - cubre el área de mensajes (debajo del header) */}
               {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   {(() => {
                     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
                     if (custom) {
