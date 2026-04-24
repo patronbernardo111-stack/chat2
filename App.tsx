@@ -4418,10 +4418,10 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '56px', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat - cubre el área de mensajes (debajo del header) */}
               {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   {(() => {
                     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
                     if (custom) {
@@ -4479,7 +4479,7 @@ const App: React.FC = () => {
                 </div>
               )}
               {/* Header conversacin */}
-              <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={{ position: 'fixed', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -4593,7 +4593,7 @@ const App: React.FC = () => {
               )}
 
               {/* Spacer for fixed header */}
-              <div style={{ height: '60px', flexShrink: 0, position: 'relative', zIndex: 1 }} />
+              <div style={{ height: '56px', flexShrink: 0, position: 'relative', zIndex: 1 }} />
               {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>

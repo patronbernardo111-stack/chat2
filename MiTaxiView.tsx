@@ -128,7 +128,7 @@ const RealMap: React.FC<{
   // Inicializar mapa MapTiler
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-    loadMaptiler().then(({ Map, config, MapStyle }) => {
+    import('@maptiler/sdk').then(({ Map, config, MapStyle }) => {
       config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
       const map = new Map({
         container: mapContainer.current!,
@@ -157,7 +157,7 @@ const RealMap: React.FC<{
     if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
 
-    loadMaptiler().then(({ Marker, Popup, LngLatBounds }) => {
+    import('@maptiler/sdk').then(({ Marker, Popup, LngLatBounds }) => {
       // Limpiar marcadores anteriores
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
