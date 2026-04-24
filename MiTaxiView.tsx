@@ -137,7 +137,13 @@ const RealMap: React.FC<{
         zoom: 14,
       });
       mapRef.current = map;
-      map.on('load', () => setMapLoaded(true));
+      // Disparar inmediatamente si ya está cargado, o esperar el evento
+      if (map.isStyleLoaded()) {
+        setMapLoaded(true);
+      } else {
+        map.on('load', () => setMapLoaded(true));
+        map.on('style.load', () => setMapLoaded(true));
+      }
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
