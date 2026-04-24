@@ -138,6 +138,10 @@ const RealMap: React.FC<{
       });
       mapRef.current = map;
       map.on('load', () => setMapLoaded(true));
+      map.on('style.load', () => setMapLoaded(true));
+      // Fallback: si el evento load no dispara (sprite faltante), forzar tras 2s
+      setTimeout(() => { if (mapRef.current && !mapRef.current._loaded) setMapLoaded(true); }, 2000);
+      setTimeout(() => { setMapLoaded(true); }, 4000);
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
