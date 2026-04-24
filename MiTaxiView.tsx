@@ -145,6 +145,13 @@ const RealMap: React.FC<{
     return () => { mapRef.current?.remove(); mapRef.current = null; };
   }, []);
 
+  // Cuando llega GPS real, centrar mapa inmediatamente
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    if (!origin?.lat || !origin?.lng) return;
+    mapRef.current.flyTo({ center: [origin.lng, origin.lat], zoom: 15, duration: 1200 });
+  }, [mapLoaded, origin?.lat, origin?.lng]);
+
   // Actualizar marcadores y ruta cuando cambian datos
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -167,10 +174,7 @@ const RealMap: React.FC<{
       };
 
       // Marcador origen
-      // Centrar mapa en posición real del usuario
-      map.flyTo({ center: [originLng, originLat], zoom: 15, duration: 800 });
-
-      // // PIN usuario — marcador nativo MapTiler (más fiable)
+// // PIN usuario — marcador nativo MapTiler (más fiable)
       const userMarker = new Marker({ color: '#4A90E2', scale: 1.2 })
         .setLngLat([originLng, originLat])
         .setPopup(new Popup({ offset: 30 }).setHTML('<b>📍 Tu ubicación</b>'))
