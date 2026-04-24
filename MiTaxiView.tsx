@@ -785,7 +785,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
   ]);
 
   // GPS real — posición del usuario
-  const { position: gpsPos, error: gpsError, loading: gpsLoading } = useGPS({
+  const { position: gpsPos, error: gpsError, loading: gpsLoading, requestPosition } = useGPS({
     watch: true,
     highAccuracy: true,
     reverseGeocode: true,
@@ -889,6 +889,25 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
           </div>
         </div>
       </div>
+
+      {/* GPS status indicator */}
+      {gpsLoading && (
+        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(17,24,39,0.85)', backdropFilter:'blur(10px)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px', border:'1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#f59e0b', animation:'pulse-user 1s infinite' }}/>
+          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>Obteniendo GPS...</span>
+        </div>
+      )}
+      {gpsError && (
+        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(239,68,68,0.9)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px', cursor:'pointer' }} onClick={() => requestPosition()}>
+          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>📍 Activar GPS</span>
+        </div>
+      )}
+      {gpsPos && !gpsLoading && (
+        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(0,200,160,0.9)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px' }}>
+          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#fff' }}/>
+          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>GPS activo</span>
+        </div>
+      )}
 
       {/* Badge conductores disponibles */}
       <div style={{ position:'absolute', top:'110px', left:'50%', transform:'translateX(-50%)', zIndex:20 }}>
@@ -1003,7 +1022,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
       </div>
 
       {/* Botón centrar ubicación */}
-      <button onClick={() => userLocation && setOrigin(userLocation)}
+      <button onClick={() => { requestPosition(); if (userLocation) setOrigin(userLocation); }}
         style={{ position:'absolute', right:'16px', bottom: (destination || bookingSheetOpen) ? '320px' : '48px', zIndex:20, width:'48px', height:'48px', borderRadius:'50%', background:'#FFFFFF', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.25)', transition:'bottom 0.35s' }}>
         <NavigationIcon size={22} color="#1E293B"/>
       </button>
