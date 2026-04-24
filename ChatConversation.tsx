@@ -105,9 +105,10 @@ export const ChatConversation: React.FC<Props> = ({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (isNearBottomRef.current) {
+    // Siempre scroll al fondo cuando llega un mensaje nuevo
+    requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
-    }
+    });
   }, [sorted.length]);
 
   // Scroll al fondo al abrir el chat
