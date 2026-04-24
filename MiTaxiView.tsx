@@ -150,7 +150,7 @@ const RealMap: React.FC<{
       }).addTo(map);
       // Calles y nombres encima
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, opacity: 0.45, attribution: '© OSM',
+        maxZoom: 19, opacity: 0.3, attribution: '© OSM',
       }).addTo(map);
 
       mapRef.current = map;
@@ -202,7 +202,7 @@ const RealMap: React.FC<{
       markersRef.current.push(userM);
 
       // Centrar mapa en usuario
-      map.setView([originLat, originLng], 15);
+      map.setView([originLat, originLng], 14);
 
       // Destino
       if (destination) addMarker(destination.lat, destination.lng, '��', '#FFD700', '<b>Destino</b>');
@@ -642,6 +642,76 @@ const SafetyCenter: React.FC<{ onClose: () => void; driver?: Driver | null }> = 
   );
 };
 
+// ─── PANEL DE NAVEGACIÓN TURN-BY-TURN ────────────────────────────────────────
+const NavPanel: React.FC<{ origin?: Location | null; destination?: Location | null }> = ({ origin, destination }) => {
+  const [steps, setSteps] = React.useState<{instruction: string; distance: string; direction: string}[]>([]);
+  const [totalDist, setTotalDist] = React.useState('');
+  const [totalTime, setTotalTime] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!origin || !destination) return;
+    setLoading(true);
+    fetch(`https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&steps=true&annotations=false`)
+      .then(r => r.json())
+      .then(data => {
+        const route = data.routes?.[0];
+        if (!route) return;
+        const dist = route.distance > 1000 ? `${(route.distance/1000).toFixed(1)} km` : `${Math.round(route.distance)} m`;
+        const time = route.duration > 3600 ? `${Math.floor(route.duration/3600)}h ${Math.floor((route.duration%3600)/60)}min` : `${Math.floor(route.duration/60)} min`;
+        setTotalDist(dist);
+        setTotalTime(time);
+        const allSteps: any[] = [];
+        route.legs?.forEach((leg: any) => {
+          leg.steps?.forEach((step: any) => {
+            const d = step.distance > 1000 ? `${(step.distance/1000).toFixed(1)} km` : `${Math.round(step.distance)} m`;
+            const maneuver = step.maneuver?.type || '';
+            const modifier = step.maneuver?.modifier || '';
+            let direction = '↑';
+            if (modifier === 'left') direction = '←';
+            else if (modifier === 'right') direction = '→';
+            else if (modifier === 'slight left') direction = '↖';
+            else if (modifier === 'slight right') direction = '↗';
+            else if (modifier === 'sharp left') direction = '↙';
+            else if (modifier === 'sharp right') direction = '↘';
+            else if (maneuver === 'arrive') direction = '🏁';
+            else if (maneuver === 'depart') direction = '🚀';
+            const name = step.name || '';
+            const instruction = name ? `${maneuver === 'turn' ? 'Girar' : maneuver === 'arrive' ? 'Llegada' : 'Continuar'} ${modifier ? modifier + ' en' : 'por'} ${name}` : step.maneuver?.type || 'Continuar';
+            allSteps.push({ instruction, distance: d, direction });
+          });
+        });
+        setSteps(allSteps.slice(0, 8));
+        setLoading(false);
+      }).catch(() => setLoading(false));
+  }, [origin?.lat, origin?.lng, destination?.lat, destination?.lng]);
+
+  return (
+    <div style={{ background:'#fff', borderRadius:'16px', padding:'14px', marginBottom:'16px', boxShadow:'0 2px 12px rgba(0,0,0,0.08)' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'12px' }}>
+        <div style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>🧭 Navegación 导航</div>
+        {totalDist && <div style={{ fontSize:'12px', color:'#8A9BB5' }}>{totalDist} · {totalTime}</div>}
+      </div>
+      {loading ? (
+        <div style={{ fontSize:'13px', color:'#8A9BB5', textAlign:'center', padding:'8px' }}>Calculando ruta...</div>
+      ) : steps.length === 0 ? (
+        <div style={{ fontSize:'13px', color:'#8A9BB5', textAlign:'center', padding:'8px' }}>Ruta no disponible</div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+          {steps.map((step, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 10px', background: i === 0 ? '#EEF9F6' : '#F8FAFC', borderRadius:'10px', border: i === 0 ? '1px solid #A7F3D0' : '1px solid #F0F2F5' }}>
+              <div style={{ fontSize:'20px', width:'28px', textAlign:'center', flexShrink:0 }}>{step.direction}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:'13px', fontWeight: i === 0 ? '700' : '500', color:'#1A2B4A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{step.instruction}</div>
+              </div>
+              <div style={{ fontSize:'11px', color:'#8A9BB5', flexShrink:0 }}>{step.distance}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 // ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
 export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, userName='Usuario', userPhone='' }) => {
   const [screen, setScreen]             = useState<Screen>('home');
@@ -1224,6 +1294,11 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
         <div style={{ height:'260px', marginBottom:'16px', borderRadius:'16px', overflow:'hidden' }}>
           <RealMap origin={origin} destination={destination} driver={driver} status="onway"/>
         </div>
+        {/* Navegación 导航 — instrucciones turn-by-turn */}
+        {destination && (
+          <NavPanel origin={origin} destination={destination} />
+        )}
+
         {/* Countdown llegada */}
         <div style={{ background: driverArrivalCountdown === 0 ? 'linear-gradient(135deg,rgba(0,200,160,0.25),rgba(0,180,230,0.25))' : 'linear-gradient(135deg,rgba(0,200,160,0.15),rgba(0,180,230,0.15))', borderRadius:'16px', padding:'16px', marginBottom:'16px', border: driverArrivalCountdown === 0 ? '1px solid rgba(0,200,160,0.5)' : 'none' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
