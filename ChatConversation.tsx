@@ -349,15 +349,18 @@ export const ChatConversation: React.FC<Props> = ({
           <div style={{ position: 'fixed', inset: 0, zIndex: 5999, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }} onClick={() => setContextMenu(null)} />
           <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', zIndex: 6000, width: '260px', background: '#fff', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
             {[
-              { label: 'Copiar', icon: '📋', action: () => { navigator.clipboard?.writeText(contextMenu.msg.text || ''); setContextMenu(null); } },
-              { label: 'Responder', icon: '↩️', action: () => { setInput(`> ${contextMenu.msg.text?.slice(0,40)}...\n`); setContextMenu(null); inputRef.current?.focus(); } },
+              { label: 'Copiar', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>, action: () => { navigator.clipboard?.writeText(contextMenu.msg.text || ''); setContextMenu(null); } },
+              { label: 'Responder', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>, action: () => { setInput(`> ${contextMenu.msg.text?.slice(0,40)}...\n`); setContextMenu(null); inputRef.current?.focus(); } },
               ...(contextMenu.msg.from === 'me' ? [
-                { label: 'Editar', icon: '✏️', action: () => startEdit(contextMenu.msg) },
-                { label: 'Eliminar', icon: '🗑️', action: () => { onDeleteMessage?.(contextMenu.msg.id); setContextMenu(null); } },
-              ] : []),
+                { label: 'Editar', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>, action: () => startEdit(contextMenu.msg) },
+                { label: 'Eliminar para todos', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>, action: () => { onDeleteMessage?.(contextMenu.msg.id); setContextMenu(null); }, danger: true },
+                { label: 'Eliminar para mí', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>, action: () => { onDeleteMessage?.(contextMenu.msg.id); setContextMenu(null); }, danger: true },
+              ] : [
+                { label: 'Eliminar para mí', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>, action: () => { onDeleteMessage?.(contextMenu.msg.id); setContextMenu(null); }, danger: true },
+              ]),
             ].map(item => (
-              <button key={item.label} onClick={item.action} style={{ width: '100%', background: 'none', border: 'none', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '15px', color: item.label === 'Eliminar' ? '#ef4444' : '#111827', borderBottom: '1px solid #f3f4f6', fontFamily: 'inherit' }}>
-                <span>{item.icon}</span>{item.label}
+              <button key={item.label} onClick={item.action} style={{ width: '100%', background: 'none', border: 'none', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '15px', color: (item as any).danger ? '#ef4444' : '#111827', borderBottom: '1px solid #f3f4f6', fontFamily: 'inherit' }}>
+                <span style={{ display: 'flex', alignItems: 'center', color: (item as any).danger ? '#ef4444' : '#6b7280' }}>{item.icon}</span>{item.label}
               </button>
             ))}
           </div>
