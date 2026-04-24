@@ -48,6 +48,12 @@ interface Transaction {
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
+
+  // Precargar SDK de MapTiler en background para que MiTaxi abra rápido
+  React.useEffect(() => {
+    const timer = setTimeout(() => { import('@maptiler/sdk').catch(() => {}); }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
   // -- Auth persistente -----------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
   // -- WebRTC real -----------------------------------------------

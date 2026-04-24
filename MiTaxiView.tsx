@@ -2,6 +2,13 @@
 import { useGPS } from './useGPS';
 import { playSuccess, playNotification, vibrate } from './useSounds';
 
+// Cache del SDK de MapTiler para carga instantánea en reusos
+let _maptilerCache: any = null;
+const loadMaptiler = () => {
+  if (_maptilerCache) return Promise.resolve(_maptilerCache);
+  return import('@maptiler/sdk').then(sdk => { _maptilerCache = sdk; return sdk; });
+};
+
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 type Screen = 'home' | 'booking' | 'vehicle-select' | 'searching' | 'matched' | 'onway' | 'arrived' | 'qr-pay' | 'rating' | 'completed'
   | 'driver-home' | 'driver-register' | 'driver-requests' | 'driver-trip' | 'driver-qr' | 'driver-earnings';
@@ -121,7 +128,7 @@ const RealMap: React.FC<{
   // Inicializar mapa MapTiler
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-    import('@maptiler/sdk').then(({ Map, config, MapStyle }) => {
+    loadMaptiler().then(({ Map, config, MapStyle }) => {
       config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
       const map = new Map({
         container: mapContainer.current!,
@@ -143,7 +150,7 @@ const RealMap: React.FC<{
     if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
 
-    import('@maptiler/sdk').then(({ Marker, Popup, LngLatBounds }) => {
+    loadMaptiler().then(({ Marker, Popup, LngLatBounds }) => {
       // Limpiar marcadores anteriores
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
