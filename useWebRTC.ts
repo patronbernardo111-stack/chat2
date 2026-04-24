@@ -174,12 +174,14 @@ export function useWebRTC() {
     let pollCount = 0;
     let answerSet = false;
     let calleeCandidatesApplied = 0;
+    let consecutiveErrors = 0;
 
     pollingRef.current = setInterval(async () => {
       if (endedRef.current) return;
       try {
         pollCount++;
         const session = await sigFetch(`/call/${callId}`);
+        consecutiveErrors = 0; // reset on success
         if (!session || session.ended) { triggerEnded(); return; }
 
         if (!answerSet && session.answer && p.signalingState === 'have-local-offer') {
@@ -193,11 +195,17 @@ export function useWebRTC() {
           }
           calleeCandidatesApplied = cands.length;
         }
-        // Timeout 45s sin respuesta
-        if (pollCount > 30 && !answerSet) triggerEnded();
+        // Timeout 60s sin respuesta (aumentado de 45s)
+        if (pollCount > 40 && !answerSet) triggerEnded();
       } catch (err: any) {
-        // 404 = sesión terminada en Supabase
-        if (err?.message?.includes('404') || err?.message?.includes('Signal error 404')) triggerEnded();
+        consecutiveErrors++;
+        // Solo cortar si hay 5+ errores consecutivos Y la conexión WebRTC está caída
+        const rtcState = p.connectionState || p.iceConnectionState;
+        const rtcFailed = rtcState === 'failed' || rtcState === 'disconnected' || rtcState === 'closed';
+        if (consecutiveErrors >= 5 && rtcFailed) {
+          triggerEnded();
+        }
+        // Si es 404 pero WebRTC sigue conectado, ignorar (servidor reiniciado)
       }
     }, 1500);
   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
@@ -248,10 +256,12 @@ export function useWebRTC() {
 
     setCallState('connected');
 
+    let calleeConsecutiveErrors = 0;
     pollingRef.current = setInterval(async () => {
       if (endedRef.current) return;
       try {
         const s = await sigFetch(`/call/${callId}`);
+        calleeConsecutiveErrors = 0;
         if (!s || s.ended) { triggerEnded(); return; }
         const cands = s.callerCandidates || [];
         for (let i = callerCandidatesApplied; i < cands.length; i++) {
@@ -259,7 +269,11 @@ export function useWebRTC() {
         }
         callerCandidatesApplied = cands.length;
       } catch (err: any) {
-        if (err?.message?.includes('404') || err?.message?.includes('Signal error 404')) triggerEnded();
+        calleeConsecutiveErrors++;
+        // Solo cortar si hay 5+ errores Y WebRTC está caído
+        const rtcState = p.connectionState || p.iceConnectionState;
+        const rtcFailed = rtcState === 'failed' || rtcState === 'disconnected' || rtcState === 'closed';
+        if (calleeConsecutiveErrors >= 5 && rtcFailed) triggerEnded();
       }
     }, 1500);
   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);

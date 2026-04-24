@@ -207,6 +207,7 @@ const App: React.FC = () => {
   const [activeCall, setActiveCall] = useState<{ type: 'audio' | 'video'; contact: any; status: 'calling' | 'connected' | 'ended' } | null>(null);
   const [callDuration, setCallDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [callMinimized, setCallMinimized] = useState<boolean>(false);
   const [isCameraOff, setIsCameraOff] = useState<boolean>(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [selectedNotif, setSelectedNotif] = useState<any>(null);
@@ -2555,6 +2556,7 @@ const App: React.FC = () => {
     }
     // Forzar cierre inmediato de la ventana de llamada
     setActiveCall(null); 
+    setCallMinimized(false);
     setCallDuration(0); 
     setIsMuted(false); 
     setIsCameraOff(false);
@@ -2622,13 +2624,34 @@ const App: React.FC = () => {
     if (!activeCall) return null;
     const { type, contact, status } = activeCall;
     const color = contact?.color || '#00c8a0';
-    // Nombre correcto: priorizar full_name de users, luego title/name/subtitle (evitar IDs)
     const rawName = contact?.users?.full_name || contact?.full_name || contact?.title || contact?.name || contact?.subtitle || '';
     const name = rawName && !rawName.match(/^[0-9a-f-]{20,}$/i) ? rawName : 'Contacto';
     const initials = name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'EG';
 
+    // Floating mini widget when minimized
+    if (callMinimized) {
+      return (
+        <div onClick={() => setCallMinimized(false)} style={{ position: 'fixed', bottom: '90px', right: '16px', zIndex: 2000, background: 'linear-gradient(135deg,#1a1a2e,#0f3460)', borderRadius: '16px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', minWidth: '160px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${color}30`, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', color, flexShrink: 0 }}>{initials}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>{status === 'connected' ? formatCallDuration(callDuration) : type === 'video' ? '📹 Video' : '📞 Voz'}</div>
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); endCall(); }} style={{ background: '#ef4444', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: type === 'video' ? '#000' : 'linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* Botón minimizar — bajar la llamada y seguir chateando */}
+        <button onClick={() => setCallMinimized(true)} style={{ position: 'absolute', top: 'calc(16px + env(safe-area-inset-top, 44px))', left: '16px', zIndex: 20, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '20px', padding: '8px 14px', color: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', backdropFilter: 'blur(10px)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+          Minimizar
+        </button>
         {/* Video remoto (fondo) */}
         {type === 'video' && (
           <div style={{ position: 'absolute', inset: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
