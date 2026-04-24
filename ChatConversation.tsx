@@ -101,13 +101,12 @@ export const ChatConversation: React.FC<Props> = ({
   // Ordenar mensajes ASC (antiguo arriba, nuevo abajo)
   const sorted = [...messages].sort((a, b) => getMsgTs(a) - getMsgTs(b));
 
-  // Scroll al fondo al montar y cuando llegan mensajes nuevos
+  // Scroll al fondo al montar y cuando llegan mensajes nuevos — SIEMPRE
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Siempre scroll al fondo cuando llega un mensaje nuevo
     requestAnimationFrame(() => {
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     });
   }, [sorted.length]);
 
@@ -138,6 +137,10 @@ export const ChatConversation: React.FC<Props> = ({
     }
 
     setInput('');
+    // Scroll inmediato al enviar
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    });
     await onSendMessage(text);
   };
 

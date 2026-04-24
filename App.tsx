@@ -226,6 +226,7 @@ const App: React.FC = () => {
     try { const s = localStorage.getItem('egchat_messages'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const [currentChatInput, setCurrentChatInput] = useState<string>('');
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [showChatEmojis, setShowChatEmojis] = useState<boolean>(false);
   const [showChatAttach, setShowChatAttach] = useState<boolean>(false);
   const [showNewChatModal, setShowNewChatModal] = useState<boolean>(false);
