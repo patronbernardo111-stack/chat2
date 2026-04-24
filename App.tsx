@@ -8095,6 +8095,68 @@ const App: React.FC = () => {
     return () => { if (typeof cleanup === 'function') cleanup(); };
   }, [isAuthenticated]);
 
+  // -- Listener de mensajes del Service Worker (llamadas desde notificación push) --
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data) return;
+
+      // Llamada entrante desde notificación push (app estaba cerrada/hibernada)
+      if (data.type === 'INCOMING_CALL') {
+        if (incomingCallIdRef.current) return; // ya hay una activa
+        // Buscar la sesión de llamada en el servidor
+        const callId = data.callId;
+        const token = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
+        if (!callId || !token) return;
+        fetch(`${(import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com'}/api/call/${callId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(r => r.json()).then(session => {
+          if (!session || session.ended || !session.offer) return;
+          incomingCallIdRef.current = callId;
+          setIncomingCall({
+            callId,
+            callerId: session.callerId || data.callerId,
+            type: (session.type || data.callType || 'audio') as 'audio' | 'video',
+            offer: session.offer,
+          });
+          startRingtone(); vibrate([500, 200, 500, 200, 500]);
+          // Si el usuario tocó "Aceptar" en la notificación, auto-aceptar
+          if (data.autoAccept) {
+            setTimeout(async () => {
+              try {
+                const contact = { id: data.callerId, title: data.callerName || 'Llamada', status: 'online', avatarUrl: '' };
+                setActiveCall({ type: session.type || 'audio', contact, status: 'calling' });
+                incomingCallIdRef.current = null;
+                setIncomingCall(null);
+                stopRingtone();
+                await webrtc.answerCall(callId, session.offer, session.type || 'audio');
+                setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
+              } catch (err) { console.error('Auto-accept call error:', err); }
+            }, 500);
+          }
+        }).catch(err => console.warn('SW call fetch error:', err));
+      }
+
+      // Llamada rechazada desde notificación
+      if (data.type === 'CALL_REJECTED' && data.callId === incomingCallIdRef.current) {
+        stopRingtone();
+        incomingCallIdRef.current = null;
+        setIncomingCall(null);
+      }
+
+      // Click en notificación de mensaje
+      if (data.type === 'NOTIFICATION_CLICK' && data.chatId) {
+        setCurrentView('Mensajería');
+        const chat = realChats.find((c: any) => c.id?.toString() === data.chatId?.toString());
+        if (chat) setSelectedChat(chat);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, [isAuthenticated, realChats]);
+
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
   const loadContacts = React.useCallback(async () => {
     try {
@@ -8167,6 +8229,28 @@ const App: React.FC = () => {
           showToast(`? ${addName || addPhone} aadido a contactos`, 'success');
         } catch {}
       }, 2000);
+    }
+
+    // Manejar llamada entrante desde notificación push (app abierta desde hibernado)
+    const callId = urlParams.get('call');
+    const callerNameParam = urlParams.get('caller');
+    const callType = (urlParams.get('type') || 'audio') as 'audio' | 'video';
+    const autoAccept = urlParams.get('accept') === '1';
+    if (callId) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setTimeout(async () => {
+        try {
+          const token = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
+          if (!token) return;
+          const apiBase = (import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com';
+          const r = await fetch(`${apiBase}/api/call/${callId}`, { headers: { Authorization: `Bearer ${token}` } });
+          const session = await r.json();
+          if (!session || session.ended || !session.offer) return;
+          incomingCallIdRef.current = callId;
+          setIncomingCall({ callId, callerId: session.callerId, type: session.type || callType, offer: session.offer });
+          startRingtone(); vibrate([500, 200, 500, 200, 500]);
+        } catch (err) { console.warn('URL call param error:', err); }
+      }, 1500);
     }
     authAPI.me().then((u: any) => {
       if (u?.id) {

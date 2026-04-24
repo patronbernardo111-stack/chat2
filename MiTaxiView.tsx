@@ -104,7 +104,7 @@ const RealMap: React.FC<{
   const routeLayerRef = useRef(false);
 
   const originLat = origin?.lat ?? 3.7523;
-  const originLng = origin?.lng ?? 8.7371;
+  const originLng = origin?.lng ?? 8.7737;
 
   // Animar conductor hacia origen
   useEffect(() => {
@@ -173,13 +173,8 @@ const RealMap: React.FC<{
         return m;
       };
 
-      // Marcador origen
-// // PIN usuario — marcador nativo MapTiler (más fiable)
-      const userMarker = new Marker({ color: '#4A90E2', scale: 1.2 })
-        .setLngLat([originLng, originLat])
-        .setPopup(new Popup({ offset: 30 }).setHTML('<b>📍 Tu ubicación</b>'))
-        .addTo(map);
-      markersRef.current.push(userMarker);
+      // Marcador usuario — punto azul (mismo sistema que taxis)
+      addMarker(originLat, originLng, '🔵', '#1d4ed8', '<b>Tu ubicación</b>');
 
       // Marcador destino
       if (destination) {
