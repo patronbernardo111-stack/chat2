@@ -218,7 +218,10 @@ const RealMap: React.FC<{
           { lat: originLat+0.005, lng: originLng+0.001, name:'Pedro E.', car:'Honda CB500', rating:'4.6', type:'moto', eta:'3 min', emoji:'🏍️', color:'#F97316' },
           { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', car:'Toyota Hiace', rating:'4.7', type:'xl', eta:'7 min', emoji:'🚐', color:'#3B82F6' },
         ];
-        const filtered = vehicleFilter && vehicleFilter !== 'all' ? vehicles.filter(v => v.type === vehicleFilter) : vehicles;
+        // Map rideType ids to vehicle types
+        const typeMap: Record<string,string> = { basic:'taxi', comfort:'comfort', suv:'suv', xl:'xl', minivan:'xl', mujer:'mujer', moto:'moto', cargo:'xl' };
+        const mappedFilter = vehicleFilter ? (typeMap[vehicleFilter] || vehicleFilter) : null;
+        const filtered = mappedFilter && mappedFilter !== 'all' ? vehicles.filter(v => v.type === mappedFilter) : vehicles;
         filtered.forEach(v => addMarker(v.lat, v.lng, v.emoji, v.color,
           `<b>${v.name}</b><br><small>${v.car}</small><br>⭐ ${v.rating} · ⏱ ${v.eta}`));
       }
