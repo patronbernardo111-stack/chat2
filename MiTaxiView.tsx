@@ -209,6 +209,8 @@ const RealMap: React.FC<{
           });
       }
     });
+    };
+    tryAddMarkers();
   }, [mapLoaded, origin, destination, driverPos, vehicleFilter]);
 
 
