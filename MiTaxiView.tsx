@@ -104,7 +104,7 @@ const RealMap: React.FC<{
   const routeLayerRef = useRef(false);
 
   const originLat = origin?.lat ?? 3.7523;
-  const originLng = origin?.lng ?? 8.7737;
+  const originLng = origin?.lng ?? 8.7371;
 
   // Animar conductor hacia origen
   useEffect(() => {
@@ -128,21 +128,16 @@ const RealMap: React.FC<{
   // Inicializar mapa MapTiler
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-    import('@maptiler/sdk').then(({ Map, config, MapStyle }) => {
+    loadMaptiler().then(({ Map, config, MapStyle }) => {
       config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
       const map = new Map({
         container: mapContainer.current!,
-        style: 'https://api.maptiler.com/maps/streets/style.json?key=bg3FUa7es7Qn1TITIWjO',
+        style: MapStyle.STREETS,
         center: [originLng, originLat],
         zoom: 14,
       });
       mapRef.current = map;
-      // Disparar inmediatamente si ya está cargado, o esperar el evento
-      const onLoad = () => setMapLoaded(true);
-      map.on('load', onLoad);
-      map.on('style.load', onLoad);
-      // Fallback: force after 3s if events don't fire
-      setTimeout(() => { if (mapRef.current) setMapLoaded(true); }, 3000);
+      map.on('load', () => setMapLoaded(true));
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
@@ -150,19 +145,12 @@ const RealMap: React.FC<{
     return () => { mapRef.current?.remove(); mapRef.current = null; };
   }, []);
 
-  // Cuando llega GPS real, centrar mapa inmediatamente
-  useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
-    if (!origin?.lat || !origin?.lng) return;
-    mapRef.current.flyTo({ center: [origin.lng, origin.lat], zoom: 15, duration: 1200 });
-  }, [mapLoaded, origin]);
-
   // Actualizar marcadores y ruta cuando cambian datos
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
 
-    import('@maptiler/sdk').then(({ Marker, Popup, LngLatBounds }) => {
+    loadMaptiler().then(({ Marker, Popup, LngLatBounds }) => {
       // Limpiar marcadores anteriores
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
@@ -178,8 +166,15 @@ const RealMap: React.FC<{
         return m;
       };
 
-      // Marcador usuario — punto azul (mismo sistema que taxis)
-      addMarker(originLat, originLng, '🔵', '#1d4ed8', '<b>Tu ubicación</b>');
+      // Marcador origen
+      // Marcador usuario — punto azul pulsante
+      const userEl = document.createElement('div');
+      userEl.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.3);animation:pulse-user 1.5s infinite;cursor:pointer';
+      if (!document.getElementById('taxi-pulse-style')) { const s = document.createElement('style'); s.id = 'taxi-pulse-style'; s.textContent = '@keyframes pulse-user{0%,100%{box-shadow:0 0 0 6px rgba(74,144,226,0.3)}50%{box-shadow:0 0 0 14px rgba(74,144,226,0.08)}}'; document.head.appendChild(s); }
+      const userMarker = new Marker({ element: userEl }).setLngLat([originLng, originLat]);
+      userMarker.setPopup(new Popup({ offset: 20 }).setHTML('<b>Tu ubicación</b>'));
+      userMarker.addTo(map);
+      markersRef.current.push(userMarker);
 
       // Marcador destino
       if (destination) {
@@ -270,136 +265,51 @@ const RealMap: React.FC<{
   );
 };
 
-// ─── SMART ADDRESS INPUT con historial y autocompletado ─────────────────────
-const SAVED_ADDRESSES_KEY = 'egchat_taxi_addresses';
-
-const getSavedAddresses = (): Location[] => {
-  try { return JSON.parse(localStorage.getItem(SAVED_ADDRESSES_KEY) || '[]'); } catch { return []; }
-};
-const saveAddress = (loc: Location) => {
-  if (!loc.address || loc.address.length < 3) return;
-  try {
-    const saved = getSavedAddresses();
-    const exists = saved.find(a => a.address === loc.address);
-    if (!exists) {
-      const updated = [loc, ...saved].slice(0, 20);
-      localStorage.setItem(SAVED_ADDRESSES_KEY, JSON.stringify(updated));
-    }
-  } catch {}
-};
-
+// Input simple para direcciones
 const AddressInput: React.FC<{
-  onSelect: (loc: Location) => void;
-  placeholder: string;
-  value?: string;
-  editable?: boolean;
-}> = ({ onSelect, placeholder, value, editable = true }) => {
+  onSelect: (loc: Location) => void; placeholder: string; value?: string;
+}> = ({ onSelect, placeholder, value }) => {
   const [inputValue, setInputValue] = useState(value || '');
-  const [suggestions, setSuggestions] = useState<Location[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const debounceRef = React.useRef<any>(null);
-
-  React.useEffect(() => { setInputValue(value || ''); }, [value]);
-
-  const searchAddress = async (query: string) => {
-    if (query.length < 2) { setSuggestions([]); return; }
-    setLoading(true);
-    try {
-      // 1. Buscar en historial local primero
-      const saved = getSavedAddresses();
-      const localMatches = saved.filter(a =>
-        a.address.toLowerCase().includes(query.toLowerCase())
-      );
-      // 2. Buscar en zonas predefinidas
-      const zoneMatches = ZONES
-        .filter(z => z.name.toLowerCase().includes(query.toLowerCase()))
-        .map(z => ({ lat: z.lat, lng: z.lng, address: z.name }));
-      // 3. Nominatim geocoding
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' Guinea Ecuatorial')}&format=json&limit=4&countrycodes=gq`
-      );
-      const data = await res.json();
-      const nominatimResults: Location[] = data.map((r: any) => ({
-        lat: parseFloat(r.lat),
-        lng: parseFloat(r.lon),
-        address: r.display_name.split(',').slice(0, 2).join(', '),
-      }));
-      // Combinar sin duplicados
-      const all = [...localMatches, ...zoneMatches, ...nominatimResults];
-      const unique = all.filter((a, i) => all.findIndex(b => b.address === a.address) === i);
-      setSuggestions(unique.slice(0, 6));
-      setShowSuggestions(true);
-    } catch {
-      const saved = getSavedAddresses();
-      setSuggestions(saved.filter(a => a.address.toLowerCase().includes(query.toLowerCase())).slice(0, 4));
-    } finally { setLoading(false); }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setInputValue(v);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchAddress(v), 400);
-  };
-
-  const handleSelect = (loc: Location) => {
-    setInputValue(loc.address);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    saveAddress(loc);
-    onSelect(loc);
-  };
-
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
-    const zone = ZONES.find(z => z.name.toLowerCase().includes(inputValue.toLowerCase()));
-    if (zone) { handleSelect({ lat: zone.lat, lng: zone.lng, address: zone.name }); return; }
-    const saved = getSavedAddresses().find(a => a.address.toLowerCase().includes(inputValue.toLowerCase()));
-    if (saved) { handleSelect(saved); return; }
-    handleSelect({ lat: 3.7523, lng: 8.7737, address: inputValue });
+    if (inputValue.trim()) {
+      // Simular geocodificación simple
+      const zone = ZONES.find(z => z.name.toLowerCase().includes(inputValue.toLowerCase()));
+      if (zone) {
+        onSelect({ lat: zone.lat, lng: zone.lng, address: zone.name });
+      } else {
+        // Ubicación por defecto si no se encuentra
+        onSelect({ lat: 3.7523, lng: 8.7737, address: inputValue });
+      }
+    }
   };
-
+  
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <form onSubmit={handleSubmit}>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder={placeholder}
-            value={inputValue}
-            onChange={handleChange}
-            onFocus={() => { if (inputValue.length > 1) setShowSuggestions(true); else { setSuggestions(getSavedAddresses().slice(0,5)); setShowSuggestions(true); } }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            readOnly={!editable}
-            style={{
-              width: '100%', padding: '12px 40px 12px 14px',
-              background: editable ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px',
-              color: '#fff', fontSize: '14px', outline: 'none',
-              fontFamily: 'inherit', boxSizing: 'border-box' as const,
-              cursor: editable ? 'text' : 'default',
-            }}
-          />
-          {loading && (
-            <div style={{ position: 'absolute', right: '12px', width: '16px', height: '16px', border: '2px solid #00c8a0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          )}
-        </div>
-      </form>
-      {showSuggestions && suggestions.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a2035', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', zIndex: 999, overflow: 'hidden', marginTop: '4px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-          {suggestions.map((s, i) => (
-            <button key={i} onMouseDown={() => handleSelect(s)} style={{ width: '100%', background: 'none', border: 'none', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#fff', fontSize: '13px', textAlign: 'left', borderBottom: i < suggestions.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none', fontFamily: 'inherit' }}>
-              <span style={{ fontSize: '16px', flexShrink: 0 }}>📍</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.address}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <form onSubmit={handleSubmit} style={{ width:'100%' }}>
+      <input 
+        type="text" 
+        placeholder={placeholder} 
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onBlur={handleSubmit}
+        style={{ 
+          width:'100%', 
+          padding:'12px 14px', 
+          background:'rgba(255,255,255,0.05)', 
+          border:'1px solid #E8EEF5', 
+          borderRadius:'10px', 
+          color:'#fff', 
+          fontSize:'14px', 
+          outline:'none', 
+          fontFamily:'inherit', 
+          boxSizing:'border-box' 
+        }}
+      />
+    </form>
   );
 };
+
 // Geolocalización real del navegador con fallback a Malabo
 // ─── ICONOS ───────────────────────────────────────────────────────────────────
 const TaxiIcon = ({ size=24, color='#FFD700', filled=false }: { size?:number; color?:string; filled?:boolean }) => (
@@ -787,7 +697,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
   ]);
 
   // GPS real — posición del usuario
-  const { position: gpsPos, error: gpsError, loading: gpsLoading, requestPosition } = useGPS({
+  const { position: gpsPos, error: gpsError, loading: gpsLoading } = useGPS({
     watch: true,
     highAccuracy: true,
     reverseGeocode: true,
@@ -804,13 +714,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
 
   const finalPrice = Math.round(BASE_PRICE * rideType.multiplier * (promoApplied ? 0.85 : 1));
 
-  // Actualizar origen siempre que cambie el GPS (no solo la primera vez)
-  useEffect(() => {
-    if (gpsPos) {
-      const addr = gpsPos.city || `${gpsPos.lat.toFixed(4)}, ${gpsPos.lng.toFixed(4)}`;
-      setOrigin({ lat: gpsPos.lat, lng: gpsPos.lng, address: addr });
-    }
-  }, [gpsPos?.lat, gpsPos?.lng, gpsPos?.city]);
+  useEffect(() => { if (userLocation && !origin) setOrigin(userLocation); }, [userLocation]);
 
   useEffect(() => {
     if (screen !== 'searching') return;
@@ -891,25 +795,6 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
           </div>
         </div>
       </div>
-
-      {/* GPS status indicator */}
-      {gpsLoading && (
-        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(17,24,39,0.85)', backdropFilter:'blur(10px)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px', border:'1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#f59e0b', animation:'pulse-user 1s infinite' }}/>
-          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>Obteniendo GPS...</span>
-        </div>
-      )}
-      {gpsError && (
-        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(239,68,68,0.9)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px', cursor:'pointer' }} onClick={() => requestPosition()}>
-          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>📍 Activar GPS</span>
-        </div>
-      )}
-      {gpsPos && !gpsLoading && (
-        <div style={{ position:'absolute', top:'110px', right:'16px', zIndex:21, background:'rgba(0,200,160,0.9)', borderRadius:'12px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'6px' }}>
-          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#fff' }}/>
-          <span style={{ fontSize:'11px', color:'#fff', fontWeight:'600' }}>GPS activo</span>
-        </div>
-      )}
 
       {/* Badge conductores disponibles */}
       <div style={{ position:'absolute', top:'110px', left:'50%', transform:'translateX(-50%)', zIndex:20 }}>
@@ -1024,7 +909,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
       </div>
 
       {/* Botón centrar ubicación */}
-      <button onClick={() => { requestPosition(); if (userLocation) setOrigin(userLocation); }}
+      <button onClick={() => userLocation && setOrigin(userLocation)}
         style={{ position:'absolute', right:'16px', bottom: (destination || bookingSheetOpen) ? '320px' : '48px', zIndex:20, width:'48px', height:'48px', borderRadius:'50%', background:'#FFFFFF', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.25)', transition:'bottom 0.35s' }}>
         <NavigationIcon size={22} color="#1E293B"/>
       </button>
@@ -1089,35 +974,11 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
             )}
           </>
         ) : (
-                    <div style={{ padding:'4px 0 8px' }}>
-            {/* Input inteligente de destino */}
-            <div style={{ marginBottom:'14px' }}>
-              <div style={{ fontSize:'13px', fontWeight:'700', color:'#1A2B4A', marginBottom:'8px', display:'flex', alignItems:'center', gap:'6px' }}>
-                <LocationIcon size={14} color="#FF4444" filled/> ¿A dónde vas?
-              </div>
-              <div style={{ background:'#0f172a', borderRadius:'12px', padding:'12px' }}>
-                <AddressInput
-                  placeholder="Escribe tu destino..."
-                  onSelect={(loc) => { setDestination(loc); setBookingSheetOpen(true); saveAddress(loc); }}
-                />
-              </div>
-            </div>
-            {/* Origen editable */}
-            <div style={{ marginBottom:'14px' }}>
-              <div style={{ fontSize:'13px', fontWeight:'700', color:'#1A2B4A', marginBottom:'8px', display:'flex', alignItems:'center', gap:'6px' }}>
-                <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#00c8a0' }}/> Tu ubicación (origen)
-              </div>
-              <div style={{ background:'#0f172a', borderRadius:'12px', padding:'12px' }}>
-                <AddressInput
-                  placeholder="Tu ubicación actual..."
-                  value={origin?.address || ''}
-                  onSelect={(loc) => setOrigin(loc)}
-                />
-              </div>
-            </div>
-            {/* Zonas populares */}
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'#8A9BB5', marginBottom:'8px', textTransform:'uppercase', letterSpacing:'0.5px' }}>Zonas populares</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:'8px' }}>
+          <div style={{ textAlign:'center', padding:'8px 0 20px' }}>
+            <div style={{ fontSize:'32px', marginBottom:'12px' }}>🗺️</div>
+            <div style={{ fontSize:'17px', fontWeight:'700', color:'#1A2B4A', marginBottom:'6px' }}>Toca el mapa para seleccionar tu destino</div>
+            <div style={{ fontSize:'13px', color:'#8A9BB5' }}>O elige una zona popular</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center', marginTop:'16px' }}>
               {ZONES.slice(0,6).map(z => (
                 <button key={z.name} onClick={() => { setDestination({lat:z.lat,lng:z.lng,address:z.name}); setBookingSheetOpen(true); }}
                   style={{ background:'#EEF2F7', border:'none', borderRadius:'20px', padding:'8px 14px', fontSize:'12px', fontWeight:'600', color:'#1A2B4A', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px' }}>
@@ -1127,6 +988,596 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
             </div>
           </div>
         )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── VEHICLE SELECT ────────────────────────────────────────────────────────
+  if (screen === 'vehicle-select') return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', overflow:'hidden' }}>
+      {/* Header */}
+      <div style={{ background:'#FFFFFF', padding:'52px 20px 12px', borderBottom:'1px solid #E2E8F0', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px' }}>
+          <button onClick={() => setScreen('booking')} style={{ width:'40px', height:'40px', borderRadius:'50%', background:'#EEF2F7', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </button>
+          <div style={{ fontSize:'17px', fontWeight:'700', color:'#1A2B4A' }}>Selecciona tu vehículo</div>
+          <div style={{ width:'40px' }}/>
+        </div>
+        {/* Ruta */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+            <div style={{ width:'12px', height:'12px', borderRadius:'50%', background:'#10B981', flexShrink:0 }}/>
+            <div>
+              <div style={{ fontSize:'11px', color:'#8A9BB5' }}>Origen</div>
+              <div style={{ fontSize:'13px', fontWeight:'600', color:'#1A2B4A' }}>{origin?.address || 'Centro Malabo'}</div>
+            </div>
+          </div>
+          <div style={{ width:'2px', height:'16px', background:'#E2E8F0', marginLeft:'5px' }}/>
+          <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+            <div style={{ width:'12px', height:'12px', borderRadius:'50%', background:'#FF4444', flexShrink:0 }}/>
+            <div>
+              <div style={{ fontSize:'11px', color:'#8A9BB5' }}>Destino</div>
+              <div style={{ fontSize:'13px', fontWeight:'600', color:'#1A2B4A' }}>{destination?.address || 'Destino'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de vehículos */}
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 120px' }}>
+        {VEHICLE_CATEGORIES.map(cat => (
+          <div key={cat.id} style={{ marginBottom:'20px' }}>
+            <div style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A', marginBottom:'10px', marginTop:'4px' }}>{cat.title}</div>
+            {cat.vehicles.map(v => {
+              const isSel = selectedVehicle?.id === v.id;
+              return (
+                <button key={v.id} onClick={() => setSelectedVehicle(v)}
+                  style={{ width:'100%', background: isSel ? '#FFFBF0' : '#fff', border:`2px solid ${isSel ? v.color : 'transparent'}`, borderRadius:'16px', padding:'14px', marginBottom:'10px', cursor:'pointer', textAlign:'left', boxShadow:'0 2px 8px rgba(0,0,0,0.07)', position:'relative', fontFamily:'inherit' }}>
+                  {/* Badge */}
+                  {v.badge && (
+                    <div style={{ position:'absolute', top:'-10px', right:'14px', background: v.badge==='Popular'?'#10B981':'#EC4899', color:'#fff', fontSize:'10px', fontWeight:'700', padding:'3px 10px', borderRadius:'10px' }}>{v.badge}</div>
+                  )}
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                    {/* Icono */}
+                    <div style={{ width:'68px', height:'68px', borderRadius:'14px', background:`${v.color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'help' }}
+                      title={v.name}
+                      onMouseEnter={e => {
+                        const tip = document.createElement('div');
+                        tip.id = 'vehicle-tip';
+                        tip.textContent = v.name;
+                        tip.style.cssText = 'position:fixed;background:#1E293B;color:#fff;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+                        document.body.appendChild(tip);
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        tip.style.left = (r.left + r.width/2 - tip.offsetWidth/2) + 'px';
+                        tip.style.top = (r.top - 36) + 'px';
+                      }}
+                      onMouseLeave={() => { const t = document.getElementById('vehicle-tip'); if(t) t.remove(); }}
+                    >
+                      {getVehicleIcon(v.iconId, 44, v.color, isSel)}
+                    </div>
+                    {/* Info */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px' }}>
+                        <span style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>{v.name}</span>
+                        <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                          <StarIcon size={13} filled color="#FFB800"/>
+                          <span style={{ fontSize:'12px', fontWeight:'600', color:'#1A2B4A' }}>{v.rating}</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:'12px', color:'#8A9BB5', marginBottom:'4px' }}>{v.description}</div>
+                      <div style={{ fontSize:'11px', color:'#10B981', fontWeight:'600', marginBottom:'6px' }}>⏱ {v.time}</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:'5px' }}>
+                        {v.features.slice(0,3).map(f => (
+                          <span key={f} style={{ background:'#EEF2F7', color:'#8A9BB5', fontSize:'10px', padding:'2px 8px', borderRadius:'6px' }}>{f}</span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Precio */}
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'6px', flexShrink:0 }}>
+                      <span style={{ fontSize:'17px', fontWeight:'700', color:'#1A2B4A' }}>{v.price.toLocaleString()}</span>
+                      <span style={{ fontSize:'10px', color:'#8A9BB5' }}>XAF</span>
+                      {isSel && <div style={{ width:'24px', height:'24px', borderRadius:'50%', background:v.color, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:'14px', fontWeight:'800' }}>✓</div>}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Panel inferior */}
+      {selectedVehicle && (
+        <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#FFFFFF', borderTopLeftRadius:'24px', borderTopRightRadius:'24px', padding:'16px 20px 32px', boxShadow:'0 -4px 20px rgba(0,0,0,0.12)', zIndex:50 }}>
+          <div style={{ width:'40px', height:'4px', background:'#CBD5E1', borderRadius:'2px', margin:'0 auto 14px' }}/>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+            <div style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>Vehículo seleccionado</div>
+            <button onClick={() => setSelectedVehicle(null)} style={{ background:'none', border:'none', color:'#8A9BB5', fontSize:'20px', cursor:'pointer' }}>✕</button>
+          </div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#EEF2F7', padding:'14px 16px', borderRadius:'12px', marginBottom:'14px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+              <div style={{ width:'44px', height:'44px', borderRadius:'10px', background:`${selectedVehicle.color}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {getVehicleIcon(selectedVehicle.iconId, 30, selectedVehicle.color, true)}
+              </div>
+              <div>
+                <div style={{ fontSize:'15px', fontWeight:'600', color:'#1A2B4A' }}>{selectedVehicle.name}</div>
+                <div style={{ fontSize:'12px', color:'#8A9BB5' }}>{selectedVehicle.time} de espera</div>
+              </div>
+            </div>
+            <div style={{ fontSize:'20px', fontWeight:'700', color:'#10B981' }}>{selectedVehicle.price.toLocaleString()} XAF</div>
+          </div>
+          <PBtn title="Confirmar y buscar conductor" onPress={() => setScreen('searching')} type="primary" icon={getVehicleIcon(selectedVehicle.iconId, 20, '#1E293B', true)}/>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── SEARCHING ─────────────────────────────────────────────────────────────
+  if (screen === 'searching') return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <Header title="Buscando conductor" back={() => setScreen('booking')}/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+        <div style={{ position:'relative', width:'120px', height:'120px', marginBottom:'32px' }}>
+          <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'3px solid #00c8a0', animation:'ping 1.5s ease-out infinite' }}/>
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <TaxiIcon size={56} color="#facc15" filled/>
+          </div>
+        </div>
+        <div style={{ fontSize:'20px', fontWeight:'800', color:'#fff', marginBottom:'8px' }}>Buscando el mejor conductor</div>
+        <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'24px', textAlign:'center' }}>{origin?.address} → {destination?.address}</div>
+        <div style={{ background:'#FFFFFF', borderRadius:'14px', padding:'14px 20px', width:'100%', maxWidth:'300px' }}>
+          {[['Tiempo de búsqueda',`${searchTimer}s`,'#facc15'],['Tipo de viaje',rideType.label,'#fff'],['Precio estimado',`${finalPrice.toLocaleString()} XAF`,'#facc15']].map(([l,v,c]) => (
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
+              <span style={{ fontSize:'12px', color:'#8A9BB5' }}>{l}</span>
+              <span style={{ fontSize:'12px', fontWeight:'700', color:c }}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => setScreen('booking')} style={{ marginTop:'20px', background:'transparent', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'10px', padding:'10px 24px', color:'#8A9BB5', cursor:'pointer' }}>
+          Cancelar búsqueda
+        </button>
+      </div>
+      <style>{`@keyframes ping { 0%{transform:scale(0.8);opacity:1} 100%{transform:scale(1.5);opacity:0} }`}</style>
+    </div>
+  );
+
+  // ── MATCHED ───────────────────────────────────────────────────────────────
+  if (screen === 'matched' && driver) return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <Header title="¡Conductor encontrado! 🎉" back={() => setScreen('booking')} showSafety/>
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 90px' }}>
+        <div style={{ height:'220px', marginBottom:'16px', borderRadius:'16px', overflow:'hidden' }}>
+          <RealMap origin={origin} destination={destination} driver={driver} status="matched"/>
+        </div>
+        <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'20px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'16px' }}>
+            <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <UserIcon size={32} color="#fff" filled/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:'18px', fontWeight:'800', color:'#1A2B4A' }}>{driver.name}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:'4px', marginTop:'4px' }}>
+                <StarIcon size={14} filled color="#FFB800"/>
+                <span style={{ fontSize:'13px', fontWeight:'700', color:'#FFB800' }}>{driver.rating}</span>
+                <span style={{ fontSize:'12px', color:'#8A9BB5' }}>{driver.trips} viajes</span>
+              </div>
+              {driver.badge && <div style={{ display:'inline-block', background:'rgba(250,204,21,0.15)', borderRadius:'6px', padding:'2px 8px', fontSize:'10px', fontWeight:'700', color:'#facc15', marginTop:'4px' }}><StarIcon size={10} filled color="#facc15"/> {driver.badge}</div>}
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <div style={{ fontSize:'11px', color:'#8A9BB5' }}>Llega en</div>
+              <div style={{ fontSize:'24px', fontWeight:'800', color:'#00B4D8' }}>{driver.eta}</div>
+            </div>
+          </div>
+          <div style={{ background:'#EEF2F7', borderRadius:'12px', padding:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', marginBottom:'16px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
+              <span style={{ fontSize:'12px', color:'#8A9BB5' }}>Vehículo</span>
+              <span style={{ fontSize:'12px', fontWeight:'600', color:'#1A2B4A' }}>{driver.car}</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between' }}>
+              <span style={{ fontSize:'12px', color:'#8A9BB5' }}>Matrícula</span>
+              <span style={{ fontSize:'12px', fontWeight:'600', color:'#facc15' }}>{driver.plate}</span>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:'10px', marginBottom:'16px' }}>
+            <button onClick={() => { try { const {shell}=(window as any).require('electron'); shell.openExternal(`tel:${driver.phone}`); } catch { alert(`Llamando a ${driver.name} (${driver.phone})...`); }}} style={{ flex:1, background:'#dcfce7', border:'none', borderRadius:'12px', padding:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', cursor:'pointer', color:'#00B4D8', fontWeight:'700', fontSize:'13px' }}>📞 Llamar</button>
+            <button onClick={() => setShowChat(true)} style={{ flex:1, background:'#dbeafe', border:'none', borderRadius:'12px', padding:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', cursor:'pointer', color:'#60a5fa', fontWeight:'700', fontSize:'13px' }}>💬 Chat</button>
+            <button onClick={() => setShowSafety(true)} style={{ flex:1, background:'#fee2e2', border:'none', borderRadius:'12px', padding:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.05)', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', cursor:'pointer', color:'#ef4444' }}>🛡️ Seguridad</button>
+          </div>
+          <PBtn title="Confirmar viaje" onPress={() => setScreen('onway')} type="primary" icon={<TaxiIcon size={18} color="#1E293B" filled/>}/>
+        </div>
+      </div>
+      {showSafety && <SafetyCenter onClose={() => setShowSafety(false)} driver={driver}/>}
+      {/* Modal Chat con conductor */}
+      {showChat && driver && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:500, display:'flex', alignItems:'flex-end' }}>
+          <div style={{ background:'#EEF2F7', borderRadius:'24px 24px 0 0', width:'100%', height:'70vh', display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <UserIcon size={20} color="#fff" filled/>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>{driver.name}</div>
+                <div style={{ fontSize:'11px', color:'#00B4D8' }}>● En línea</div>
+              </div>
+              <button onClick={() => setShowChat(false)} style={{ background:'#EFF6FF', border:'none', borderRadius:'50%', width:'32px', height:'32px', color:'#fff', cursor:'pointer', fontSize:'16px' }}>✕</button>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'8px' }}>
+              <div style={{ background:'#EEF2F7', borderRadius:'12px 12px 12px 2px', padding:'10px 14px', maxWidth:'80%', alignSelf:'flex-start' }}>
+                <div style={{ fontSize:'13px', color:'#1A2B4A' }}>Hola, estoy en camino. Llegaré en {driver.eta} 🚗</div>
+                <div style={{ fontSize:'10px', color:'#8A9BB5', marginTop:'4px' }}>Ahora</div>
+              </div>
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ background: msg.from==='me' ? '#facc15' : 'rgba(255,255,255,0.06)', borderRadius: msg.from==='me' ? '12px 12px 2px 12px' : '12px 12px 12px 2px', padding:'10px 14px', maxWidth:'80%', alignSelf: msg.from==='me' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ fontSize:'13px', color: msg.from==='me' ? '#111' : '#fff' }}>{msg.text}</div>
+                  <div style={{ fontSize:'10px', color: msg.from==='me' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)', marginTop:'4px' }}>{msg.time}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:'12px 16px', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', gap:'8px' }}>
+              {['Estoy listo 👍','¿Dónde estás?','Ok, te espero'].map(q => (
+                <button key={q} onClick={() => { const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:q,time:t}]); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Entendido 👌',time:t}]),1000); }}
+                  style={{ background:'#EEF2F7', border:'1px solid #E8EEF5', borderRadius:'20px', padding:'6px 12px', color:'#5A7090', fontSize:'11px', cursor:'pointer', whiteSpace:'nowrap' }}>{q}</button>
+              ))}
+            </div>
+            <div style={{ padding:'0 16px 20px', display:'flex', gap:'8px' }}>
+              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&chatInput.trim()){ const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:chatInput,time:t}]); setChatInput(''); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Ok 👍',time:t}]),1000); }}} placeholder="Escribe un mensaje..." style={{ flex:1, padding:'11px 14px', background:'#EEF2F7', border:'1px solid #E8EEF5', borderRadius:'24px', color:'#fff', fontSize:'13px', outline:'none', fontFamily:'inherit' }}/>
+              <button onClick={()=>{ if(chatInput.trim()){ const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:chatInput,time:t}]); setChatInput(''); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Ok 👍',time:t}]),1000); }}} style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#facc15', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── ONWAY ─────────────────────────────────────────────────────────────────
+  if (screen === 'onway' && driver) return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <Header title="Viaje en curso" sub={`Tu conductor ${driver.name} está en camino`} back={() => setScreen('matched')} showSafety/>
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 90px' }}>
+        <div style={{ height:'260px', marginBottom:'16px', borderRadius:'16px', overflow:'hidden' }}>
+          <RealMap origin={origin} destination={destination} driver={driver} status="onway"/>
+        </div>
+        {/* Countdown llegada */}
+        <div style={{ background: driverArrivalCountdown === 0 ? 'linear-gradient(135deg,rgba(0,200,160,0.25),rgba(0,180,230,0.25))' : 'linear-gradient(135deg,rgba(0,200,160,0.15),rgba(0,180,230,0.15))', borderRadius:'16px', padding:'16px', marginBottom:'16px', border: driverArrivalCountdown === 0 ? '1px solid rgba(0,200,160,0.5)' : 'none' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div>
+              <div style={{ fontSize:'11px', color:'#8A9BB5', marginBottom:'4px' }}>
+                {driverArrivalCountdown === 0 ? '✅ Conductor llegado' : 'Llegada estimada'}
+              </div>
+              <div style={{ fontSize:'28px', fontWeight:'900', color: driverArrivalCountdown === 0 ? '#00c8a0' : '#00B4D8' }}>
+                {driverArrivalCountdown === 0 ? '¡Llegó!' : driverArrivalCountdown !== null ? `${driverArrivalCountdown}s` : driver.eta}
+              </div>
+              <div style={{ fontSize:'11px', color:'#8A9BB5', marginTop:'4px' }}>Distancia: {driver.distance}</div>
+            </div>
+            <NavigationIcon size={48} color={driverArrivalCountdown === 0 ? '#00c8a0' : '#facc15'} rotation={0}/>
+          </div>
+        </div>
+        <div style={{ background:'#FFFFFF', borderRadius:'16px', padding:'16px', marginBottom:'16px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
+            <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <UserIcon size={24} color="#fff" filled/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:'16px', fontWeight:'700', color:'#1A2B4A' }}>{driver.name}</div>
+              <div style={{ fontSize:'12px', color:'#8A9BB5' }}>{driver.car} · {driver.plate}</div>
+            </div>
+            <div style={{ display:'flex', gap:'8px' }}>
+              <button onClick={() => { try { const {shell}=(window as any).require('electron'); shell.openExternal(`tel:${driver.phone}`); } catch { alert(`Llamando a ${driver.name}...`); }}} style={{ width:'38px', height:'38px', borderRadius:'50%', background:'rgba(0,200,160,0.15)', border:'1px solid rgba(0,200,160,0.3)', cursor:'pointer', fontSize:'16px' }}>📞</button>
+              <button onClick={() => setShowChat(true)} style={{ width:'38px', height:'38px', borderRadius:'50%', background:'rgba(59,130,246,0.15)', border:'1px solid rgba(59,130,246,0.3)', cursor:'pointer', fontSize:'16px' }}>💬</button>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:'8px' }}>
+            <div style={{ flex:1, background:'#EEF2F7', borderRadius:'10px', padding:'10px', textAlign:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', marginBottom:'2px' }}>
+                <LocationIcon size={10} color="#00c8a0" filled/>
+                <div style={{ fontSize:'10px', color:'#8A9BB5' }}>Origen</div>
+              </div>
+              <div style={{ fontSize:'12px', fontWeight:'700', color:'#00B4D8' }}>{origin?.address||'...'}</div>
+            </div>
+            <div style={{ width:'20px', display:'flex', alignItems:'center', justifyContent:'center', color:'#8A9BB5' }}>→</div>
+            <div style={{ flex:1, background:'#EEF2F7', borderRadius:'10px', padding:'10px', textAlign:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', marginBottom:'2px' }}>
+                <LocationIcon size={10} color="#facc15" filled/>
+                <div style={{ fontSize:'10px', color:'#8A9BB5' }}>Destino</div>
+              </div>
+              <div style={{ fontSize:'12px', fontWeight:'700', color:'#facc15' }}>{destination?.address||'...'}</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          <button onClick={() => { if(window.confirm('¿Cancelar el viaje? Se puede aplicar una penalización.')) { reset(); }}} style={{ flex:1, padding:'14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'14px', color:'#ef4444', fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
+            ✕ Cancelar viaje
+          </button>
+        </div>
+      </div>
+
+      {/* Notificación de llegada */}
+      {showArrivalNotif && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+          <div style={{ background:'#FFFFFF', borderRadius:'24px', padding:'28px 24px', width:'100%', maxWidth:'340px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
+            {/* Animación llegada */}
+            <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', boxShadow:'0 0 0 12px rgba(0,200,160,0.15)' }}>
+              <TaxiIcon size={40} color="#fff" filled/>
+            </div>
+            <div style={{ fontSize:'22px', fontWeight:'900', color:'#1A2B4A', marginBottom:'6px' }}>¡Tu taxi ha llegado!</div>
+            <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'4px' }}>{driver.name} te está esperando</div>
+            <div style={{ background:'rgba(250,204,21,0.15)', borderRadius:'10px', padding:'8px 16px', display:'inline-block', marginBottom:'20px' }}>
+              <span style={{ fontSize:'18px', fontWeight:'800', color:'#facc15' }}>{driver.plate}</span>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+              <button onClick={() => { setShowArrivalNotif(false); setShowChat(true); }}
+                style={{ padding:'14px', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', border:'none', borderRadius:'14px', color:'#fff', fontSize:'15px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+                💬 Abrir chat con el conductor
+              </button>
+              <button onClick={() => { try { const {shell}=(window as any).require('electron'); shell.openExternal(`tel:${driver.phone}`); } catch { alert(`Llamando a ${driver.name}...`); } setShowArrivalNotif(false); }}
+                style={{ padding:'14px', background:'rgba(0,200,160,0.1)', border:'1px solid rgba(0,200,160,0.3)', borderRadius:'14px', color:'#00c8a0', fontSize:'15px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+                📞 Llamar al conductor
+              </button>
+              <button onClick={() => { setShowArrivalNotif(false); setScreen('arrived'); }}
+                style={{ padding:'12px', background:'transparent', border:'none', color:'#8A9BB5', fontSize:'13px', cursor:'pointer' }}>
+                Continuar al pago →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSafety && <SafetyCenter onClose={() => setShowSafety(false)} driver={driver}/>}
+      {showChat && driver && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:500, display:'flex', alignItems:'flex-end' }}>
+          <div style={{ background:'#EEF2F7', borderRadius:'24px 24px 0 0', width:'100%', height:'65vh', display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center' }}><UserIcon size={20} color="#fff" filled/></div>
+              <div style={{ flex:1 }}><div style={{ fontSize:'15px', fontWeight:'700', color:'#1A2B4A' }}>{driver.name}</div><div style={{ fontSize:'11px', color: driverArrivalCountdown === 0 ? '#00c8a0' : '#00B4D8' }}>● {driverArrivalCountdown === 0 ? 'Ha llegado' : 'En camino'}</div></div>
+              <button onClick={() => setShowChat(false)} style={{ background:'#EFF6FF', border:'none', borderRadius:'50%', width:'32px', height:'32px', color:'#1A2B4A', cursor:'pointer', fontSize:'16px' }}>✕</button>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'8px' }}>
+              <div style={{ background:'#fff', borderRadius:'12px 12px 12px 2px', padding:'10px 14px', maxWidth:'80%' }}>
+                <div style={{ fontSize:'13px', color:'#1A2B4A' }}>Estoy en camino, llegaré en {driver.eta} 🚗</div>
+                <div style={{ fontSize:'10px', color:'#8A9BB5', marginTop:'4px' }}>Ahora</div>
+              </div>
+              {chatMessages.map((msg, i) => (
+                <div key={i} style={{ background: msg.from==='me'?'#facc15':'#fff', borderRadius: msg.from==='me'?'12px 12px 2px 12px':'12px 12px 12px 2px', padding:'10px 14px', maxWidth:'80%', alignSelf: msg.from==='me'?'flex-end':'flex-start' }}>
+                  <div style={{ fontSize:'13px', color: msg.from==='me'?'#111':'#1A2B4A' }}>{msg.text}</div>
+                  <div style={{ fontSize:'10px', color: msg.from==='me'?'rgba(0,0,0,0.4)':'#8A9BB5', marginTop:'4px' }}>{msg.time}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:'8px 16px', display:'flex', gap:'6px', flexWrap:'wrap' }}>
+              {['Estoy listo 👍','¿Dónde estás?','Ok, te espero','Gracias'].map(q => (
+                <button key={q} onClick={() => { const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:q,time:t}]); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Entendido 👌',time:t}]),1000); }}
+                  style={{ background:'#EEF2F7', border:'1px solid #E8EEF5', borderRadius:'20px', padding:'5px 10px', color:'#5A7090', fontSize:'11px', cursor:'pointer' }}>{q}</button>
+              ))}
+            </div>
+            <div style={{ padding:'0 16px 20px', display:'flex', gap:'8px' }}>
+              <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&chatInput.trim()){ const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:chatInput,time:t}]); setChatInput(''); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Ok 👍',time:t}]),1000); }}} placeholder="Escribe un mensaje..." style={{ flex:1, padding:'11px 14px', background:'#fff', border:'1px solid #E8EEF5', borderRadius:'24px', color:'#1A2B4A', fontSize:'13px', outline:'none', fontFamily:'inherit' }}/>
+              <button onClick={()=>{ if(chatInput.trim()){ const t=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); setChatMessages(p=>[...p,{from:'me',text:chatInput,time:t}]); setChatInput(''); setTimeout(()=>setChatMessages(p=>[...p,{from:'driver',text:'Ok 👍',time:t}]),1000); }}} style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#facc15', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── ARRIVED ───────────────────────────────────────────────────────────────
+  if (screen === 'arrived' && driver) return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <Header title="Tu taxi ha llegado"/>
+      <div style={{ flex:1, overflowY:'auto', padding:'24px 24px 90px', display:'flex', flexDirection:'column', alignItems:'center' }}>
+        <div style={{ width:'80px', height:'80px', borderRadius:'24px', background:'linear-gradient(135deg,rgba(0,200,160,0.2),rgba(0,180,230,0.2))', border:'1px solid rgba(0,200,160,0.3)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'20px' }}>
+          <TaxiIcon size={44} color="#facc15" filled/>
+        </div>
+        <div style={{ fontSize:'22px', fontWeight:'800', color:'#fff', marginBottom:'8px', textAlign:'center' }}>Tu conductor ha llegado</div>
+        <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'8px', textAlign:'center' }}>{driver.name} te espera</div>
+        <div style={{ background:'rgba(250,204,21,0.12)', borderRadius:'12px', padding:'8px 20px', marginBottom:'24px' }}>
+          <span style={{ fontSize:'16px', fontWeight:'800', color:'#facc15' }}>{driver.plate}</span>
+        </div>
+        <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'20px', width:'100%', marginBottom:'20px' }}>
+          {[['Ruta',`${origin?.address} → ${destination?.address}`],['Tipo', selectedVehicle?.name || rideType.label]].map(([l,v]) => (
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
+              <span style={{ fontSize:'13px', color:'#8A9BB5' }}>{l}</span>
+              <span style={{ fontSize:'13px', fontWeight:'600', color:'#1A2B4A' }}>{v}</span>
+            </div>
+          ))}
+          <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #EEF2F7', paddingTop:'10px' }}>
+            <span style={{ fontSize:'14px', fontWeight:'700', color:'#5A7090' }}>Total a pagar</span>
+            <span style={{ fontSize:'20px', fontWeight:'800', color:'#facc15' }}>{(selectedVehicle?.price || finalPrice).toLocaleString()} XAF</span>
+          </div>
+        </div>
+
+        {/* Opciones de pago */}
+        <div style={{ width:'100%', marginBottom:'12px' }}>
+          <div style={{ fontSize:'12px', fontWeight:'700', color:'#8A9BB5', textTransform:'uppercase', letterSpacing:'1px', marginBottom:'10px', textAlign:'center' }}>Elige cómo pagar</div>
+
+          {/* Pago EGCHAT Wallet */}
+          <PBtn title={`💳 Pagar con EGCHAT Wallet · ${(selectedVehicle?.price || finalPrice).toLocaleString()} XAF`}
+            onPress={() => { onDebit(selectedVehicle?.price || finalPrice); setScreen('rating'); }}
+            type="primary" icon={<WalletIcon size={20} color="#1E293B" filled/>}/>
+
+          <div style={{ height:'10px' }}/>
+
+          {/* Pago por QR */}
+          <button onClick={() => setScreen('qr-pay')}
+            style={{ width:'100%', padding:'15px', background:'#EEF2F7', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', fontFamily:'inherit' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M17 17h3M14 20h3"/></svg>
+            Pagar escaneando QR
+          </button>
+
+          <div style={{ height:'10px' }}/>
+
+          {/* Pago en efectivo */}
+          <button onClick={() => { if(window.confirm('¿Pagar en efectivo al conductor?')) { setScreen('rating'); }}}
+            style={{ width:'100%', padding:'15px', background:'#EEF2F7', border:'1px solid #E8EEF5', borderRadius:'12px', color:'#8A9BB5', fontSize:'14px', fontWeight:'600', cursor:'pointer', fontFamily:'inherit' }}>
+            💵 Pagar en efectivo
+          </button>
+        </div>
+
+        <div style={{ fontSize:'12px', color:'#8A9BB5', marginTop:'4px' }}>Saldo EGCHAT: {userBalance.toLocaleString()} XAF</div>
+      </div>
+    </div>
+  );
+
+  // ── DRIVER QR — conductor muestra su QR para cobrar ──────────────────────
+  if (screen === 'driver-qr' && activeRequest) return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
+      <Header title="QR de Cobro" back={() => setScreen('driver-trip')}/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+        <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'8px' }}>Muestra este QR al pasajero</div>
+        <div style={{ fontSize:'28px', fontWeight:'900', color:'#facc15', marginBottom:'24px' }}>{activeRequest.price.toLocaleString()} XAF</div>
+        {/* QR visual */}
+        <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'20px', marginBottom:'24px', boxShadow:'0 8px 32px rgba(250,204,21,0.3)' }}>
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <rect x="10" y="10" width="60" height="60" rx="4" fill="none" stroke="#111" strokeWidth="6"/>
+            <rect x="20" y="20" width="40" height="40" rx="2" fill="#111"/>
+            <rect x="130" y="10" width="60" height="60" rx="4" fill="none" stroke="#111" strokeWidth="6"/>
+            <rect x="140" y="20" width="40" height="40" rx="2" fill="#111"/>
+            <rect x="10" y="130" width="60" height="60" rx="4" fill="none" stroke="#111" strokeWidth="6"/>
+            <rect x="20" y="140" width="40" height="40" rx="2" fill="#111"/>
+            {[0,1,2,3,4,5,6,7,8].flatMap(i => [0,1,2,3,4,5,6,7,8].map(j => {
+              const px = 80 + j*5; const py = 80 + i*5;
+              return (i+j+i*j) % 3 !== 0 ? <rect key={`c${i}-${j}`} x={px} y={py} width="4" height="4" fill="#111"/> : null;
+            }))}
+            <rect x="85" y="85" width="30" height="30" rx="6" fill="#facc15"/>
+            <text x="100" y="105" textAnchor="middle" fontSize="10" fontWeight="900" fill="#111">EG</text>
+          </svg>
+        </div>
+        <div style={{ background:'#FFFFFF', borderRadius:'16px', padding:'16px', width:'100%', marginBottom:'16px', textAlign:'center' }}>
+          <div style={{ fontSize:'12px', color:'#8A9BB5', marginBottom:'4px' }}>Pasajero</div>
+          <div style={{ fontSize:'16px', fontWeight:'700', color:'#fff', marginBottom:'8px' }}>{activeRequest.passenger}</div>
+          <div style={{ fontSize:'12px', color:'#8A9BB5', marginBottom:'4px' }}>Ruta</div>
+          <div style={{ fontSize:'13px', color:'#5A7090' }}>{activeRequest.from} → {activeRequest.to}</div>
+        </div>
+        <div style={{ fontSize:'12px', color:'#8A9BB5', textAlign:'center', marginBottom:'16px' }}>
+          El pasajero escanea este QR con EGCHAT para pagar
+        </div>
+        <PBtn title="✅ Simular pago recibido" onPress={() => {
+          onDebit(-activeRequest.price);
+          setDriverEarnings(p => p + activeRequest.price);
+          setDriverTripsToday(p => p + 1);
+          const passenger = activeRequest.passenger;
+          const price = activeRequest.price;
+          setActiveRequest(null);
+          alert(`✅ Pago de ${price.toLocaleString()} XAF recibido de ${passenger}`);
+          setScreen('driver-home');
+        }} type="primary"/>
+      </div>
+    </div>
+  );
+
+  // ── QR PAY — pasajero escanea QR del conductor ────────────────────────────
+  if (screen === 'qr-pay') return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
+      <Header title="Pagar con QR" back={() => { setScreen('arrived'); setQrScanning(false); setQrPaid(false); }}/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+        {!qrPaid ? (
+          <>
+            <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'8px', textAlign:'center' }}>
+              Apunta la cámara al QR del conductor
+            </div>
+            <div style={{ fontSize:'24px', fontWeight:'900', color:'#facc15', marginBottom:'24px' }}>
+              {(selectedVehicle?.price || finalPrice).toLocaleString()} XAF
+            </div>
+            <div style={{ width:'240px', height:'240px', borderRadius:'20px', background:'#111', border:'2px solid rgba(250,204,21,0.4)', position:'relative', overflow:'hidden', marginBottom:'24px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ position:'absolute', top:'16px', left:'16px', width:'40px', height:'40px', borderTop:'3px solid #facc15', borderLeft:'3px solid #facc15', borderRadius:'4px 0 0 0' }}/>
+              <div style={{ position:'absolute', top:'16px', right:'16px', width:'40px', height:'40px', borderTop:'3px solid #facc15', borderRight:'3px solid #facc15', borderRadius:'0 4px 0 0' }}/>
+              <div style={{ position:'absolute', bottom:'16px', left:'16px', width:'40px', height:'40px', borderBottom:'3px solid #facc15', borderLeft:'3px solid #facc15', borderRadius:'0 0 0 4px' }}/>
+              <div style={{ position:'absolute', bottom:'16px', right:'16px', width:'40px', height:'40px', borderBottom:'3px solid #facc15', borderRight:'3px solid #facc15', borderRadius:'0 0 4px 0' }}/>
+              {qrScanning
+                ? <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:'32px', marginBottom:'8px' }}>📷</div>
+                    <div style={{ fontSize:'12px', color:'#8A9BB5' }}>Escaneando...</div>
+                    <div style={{ width:'180px', height:'2px', background:'#facc15', marginTop:'12px', animation:'scan 1s ease-in-out infinite' }}/>
+                  </div>
+                : <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:'32px', marginBottom:'8px' }}>📷</div>
+                    <div style={{ fontSize:'12px', color:'#8A9BB5' }}>Cámara lista</div>
+                  </div>
+              }
+            </div>
+            <style>{`@keyframes scan{0%{transform:translateY(-40px)}50%{transform:translateY(40px)}100%{transform:translateY(-40px)}}`}</style>
+            <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:'10px' }}>
+              <PBtn title={qrScanning ? '⏳ Escaneando QR...' : '📷 Escanear QR del conductor'}
+                onPress={() => {
+                  setQrScanning(true);
+                  setTimeout(() => { setQrScanning(false); setQrPaid(true); onDebit(selectedVehicle?.price || finalPrice); }, 2500);
+                }}
+                type="primary" disabled={qrScanning}/>
+              <PBtn title="Introducir código manualmente" onPress={() => {
+                const code = window.prompt('Introduce el código del conductor:');
+                if (code) { onDebit(selectedVehicle?.price || finalPrice); setQrPaid(true); }
+              }} type="outline"/>
+            </div>
+          </>
+        ) : (
+          <div style={{ textAlign:'center' }}>
+            <div style={{ fontSize:'72px', marginBottom:'16px' }}>✅</div>
+            <div style={{ fontSize:'24px', fontWeight:'900', color:'#00B4D8', marginBottom:'8px' }}>¡Pago completado!</div>
+            <div style={{ fontSize:'28px', fontWeight:'800', color:'#facc15', marginBottom:'8px' }}>{(selectedVehicle?.price || finalPrice).toLocaleString()} XAF</div>
+            <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'32px' }}>Pagado a {driver?.name}</div>
+            <PBtn title="Calificar el viaje" onPress={() => { setQrPaid(false); setScreen('rating'); }} type="primary" icon={<StarIcon size={18} filled color="#1E293B"/>}/>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── RATING ────────────────────────────────────────────────────────────────
+  if (screen === 'rating' && driver) return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <Header title="Califica tu viaje"/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+        <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'16px' }}>
+          <UserIcon size={36} color="#fff" filled/>
+        </div>
+        <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff', marginBottom:'4px' }}>{driver.name}</div>
+        <div style={{ fontSize:'13px', color:'#8A9BB5', marginBottom:'28px' }}>{driver.car} · {driver.plate}</div>
+        <div style={{ fontSize:'14px', color:'#5A7090', marginBottom:'16px' }}>¿Cómo fue tu viaje?</div>
+        <div style={{ display:'flex', gap:'8px', marginBottom:'28px' }}>
+          {[1,2,3,4,5].map(s => (
+            <button key={s} onClick={() => setRating(s)} style={{ background:'none', border:'none', cursor:'pointer', transform: s<=rating ? 'scale(1.15)' : 'scale(1)', transition:'all 0.15s' }}>
+              <StarIcon size={36} filled={s<=rating} color="#FFB800"/>
+            </button>
+          ))}
+        </div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center', marginBottom:'20px' }}>
+          {['Puntual','Amable','Coche limpio','Buen manejo','Música agradable'].map(tag => (
+            <button key={tag} style={{ background:'#EEF2F7', border:'1px solid #E8EEF5', borderRadius:'20px', padding:'6px 14px', color:'#5A7090', fontSize:'12px', cursor:'pointer' }}>{tag}</button>
+          ))}
+        </div>
+        <PBtn title={rating>0?'Enviar calificación':'Selecciona una calificación'} onPress={() => setScreen('completed')} type="primary" disabled={rating===0}/>
+        <button onClick={() => setScreen('completed')} style={{ marginTop:'12px', background:'none', border:'none', color:'#8A9BB5', fontSize:'13px', cursor:'pointer' }}>Omitir</button>
+      </div>
+    </div>
+  );
+
+  // ── COMPLETED ─────────────────────────────────────────────────────────────
+  if (screen === 'completed') return (
+    <div style={{ height:'100vh', background:'#EEF2F7', display:'flex', flexDirection:'column' }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+        <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(135deg,#0096C7,#48CAE4)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'20px', boxShadow:'0 8px 32px rgba(0,200,160,0.3)' }}>
+          <CheckIcon size={36}/>
+        </div>
+        <div style={{ fontSize:'22px', fontWeight:'800', color:'#fff', marginBottom:'8px' }}>Viaje completado</div>
+        <div style={{ fontSize:'14px', color:'#8A9BB5', marginBottom:'28px', textAlign:'center' }}>Gracias por usar MiTaxi GQ</div>
+        <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'20px', width:'100%', marginBottom:'20px' }}>
+          {[['Ruta',`${origin?.address} → ${destination?.address}`],['Conductor',driver?.name||''],['Tipo',rideType.label]].map(([l,v]) => (
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
+              <span style={{ fontSize:'13px', color:'#8A9BB5' }}>{l}</span>
+              <span style={{ fontSize:'13px', fontWeight:'600', color:'#1A2B4A' }}>{v}</span>
+            </div>
+          ))}
+          {rating>0 && (
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
+              <span style={{ fontSize:'13px', color:'#8A9BB5' }}>Tu calificación</span>
+              <span style={{ fontSize:'13px', fontWeight:'600', color:'#FFB800', display:'flex', gap:'2px' }}>{Array.from({length:rating}).map((_,i)=><StarIcon key={i} size={14} filled color="#FFB800"/>)}</span>
+            </div>
+          )}
           <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #EEF2F7', paddingTop:'12px' }}>
             <span style={{ fontSize:'14px', fontWeight:'700', color:'#5A7090' }}>Pagado</span>
             <span style={{ fontSize:'20px', fontWeight:'800', color:'#00B4D8' }}>{finalPrice.toLocaleString()} XAF</span>
