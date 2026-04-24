@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGPS } from './useGPS';
 import { playSuccess, playNotification, vibrate } from './useSounds';
 
@@ -126,28 +126,32 @@ const RealMap: React.FC<{
   }, [driver, status, origin]);
 
   // Inicializar mapa MapTiler
-  // Inicializar mapa
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
     loadMaptiler().then(({ Map, config, MapStyle }) => {
       config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
-      const map = new Map({ container: mapContainer.current!, style: MapStyle.STREETS, center: [originLng, originLat], zoom: 14 });
+      const map = new Map({
+        container: mapContainer.current!,
+        style: MapStyle.STREETS,
+        center: [originLng, originLat],
+        zoom: 14,
+      });
       mapRef.current = map;
-      const done = () => setMapLoaded(true);
-      map.on('load', done); map.on('style.load', done); map.on('idle', done);
-      map.on('styleimagemissing', done); map.on('error', done);
-      setTimeout(done, 1000); setTimeout(done, 3000);
-      if (onLocationSelect) map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
+      map.on('load', () => setMapLoaded(true));
+      if (onLocationSelect) {
+        map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
+      }
     });
     return () => { mapRef.current?.remove(); mapRef.current = null; };
   }, []);
-  // ─── Mapa + marcadores en un solo efecto ───────────────────────────────────
+
+  // Actualizar marcadores y ruta cuando cambian datos
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapRef.current || !mapLoaded) return;
     const map = mapRef.current;
-    if (!map) return;
 
     loadMaptiler().then(({ Marker, Popup, LngLatBounds }) => {
+      // Limpiar marcadores anteriores
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
 
@@ -162,16 +166,28 @@ const RealMap: React.FC<{
         return m;
       };
 
-      // Pin usuario
-      addMarker(originLat, originLng, '🔵', '#1d4ed8', '<b>Tu ubicación</b>');
+      // Marcador origen
+      // Marcador usuario — punto azul pulsante
+      const userEl = document.createElement('div');
+      userEl.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.3);animation:pulse-user 1.5s infinite;cursor:pointer';
+      if (!document.getElementById('taxi-pulse-style')) { const s = document.createElement('style'); s.id = 'taxi-pulse-style'; s.textContent = '@keyframes pulse-user{0%,100%{box-shadow:0 0 0 6px rgba(74,144,226,0.3)}50%{box-shadow:0 0 0 14px rgba(74,144,226,0.08)}}'; document.head.appendChild(s); }
+      const userMarker = new Marker({ element: userEl }).setLngLat([originLng, originLat]);
+      userMarker.setPopup(new Popup({ offset: 20 }).setHTML('<b>Tu ubicación</b>'));
+      userMarker.addTo(map);
+      markersRef.current.push(userMarker);
 
-      // Destino
-      if (destination) addMarker(destination.lat, destination.lng, '🏁', '#FFD700', '<b>Destino</b>');
+      // Marcador destino
+      if (destination) {
+        addMarker(destination.lat, destination.lng, '🏁', '#FFD700', '<b>Destino</b>');
+      }
 
-      // Conductor
-      if (driverPos) addMarker(driverPos.lat, driverPos.lng, '🚕', '#facc15', `<b>${driver?.name || 'Tu conductor'}</b><br>${driver?.car || ''}`);
+      // Marcador conductor
+      if (driverPos) {
+        addMarker(driverPos.lat, driverPos.lng, '🚕', '#facc15',
+          `<b>${driver?.name || 'Tu conductor'}</b><br>${driver?.car || ''}`);
+      }
 
-      // Vehículos cercanos
+      // Vehículos disponibles (cuando no hay viaje activo)
       if (!destination && !driverPos) {
         const vehicles = [
           { lat: originLat+0.003, lng: originLng+0.004, name:'Marcos N.', car:'Toyota Corolla', rating:'4.9', type:'taxi', eta:'2 min', emoji:'🚕', color:'#FFD700' },
@@ -181,36 +197,58 @@ const RealMap: React.FC<{
           { lat: originLat+0.005, lng: originLng+0.001, name:'Pedro E.', car:'Honda CB500', rating:'4.6', type:'moto', eta:'3 min', emoji:'🏍️', color:'#F97316' },
           { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', car:'Toyota Hiace', rating:'4.7', type:'xl', eta:'7 min', emoji:'🚐', color:'#3B82F6' },
         ];
-        const filtered = vehicleFilter && vehicleFilter !== 'all' ? vehicles.filter(v => v.type === vehicleFilter) : vehicles;
-        filtered.forEach(v => addMarker(v.lat, v.lng, v.emoji, v.color,
-          `<div style="font-family:sans-serif;min-width:130px"><b style="font-size:13px">${v.name}</b><br><span style="color:#666;font-size:11px">${v.car}</span><br><span style="color:#f59e0b">⭐ ${v.rating}</span> · <span style="color:#10B981">⏱ ${v.eta}</span></div>`
-        ));
+        const filtered = vehicleFilter && vehicleFilter !== 'all'
+          ? vehicles.filter(v => v.type === vehicleFilter)
+          : vehicles;
+        filtered.forEach(v => {
+          addMarker(v.lat, v.lng, v.emoji, v.color,
+            `<div style="font-family:sans-serif;min-width:130px"><b style="font-size:13px">${v.name}</b><br><span style="color:#666;font-size:11px">${v.car}</span><br><span style="color:#f59e0b">⭐ ${v.rating}</span> · <span style="color:#10B981">⏱ ${v.eta}</span></div>`
+          );
+        });
       }
 
-      // Ruta
+      // Ruta con OSRM
       if (destination) {
-        if (routeLayerRef.current) { try { map.removeLayer('route-line'); map.removeSource('route'); } catch {} routeLayerRef.current = false; }
+        // Eliminar ruta anterior
+        if (routeLayerRef.current) {
+          try { map.removeLayer('route-line'); map.removeSource('route'); } catch {}
+          routeLayerRef.current = false;
+        }
         const from = `${originLng},${originLat}`;
         const to = `${destination.lng},${destination.lat}`;
         fetch(`https://router.project-osrm.org/route/v1/driving/${from};${to}?overview=full&geometries=geojson`)
-          .then(r => r.json()).then(data => {
+          .then(r => r.json())
+          .then(data => {
             const geometry = data.routes?.[0]?.geometry;
             if (!geometry) return;
             map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry } });
-            map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00B4D8', 'line-width': 5, 'line-opacity': 0.85 } });
+            map.addLayer({ id: 'route-line', type: 'line', source: 'route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#00B4D8', 'line-width': 5, 'line-opacity': 0.85 }
+            });
             routeLayerRef.current = true;
+            // Ajustar vista
             const coords = geometry.coordinates;
-            const bounds = coords.reduce((b: any, c: [number,number]) => b.extend(c), new LngLatBounds(coords[0], coords[0]));
+            const bounds = coords.reduce(
+              (b: any, c: [number,number]) => b.extend(c),
+              new LngLatBounds(coords[0], coords[0])
+            );
             map.fitBounds(bounds, { padding: 60, duration: 1000 });
-          }).catch(() => {
-            map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[originLng,originLat],[destination.lng,destination.lat]] } } });
-            map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00B4D8', 'line-width': 5 } });
+          })
+          .catch(() => {
+            // Fallback línea recta
+            map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {},
+              geometry: { type: 'LineString', coordinates: [[originLng,originLat],[destination.lng,destination.lat]] }
+            }});
+            map.addLayer({ id: 'route-line', type: 'line', source: 'route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': '#00B4D8', 'line-width': 5 }
+            });
             routeLayerRef.current = true;
           });
       }
     });
   }, [mapLoaded, origin, destination, driverPos, vehicleFilter]);
-
 
   return (
     <div style={{ position: 'relative', width: '100%', height }}>
