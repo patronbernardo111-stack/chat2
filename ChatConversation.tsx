@@ -225,15 +225,15 @@ export const ChatConversation: React.FC<Props> = ({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '10px 6px 10px 2px',
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '8px 4px 8px 2px',
       }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex', flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
 
         <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={onOpenProfile}>
-          <Avatar name={chat.title} size={56} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
+          <Avatar name={chat.title} size={42} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={onOpenProfile}>
@@ -243,7 +243,7 @@ export const ChatConversation: React.FC<Props> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0px', marginLeft: 'auto' }}>
+        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
           {onStartCall && (
             <>
               <button onClick={() => onStartCall('audio')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
