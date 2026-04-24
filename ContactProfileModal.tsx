@@ -115,7 +115,7 @@ export const ContactProfileModal: React.FC<Props> = ({
     <div style={{position:'fixed',inset:0,background:'#F0F2F5',zIndex:4000,display:'flex',flexDirection:'column',overflow:'hidden'}}>
 
       {/* Header fijo */}
-      <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'10px 16px',display:'flex',alignItems:'center',gap:'12px',flexShrink:0}}>
+      <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',paddingTop:'calc(10px + env(safe-area-inset-top, 44px))',padding:'10px 16px',paddingTop:'calc(10px + env(safe-area-inset-top, 44px))',display:'flex',alignItems:'center',gap:'12px',flexShrink:0}}>
         <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#374151',padding:'4px',display:'flex'}}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
