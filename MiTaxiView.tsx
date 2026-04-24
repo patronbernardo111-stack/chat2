@@ -167,6 +167,9 @@ const RealMap: React.FC<{
       };
 
       // Marcador origen
+      // Centrar mapa en posición real del usuario
+      map.flyTo({ center: [originLng, originLat], zoom: 15, duration: 800 });
+
       // Marcador usuario — punto azul pulsante
       const userEl = document.createElement('div');
       userEl.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.3);animation:pulse-user 1.5s infinite;cursor:pointer';
@@ -248,7 +251,7 @@ const RealMap: React.FC<{
           });
       }
     });
-  }, [mapLoaded, origin, destination, driverPos, vehicleFilter]);
+  }, [mapLoaded, origin?.lat, origin?.lng, destination?.lat, destination?.lng, driverPos?.lat, driverPos?.lng, vehicleFilter]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height }}>
