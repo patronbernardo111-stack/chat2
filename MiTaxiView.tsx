@@ -137,12 +137,14 @@ const RealMap: React.FC<{
         zoom: 14,
       });
       mapRef.current = map;
-      const triggerLoad = () => setMapLoaded(p => { if (!p) { return true; } return p; });
+      const triggerLoad = () => setMapLoaded(p => p ? p : true);
       map.on('load', triggerLoad);
       map.on('style.load', triggerLoad);
       map.on('idle', triggerLoad);
-      setTimeout(triggerLoad, 2000);
-      setTimeout(triggerLoad, 5000);
+      map.on('styleimagemissing', triggerLoad);
+      map.on('error', triggerLoad);
+      setTimeout(triggerLoad, 1500);
+      setTimeout(triggerLoad, 3000);
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
