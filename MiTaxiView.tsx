@@ -717,7 +717,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
   // Actualizar origen siempre que cambie el GPS (no solo la primera vez)
   useEffect(() => {
     if (gpsPos) {
-      const addr = gpsPos.city || (gpsPos.lat && gpsPos.lng ? ${gpsPos.lat.toFixed(4)},  : 'Obteniendo ubicación...');
+      const addr = gpsPos.city || `${gpsPos.lat.toFixed(4)}, ${gpsPos.lng.toFixed(4)}`;
       setOrigin({ lat: gpsPos.lat, lng: gpsPos.lng, address: addr });
     }
   }, [gpsPos?.lat, gpsPos?.lng, gpsPos?.city]);
