@@ -714,7 +714,13 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance, onDebit, user
 
   const finalPrice = Math.round(BASE_PRICE * rideType.multiplier * (promoApplied ? 0.85 : 1));
 
-  useEffect(() => { if (userLocation && !origin) setOrigin(userLocation); }, [userLocation]);
+  // Actualizar origen siempre que cambie el GPS (no solo la primera vez)
+  useEffect(() => {
+    if (gpsPos) {
+      const addr = gpsPos.city || (gpsPos.lat && gpsPos.lng ? ${gpsPos.lat.toFixed(4)},  : 'Obteniendo ubicación...');
+      setOrigin({ lat: gpsPos.lat, lng: gpsPos.lng, address: addr });
+    }
+  }, [gpsPos?.lat, gpsPos?.lng, gpsPos?.city]);
 
   useEffect(() => {
     if (screen !== 'searching') return;
