@@ -137,11 +137,12 @@ const RealMap: React.FC<{
         zoom: 14,
       });
       mapRef.current = map;
-      map.on('load', () => setMapLoaded(true));
-      map.on('style.load', () => setMapLoaded(true));
-      // Fallback: si el evento load no dispara (sprite faltante), forzar tras 2s
-      setTimeout(() => { if (mapRef.current && !mapRef.current._loaded) setMapLoaded(true); }, 2000);
-      setTimeout(() => { setMapLoaded(true); }, 4000);
+      const triggerLoad = () => setMapLoaded(p => { if (!p) { return true; } return p; });
+      map.on('load', triggerLoad);
+      map.on('style.load', triggerLoad);
+      map.on('idle', triggerLoad);
+      setTimeout(triggerLoad, 2000);
+      setTimeout(triggerLoad, 5000);
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
