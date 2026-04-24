@@ -552,12 +552,12 @@ const App: React.FC = () => {
     setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }, 100);
   }, [selectedChat?.id]);
 
-  // Scroll automático SOLO si el usuario est abajo
+  // Scroll automático SIEMPRE al último mensaje al enviar o recibir
   React.useEffect(() => {
     if (!selectedChat) return;
-    if (isAtBottomRef.current) {
+    requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    });
   }, [chatMessages]);
 
   // Geolocalizacin automática + clima real (Open-Meteo, sin API key)
@@ -4386,14 +4386,23 @@ const App: React.FC = () => {
 
           const sendChatMessage = async () => {
             if (!currentChatInput.trim()) return;
-            playMessageSent(); vibrate(30); // sonido + vibración al enviar
             const messageText = currentChatInput.trim();
+
+            // MODO EDICIÓN — actualiza el mensaje existente
+            if (editingMsgId) {
+              setChatMessages(prev => ({ ...prev, [chatId]: (prev[chatId]||[]).map(m => m.id === editingMsgId ? { ...m, text: messageText, edited: true } : m) }));
+              setCurrentChatInput('');
+              setEditingMsgId(null);
+              showToast('Mensaje editado', 'success');
+              return;
+            }
+
+            playMessageSent(); vibrate(30);
             const newMsg = { id: Date.now().toString(), from: 'me' as const, text: messageText, time: makeTime(), status: 'pending' as const };
             addMsg(newMsg);
             setCurrentChatInput('');
             setShowChatEmojis(false);
             
-            // Si es un chat real (UUID), enviar al backend
             if (chatId && chatId.includes('-') && chatId.length > 20) {
               try {
                 await chatAPI.sendMessage(chatId, { text: messageText, type: 'text' });
@@ -4403,7 +4412,6 @@ const App: React.FC = () => {
                 setChatMessages(prev => ({ ...prev, [chatId]: (prev[chatId]||[]).map(m => m.id===newMsg.id ? {...m, status:'pending'} : m) }));
               }
             } else {
-              // Chat demo ? simular entrega
               setTimeout(() => setChatMessages(prev => ({ ...prev, [chatId]: (prev[chatId]||[]).map(m => m.id===newMsg.id ? {...m, status:'delivered'} : m) })), 1000);
               setTimeout(() => setChatMessages(prev => ({ ...prev, [chatId]: (prev[chatId]||[]).map(m => m.id===newMsg.id ? {...m, status:'read'} : m) })), 3000);
             }
@@ -5398,11 +5406,12 @@ const App: React.FC = () => {
                 </button>
 
                 {/* Input */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#ffffff', border: '1.5px solid #E5E7EB', borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#ffffff', border: `1.5px solid ${editingMsgId ? '#6B5BD6' : '#E5E7EB'}`, borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+                  {editingMsgId && <span style={{ fontSize: '11px', color: '#6B5BD6', fontWeight: '700', flexShrink: 0 }}>✏️</span>}
                   <input
                     type="text"
                     value={currentChatInput}
-                    onChange={e => setCurrentChatInput(e.target.value)}
+                    onChange={e => { setCurrentChatInput(e.target.value); if (!e.target.value && editingMsgId) setEditingMsgId(null); }}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } }}
                     placeholder="Escribe un mensaje..."
                     style={{ flex: 1, background: 'none', border: 'none', color: '#111827', fontSize: '15px', outline: 'none', fontFamily: 'inherit', lineHeight: '1.4' }}
@@ -8445,7 +8454,7 @@ const App: React.FC = () => {
                 ...(msgContextMenu.msg.from === 'me' ? [{
                   color:'#6B5BD6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
                   label:'Editar', sub:'Modificar el texto enviado',
-                  action:() => { setCurrentChatInput(msgContextMenu.msg.text || ''); showToast('Edita el mensaje y reenvía', 'info'); setMsgContextMenu(null); }
+                  action:() => { setCurrentChatInput(msgContextMenu.msg.text || ''); setEditingMsgId(msgContextMenu.msg.id); showToast('Edita el mensaje y pulsa enviar', 'info'); setMsgContextMenu(null); }
                 }] : []),
                 {
                   color:'#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
