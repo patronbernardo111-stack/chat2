@@ -132,18 +132,17 @@ const RealMap: React.FC<{
       config.apiKey = 'bg3FUa7es7Qn1TITIWjO';
       const map = new Map({
         container: mapContainer.current!,
-        style: MapStyle.STREETS,
+        style: 'https://api.maptiler.com/maps/streets/style.json?key=bg3FUa7es7Qn1TITIWjO',
         center: [originLng, originLat],
         zoom: 14,
       });
       mapRef.current = map;
       // Disparar inmediatamente si ya está cargado, o esperar el evento
-      if (map.isStyleLoaded()) {
-        setMapLoaded(true);
-      } else {
-        map.on('load', () => setMapLoaded(true));
-        map.on('style.load', () => setMapLoaded(true));
-      }
+      const onLoad = () => setMapLoaded(true);
+      map.on('load', onLoad);
+      map.on('style.load', onLoad);
+      // Fallback: force after 3s if events don't fire
+      setTimeout(() => { if (mapRef.current) setMapLoaded(true); }, 3000);
       if (onLocationSelect) {
         map.on('click', (e: any) => onLocationSelect(e.lngLat.lat, e.lngLat.lng));
       }
