@@ -150,7 +150,7 @@ const RealMap: React.FC<{
     if (!mapRef.current || !mapLoaded) return;
     if (!origin?.lat || !origin?.lng) return;
     mapRef.current.flyTo({ center: [origin.lng, origin.lat], zoom: 15, duration: 1200 });
-  }, [mapLoaded, origin?.lat, origin?.lng]);
+  }, [mapLoaded, origin]);
 
   // Actualizar marcadores y ruta cuando cambian datos
   useEffect(() => {
@@ -248,7 +248,7 @@ const RealMap: React.FC<{
           });
       }
     });
-  }, [mapLoaded, origin?.lat, origin?.lng, destination?.lat, destination?.lng, driverPos?.lat, driverPos?.lng, vehicleFilter]);
+  }, [mapLoaded, origin, destination, driverPos, vehicleFilter]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height }}>
