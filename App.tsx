@@ -19,7 +19,6 @@ import { AvatarCropModal } from './AvatarCropModal';
 import { QRScanner } from './QRScanner';
 import { QRCodeSVG } from 'qrcode.react';
 import { RestaurantesModule, VuelosModule, GasolinerasModule } from './ServiciosDiarios';
-import { GroupProfileModal } from './GroupProfileModal';
 import { useWebRTC } from './useWebRTC';
 import { playMessageReceived, playMessageSent, playNotification, startRingtone, stopRingtone, startDialingTone, stopDialingTone, playCallConnected, playCallEnded, playError, playSuccess, vibrate, unlockAudio, getSoundSettings, saveSoundSettings, MESSAGE_TONES, RINGTONES, NOTIFICATION_TONES, type SoundSettings } from './useSounds';
 
@@ -3961,77 +3960,25 @@ const App: React.FC = () => {
 
     return (
       <>
-        {/* Tab bar */}
-        {/* Safe area fill — same gradient as nav bar, covers iPhone home indicator zone */}
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'env(safe-area-inset-bottom, 0px)', background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)', zIndex: 999 }} />
         <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 'env(safe-area-inset-bottom, 0px)',
+          position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', left: 0, right: 0,
           background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
-          zIndex: 999,
-        }} />
-        <div style={{
-          position: 'fixed',
-          bottom: 'env(safe-area-inset-bottom, 0px)',
-          left: 0,
-          right: 0,
-          background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-around',
-          zIndex: 1000,
-          borderTop: '0.5px solid rgba(255,255,255,0.25)',
-          boxShadow: '0 -1px 0 rgba(0,0,0,0.1)',
-          paddingTop: '6px',
-          paddingBottom: '8px',
-          minHeight: '49px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+          zIndex: 1000, borderTop: '0.5px solid rgba(255,255,255,0.25)',
+          boxShadow: '0 -1px 0 rgba(0,0,0,0.1)', paddingTop: '6px', paddingBottom: '8px', minHeight: '49px',
         }}>
           {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === 'servicios') {
-                  if (currentView === 'servicios') { setCurrentView(previousView); }
-                  else { setPreviousView(currentView); setCurrentView('servicios'); }
-                } else {
-                  setCurrentView(item.id);
-                }
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '2px',
-                padding: 0,
-                outline: 'none',
-                flex: 1,
-                height: '100%',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              <div style={{
-                color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.65)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '28px',
-                height: '28px',
-              }}>
+            <button key={item.id} onClick={() => {
+              if (item.id === 'servicios') {
+                if (currentView === 'servicios') { setCurrentView(previousView); }
+                else { setPreviousView(currentView); setCurrentView('servicios'); }
+              } else { setCurrentView(item.id); }
+            }} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: 0, outline: 'none', flex: 1, height: '100%', WebkitTapHighlightColor: 'transparent' }}>
+              <div style={{ color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px' }}>
                 {renderIcon(item.icon, 28)}
               </div>
-              <span style={{
-                fontSize: '10px',
-                fontWeight: currentView === item.id ? '600' : '400',
-                color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.65)',
-                lineHeight: 1,
-                letterSpacing: '0.2px',
-              }}>
+              <span style={{ fontSize: '10px', fontWeight: currentView === item.id ? '600' : '400', color: currentView === item.id ? '#fff' : 'rgba(255,255,255,0.65)', lineHeight: 1, letterSpacing: '0.2px' }}>
                 {item.label}
               </span>
             </button>
@@ -4284,35 +4231,32 @@ const App: React.FC = () => {
             <button
               key={item.id}
               onClick={() => { setPreviousView(currentView); setCurrentView(item.id); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '4px 0', width: '100%', transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1)', WebkitTapHighlightColor: 'transparent' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', padding: '4px 0', width: '100%', transition: 'all 0.25s ease', WebkitTapHighlightColor: 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.05)'; const icon = e.currentTarget.querySelector('div[style*="rgba(255,255,255,0.18)"]') as HTMLElement; if (icon) icon.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.6), 0 0 12px rgba(0,174,255,0.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; const icon = e.currentTarget.querySelector('div[style*="rgba(255,255,255,0.18)"]') as HTMLElement; if (icon) icon.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.06)'; }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)'; }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-4px) scale(1.05)'; }}
             >
-              {/* App icon container — estilo iOS, responsive */}
+              {/* App icon container — estilo cristalino */}
               <div style={{
                 position: 'relative',
                 width: 'clamp(52px, 14vw, 72px)',
                 height: 'clamp(52px, 14vw, 72px)',
                 borderRadius: 'clamp(13px, 3.5vw, 18px)',
                 overflow: 'hidden',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.22), 0 2px 4px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.25)',
+                background: 'rgba(255,255,255,0.18)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.06)',
+                border: '1px solid rgba(255,255,255,0.35)',
                 flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <img
                   src={item.img}
                   alt={item.label}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  style={{ width: '70%', height: '70%', objectFit: 'contain', display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
                 />
-                {/* Reflejo superior — efecto gloss */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0,
-                  height: '45%',
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)',
-                  borderRadius: 'clamp(13px, 3.5vw, 18px) clamp(13px, 3.5vw, 18px) 0 0',
-                  pointerEvents: 'none',
-                }} />
               </div>
               <span style={{ fontSize: 'clamp(10px, 2.8vw, 13px)', color: '#1a1a1a', fontWeight: '700', textAlign: 'center', lineHeight: '1.2', maxWidth: 'clamp(52px, 14vw, 72px)', letterSpacing: '0.1px' }}>{item.label}</span>
             </button>
@@ -10695,8 +10639,8 @@ const App: React.FC = () => {
       {showSuperModal && <SupermercadosModal onClose={() => setShowSuperModal(false)} userBalance={userBalance} onDebit={(n: number) => setUserBalance((p: number) => p - n)} />}
 
 
-      {/* -- PERFIL DE CONTACTO / GRUPO --------------------------------------- */}
-      {showContactProfile && !showContactProfile.isGroup && (
+      {/* -- PERFIL DE CONTACTO ---------------------------------------------- */}
+      {showContactProfile && (
         <ContactProfileModal
           contact={showContactProfile}
           onClose={() => setShowContactProfile(null)}
@@ -10722,7 +10666,7 @@ const App: React.FC = () => {
               await contactsAPI.add(cp.id, phone || undefined, name || undefined);
               await loadContacts();
               showToast(`${name} anadido a contactos`, 'success');
-            } catch { showToast('No se pudo añadir el contacto', 'error'); }
+            } catch { showToast('No se pudo anadir el contacto', 'error'); }
           }}
           onSendMoney={(contact) => { setQuickTransferData({ contactId: contact.id?.toString() || '', contactName: contact.title || contact.name, amount: '', accountId: bankAccounts[0]?.id || '' }); setShowQuickTransferModal(true); }}
           onStartCall={(type, contact) => startCall(type, contact)}
@@ -10738,36 +10682,6 @@ const App: React.FC = () => {
               }
             } catch {}
           }}
-        />
-      )}
-      {showContactProfile && showContactProfile.isGroup && (
-        <GroupProfileModal
-          group={showContactProfile}
-          onClose={() => setShowContactProfile(null)}
-          allContacts={allContacts}
-          mutedChats={mutedChats}
-          pinnedChats={pinnedChats}
-          onMuteToggle={(id) => setMutedChats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])}
-          onPinToggle={(id) => setPinnedChats(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])}
-          onClearChat={(id) => setChatMessages(prev => ({ ...prev, [id]: [] }))}
-          onOpenWallpaper={() => setShowWallpaperCatalog(true)}
-          onUpdateGroup={(id, data) => {
-            setAllGroups(prev => prev.map(g => g.id === id ? { ...g, ...data } : g));
-            setSelectedChat((prev: any) => prev?.id === id ? { ...prev, ...data, title: data.name || prev.title } : prev);
-          }}
-          onAddContactFromGroup={async (member) => {
-            try {
-              await contactsAPI.add(member.id, member.phone || undefined, member.name || undefined);
-              await loadContacts();
-            } catch {}
-          }}
-          onLeaveGroup={(id) => {
-            setAllGroups(prev => prev.filter(g => g.id !== id));
-            setRealChats((prev: any[]) => prev.filter((c: any) => c.id !== id));
-            setSelectedChat(null);
-            showToast('Has salido del grupo', 'info');
-          }}
-          showToast={showToast}
         />
       )}
 
