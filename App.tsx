@@ -145,8 +145,10 @@ const App: React.FC = () => {
           const localOnly = (prev[chatId] || []).filter((m: any) =>
             !backendIds.has(m.id) && (m.type === 'image' || m.type === 'audio' || m.imageUrl || m.audioUrl || m.status === 'pending')
           );
+          // Filtrar mensajes eliminados para mí localmente (respaldo)
+          const filteredFmt = fmt.filter((m: any) => !deletedForMeIds.current.has(m.id));
           // Ordenar por tiempo para mantener el orden correcto
-          const merged = [...fmt, ...localOnly].sort((a: any, b: any) => {
+          const merged = [...filteredFmt, ...localOnly].sort((a: any, b: any) => {
             const ta = a.time || '00:00';
             const tb = b.time || '00:00';
             return ta.localeCompare(tb);
@@ -161,6 +163,8 @@ const App: React.FC = () => {
   const [msgNotif, setMsgNotif] = useState<{id:string; sender:string; text:string; chatId:string; avatar?:string} | null>(null);
   const msgNotifTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMsgIds = React.useRef<Record<string, string>>({});
+  // IDs de mensajes eliminados "para mí" localmente (respaldo por si el API falla)
+  const deletedForMeIds = React.useRef<Set<string>>(new Set());
   // -- Toast system --
   const [toast, setToast] = useState<{msg:string; type:'success'|'error'|'info'} | null>(null);
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -8721,13 +8725,19 @@ const App: React.FC = () => {
             {/* ── Eliminar ── */}
             <div style={{ background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid rgba(254,226,226,0.8)', marginTop:'8px' }}>
               {/* Eliminar para mí — disponible para todos */}
-              <button onClick={() => {
+              <button onClick={async () => {
                 const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
-                setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgContextMenu.msg.id) }));
-                if (msgContextMenu.msg.id?.includes('-')) {
-                  chatAPI.deleteMessageForMe(msgContextMenu.msg.id).catch(() => {});
+                const msgId = msgContextMenu.msg.id;
+                // Quitar del estado local inmediatamente
+                setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
+                // Guardar en respaldo local para que el polling no lo traiga de vuelta
+                deletedForMeIds.current.add(msgId);
+                setMsgContextMenu(null);
+                // Llamar al API si es un UUID real (tiene guiones y longitud de UUID)
+                if (msgId && msgId.length > 10) {
+                  try { await chatAPI.deleteMessageForMe(msgId); } catch {}
                 }
-                showToast('Mensaje eliminado para ti', 'info'); setMsgContextMenu(null);
+                showToast('Mensaje eliminado para ti', 'info');
               }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s', borderBottom: msgContextMenu.msg.from === 'me' ? '1px solid rgba(239,68,68,0.12)' : 'none' }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.06)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
@@ -8741,13 +8751,19 @@ const App: React.FC = () => {
               </button>
               {/* Eliminar para todos — solo el remitente */}
               {msgContextMenu.msg.from === 'me' && (
-                <button onClick={() => {
+                <button onClick={async () => {
                   const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
-                  setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgContextMenu.msg.id) }));
-                  if (msgContextMenu.msg.id?.includes('-')) {
-                    chatAPI.deleteMessage(msgContextMenu.msg.id).catch(() => {});
+                  const msgId = msgContextMenu.msg.id;
+                  // Quitar del estado local inmediatamente
+                  setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
+                  // Guardar en respaldo local por si el API tarda
+                  deletedForMeIds.current.add(msgId);
+                  setMsgContextMenu(null);
+                  // Llamar al API si es un UUID real
+                  if (msgId && msgId.length > 10) {
+                    try { await chatAPI.deleteMessage(msgId); } catch {}
                   }
-                  showToast('Mensaje eliminado para todos', 'info'); setMsgContextMenu(null);
+                  showToast('Mensaje eliminado para todos', 'info');
                 }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.06)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
