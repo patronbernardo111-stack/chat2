@@ -1,100 +1,6 @@
-// build: 20260425-105210
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useGPS } from './useGPS';
 import { playSuccess, playNotification, vibrate } from './useSounds';
-// ─── ICONOS ───────────────────────────────────────────────────────────────────
-const UserIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const TaxiIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-  </svg>
-);
-const UberTaxiIcon = TaxiIcon;
-const LocationIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-  </svg>
-);
-const StarIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-);
-const WalletIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h2"/>
-  </svg>
-);
-const NavigationIcon: React.FC<{ size?: number; color?: string; rotation?: number }> = ({ size = 24, color = 'currentColor', rotation = 0 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ transform: `rotate(${rotation}deg)` }}>
-    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-  </svg>
-);
-const CheckIcon: React.FC<{ size?: number; color?: string }> = ({ size = 24, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"/>
-  </svg>
-);
-const PBtn: React.FC<{ title: string; onPress: () => void; type?: string; icon?: React.ReactNode; disabled?: boolean }> = ({ title, onPress, type = 'primary', icon, disabled = false }) => (
-  <button onClick={onPress} disabled={disabled} style={{ width: '100%', padding: '15px', background: type === 'primary' ? '#facc15' : '#EEF2F7', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: '700', color: type === 'primary' ? '#1E293B' : '#5A7090', cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: disabled ? 0.6 : 1, fontFamily: 'inherit' }}>
-    {icon}{title}
-  </button>
-);
-const ServiceCard: React.FC<{ title: string; subtitle: string; price: string; time: string; rating: number; onSelect: () => void; selected: boolean; iconColor: string; capacity: number; premium?: boolean }> = ({ title, subtitle, price, time, rating, onSelect, selected, iconColor, capacity, premium }) => (
-  <button onClick={onSelect} style={{ width: '100%', background: selected ? '#FFFBF0' : '#fff', border: `2px solid ${selected ? iconColor : '#E2E8F0'}`, borderRadius: '14px', padding: '12px 14px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', fontFamily: 'inherit' }}>
-    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: `${iconColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <TaxiIcon size={24} color={iconColor} filled/>
-    </div>
-    <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '14px', fontWeight: '700', color: '#1A2B4A' }}>{title}</span>
-        {premium && <span style={{ fontSize: '9px', background: '#facc15', color: '#111', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>PRO</span>}
-      </div>
-      <div style={{ fontSize: '11px', color: '#8A9BB5' }}>{subtitle} · {capacity} 👤</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-        <StarIcon size={11} filled color="#FFB800"/><span style={{ fontSize: '11px', color: '#FFB800', fontWeight: '600' }}>{rating}</span>
-        <span style={{ fontSize: '11px', color: '#8A9BB5' }}>· {time}</span>
-      </div>
-    </div>
-    <div style={{ fontSize: '15px', fontWeight: '800', color: '#1A2B4A', flexShrink: 0 }}>{price}</div>
-  </button>
-);
-const SafetyCenter: React.FC<{ onClose: () => void; driver?: any }> = ({ onClose, driver }) => (
-  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 700, display: 'flex', alignItems: 'flex-end' }}>
-    <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px 40px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ fontSize: '18px', fontWeight: '800', color: '#1A2B4A' }}>🛡️ Centro de Seguridad</div>
-        <button onClick={onClose} style={{ background: '#EEF2F7', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-      </div>
-      {driver && <div style={{ background: '#EEF2F7', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1A2B4A' }}>{driver.name}</div>
-        <div style={{ fontSize: '12px', color: '#8A9BB5' }}>{driver.car} · {driver.plate}</div>
-      </div>}
-      {[['🚨', 'Emergencia', '#ef4444'], ['📞', 'Llamar al 112', '#3b82f6'], ['📍', 'Compartir ubicación', '#10b981']].map(([icon, label, color]) => (
-        <button key={String(label)} style={{ width: '100%', padding: '14px', background: `${color}15`, border: `1px solid ${color}30`, borderRadius: '12px', marginBottom: '8px', fontSize: '14px', fontWeight: '700', color: String(color), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'inherit' }}>
-          {icon} {label}
-        </button>
-      ))}
-    </div>
-  </div>
-);
-function getVehicleIcon(iconId: string, size: number, color: string, _filled: boolean): React.ReactNode {
-  const icons: Record<string, React.ReactNode> = {
-    basic:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>,
-    comfort: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>,
-    suv:     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="8" width="22" height="10" rx="2"/><path d="M5 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
-    xl:      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="7" width="22" height="11" rx="2"/><path d="M5 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
-    minivan: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="7" width="22" height="11" rx="2"/><path d="M5 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
-    moto:    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="17" r="3"/><path d="M5 17l4-8h6l4 8"/></svg>,
-    mujer:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="7" r="4"/><path d="M8 21v-2a4 4 0 0 1 8 0v2"/></svg>,
-    cargo:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
-  };
-  return icons[iconId] || icons['basic'];
-}
 
 // Cache del SDK de MapTiler para carga instantánea en reusos
 let _maptilerCache: any = null;
@@ -183,9 +89,8 @@ const VEHICLE_CATEGORIES: VehicleCategory[] = [
   ]},
 ];
 
-// ─── MAPA HÍBRIDO: Google Maps con fallback a MapTiler ──────────────────────
+// ─── MAPA CON GOOGLE MAPS ────────────────────────────────────────────────────
 const GOOGLE_MAPS_KEY = 'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY';
-const MAPTILER_KEY = 'bg3FUa7es7Qn1TITIWjO';
 
 const RealMap: React.FC<{
   origin?: Location | null; destination?: Location | null;
@@ -197,13 +102,12 @@ const RealMap: React.FC<{
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const routeRef = useRef<any>(null);
-  const [mapEngine, setMapEngine] = React.useState<'google'|'maptiler'|'loading'>('loading');
   const [driverPos, setDriverPos] = useState(driver?.location ?? null);
 
   const originLat = origin?.lat ?? 3.7523;
   const originLng = origin?.lng ?? 8.7737;
 
-  // Animar conductor
+  // Animar conductor hacia origen
   useEffect(() => {
     if (!driver) return;
     setDriverPos(driver.location);
@@ -221,77 +125,67 @@ const RealMap: React.FC<{
     return () => clearInterval(iv);
   }, [driver, status, origin]);
 
-  // Inicializar mapa — Google Maps primero, MapTiler como fallback
+  // Cargar Google Maps API
+  const loadGoogleMaps = (): Promise<any> => {
+    return new Promise((resolve) => {
+      if ((window as any).google?.maps) { resolve((window as any).google.maps); return; }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=geometry`;
+      script.async = true;
+      script.onload = () => resolve((window as any).google.maps);
+      document.head.appendChild(script);
+    });
+  };
+
+  // Inicializar mapa
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
-
-    const initGoogleMaps = (): Promise<boolean> => {
-      return new Promise((resolve) => {
-        if ((window as any).google?.maps) { resolve(true); return; }
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=geometry`;
-        script.async = true;
-        const timeout = setTimeout(() => resolve(false), 8000);
-        script.onload = () => { clearTimeout(timeout); resolve(true); };
-        script.onerror = () => { clearTimeout(timeout); resolve(false); };
-        document.head.appendChild(script);
+    loadGoogleMaps().then((gmaps) => {
+      const map = new gmaps.Map(mapContainer.current!, {
+        center: { lat: originLat, lng: originLng },
+        zoom: 15,
+        mapTypeId: 'roadmap',
+        disableDefaultUI: false,
+        zoomControl: true,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+        ],
       });
-    };
-
-    const initMapTiler = () => {
-      if (!document.getElementById('leaflet-css')) {
-        const link = document.createElement('link');
-        link.id = 'leaflet-css';
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-      }
-      import('leaflet').then((L) => {
-        const map = L.map(mapContainer.current!, { center: [originLat, originLng], zoom: 14, zoomControl: true, attributionControl: false });
-        L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, { maxZoom: 19 }).addTo(map);
-        mapRef.current = map;
-        setMapEngine('maptiler');
-        if (onLocationSelect) map.on('click', (e: any) => onLocationSelect(e.latlng.lat, e.latlng.lng));
-      });
-    };
-
-    initGoogleMaps().then((ok) => {
-      if (ok && (window as any).google?.maps) {
-        const gmaps = (window as any).google.maps;
-        try {
-          const map = new gmaps.Map(mapContainer.current!, {
-            center: { lat: originLat, lng: originLng }, zoom: 14,
-            mapTypeId: 'roadmap', zoomControl: true,
-            streetViewControl: false, mapTypeControl: false, fullscreenControl: false,
-          });
-          mapRef.current = map;
-          setMapEngine('google');
-          if (onLocationSelect) map.addListener('click', (e: any) => onLocationSelect(e.latLng.lat(), e.latLng.lng()));
-        } catch { initMapTiler(); }
-      } else {
-        initMapTiler();
+      mapRef.current = map;
+      if (onLocationSelect) {
+        map.addListener('click', (e: any) => onLocationSelect(e.latLng.lat(), e.latLng.lng()));
       }
     });
-
-    return () => { if (mapRef.current) { try { mapRef.current.remove?.(); } catch {} mapRef.current = null; } };
+    return () => { mapRef.current = null; };
   }, []);
 
   // Actualizar marcadores
   useEffect(() => {
-    if (!mapRef.current || mapEngine === 'loading') return;
-
-    if (mapEngine === 'google') {
-      const gmaps = (window as any).google?.maps;
-      if (!gmaps) return;
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    loadGoogleMaps().then((gmaps) => {
+      // Limpiar marcadores
       markersRef.current.forEach(m => m.setMap(null));
       markersRef.current = [];
       if (routeRef.current) { routeRef.current.setMap(null); routeRef.current = null; }
 
       const makeMarker = (lat: number, lng: number, emoji: string, title: string) => {
         const m = new gmaps.Marker({
-          position: { lat, lng }, map: mapRef.current, title,
-          label: { text: emoji, fontSize: '18px' },
-          icon: { path: gmaps.SymbolPath.CIRCLE, scale: 16, fillColor: '#fff', fillOpacity: 1, strokeColor: '#1d4ed8', strokeWeight: 2 },
+          position: { lat, lng },
+          map,
+          title,
+          label: { text: emoji, fontSize: '20px', fontFamily: 'Arial' },
+          icon: {
+            path: gmaps.SymbolPath.CIRCLE,
+            scale: 18,
+            fillColor: '#fff',
+            fillOpacity: 1,
+            strokeColor: '#1d4ed8',
+            strokeWeight: 2,
+          },
         });
         markersRef.current.push(m);
         return m;
@@ -299,15 +193,30 @@ const RealMap: React.FC<{
 
       // Pin usuario
       new gmaps.Marker({
-        position: { lat: originLat, lng: originLng }, map: mapRef.current, title: 'Tu ubicación',
-        icon: { path: gmaps.SymbolPath.CIRCLE, scale: 12, fillColor: '#4A90E2', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 },
+        position: { lat: originLat, lng: originLng },
+        map,
+        title: 'Tu ubicación',
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#4A90E2',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 3,
+        },
         zIndex: 999,
       });
-      mapRef.current.setCenter({ lat: originLat, lng: originLng });
 
+      // Centrar en usuario
+      map.setCenter({ lat: originLat, lng: originLng });
+
+      // Destino
       if (destination) makeMarker(destination.lat, destination.lng, '🏁', 'Destino');
+
+      // Conductor
       if (driverPos) makeMarker(driverPos.lat, driverPos.lng, '🚕', driver?.name || 'Conductor');
 
+      // Vehículos cercanos
       if (!destination && !driverPos) {
         const vehicles = [
           { lat: originLat+0.003, lng: originLng+0.004, name:'Marcos N.', type:'taxi', emoji:'🚕' },
@@ -318,80 +227,34 @@ const RealMap: React.FC<{
           { lat: originLat-0.001, lng: originLng+0.006, name:'Carlos B.', type:'xl', emoji:'🚐' },
         ];
         const typeMap: Record<string,string> = { basic:'taxi', comfort:'comfort', suv:'suv', xl:'xl', minivan:'xl', mujer:'mujer', moto:'moto', cargo:'xl' };
-        const mf = vehicleFilter ? (typeMap[vehicleFilter] || vehicleFilter) : null;
-        (mf && mf !== 'all' ? vehicles.filter(v => v.type === mf) : vehicles).forEach(v => makeMarker(v.lat, v.lng, v.emoji, v.name));
+        const mappedFilter = vehicleFilter ? (typeMap[vehicleFilter] || vehicleFilter) : null;
+        const filtered = mappedFilter && mappedFilter !== 'all' ? vehicles.filter(v => v.type === mappedFilter) : vehicles;
+        filtered.forEach(v => makeMarker(v.lat, v.lng, v.emoji, v.name));
       }
 
+      // Ruta con Google Directions
       if (destination) {
-        const ds = new gmaps.DirectionsService();
-        const dr = new gmaps.DirectionsRenderer({ map: mapRef.current, suppressMarkers: true, polylineOptions: { strokeColor: '#00B4D8', strokeWeight: 5 } });
-        routeRef.current = dr;
-        ds.route({ origin: { lat: originLat, lng: originLng }, destination: { lat: destination.lat, lng: destination.lng }, travelMode: gmaps.TravelMode.DRIVING }, (r: any, s: any) => { if (s === 'OK') dr.setDirections(r); });
-      }
-
-    } else if (mapEngine === 'maptiler') {
-      import('leaflet').then((L) => {
-        markersRef.current.forEach(m => m.remove());
-        markersRef.current = [];
-        if (routeRef.current) { routeRef.current.remove(); routeRef.current = null; }
-        const map = mapRef.current;
-
-        const makeIcon = (emoji: string, color: string) => L.divIcon({
-          html: `<div style="width:36px;height:36px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:17px">${emoji}</div>`,
-          className: '', iconSize: [36, 36], iconAnchor: [18, 18],
+        const directionsService = new gmaps.DirectionsService();
+        const directionsRenderer = new gmaps.DirectionsRenderer({
+          map,
+          suppressMarkers: true,
+          polylineOptions: { strokeColor: '#00B4D8', strokeWeight: 5, strokeOpacity: 0.85 },
         });
+        routeRef.current = directionsRenderer;
+        directionsService.route({
+          origin: { lat: originLat, lng: originLng },
+          destination: { lat: destination.lat, lng: destination.lng },
+          travelMode: gmaps.TravelMode.DRIVING,
+        }, (result: any, status: any) => {
+          if (status === 'OK') {
+            directionsRenderer.setDirections(result);
+          }
+        });
+      }
+    });
+  }, [originLat, originLng, destination, driverPos, vehicleFilter]);
 
-        // Pin usuario
-        const userIcon = L.divIcon({ html: `<div style="width:20px;height:20px;border-radius:50%;background:#4A90E2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(74,144,226,0.25)"></div>`, className: '', iconSize: [20, 20], iconAnchor: [10, 10] });
-        markersRef.current.push(L.marker([originLat, originLng], { icon: userIcon }).bindPopup('<b>Tu ubicación</b>').addTo(map));
-        map.setView([originLat, originLng], map.getZoom());
-
-        if (destination) markersRef.current.push(L.marker([destination.lat, destination.lng], { icon: makeIcon('🏁', '#FFD700') }).addTo(map));
-        if (driverPos) markersRef.current.push(L.marker([driverPos.lat, driverPos.lng], { icon: makeIcon('🚕', '#facc15') }).addTo(map));
-
-        if (!destination && !driverPos) {
-          const vehicles = [
-            { lat: originLat+0.003, lng: originLng+0.004, type:'taxi', emoji:'🚕', color:'#FFD700' },
-            { lat: originLat-0.004, lng: originLng+0.002, type:'comfort', emoji:'🚗', color:'#22C55E' },
-            { lat: originLat+0.002, lng: originLng-0.005, type:'suv', emoji:'🚙', color:'#8B5CF6' },
-            { lat: originLat-0.002, lng: originLng-0.003, type:'mujer', emoji:'🚗', color:'#EC4899' },
-            { lat: originLat+0.005, lng: originLng+0.001, type:'moto', emoji:'🏍️', color:'#F97316' },
-            { lat: originLat-0.001, lng: originLng+0.006, type:'xl', emoji:'🚐', color:'#3B82F6' },
-          ];
-          const typeMap: Record<string,string> = { basic:'taxi', comfort:'comfort', suv:'suv', xl:'xl', minivan:'xl', mujer:'mujer', moto:'moto', cargo:'xl' };
-          const mf = vehicleFilter ? (typeMap[vehicleFilter] || vehicleFilter) : null;
-          (mf && mf !== 'all' ? vehicles.filter(v => v.type === mf) : vehicles).forEach(v => markersRef.current.push(L.marker([v.lat, v.lng], { icon: makeIcon(v.emoji, v.color) }).addTo(map)));
-        }
-
-        if (destination) {
-          fetch(`https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`)
-            .then(r => r.json()).then(data => {
-              const coords = data.routes?.[0]?.geometry?.coordinates;
-              if (!coords) return;
-              routeRef.current = L.polyline(coords.map((c: [number,number]) => [c[1], c[0]]), { color: '#00B4D8', weight: 5 }).addTo(map);
-              map.fitBounds(routeRef.current.getBounds(), { padding: [40, 40] });
-            }).catch(() => {});
-        }
-      });
-    }
-  }, [mapEngine, originLat, originLng, destination, driverPos, vehicleFilter]);
-
-  return (
-    <div style={{ position: 'relative', width: '100%', height }}>
-      <div ref={mapContainer} style={{ width: '100%', height: '100%', borderRadius: '16px' }} />
-      {mapEngine === 'loading' && (
-        <div style={{ position:'absolute', inset:0, background:'#1a2035', borderRadius:'16px', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'8px' }}>
-          <div style={{ width:'32px', height:'32px', border:'3px solid #00c8a0', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/>
-          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)' }}>Cargando mapa...</span>
-        </div>
-      )}
-      {mapEngine === 'maptiler' && (
-        <div style={{ position:'absolute', bottom:'8px', left:'8px', zIndex:10, background:'rgba(0,0,0,0.6)', borderRadius:'8px', padding:'3px 8px' }}>
-          <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.7)' }}>MapTiler</span>
-        </div>
-      )}
-    </div>
-  );
+  return <div ref={mapContainer} style={{ width: '100%', height, borderRadius: '16px' }} />;
 };
 // ─── PANEL DE NAVEGACIÓN TURN-BY-TURN ────────────────────────────────────────
 const NavPanel: React.FC<{ origin?: Location | null; destination?: Location | null }> = ({ origin, destination }) => {
