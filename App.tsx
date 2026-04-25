@@ -315,6 +315,8 @@ const App: React.FC = () => {
   const [showChatSearch, setShowChatSearch] = useState(false);
   const [chatImageViewer, setChatImageViewer] = useState<string | null>(null); // visor de imagen inline
   const [msgContextMenu, setMsgContextMenu] = useState<{msg: any; x: number; y: number} | null>(null); // men contextual de mensaje
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMsgIds, setSelectedMsgIds] = useState<string[]>([]);
   const [saludInitTab, setSaludInitTab] = useState<'hospitales'|'farmacias'|'cita'|'urgencias'>('hospitales');
   const [showSvcModal, setShowSvcModal] = useState<string | null>(null); // servicios publicos + diarios + herramientas
   const [svcStep, setSvcStep] = useState<string>('main');
@@ -551,7 +553,10 @@ const App: React.FC = () => {
   React.useEffect(() => {
     if (!selectedChat) return;
     isAtBottomRef.current = true;
-    setTimeout(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }); }, 100);
+    setTimeout(() => {
+      const el = document.querySelector('.chat-messages-scroll') as HTMLElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 100);
   }, [selectedChat?.id]);
 
   // Scroll automático SIEMPRE al último mensaje al enviar o recibir
@@ -562,7 +567,8 @@ const App: React.FC = () => {
     // Scroll siempre si el último mensaje es mío, o si ya estaba al fondo
     if (lastMsg?.from === 'me' || isAtBottomRef.current) {
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const el = document.querySelector('.chat-messages-scroll') as HTMLElement;
+        if (el) el.scrollTop = el.scrollHeight;
         isAtBottomRef.current = true;
       });
     }
@@ -4640,8 +4646,8 @@ const App: React.FC = () => {
 
               {/* Mensajes */}
               <div
-                className="scroll-container"
-                ref={(el) => { if (el) { (el as any)._chatScrollEl = true; el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60; isAtBottomRef.current = atBottom; }; } }}
+                className="scroll-container chat-messages-scroll"
+                ref={(el) => { if (el) { el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80; isAtBottomRef.current = atBottom; }; } }}
                 style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: selectedWallpaper === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
@@ -8593,7 +8599,7 @@ const App: React.FC = () => {
                 {
                   color:'#8B5CF6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
                   label:'Seleccionar', sub:'Seleccionar varios mensajes',
-                  action:() => { showToast('Modo seleccion activado', 'info'); setMsgContextMenu(null); }
+                  action:() => { setSelectionMode(true); setSelectedMsgIds([msgContextMenu.msg.id]); setMsgContextMenu(null); }
                 },
                 {
                   color:'#EC4899', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
