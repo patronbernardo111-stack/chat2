@@ -70,7 +70,30 @@ const App: React.FC = () => {
 
   const loadChats = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
-    try { const d = await chatAPI.getChats(); if (Array.isArray(d)) { setRealChats(d); realChatsRef.current = d; } } catch {}
+    try {
+      const d = await chatAPI.getChats();
+      if (Array.isArray(d)) {
+        setRealChats(d);
+        realChatsRef.current = d;
+        // Abrir chat pendiente de notificación si existe
+        const pendingId = (window as any).__pendingOpenChatId;
+        if (pendingId) {
+          const chat = d.find((c: any) => c.id?.toString() === pendingId);
+          if (chat) {
+            const isGroup = chat.type === 'group';
+            let name = chat.name || chat.title || '';
+            let avatarUrl = chat.avatar_url || '';
+            if (!isGroup && chat.participants) {
+              const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+              if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || avatarUrl; }
+            }
+            setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
+            setCurrentView('Mensajería');
+            (window as any).__pendingOpenChatId = null;
+          }
+        }
+      }
+    } catch {}
   }, []);
 
   const loadMessages = useCallback(async (chatId: string) => {
@@ -8234,8 +8257,21 @@ const App: React.FC = () => {
       // Click en notificación de mensaje
       if (data.type === 'NOTIFICATION_CLICK' && data.chatId) {
         setCurrentView('Mensajería');
-        const chat = realChats.find((c: any) => c.id?.toString() === data.chatId?.toString());
-        if (chat) setSelectedChat(chat);
+        const chatId = data.chatId?.toString();
+        const chat = realChats.find((c: any) => c.id?.toString() === chatId);
+        if (chat) {
+          const isGroup = chat.type === 'group';
+          let name = chat.name || chat.title || '';
+          let avatarUrl = chat.avatar_url || '';
+          if (!isGroup && chat.participants) {
+            const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+            if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || avatarUrl; }
+          }
+          setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
+        } else {
+          // Chats aún no cargados — guardar el chatId pendiente y abrir cuando carguen
+          (window as any).__pendingOpenChatId = chatId;
+        }
       }
     };
 
