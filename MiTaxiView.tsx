@@ -115,8 +115,21 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit, 
   const [stars, setStars] = useState(0);
   const [hoverStar, setHoverStar] = useState(0);
   const [ratedDone, setRatedDone] = useState(false);
-  const [driverTab, setDriverTab] = useState<'info' | 'vehicle'>('info');
+  const [driverTab, setDriverTab] = useState<'info' | 'vehicle' | 'docs'>('info');
   const [driverForm, setDriverForm] = useState({ name: '', phone: '', license: '', carBrand: '', carModel: '', carYear: '', carColor: '', plate: '', carType: 'sedan' });
+  const [driverDocs, setDriverDocs] = useState<Record<string, string>>({});
+  const handleDocUpload = (key: string, file: File | null) => {
+    if (file) setDriverDocs(d => ({ ...d, [key]: file.name }));
+  };
+  const REQUIRED_DOCS = [
+    { key: 'dni',       label: 'DNI / Cedula de identidad',        desc: 'Documento nacional de identidad vigente',        required: true  },
+    { key: 'license',   label: 'Permiso de conducir',              desc: 'Licencia de conducir categoria B o superior',    required: true  },
+    { key: 'itv',       label: 'ITV / Inspeccion tecnica',         desc: 'Certificado de inspeccion tecnica del vehiculo', required: true  },
+    { key: 'ownership', label: 'Titulo de propiedad del vehiculo', desc: 'Documento que acredita la titularidad',          required: true  },
+    { key: 'criminal',  label: 'Certificado de antecedentes',      desc: 'Certificado de antecedentes penales',            required: true  },
+    { key: 'insurance', label: 'Seguro del vehiculo',              desc: 'Poliza de seguro (opcional)',                    required: false },
+  ];
+  const requiredUploaded = REQUIRED_DOCS.filter(d => d.required).every(d => driverDocs[d.key]);
   const [driverSubmitted, setDriverSubmitted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -178,9 +191,9 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit, 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Tabs */}
           <div style={{ display: 'flex', background: '#fff', borderBottom: '1px solid #F3F4F6', padding: '0 20px' }}>
-            {(['info', 'vehicle'] as const).map(t => (
+            {(['info', 'vehicle', 'docs'] as const).map(t => (
               <button key={t} onClick={() => setDriverTab(t)} style={{ padding: '14px 20px', fontSize: 14, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer', color: driverTab === t ? '#111827' : '#9CA3AF', borderBottom: driverTab === t ? '2px solid #111827' : '2px solid transparent' }}>
-                {t === 'info' ? 'Datos personales' : 'Vehículo'}
+                {t === 'info' ? 'Datos personales' : t === 'vehicle' ? 'Vehiculo' : 'Documentos'}
               </button>
             ))}
           </div>
@@ -234,10 +247,48 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit, 
                   </div>
                 </div>
                 <button
-                  onClick={() => { if (driverForm.name && driverForm.phone && driverForm.plate) setDriverSubmitted(true); }}
+                  onClick={() => setDriverTab('docs')}
                   style={{ padding: '14px', background: (driverForm.name && driverForm.phone && driverForm.plate) ? '#111827' : '#E5E7EB', color: (driverForm.name && driverForm.phone && driverForm.plate) ? '#fff' : '#9CA3AF', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: (driverForm.name && driverForm.phone && driverForm.plate) ? 'pointer' : 'not-allowed' }}
                 >
-                  Enviar solicitud
+                  Continuar a Documentos
+                </button>
+              </div>
+            )}
+            {driverTab === 'docs' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ background: '#F0F9FF', borderRadius: 10, padding: '12px 14px', border: '1px solid #BAE6FD', marginBottom: 4 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0369A1' }}>Documentos requeridos</div>
+                  <div style={{ fontSize: 12, color: '#0284C7', marginTop: 2 }}>Los documentos marcados con * son obligatorios para activar tu cuenta.</div>
+                </div>
+                {REQUIRED_DOCS.map(doc => (
+                  <div key={doc.key} style={{ background: driverDocs[doc.key] ? '#F0FDF4' : '#F8F9FF', borderRadius: 12, padding: '14px 16px', border: '1.5px solid ' + (driverDocs[doc.key] ? '#86EFAC' : (doc.required ? '#E8EAFF' : '#E5E7EB')) }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {doc.label}
+                          {doc.required && <span style={{ fontSize: 11, color: '#EF4444', fontWeight: 700 }}>*</span>}
+                          {!doc.required && <span style={{ fontSize: 10, color: '#9CA3AF', background: '#F3F4F6', padding: '1px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{doc.desc}</div>
+                        {driverDocs[doc.key] && (
+                          <div style={{ fontSize: 12, color: '#16A34A', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5'><path d='M20 6L9 17l-5-5'/></svg>
+                            {driverDocs[doc.key]}
+                          </div>
+                        )}
+                      </div>
+                      <label style={{ flexShrink: 0, padding: '8px 14px', background: driverDocs[doc.key] ? '#DCFCE7' : '#111827', color: driverDocs[doc.key] ? '#16A34A' : '#fff', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        {driverDocs[doc.key] ? 'Cambiar' : 'Subir'}
+                        <input type='file' accept='image/*,.pdf' style={{ display: 'none' }} onChange={e => handleDocUpload(doc.key, e.target.files?.[0] || null)} />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={() => { if (driverForm.name && driverForm.phone && driverForm.plate && requiredUploaded) setDriverSubmitted(true); }}
+                  style={{ padding: '14px', background: (driverForm.name && driverForm.phone && driverForm.plate && requiredUploaded) ? '#111827' : '#E5E7EB', color: (driverForm.name && driverForm.phone && driverForm.plate && requiredUploaded) ? '#fff' : '#9CA3AF', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: (driverForm.name && driverForm.phone && driverForm.plate && requiredUploaded) ? 'pointer' : 'not-allowed' }}
+                >
+                  {requiredUploaded ? 'Enviar solicitud completa' : 'Sube los documentos obligatorios (*)'}
                 </button>
               </div>
             )}
