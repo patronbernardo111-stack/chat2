@@ -188,8 +188,11 @@ export const chatAPI = {
     return res.json();
   },
   
-  // Eliminar mensaje
+  // Eliminar mensaje para todos (solo remitente)
   deleteMessage: (messageId:string) => del<void>(`/messages/${messageId}`),
+  
+  // Eliminar mensaje solo para mí
+  deleteMessageForMe: (messageId:string) => del<void>(`/messages/${messageId}/for-me`),
   
   // Buscar usuarios para chat
   searchUsers: (query:string) => get<any[]>(`/contacts/search?q=${encodeURIComponent(query)}`),

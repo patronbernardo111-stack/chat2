@@ -72,6 +72,18 @@ CREATE TABLE IF NOT EXISTS chat_participants (
   UNIQUE(chat_id, user_id)
 );
 
+-- Tabla para rastrear eliminaciones individuales (eliminar para mí)
+CREATE TABLE IF NOT EXISTS message_deletions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  deleted_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(message_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_message_deletions_user ON message_deletions (user_id);
+CREATE INDEX IF NOT EXISTS idx_message_deletions_message ON message_deletions (message_id);
+
 -- Tabla de mensajes leídos (para confirmación de lectura)
 CREATE TABLE IF NOT EXISTS message_reads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
