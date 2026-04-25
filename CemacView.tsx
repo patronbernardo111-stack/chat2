@@ -222,7 +222,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
 
   // ── WELCOME SCREEN ──────────────────────────────────────────────────────────
   if (!country) return (
-    <div style={{ width:'100%', height:'100%', background:'linear-gradient(160deg,#003d22 0%,#006b3c 35%,#00a86b 65%,#00c8a0 85%,#00b4e6 100%)', display:'flex', flexDirection:'column', paddingTop:56, boxSizing:'border-box', overflowY:'auto' }}>
+    <div style={{ width:'100%', height:'100%', background:'linear-gradient(160deg,#003d22 0%,#006b3c 35%,#00a86b 65%,#00c8a0 85%,#00b4e6 100%)', display:'flex', flexDirection:'column', paddingTop:'max(56px, env(safe-area-inset-top))', boxSizing:'border-box', overflowY:'auto' }}>
       <div style={{ textAlign:'center', padding:'14px 20px 10px' }}>
         <svg width="80" height="80" viewBox="0 0 100 100" style={{ margin:'0 auto 8px', display:'block', filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.35))' }}>
           <circle cx="50" cy="50" r="48" fill="#F5C518" stroke="#fff" strokeWidth="2"/>
@@ -278,7 +278,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
 
   // ── ATM MAP ─────────────────────────────────────────────────────────────────
   if (mapAtm) return (
-    <div style={{ width:'100%', height:'100%', background:'#F0F2F5', display:'flex', flexDirection:'column', paddingTop:56, boxSizing:'border-box' }}>
+    <div style={{ width:'100%', height:'100%', background:'#F0F2F5', display:'flex', flexDirection:'column', paddingTop:'max(56px, env(safe-area-inset-top))', boxSizing:'border-box' }}>
       <div style={{ background:grad, padding:'12px 16px', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
         <button onClick={() => setMapAtm(null)} style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:10, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:18 }}>←</button>
         <div style={{ color:'#fff', fontWeight:700, fontSize:16 }}>{mapAtm.bank}</div>
@@ -589,7 +589,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
 
   // ── MAIN LAYOUT ──────────────────────────────────────────────────────────────
   return (
-    <div style={{ width:'100%', height:'100%', background:'#F0F2F5', display:'flex', flexDirection:'column', overflow:'hidden', paddingTop:56, boxSizing:'border-box' }}>
+    <div style={{ width:'100%', height:'100%', background:'#F0F2F5', display:'flex', flexDirection:'column', overflow:'hidden', paddingTop:'max(56px, env(safe-area-inset-top))', boxSizing:'border-box' }}>
       <div style={{ background:grad, flexShrink:0, boxShadow:'0 2px 12px rgba(0,0,0,0.15)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px 8px' }}>
           <button onClick={() => setCountry(null)} style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:10, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:18 }}>←</button>

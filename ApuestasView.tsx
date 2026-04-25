@@ -558,7 +558,7 @@ const WebModal:React.FC<{co:Co;onClose:()=>void;userBalance:number;onDebit:(amou
   return(
     <div style={{position:'fixed',inset:0,zIndex:500,background:'#fff',display:'flex',flexDirection:'column'}}>
       {/* Barra superior estilo EGCHAT */}
-      <div style={{background:co.color,padding:'56px 10px 10px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
+      <div style={{background:co.color,paddingTop:'max(56px, env(safe-area-inset-top))',paddingLeft:'10px',paddingRight:'10px',paddingBottom:'10px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
         <button onClick={onClose} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'50%',width:'32px',height:'32px'}}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
@@ -746,7 +746,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
   if(!sel)return(
     <div style={{height:'100%',background:'#f0f2f5',display:'flex',flexDirection:'column',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',overflow:'hidden'}}>
       {/* Header estilo EGCHAT */}
-      <div style={{background:'#075e54',padding:'56px 16px 12px',flexShrink:0}}>
+      <div style={{background:'#075e54',paddingTop:'max(56px, env(safe-area-inset-top))',paddingLeft:'16px',paddingRight:'16px',paddingBottom:'12px',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           <button onClick={onBack} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex'}}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -786,7 +786,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
   if(sel.type==='sports')return(
     <div style={{height:'100%',background:'#f0f2f5',display:'flex',flexDirection:'column',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',overflow:'hidden'}}>
       {/* Header */}
-      <div style={{background:ac,padding:'56px 8px 0',flexShrink:0}}>
+      <div style={{background:ac,paddingTop:'max(56px, env(safe-area-inset-top))',paddingLeft:'8px',paddingRight:'8px',paddingBottom:'0',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'6px',paddingBottom:'8px'}}>
           <button onClick={goBack} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex'}}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -967,7 +967,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
   // ── Vista casino - GALERÍA DE JUEGOS ──────────────────────────────────────
   if(sel.type==='casino')return(
     <div style={{height:'100%',background:'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',display:'flex',flexDirection:'column',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',overflow:'hidden'}}>
-      <div style={{background:'rgba(0,0,0,0.3)',padding:'56px 12px 12px',flexShrink:0,borderBottom:'2px solid rgba(255,255,255,0.1)'}}>
+      <div style={{background:'rgba(0,0,0,0.3)',paddingTop:'max(56px, env(safe-area-inset-top))',paddingLeft:'12px',paddingRight:'12px',paddingBottom:'12px',flexShrink:0,borderBottom:'2px solid rgba(255,255,255,0.1)'}}>
         <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
           <button onClick={goBack} style={{background:'rgba(255,255,255,0.2)',border:'none',color:'#fff',cursor:'pointer',padding:'8px',display:'flex',borderRadius:'8px'}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
           <div><div style={{fontSize:'18px',fontWeight:'800',color:'#fff'}}>🎮 JUEGOS ARCADE</div><div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>Saldo: {userBalance.toLocaleString()} XAF</div></div>
@@ -1044,7 +1044,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
   // ── Vista lotería ──────────────────────────────────────────────────────────
   return(
     <div style={{height:'100%',background:'#f0f2f5',display:'flex',flexDirection:'column',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',overflow:'hidden'}}>
-      <div style={{background:ac,padding:'56px 8px 12px',flexShrink:0}}>
+      <div style={{background:ac,paddingTop:'max(56px, env(safe-area-inset-top))',paddingLeft:'8px',paddingRight:'8px',paddingBottom:'12px',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
           <button onClick={goBack} style={{background:'none',border:'none',color:'#fff',cursor:'pointer',padding:'4px',display:'flex'}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
           <Logo id={sel.id} size={32}/>

@@ -669,7 +669,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
     <div style={{ height: '100vh', background: '#fff', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
 
       {/* Header */}
-      <div style={{ padding: '52px 16px 0', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+      <div style={{ paddingTop: 'max(52px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '0', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#00c8a0', cursor: 'pointer', padding: '4px', display: 'flex', marginLeft: '-4px' }}>{Icon.back}</button>
           <span style={{ fontSize: '18px', fontWeight: '700', color: '#111', flex: 1 }}>Estados</span>
@@ -865,7 +865,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '40%', zIndex: 1 }} onClick={() => goSlide('prev')} />
             <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '40%', zIndex: 1 }} onClick={() => goSlide('next')} />
             {/* Barras progreso */}
-            <div style={{ display: 'flex', gap: '3px', padding: '48px 12px 8px', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', gap: '3px', paddingTop: 'max(48px, env(safe-area-inset-top))', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '8px', position: 'relative', zIndex: 2 }}>
               {viewing.media.map((_, i) => (
                 <div key={i} style={{ flex: 1, height: '2px', borderRadius: '2px', background: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', background: '#fff', width: i < slideIdx ? '100%' : i === slideIdx ? `${progress}%` : '0%', transition: 'width 0.1s linear' }} />
@@ -979,7 +979,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
       {activeEspacio && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#f5f5f5', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, sans-serif' }}>
           {/* Banner header */}
-          <div style={{ background: activeEspacio.cover, paddingTop: '48px', flexShrink: 0 }}>
+          <div style={{ background: activeEspacio.cover, paddingTop: 'max(48px, env(safe-area-inset-top))', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px 14px' }}>
               <button onClick={() => setActiveEspacio(null)} style={{ background: 'rgba(0,0,0,0.25)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{Icon.back}</button>
               <div style={{ flex: 1 }}>
@@ -1037,7 +1037,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
       {/* CREAR TEXTO */}
       {createMode === 'text' && (
         <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '52px 16px 12px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f0f0f0' }}>
+          <div style={{ paddingTop: 'max(52px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f0f0f0' }}>
             <button onClick={closeCreate} style={{ background: 'none', border: 'none', color: '#00c8a0', cursor: 'pointer', padding: '4px', display: 'flex' }}>{Icon.back}</button>
             <span style={{ fontSize: '17px', fontWeight: '700', color: '#111', flex: 1 }}>Nuevo estado</span>
             <button onClick={publishText} style={{ background: '#00c8a0', border: 'none', borderRadius: '20px', padding: '7px 18px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>Publicar</button>
@@ -1069,7 +1069,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
       {(createMode === 'clip' || createMode === 'video') && (
         <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '48px 16px 12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingTop: 'max(48px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)' }}>
             <button onClick={closeCreate} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{Icon.back}</button>
             <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', flex: 1 }}>{createMode === 'clip' ? 'Clip · máx 15s' : 'Video · máx 60s'}</span>
             {chunks.current.length > 0 && !isRecording && (
@@ -1219,7 +1219,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
       {/* LIVE */}
       {createMode === 'live' && (
         <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '52px 16px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ paddingTop: 'max(52px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button onClick={isLive ? undefined : closeCreate} style={{ background: 'none', border: 'none', color: '#fff', cursor: isLive ? 'default' : 'pointer', padding: '4px', display: 'flex', opacity: isLive ? 0.3 : 1 }}>{Icon.back}</button>
             <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff', flex: 1 }}>{isLive ? 'EN VIVO' : 'Iniciar en vivo'}</span>
             {isLive && <div style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', color: '#ef4444', fontWeight: '700' }}>👁 {liveViewers}</div>}
@@ -1279,7 +1279,7 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
       {creatingEspacio && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2500, background: '#fff', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, sans-serif' }}>
           {/* Header */}
-          <div style={{ padding: '52px 16px 14px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ paddingTop: 'max(52px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '14px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button onClick={() => newEspacioStep === 2 ? setNewEspacioStep(1) : setCreatingEspacio(false)} style={{ background: 'none', border: 'none', color: '#00c8a0', cursor: 'pointer', padding: '4px', display: 'flex' }}>{Icon.back}</button>
             <span style={{ fontSize: '17px', fontWeight: '700', color: '#111', flex: 1 }}>
               {newEspacioStep === 1 ? 'Tipo de espacio' : 'Configura tu espacio'}
@@ -1380,3 +1380,4 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
     </div>
   );
 };
+
