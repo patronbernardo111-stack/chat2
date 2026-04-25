@@ -4442,7 +4442,7 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat */}
               {selectedWallpaper !== 'none' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
