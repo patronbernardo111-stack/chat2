@@ -5357,8 +5357,8 @@ const App: React.FC = () => {
                   objetos:   { icon:'💡', emojis:['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','💽','💾','💿','📀','🧮','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🧭','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🧯','💰','💴','💵','💶','💷','💸','💳','🪙','💹','📈','📉','📊','📋','📌','📍','📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️','🔒','🔓','🔏','🔐','🔑','🗝️','🔨','🪓','⛏️','⚒️','🛠️','🗡️','⚔️','🛡️','🔧','🪛','🔩','⚙️','🗜️','⚖️','🔗','⛓️','🪝','🧲','🪜','🧰','🧪','🧫','🧬','🔭','🔬','🩺','🩹','💊','💉','🩸','🌡️','🧹','🪣','🧺','🧻','🚽','🚰','🚿','🛁','🪥','🧼','🪒','🧴','🧷','🧹','🧺','🧻'] },
                   simbolos:  { icon:'❤️', emojis:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','❤️‍🩹','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧️','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾️','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔷','🔶','🔹','🔸','🔲','🔳','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♥️','♦️','🃏','🎴','🀄'] },
                   custom:    { icon:'⭐', emojis:[] },
-                };
-                return (
+                  stickers:  { icon:'🎭', emojis:[] },
+                };                return (
                 <div style={{ background: '#f7f8fa', borderTop: '1px solid rgba(0,0,0,0.07)', flexShrink: 0 }}>
                   {/* Barra bsqueda */}
                   <div style={{ padding: '7px 10px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -5407,6 +5407,61 @@ const App: React.FC = () => {
                             {editingEmoji.id ? 'Guardar' : 'Crear'}
                           </button>
                         </div>
+                      </div>
+                    ) : chatEmojiCategory === 'stickers' ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '4px' }}>
+                        {[
+                          { emoji: '😎', label: 'Con Flow' },
+                          { emoji: '👍', label: 'Bien!' },
+                          { emoji: '😱', label: 'OMG!' },
+                          { emoji: '😂', label: 'Jajaja' },
+                          { emoji: '😘', label: 'Muack!' },
+                          { emoji: '🕶️', label: 'Cool' },
+                          { emoji: '💃', label: 'A Bailar' },
+                          { emoji: '🥰', label: 'Sueño' },
+                          { emoji: '☕', label: 'Cafacito' },
+                          { emoji: '🙄', label: 'Ugh' },
+                          { emoji: '🙌', label: 'Fuerte' },
+                          { emoji: '💪', label: 'Hmm...' },
+                          { emoji: '🍕', label: 'Ñam Nam' },
+                          { emoji: '☮️', label: 'Paz' },
+                          { emoji: '🎉', label: 'Huhoo!' },
+                          { emoji: '🤳', label: 'Selfie!' },
+                          { emoji: '😴', label: 'Zzz' },
+                          { emoji: '🤩', label: 'Wow' },
+                          { emoji: '😤', label: 'No Way' },
+                          { emoji: '🥳', label: 'Fiesta' },
+                          { emoji: '🤗', label: 'Abrazo' },
+                          { emoji: '😇', label: 'Inocente' },
+                          { emoji: '🤭', label: 'Shh' },
+                          { emoji: '🥺', label: 'Por Favor' },
+                          { emoji: '😏', label: 'Obvio' },
+                          { emoji: '🤪', label: 'Loco' },
+                          { emoji: '😋', label: 'Rico' },
+                          { emoji: '🤑', label: 'Dinero' },
+                          { emoji: '😈', label: 'Travieso' },
+                          { emoji: '👑', label: 'Reina' },
+                          { emoji: '💅', label: 'Glamour' },
+                          { emoji: '🦋', label: 'Libre' },
+                        ].map((s, i) => (
+                          <button key={i} onClick={() => {
+                            const sticker = `${s.emoji} ${s.label}`;
+                            // Enviar como mensaje directo
+                            const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
+                            const newMsg = { id: `local-${Date.now()}`, from: 'me' as const, text: sticker, time: new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}), created_at: new Date().toISOString(), status: 'pending' as const };
+                            setChatMessages((prev: any) => ({ ...prev, [cid]: [...(prev[cid]||[]), newMsg] }));
+                            setShowChatEmojis(false);
+                            if (cid && cid.includes('-') && cid.length > 20) {
+                              chatAPI.sendMessage(cid, sticker).catch(() => {});
+                            }
+                          }}
+                            style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', cursor: 'pointer', padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', minWidth: '58px', outline: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 0.1s' }}
+                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}>
+                            <span style={{ fontSize: '28px', lineHeight: 1 }}>{s.emoji}</span>
+                            <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: '600', whiteSpace: 'nowrap' }}>{s.label}</span>
+                          </button>
+                        ))}
                       </div>
                     ) : chatEmojiCategory === 'custom' ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '4px' }}>
