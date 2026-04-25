@@ -547,6 +547,7 @@ const App: React.FC = () => {
   }, []);
 
   // Scroll al fondo al ABRIR un chat
+  // Scroll automático: siempre al abrir chat, y al recibir/enviar solo si estás al fondo
   React.useEffect(() => {
     if (!selectedChat) return;
     isAtBottomRef.current = true;
@@ -556,9 +557,15 @@ const App: React.FC = () => {
   // Scroll automático SIEMPRE al último mensaje al enviar o recibir
   React.useEffect(() => {
     if (!selectedChat) return;
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    });
+    const msgs = chatMessages[selectedChat.id?.toString() || ''] || [];
+    const lastMsg = msgs[msgs.length - 1];
+    // Scroll siempre si el último mensaje es mío, o si ya estaba al fondo
+    if (lastMsg?.from === 'me' || isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        isAtBottomRef.current = true;
+      });
+    }
   }, [chatMessages]);
 
   // Geolocalizacin automática + clima real (Open-Meteo, sin API key)
@@ -4618,6 +4625,7 @@ const App: React.FC = () => {
               )}
 
               {/* Spacer eliminado - header ahora es sticky */}
+              <div ref={messagesEndRef} style={{ height: 1, flexShrink: 0 }} />
               {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
@@ -4633,6 +4641,7 @@ const App: React.FC = () => {
               {/* Mensajes */}
               <div
                 className="scroll-container"
+                ref={(el) => { if (el) { (el as any)._chatScrollEl = true; el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60; isAtBottomRef.current = atBottom; }; } }}
                 style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: selectedWallpaper === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
@@ -8356,9 +8365,10 @@ const App: React.FC = () => {
     if (!isAuthenticated) return;
     const iv = setInterval(() => {
       loadChats();
+      loadContacts(); // refrescar fotos y nombres de contactos
     }, 15000);
     return () => clearInterval(iv);
-  }, [isAuthenticated, loadChats]);
+  }, [isAuthenticated, loadChats, loadContacts]);
 
   // -- Auth check  todos los hooks declarados -------------------
   if (!isAuthenticated) return <AuthScreen onAuth={(user) => {
