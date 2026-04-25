@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <rect width="200" height="200" rx="20" fill="#1A1A2E"/>
-  <circle cx="100" cy="90" r="55" fill="none" stroke="#E65100" stroke-width="5"/>
-  <path d="M100 35 L100 145 M55 90 L145 90" stroke="#E65100" stroke-width="3" opacity="0.4"/>
-  <path d="M75 50 Q60 70 58 90 Q56 110 70 128 Q84 146 100 148 Q116 146 130 128 Q144 110 142 90 Q140 70 125 50 Q112 35 100 32 Q88 35 75 50Z" fill="#E65100" opacity="0.15"/>
-  <path d="M100 45 L108 75 L138 75 L115 93 L123 123 L100 105 L77 123 L85 93 L62 75 L92 75 Z" fill="#FF6D00" opacity="0.9"/>
-  <text x="100" y="175" font-family="Arial Black, sans-serif" font-size="13" font-weight="900" fill="#FF6D00" text-anchor="middle" letter-spacing="1">GEPETROL</text>
-  <text x="100" y="192" font-family="Arial, sans-serif" font-size="9" fill="rgba(255,109,0,0.7)" text-anchor="middle">GUINEA ECUATORIAL</text>
-</svg>

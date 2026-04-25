@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <rect width="200" height="200" rx="32" fill="#F97316"/>
-  <path d="M100 30 C100 30 60 70 65 110 C70 140 85 155 100 160 C115 155 130 140 135 110 C140 70 100 30 100 30Z" fill="#ffffff" opacity="0.9"/>
-  <path d="M100 60 C100 60 78 88 80 112 C82 130 90 142 100 146 C110 142 118 130 120 112 C122 88 100 60 100 60Z" fill="#F97316"/>
-  <text x="100" y="185" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="3">FENIX</text>
-</svg>
