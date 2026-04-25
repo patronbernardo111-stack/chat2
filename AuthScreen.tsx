@@ -118,9 +118,23 @@ export default function AuthScreen({onAuth}:Props) {
   const doReg = async()=>{
     setLoading(true);setErr('');
     try{
-      const r=await authAPI.register({full_name:name,phone:fullPhone,password:pass,avatar_url:avatar||undefined});
-      if(avatar) localStorage.setItem('user_avatar',avatar);
+      // Registrar sin avatar primero (evita payload grande)
+      const r=await authAPI.register({full_name:name,phone:fullPhone,password:pass,avatar_url:undefined});
       localStorage.setItem('user_name',name);
+      // Subir avatar después del registro si existe
+      if(avatar){
+        try{
+          // Convertir base64 a File y subir
+          const res=await fetch(avatar);
+          const blob=await res.blob();
+          const file=new File([blob],'avatar.jpg',{type:'image/jpeg'});
+          const up=await (await import('./api')).userAPI.uploadAvatar(file);
+          if(up?.avatar_url) localStorage.setItem('user_avatar',up.avatar_url);
+          else localStorage.setItem('user_avatar',avatar);
+        }catch{
+          localStorage.setItem('user_avatar',avatar);
+        }
+      }
       onAuth(r.user);
     }
     catch(e:any){setErr(e.message||'Error al registrarse');}

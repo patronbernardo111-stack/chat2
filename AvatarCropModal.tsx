@@ -89,7 +89,12 @@ export const AvatarCropModal: React.FC<Props> = ({ imageUrl, onSave, onClose }) 
   const handleSave = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const url = canvas.toDataURL('image/jpeg', 0.92);
+    // Comprimir a 150x150 JPEG 60% — ~10-15KB en base64
+    const out = document.createElement('canvas');
+    out.width = 150; out.height = 150;
+    const ctx2 = out.getContext('2d')!;
+    ctx2.drawImage(canvas, 0, 0, 150, 150);
+    const url = out.toDataURL('image/jpeg', 0.6);
     onSave(url);
   };
 
