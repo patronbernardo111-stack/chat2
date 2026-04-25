@@ -4442,10 +4442,10 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(100px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat - cubre el área de mensajes (debajo del header) */}
               {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', top: 'calc(100px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   {(() => {
                     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
                     if (custom) {
@@ -4503,7 +4503,7 @@ const App: React.FC = () => {
                 </div>
               )}
               {/* Header conversacin */}
-              <div style={{ position: 'fixed', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -4606,6 +4606,7 @@ const App: React.FC = () => {
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>,label:'Vaciar chat',color:'#F59E0B',action:()=>{if(window.confirm('Vaciar todos los mensajes?')){setChatMessages(prev=>({...prev,[sc.id?.toString()||'']:[]}));}setShowChatMenu(false);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,label:'Reportar',color:'#EF4444',action:()=>{setShowChatMenu(false);alert(`"${sc.title}" reportado.`);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,label:blockedChats.includes(sc.id?.toString()||'')?'Desbloquear':'Bloquear',color:'#EF4444',action:()=>{const id=sc.id?.toString()||'';setBlockedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,label:'Eliminar contacto',color:'#EF4444',action:()=>{setShowChatMenu(false);if(window.confirm(`¿Eliminar a ${sc.title} de tus contactos?`)){const found=allContacts.find(c=>c.id===sc.id||c.phone===sc.phone);if(found){contactsAPI.remove(found.id).then(()=>{setAllContacts(prev=>prev.filter(c=>c.id!==found.id));setSelectedChat(null);showToast(`${sc.title} eliminado`,`info`);}).catch(()=>showToast('No se pudo eliminar.','error'));}else{setAllContacts(prev=>prev.filter(c=>c.id!==sc.id));setSelectedChat(null);showToast(`${sc.title} eliminado`,'info');}}}},
                     ].map((item,i,arr)=>(
                       <button key={i} onClick={item.action} style={{width:'100%',background:'none',border:'none',padding:'10px 14px',display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',outline:'none',borderBottom:i<arr.length-1?'1px solid rgba(0,0,0,0.06)':'none',textAlign:'left'}}
                         onMouseEnter={e=>{e.currentTarget.style.background='rgba(239,68,68,0.06)';}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}><span style={{color:item.color,flexShrink:0,display:'flex'}}>{item.icon}</span>
@@ -4616,8 +4617,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Spacer for fixed header */}
-              <div style={{ height: '56px', flexShrink: 0, position: 'relative', zIndex: 1 }} />
+              {/* Spacer eliminado - header ahora es sticky */}
               {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>

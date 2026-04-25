@@ -582,7 +582,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
       {showThemes && <ThemePanel />}
 
       {/* Header flotante */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', background: theme.id === 'midnight' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid ' + BORDER }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', gap: 8, paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: '12px', paddingLeft: '14px', paddingRight: '14px', background: theme.id === 'midnight' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid ' + BORDER }}>
         <button style={bk} onClick={onBack}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7" /></svg></button>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: TEXT }}>MiTaxi</div>
