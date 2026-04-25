@@ -4442,10 +4442,10 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(100px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat - cubre el área de mensajes (debajo del header) */}
               {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', top: 'calc(100px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   {(() => {
                     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
                     if (custom) {

@@ -86,7 +86,7 @@ if ('serviceWorker' in navigator) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               newWorker.postMessage({ type: 'SKIP_WAITING' });
-              window.location.reload();
+              // No recargar automáticamente para evitar parpadeo en móvil
             }
           });
         }
