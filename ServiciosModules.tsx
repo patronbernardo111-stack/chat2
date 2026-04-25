@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useGPS, distanceKm } from './useGPS';
 
 // ─── DATOS INTERNET ───────────────────────────────────────────────────────────

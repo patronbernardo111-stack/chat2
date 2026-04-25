@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface Reply { id: string; user: string; text: string; time: string; }

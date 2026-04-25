@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 // ── SVG icons profesionales sin fondo ────────────────────────────
 const IcoBanco = ({c='#1B3A6B'}:{c?:string}) => (

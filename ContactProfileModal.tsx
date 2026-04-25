@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Avatar } from './Avatar';
 
 type Msg = { id:string; from:'me'|'them'; text:string; time:string; status?:string };
