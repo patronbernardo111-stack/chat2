@@ -341,7 +341,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   const cardStyle: React.CSSProperties = { background:'#fff', borderRadius:20, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(99,102,241,0.06)' };
   const btnStyle = (dis=false): React.CSSProperties => ({ width:'100%', padding:'16px', background: dis ? '#E2E8F0' : ACCENT, color: dis ? '#94A3B8' : '#fff', border:'none', borderRadius:16, fontSize:16, fontWeight:700, cursor: dis ? 'not-allowed' : 'pointer', transition:'all 0.2s' });
   const fieldStyle = (active=false): React.CSSProperties => ({ background: active ? '#fff' : '#F1F5F9', borderRadius:14, padding:'14px 16px', border: active ? '1.5px solid ' + ACCENT : '1.5px solid transparent', transition:'all 0.2s' });
-  const hdrStyle: React.CSSProperties = { display:'flex', alignItems:'center', gap:14, padding:'16px 20px', background:'#fff', borderBottom:'1px solid ' + BORDER };
+  const hdrStyle: React.CSSProperties = { display:'flex', alignItems:'center', gap:14, paddingTop:'max(14px, env(safe-area-inset-top))', paddingBottom:'14px', paddingLeft:'16px', paddingRight:'16px', background:'#fff', borderBottom:'1px solid ' + BORDER };
   const backBtn: React.CSSProperties = { background:'none', border:'none', cursor:'pointer', padding:6, borderRadius:10, display:'flex', alignItems:'center' };
 
   // â”€â”€ PANTALLA CONDUCTOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -729,7 +729,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   return (
     <div style={wrapStyle}>
       {/* Header flotante */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'rgba(255,255,255,0.96)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(238,240,248,0.8)' }}>
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, display:'flex', alignItems:'center', gap:12, paddingTop:'max(14px, env(safe-area-inset-top))', paddingBottom:'12px', paddingLeft:'14px', paddingRight:'14px', background:'rgba(255,255,255,0.96)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(238,240,248,0.8)' }}>
         <button style={backBtn} onClick={onBack}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
@@ -839,7 +839,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           >
             {canGo ? 'Pedir ' + ride.name + ' Â· ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
           </button>
-          <div style={{ height:8 }} />
+          <div style={{ height:'max(8px, env(safe-area-inset-bottom))' }} />
         </div>
       </div>
     </div>
