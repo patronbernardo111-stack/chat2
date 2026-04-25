@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-// ─── TIPOS ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ TIPOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Props {
   onBack: () => void;
   userBalance: number;
@@ -13,10 +13,10 @@ interface LatLng { lat: number; lng: number; }
 
 const MAPTILER_KEY = (import.meta as any).env?.VITE_MAPTILER_KEY || 'bg3FUa7es7Qn1TITIWjO';
 
-// ─── CATEGORÍAS DE VEHÍCULO ───────────────────────────────────────────────────
+// â”€â”€â”€ CATEGORÃAS DE VEHÃCULO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const RIDES = [
   {
-    id:'moto', name:'Moto', sub:'1 pasajero · Rapido', price:500, eta:'2 min',
+    id:'moto', name:'Moto', sub:'1 pasajero Â· Rapido', price:500, eta:'2 min',
     color:'#F97316', bg:'#FFF7ED',
     desc:'Motocicleta economica',
     svg: `<svg viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,7 +28,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'taxi', name:'Taxi', sub:'4 pasajeros · Sedan', price:1000, eta:'4 min',
+    id:'taxi', name:'Taxi', sub:'4 pasajeros Â· Sedan', price:1000, eta:'4 min',
     color:'#EAB308', bg:'#FEFCE8',
     desc:'Taxi estandar sedan',
     svg: `<svg viewBox="0 0 56 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +42,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'suv', name:'Confort SUV', sub:'4 pasajeros · SUV', price:2000, eta:'5 min',
+    id:'suv', name:'Confort SUV', sub:'4 pasajeros Â· SUV', price:2000, eta:'5 min',
     color:'#6366F1', bg:'#EEF2FF',
     desc:'SUV comodo y espacioso',
     svg: `<svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -56,7 +56,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'vip', name:'VIP', sub:'4 pasajeros · Premium', price:3500, eta:'7 min',
+    id:'vip', name:'VIP', sub:'4 pasajeros Â· Premium', price:3500, eta:'7 min',
     color:'#7C3AED', bg:'#F5F3FF',
     desc:'Vehiculo premium ejecutivo',
     svg: `<svg viewBox="0 0 64 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -71,7 +71,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'cargo', name:'Cargo', sub:'Pickup · Carga', price:2500, eta:'8 min',
+    id:'cargo', name:'Cargo', sub:'Pickup Â· Carga', price:2500, eta:'8 min',
     color:'#0EA5E9', bg:'#F0F9FF',
     desc:'Pickup Dina 100 y camionetas',
     svg: `<svg viewBox="0 0 64 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -85,7 +85,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'van', name:'Van', sub:'8 pasajeros · Van', price:3000, eta:'9 min',
+    id:'van', name:'Van', sub:'8 pasajeros Â· Van', price:3000, eta:'9 min',
     color:'#10B981', bg:'#F0FDF4',
     desc:'Van grande para grupos',
     svg: `<svg viewBox="0 0 68 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +99,7 @@ const RIDES = [
     </svg>`,
   },
   {
-    id:'minivan', name:'MiniVan', sub:'6 pasajeros · MiniVan', price:2200, eta:'6 min',
+    id:'minivan', name:'MiniVan', sub:'6 pasajeros Â· MiniVan', price:2200, eta:'6 min',
     color:'#EC4899', bg:'#FDF2F8',
     desc:'Minivan familiar',
     svg: `<svg viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -138,7 +138,7 @@ const DOCS = [
   { key:'insurance',label:'Seguro del vehiculo',         desc:'Poliza de seguro (opcional)',      req:false },
 ];
 
-// ─── MAPA CON GPS + RUTA ──────────────────────────────────────────────────────
+// â”€â”€â”€ MAPA CON GPS + RUTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface MapProps {
   h?: number | string;
   userPos?: LatLng | null;
@@ -247,14 +247,14 @@ const LiveMap: React.FC<MapProps> = ({ h = 260, userPos, destPos, showRoute, onM
 
   if (err) return (
     <div style={{ height:h, background:'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
-      <span style={{ fontSize:32 }}>🗺️</span>
+      <span style={{ fontSize:32 }}>ðŸ—ºï¸</span>
       <span style={{ fontSize:13, color:'#6B7280' }}>Malabo, Guinea Ecuatorial</span>
     </div>
   );
   return <div ref={ref} style={{ height:h, width:'100%' }} />;
 };
 
-// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
+// â”€â”€â”€ COMPONENTE PRINCIPAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }) => {
   const [screen, setScreen]   = useState<Screen>('home');
   const [origin, setOrigin]   = useState('');
@@ -333,7 +333,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     setSugg([]);
   };
 
-  // ── ESTILOS ──────────────────────────────────────────────────────────────────
+  // â”€â”€ ESTILOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const TEXT = '#0F172A'; const SUB = '#64748B'; const ACCENT = '#6366F1';
   const ACCENT_L = '#EEF2FF'; const GREEN = '#10B981'; const RED = '#EF4444';
   const BORDER = '#EEF0F8';
@@ -344,7 +344,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   const hdrStyle: React.CSSProperties = { display:'flex', alignItems:'center', gap:14, padding:'16px 20px', background:'#fff', borderBottom:'1px solid ' + BORDER };
   const backBtn: React.CSSProperties = { background:'none', border:'none', cursor:'pointer', padding:6, borderRadius:10, display:'flex', alignItems:'center' };
 
-  // ── PANTALLA CONDUCTOR ────────────────────────────────────────────────────
+  // â”€â”€ PANTALLA CONDUCTOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (screen === 'driver') return (
     <div style={wrapStyle}>
       <div style={hdrStyle}>
@@ -405,6 +405,25 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
                     ))}
                   </div>
                 </div>
+                {/* Fotos del vehiculo */}
+                <div style={fld()}>
+                  <div style={{ fontSize:11, fontWeight:700, color:SUB, marginBottom:10, textTransform:'uppercase', letterSpacing:0.6 }}>Fotos del vehiculo</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                    {[{k:'photoExt',l:'Exterior'},  {k:'photoInt',l:'Interior'}, {k:'photoFront',l:'Frontal'}, {k:'photoBack',l:'Trasera'}].map(p => (
+                      <label key={p.k} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 8px', background: (form as any)[p.k] ? '#F0FDF4' : (theme.id==='midnight'?'#0F172A':'#F8FAFF'), borderRadius:12, border:'1.5px dashed '+((form as any)[p.k]?GREEN:BORDER), cursor:'pointer', textAlign:'center' }}>
+                        {(form as any)[p.k]
+                          ? <img src={(form as any)[p.k]} alt={p.l} style={{ width:'100%', height:60, objectFit:'cover', borderRadius:8 }} />
+                          : <><svg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke={SUB} strokeWidth='1.5' strokeLinecap='round'><rect x='3' y='3' width='18' height='18' rx='3'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/></svg><span style={{ fontSize:11, color:SUB, fontWeight:500 }}>{p.l}</span></>
+                        }
+                        <input type='file' accept='image/*' style={{ display:'none' }} onChange={e => { const f=e.target.files?.[0]; if(f){const url=URL.createObjectURL(f); setForm(x=>({...x,[p.k]:url}));} }} />
+                      </label>
+                    ))}
+                  </div>
+                  <div style={fld()}>
+                    <div style={{ fontSize:11, fontWeight:700, color:SUB, marginBottom:5, textTransform:'uppercase', letterSpacing:0.6 }}>Estado del vehiculo</div>
+                    <textarea value={form.vehicleState} onChange={e => setForm(x=>({...x,vehicleState:e.target.value}))} placeholder='Ej: Vehiculo en excelente estado, AC funcionando, sin rayones...' rows={2} style={{ width:'100%', border:'none', background:'transparent', fontSize:13, outline:'none', color:TEXT, resize:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
+                  </div>
+                </div>
                 <button onClick={() => setDtab('docs')} style={btnStyle(!form.plate)}>Continuar a Documentos</button>
               </div>
             )}
@@ -443,7 +462,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     </div>
   );
 
-  // ── BUSCANDO ──────────────────────────────────────────────────────────────
+  // â”€â”€ BUSCANDO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (screen === 'searching') return (
     <div style={wrapStyle}>
       <div style={hdrStyle}>
@@ -482,7 +501,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     </div>
   );
 
-  // ── CONDUCTOR ENCONTRADO ──────────────────────────────────────────────────
+  // â”€â”€ CONDUCTOR ENCONTRADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (screen === 'matched') return (
     <div style={wrapStyle}>
       <div style={hdrStyle}>
@@ -499,7 +518,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
                 <div style={{ fontSize:17, fontWeight:800 }}>{driver.name}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:4 }}>
                   {[1,2,3,4,5].map(s => <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s<=Math.floor(driver.rating)?'#F59E0B':'#E2E8F0'}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>)}
-                  <span style={{ fontSize:13, color:SUB }}>{driver.rating} · {driver.trips.toLocaleString()} viajes</span>
+                  <span style={{ fontSize:13, color:SUB }}>{driver.rating} Â· {driver.trips.toLocaleString()} viajes</span>
                 </div>
               </div>
               <div style={{ textAlign:'center', background:ACCENT_L, borderRadius:14, padding:'10px 16px' }}>
@@ -536,13 +555,13 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
       <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'16px 20px', background:'#fff', borderTop:'1px solid ' + BORDER, display:'flex', gap:10 }}>
         <button onClick={() => setScreen('home')} style={{ flex:1, padding:'14px', background:'#F1F5F9', color:SUB, border:'none', borderRadius:14, fontSize:15, fontWeight:600, cursor:'pointer' }}>Cancelar</button>
         <button onClick={() => { if(userBalance>=ride.price){onDebit(ride.price);setScreen('riding');}else alert('Saldo insuficiente'); }} style={{ flex:2, padding:'14px', background:ACCENT, color:'#fff', border:'none', borderRadius:14, fontSize:15, fontWeight:700, cursor:'pointer' }}>
-          Confirmar · {ride.price.toLocaleString()} XAF
+          Confirmar Â· {ride.price.toLocaleString()} XAF
         </button>
       </div>
     </div>
   );
 
-  // ── VIAJE EN CURSO ────────────────────────────────────────────────────────
+  // â”€â”€ VIAJE EN CURSO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (screen === 'riding') return (
     <div style={wrapStyle}>
       <div style={{ ...hdrStyle, justifyContent:'space-between' }}>
@@ -556,7 +575,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
             <div style={{ width:48, height:48, borderRadius:'50%', background:driver.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, color:'#fff' }}>{driver.ini}</div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:15, fontWeight:700 }}>{driver.name}</div>
-              <div style={{ fontSize:12, color:SUB }}>{driver.plate} · {driver.car}</div>
+              <div style={{ fontSize:12, color:SUB }}>{driver.plate} Â· {driver.car}</div>
             </div>
             <div style={{ fontSize:15, fontWeight:800, color:ACCENT }}>{ride.price.toLocaleString()} XAF</div>
           </div>
@@ -578,7 +597,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     </div>
   );
 
-  // ── CALIFICACION ──────────────────────────────────────────────────────────
+  // â”€â”€ CALIFICACION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (screen === 'rating') return (
     <div style={wrapStyle}>
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, gap:24 }}>
@@ -615,7 +634,98 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     </div>
   );
 
-  // ── HOME - UBER STYLE ────────────────────────────────────────────────────
+  // AJUSTES
+  if (screen === 'settings') return (
+    <div style={wrap}>
+      {showThemes && <ThemePanel />}
+      <div style={hdr}>
+        <button style={bk} onClick={() => setScreen('home')}><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke={TEXT} strokeWidth='2.5' strokeLinecap='round'><path d='M19 12H5M12 5l-7 7 7 7'/></svg></button>
+        <div style={{ flex:1 }}><div style={{ fontSize:17, fontWeight:700, color:TEXT }}>Ajustes MiTaxi</div><div style={{ fontSize:12, color:SUB }}>Personaliza tu experiencia</div></div>
+        <button onClick={() => setShowThemes(true)} style={{ background:AL, border:'none', borderRadius:50, padding:'7px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+          <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><circle cx='12' cy='12' r='3'/><path d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'/></svg>
+          <span style={{ fontSize:11, fontWeight:700, color:ACCENT }}>Fondo</span>
+        </button>
+      </div>
+      <div style={{ flex:1, overflowY:'auto', padding:'16px 20px 40px', display:'flex', flexDirection:'column', gap:20 }}>
+
+        {/* VOZ DE NAVEGACION */}
+        <div style={{ background:CARD, borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:TEXT, marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><path d='M11 5L6 9H2v6h4l5 4V5z'/><path d='M19.07 4.93a10 10 0 0 1 0 14.14'/><path d='M15.54 8.46a5 5 0 0 1 0 7.07'/></svg>
+            Voz de navegacion
+          </div>
+          {[{id:'es-GQ',l:'Espanol (Guinea Ecuatorial)',sub:'Voz local recomendada'},{id:'es-ES',l:'Espanol (Espana)',sub:'Voz estandar'},{id:'fr-FR',l:'Frances',sub:'Pour les francophones'},{id:'en-US',l:'Ingles',sub:'English navigation'}].map(v => (
+            <button key={v.id} onClick={() => setSettings(s=>({...s,voice:v.id}))} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:12, border:'1.5px solid '+(settings.voice===v.id?ACCENT:BORDER), background:settings.voice===v.id?AL:CARD, cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:settings.voice===v.id?ACCENT:BORDER, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke={settings.voice===v.id?'#fff':SUB} strokeWidth='2' strokeLinecap='round'><path d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'/><path d='M19 10v2a7 7 0 0 1-14 0v-2'/><line x1='12' y1='19' x2='12' y2='23'/><line x1='8' y1='23' x2='16' y2='23'/></svg>
+              </div>
+              <div style={{ flex:1 }}><div style={{ fontSize:14, fontWeight:600, color:TEXT }}>{v.l}</div><div style={{ fontSize:12, color:SUB }}>{v.sub}</div></div>
+              {settings.voice===v.id && <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2.5' strokeLinecap='round'><path d='M20 6L9 17l-5-5'/></svg>}
+            </button>
+          ))}
+        </div>
+
+        {/* FONDOS DE PANTALLA */}
+        <div style={{ background:CARD, borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:TEXT, marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><rect x='3' y='3' width='18' height='18' rx='3'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/></svg>
+            Fondos de pantalla
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:12 }}>
+            {APP_THEMES.map(t => (
+              <button key={t.id} onClick={() => { setTheme(t); setCustomBg(null); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 6px', borderRadius:14, border:'2px solid '+(theme.id===t.id&&!customBg?t.accent:'transparent'), background:t.bg, cursor:'pointer' }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', background:t.accent }} />
+                <span style={{ fontSize:10, fontWeight:600, color:t.id==='midnight'?'#94A3B8':'#374151', textAlign:'center' }}>{t.name}</span>
+              </button>
+            ))}
+          </div>
+          <label style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', background:AL, borderRadius:12, cursor:'pointer', border:'1.5px dashed '+ACCENT }}>
+            <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><rect x='3' y='3' width='18' height='18' rx='3'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/></svg>
+            <span style={{ fontSize:13, fontWeight:600, color:ACCENT }}>{customBg ? 'Cambiar imagen personalizada' : 'Subir imagen del dispositivo'}</span>
+            <input type='file' accept='image/*' style={{ display:'none' }} onChange={e => { const f=e.target.files?.[0]; if(f) setCustomBg(URL.createObjectURL(f)); }} />
+          </label>
+          {customBg && <button onClick={() => setCustomBg(null)} style={{ width:'100%', marginTop:8, padding:'10px', background:'#FEE2E2', color:'#EF4444', border:'none', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer' }}>Quitar imagen personalizada</button>}
+        </div>
+
+        {/* LUGARES FRECUENTES */}
+        <div style={{ background:CARD, borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:TEXT, marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/><circle cx='12' cy='9' r='2.5'/></svg>
+            Lugares frecuentes
+          </div>
+          <div style={{ fontSize:12, color:SUB, marginBottom:12 }}>Guarda destinos que usas frecuentemente para acceder rapido.</div>
+          {settings.savedPlaces.map((p,i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:theme.id==='midnight'?'#0F172A':'#F8FAFF', borderRadius:10, marginBottom:8 }}>
+              <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/><circle cx='12' cy='9' r='2.5'/></svg>
+              <span style={{ flex:1, fontSize:13, color:TEXT, fontWeight:500 }}>{p}</span>
+              <button onClick={() => setSettings(s=>({...s,savedPlaces:s.savedPlaces.filter((_,j)=>j!==i)}))} style={{ background:'none', border:'none', cursor:'pointer', color:'#EF4444', fontSize:16, padding:'0 4px' }}>×</button>
+            </div>
+          ))}
+          <div style={{ display:'flex', gap:8, marginTop:4 }}>
+            <input id='newPlace' placeholder='Agregar lugar...' style={{ flex:1, padding:'10px 12px', borderRadius:10, border:'1.5px solid '+BORDER, background:theme.id==='midnight'?'#1E293B':'#F8FAFF', color:TEXT, fontSize:13, outline:'none' }} />
+            <button onClick={() => { const el=document.getElementById('newPlace') as HTMLInputElement; if(el?.value.trim()){setSettings(s=>({...s,savedPlaces:[...s.savedPlaces,el.value.trim()]}));el.value='';} }} style={{ padding:'10px 16px', background:ACCENT, color:'#fff', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>+</button>
+          </div>
+        </div>
+
+        {/* MODELO DE NAVEGACION */}
+        <div style={{ background:CARD, borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ fontSize:14, fontWeight:800, color:TEXT, marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><polygon points='3 11 22 2 13 21 11 13 3 11'/></svg>
+            Modelo de navegacion
+          </div>
+          {[{id:'standard',l:'Estandar',sub:'Ruta mas rapida'},{id:'eco',l:'Economico',sub:'Menos combustible'},{id:'avoid_tolls',l:'Sin peajes',sub:'Evitar peajes'},{id:'scenic',l:'Pintoresco',sub:'Ruta mas bonita'}].map(m => (
+            <button key={m.id} onClick={() => setSettings(s=>({...s,navMode:m.id}))} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:12, border:'1.5px solid '+(settings.navMode===m.id?ACCENT:BORDER), background:settings.navMode===m.id?AL:CARD, cursor:'pointer', marginBottom:8, textAlign:'left' }}>
+              <div style={{ flex:1 }}><div style={{ fontSize:14, fontWeight:600, color:TEXT }}>{m.l}</div><div style={{ fontSize:12, color:SUB }}>{m.sub}</div></div>
+              {settings.navMode===m.id && <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2.5' strokeLinecap='round'><path d='M20 6L9 17l-5-5'/></svg>}
+            </button>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+
+  // â”€â”€ HOME - UBER STYLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div style={wrapStyle}>
       {/* Header flotante */}
@@ -626,7 +736,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         <div style={{ flex:1 }}>
           <div style={{ fontSize:18, fontWeight:800 }}>MiTaxi</div>
           <div style={{ fontSize:11, color:SUB }}>
-            {gpsError ? 'Malabo · Guinea Ecuatorial' : userPos ? 'GPS activo' : 'Obteniendo ubicacion...'}
+            {gpsError ? 'Malabo Â· Guinea Ecuatorial' : userPos ? 'GPS activo' : 'Obteniendo ubicacion...'}
           </div>
         </div>
         {!gpsError && !userPos && (
@@ -638,6 +748,10 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
             <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>GPS</span>
           </div>
         )}
+        <button onClick={() => setScreen('settings')} style={{ display:'flex', alignItems:'center', gap:4, padding:'7px 11px', background:AL, border:'none', borderRadius:50, cursor:'pointer' }}>
+          <svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke={ACCENT} strokeWidth='2' strokeLinecap='round'><circle cx='12' cy='12' r='3'/><path d='M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83'/></svg>
+          <span style={{ fontSize:11, fontWeight:700, color:ACCENT }}>Ajustes</span>
+        </button>
         <button onClick={() => setScreen('driver')} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', background:ACCENT_L, border:'none', borderRadius:50, cursor:'pointer', fontSize:12, fontWeight:700, color:ACCENT }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           Conductor
@@ -708,7 +822,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           {/* Info servicio seleccionado */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, padding:'10px 14px', background:ride.bg, borderRadius:12 }}>
             <div>
-              <div style={{ fontSize:14, fontWeight:700, color:ride.color }}>{ride.name} · {ride.sub}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:ride.color }}>{ride.name} Â· {ride.sub}</div>
               <div style={{ fontSize:12, color:SUB }}>{ride.desc}</div>
             </div>
             <div style={{ textAlign:'right' }}>
@@ -723,7 +837,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
             disabled={!canGo}
             style={{ width:'100%', padding:'17px', background: canGo ? ride.color : '#E2E8F0', color: canGo ? '#fff' : '#94A3B8', border:'none', borderRadius:16, fontSize:16, fontWeight:800, cursor: canGo ? 'pointer' : 'not-allowed', transition:'all 0.2s', marginBottom:8, letterSpacing:0.3, boxShadow: canGo ? '0 4px 20px rgba(99,102,241,0.3)' : 'none' }}
           >
-            {canGo ? 'Pedir ' + ride.name + ' · ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
+            {canGo ? 'Pedir ' + ride.name + ' Â· ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
           </button>
           <div style={{ height:8 }} />
         </div>
