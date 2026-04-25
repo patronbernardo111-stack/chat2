@@ -2854,8 +2854,9 @@ const App: React.FC = () => {
           width: '100%', maxHeight: '92vh', background: '#FFFFFF',
           borderRadius: '20px 20px 0 0', border: '1px solid rgba(0,0,0,0.07)',
           display: 'flex', flexDirection: 'column', }}>
-          {/* Handle */}
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+          {/* Handle — toca para cerrar */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px', cursor: 'pointer' }}
+            onClick={() => { setShowProfileView(false); setIsEditingProfile(false); setShowProfileQR(false); }}>
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e5e7eb' }} />
           </div>
 

@@ -8,16 +8,34 @@ const BASE = (() => {
   return url.endsWith('/api') ? url : url.replace(/\/$/, '') + '/api';
 })();
 
-const ICE_SERVERS = [
+// ── ICE Servers — STUN gratuitos (Google, Cloudflare, Twilio) + TURN público ──
+// Los STUN servers descubren la IP pública.
+// Los TURN servers actúan como relay cuando la conexión directa falla (NAT estricto,
+// redes móviles, diferentes países). Usamos múltiples para máxima cobertura.
+const ICE_SERVERS: RTCIceServer[] = [
+  // STUN — Google (los más confiables y gratuitos)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+  // STUN — Cloudflare (muy rápido, global)
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  // STUN — otros proveedores públicos
+  { urls: 'stun:stun.stunprotocol.org:3478' },
+  { urls: 'stun:stun.voip.blackberry.com:3478' },
+  // TURN — Open Relay (gratuito, sin registro)
+  // Puerto 80 y 443 para pasar firewalls corporativos
+  { urls: 'turn:openrelay.metered.ca:80',              username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443',             username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:a.relay.metered.ca:80', username: 'e8dd65f0a7c3e0a7e8dd65f0', credential: 'openrelayproject' },
-  { urls: 'turn:a.relay.metered.ca:443', username: 'e8dd65f0a7c3e0a7e8dd65f0', credential: 'openrelayproject' },
+  // TURN — Metered relay (gratuito, múltiples regiones)
+  { urls: 'turn:a.relay.metered.ca:80',                username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:a.relay.metered.ca:443',               username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  // TURN — Numb (gratuito, muy usado)
+  { urls: 'turn:numb.viagenie.ca',                     username: 'webrtc@live.com',  credential: 'muazkh' },
+  { urls: 'turn:numb.viagenie.ca:443?transport=tcp',   username: 'webrtc@live.com',  credential: 'muazkh' },
 ];
 
 async function sigFetch(path: string, method = 'GET', body?: object) {
@@ -84,7 +102,15 @@ export function useWebRTC() {
   }, [cleanupResources]);
 
   const createPC = useCallback(() => {
-    const p = new RTCPeerConnection({ iceServers: ICE_SERVERS, bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' });
+    const p = new RTCPeerConnection({
+      iceServers: ICE_SERVERS,
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
+      // Forzar uso de TURN cuando la conexión directa falla
+      // 'relay' = solo TURN (garantiza funcionar entre países pero más latencia)
+      // 'all'   = intenta directo primero, cae a TURN si falla (recomendado)
+      iceTransportPolicy: 'all',
+    });
 
     p.ontrack = (e) => {
       const stream = e.streams[0] || new MediaStream([e.track]);
@@ -96,22 +122,39 @@ export function useWebRTC() {
     };
 
     p.onconnectionstatechange = () => {
-      if (p.connectionState === 'connected') {
+      const state = p.connectionState;
+      if (state === 'connected') {
         setCallState('connected');
+        // Ajustar bitrate según tipo de llamada
         p.getSenders().forEach(async sender => {
           if (!sender.track) return;
           const params = sender.getParameters();
           if (!params.encodings?.length) params.encodings = [{}];
           if (sender.track.kind === 'video') {
-            params.encodings[0].maxBitrate = 2_500_000;
-            params.encodings[0].maxFramerate = 30;
+            params.encodings[0].maxBitrate = 1_500_000; // 1.5 Mbps para video (más conservador para redes lentas)
+            params.encodings[0].maxFramerate = 24;
           } else {
-            params.encodings[0].maxBitrate = 128_000;
+            params.encodings[0].maxBitrate = 64_000; // 64 kbps para audio (suficiente y ligero)
           }
           try { await sender.setParameters(params); } catch {}
         });
       }
-      // No llamar cleanup en failed/disconnected — puede ser transitorio
+      // 'disconnected' es transitorio — puede recuperarse solo (cambio de red, etc.)
+      // Solo terminar si es 'failed' definitivo
+      if (state === 'failed') {
+        // Intentar ICE restart antes de terminar
+        if (roleRef.current === 'caller' && !endedRef.current) {
+          try { p.restartIce(); } catch {}
+        }
+      }
+    };
+
+    // ICE connection state — más granular que connectionState
+    p.oniceconnectionstatechange = () => {
+      if (p.iceConnectionState === 'failed' && !endedRef.current) {
+        // Intentar ICE restart (renegocia candidatos usando TURN)
+        try { p.restartIce(); } catch {}
+      }
     };
 
     return p;

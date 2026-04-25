@@ -220,7 +220,7 @@ export const ChatConversation: React.FC<Props> = ({
       {/* Header */}
       <div style={{
         background: '#fff',
-        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        borderBottom: 'none',
         flexShrink: 0, zIndex: 10,
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
@@ -270,11 +270,11 @@ export const ChatConversation: React.FC<Props> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', ...(wallpaperStyle || { background: '#f0f2f5' }) }}
+        style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', position: 'relative', ...(wallpaperStyle || { background: '#f0f2f5' }) }}
       >
         {wallpaperContent}
         {/* Contenedor interior con flex-end — mensajes pegados al fondo */}
-        <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '8px 10px', gap: '2px' }}>
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '8px 10px', gap: '2px' }}>
           {sorted.map((msg, i) => {
             const label = getDateLabel(msg);
             const prevLabel = i > 0 ? getDateLabel(sorted[i - 1]) : null;
