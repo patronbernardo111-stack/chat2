@@ -559,17 +559,22 @@ const App: React.FC = () => {
     }, 100);
   }, [selectedChat?.id]);
 
-  // Scroll automático SIEMPRE al último mensaje al enviar o recibir
+  // Scroll automático: solo cuando hay mensaje nuevo real
+  const lastScrollMsgId = React.useRef<string>('');
   React.useEffect(() => {
     if (!selectedChat) return;
-    const msgs = chatMessages[selectedChat.id?.toString() || ''] || [];
+    const chatId = selectedChat.id?.toString() || '';
+    const msgs = chatMessages[chatId] || [];
+    if (msgs.length === 0) return;
     const lastMsg = msgs[msgs.length - 1];
-    // Scroll siempre si el último mensaje es mío, o si ya estaba al fondo
-    if (lastMsg?.from === 'me' || isAtBottomRef.current) {
+    // Evitar scroll si el último mensaje ya lo procesamos
+    if (lastMsg.id === lastScrollMsgId.current) return;
+    lastScrollMsgId.current = lastMsg.id;
+    // Scroll si es mensaje mío, o si estaba al fondo
+    if (lastMsg.from === 'me' || isAtBottomRef.current) {
       requestAnimationFrame(() => {
         const el = document.querySelector('.chat-messages-scroll') as HTMLElement;
         if (el) el.scrollTop = el.scrollHeight;
-        isAtBottomRef.current = true;
       });
     }
   }, [chatMessages]);
