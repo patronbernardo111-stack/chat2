@@ -395,70 +395,78 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     </div>
   );
 
-  // HOME
+  // HOME - Uber/DiDi style
   return (
     <div style={wrapStyle}>
-      <div style={hdrStyle}>
+      {/* HEADER flotante sobre el mapa */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10, display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'rgba(255,255,255,0.96)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(238,240,248,0.8)' }}>
         <button style={backBtn} onClick={onBack}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:18, fontWeight:800 }}>MiTaxi</div>
-          <div style={{ fontSize:12, color:SUB }}>Malabo · Guinea Ecuatorial</div>
+          <div style={{ fontSize:18, fontWeight:800, color:TEXT }}>MiTaxi</div>
+          <div style={{ fontSize:11, color:SUB }}>Malabo · Guinea Ecuatorial</div>
         </div>
-        <button onClick={() => setScreen('driver')} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 16px', background:ACCENT_L, border:'none', borderRadius:50, cursor:'pointer', fontSize:13, fontWeight:700, color:ACCENT }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <button onClick={() => setScreen('driver')} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', background:ACCENT_L, border:'none', borderRadius:50, cursor:'pointer', fontSize:12, fontWeight:700, color:ACCENT }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           Ser conductor
         </button>
       </div>
 
-      <div style={{ flexShrink:0, position:'relative' }}>
-        <LiveMap h={220} />
-        <div style={{ position:'absolute', bottom:12, left:12, background:'rgba(255,255,255,0.95)', borderRadius:12, padding:'6px 12px', fontSize:12, fontWeight:600, color:TEXT, boxShadow:'0 2px 8px rgba(0,0,0,0.1)' }}>
-          📍 Tu ubicacion · Malabo
-        </div>
+      {/* MAPA a pantalla completa */}
+      <div style={{ position:'absolute', inset:0 }}>
+        <LiveMap h="100%" />
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', background:'#fff' }}>
-        <div style={{ padding:'20px 20px 0', position:'relative' }}>
-          <div style={{ display:'flex', gap:14, alignItems:'stretch' }}>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:18, paddingBottom:18 }}>
+      {/* BOTTOM SHEET - panel deslizable estilo Uber */}
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'#fff', borderRadius:'24px 24px 0 0', boxShadow:'0 -4px 32px rgba(0,0,0,0.12)', zIndex:10 }}>
+        {/* Handle */}
+        <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 4px' }}>
+          <div style={{ width:40, height:4, borderRadius:2, background:'#E2E8F0' }} />
+        </div>
+
+        <div style={{ padding:'0 20px 8px' }}>
+          <div style={{ fontSize:16, fontWeight:800, color:TEXT, marginBottom:14 }}>A donde vas?</div>
+
+          {/* CAMPOS RUTA */}
+          <div style={{ display:'flex', gap:12, alignItems:'stretch', marginBottom:16 }}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:14, paddingBottom:14 }}>
               <div style={{ width:10, height:10, borderRadius:'50%', border:'2.5px solid ' + ACCENT, background:'#fff', flexShrink:0 }} />
-              <div style={{ width:2, flex:1, background:'linear-gradient(#6366F1,#0F172A)', margin:'5px 0', borderRadius:1 }} />
+              <div style={{ width:2, flex:1, background:'linear-gradient(#6366F1,#0F172A)', margin:'4px 0', borderRadius:1 }} />
               <div style={{ width:10, height:10, borderRadius:'50%', background:TEXT, flexShrink:0 }} />
             </div>
-            <div style={{ flex:1, display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ flex:1, display:'flex', flexDirection:'column', gap:8 }}>
               <div style={fieldStyle(focus==='o')}>
-                <div style={{ fontSize:10, fontWeight:700, color:ACCENT, marginBottom:4, textTransform:'uppercase', letterSpacing:0.8 }}>Origen</div>
-                <input value={origin} onChange={e => onSugg(e.target.value,'o')} onFocus={() => setFocus('o')} onBlur={() => setTimeout(()=>setFocus(null),150)} placeholder="Tu ubicacion actual" style={{ width:'100%', border:'none', background:'transparent', fontSize:15, outline:'none', color:TEXT, fontWeight:500, boxSizing:'border-box' }} />
+                <div style={{ fontSize:10, fontWeight:700, color:ACCENT, marginBottom:3, textTransform:'uppercase', letterSpacing:0.8 }}>Origen</div>
+                <input value={origin} onChange={e => onSugg(e.target.value,'o')} onFocus={() => setFocus('o')} onBlur={() => setTimeout(()=>setFocus(null),150)} placeholder="Tu ubicacion actual" style={{ width:'100%', border:'none', background:'transparent', fontSize:14, outline:'none', color:TEXT, fontWeight:500, boxSizing:'border-box' }} />
               </div>
               <div style={fieldStyle(focus==='d')}>
-                <div style={{ fontSize:10, fontWeight:700, color:TEXT, marginBottom:4, textTransform:'uppercase', letterSpacing:0.8 }}>Destino</div>
-                <input value={dest} onChange={e => onSugg(e.target.value,'d')} onFocus={() => setFocus('d')} onBlur={() => setTimeout(()=>setFocus(null),150)} placeholder="A donde vas?" style={{ width:'100%', border:'none', background:'transparent', fontSize:15, outline:'none', color:TEXT, fontWeight:500, boxSizing:'border-box' }} />
+                <div style={{ fontSize:10, fontWeight:700, color:TEXT, marginBottom:3, textTransform:'uppercase', letterSpacing:0.8 }}>Destino</div>
+                <input value={dest} onChange={e => onSugg(e.target.value,'d')} onFocus={() => setFocus('d')} onBlur={() => setTimeout(()=>setFocus(null),150)} placeholder="A donde vas?" style={{ width:'100%', border:'none', background:'transparent', fontSize:14, outline:'none', color:TEXT, fontWeight:500, boxSizing:'border-box' }} />
               </div>
             </div>
           </div>
+
+          {/* SUGERENCIAS */}
           {sugg.length>0 && focus && (
-            <div style={{ position:'absolute', left:20, right:20, top:'100%', background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(0,0,0,0.12)', zIndex:200, overflow:'hidden', border:'1px solid ' + BORDER }}>
+            <div style={{ background:'#fff', borderRadius:16, boxShadow:'0 4px 20px rgba(0,0,0,0.1)', marginBottom:12, overflow:'hidden', border:'1px solid ' + BORDER }}>
               {sugg.map((s,i) => (
-                <button key={i} onClick={() => { if(focus==='d') setDest(s); else setOrigin(s); setSugg([]); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'13px 18px', background:'none', border:'none', cursor:'pointer', textAlign:'left', borderBottom: i<sugg.length-1 ? '1px solid ' + BORDER : 'none' }}>
-                  <div style={{ width:32, height:32, borderRadius:10, background:ACCENT_L, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                <button key={i} onClick={() => { if(focus==='d') setDest(s); else setOrigin(s); setSugg([]); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'11px 16px', background:'none', border:'none', cursor:'pointer', textAlign:'left', borderBottom: i<sugg.length-1 ? '1px solid ' + BORDER : 'none' }}>
+                  <div style={{ width:30, height:30, borderRadius:9, background:ACCENT_L, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
                   </div>
                   <span style={{ fontSize:14, color:TEXT, fontWeight:500 }}>{s}</span>
                 </button>
               ))}
             </div>
           )}
-        </div>
 
-        <div style={{ padding:'20px 20px 0' }}>
-          <div style={{ fontSize:12, fontWeight:700, color:SUB, textTransform:'uppercase', letterSpacing:0.8, marginBottom:14 }}>Elige tu servicio</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {/* TIPOS DE SERVICIO - scroll horizontal */}
+          <div style={{ display:'flex', gap:10, overflowX:'auto', paddingBottom:4, marginBottom:16, scrollbarWidth:'none' }}>
             {RIDES.map(r => (
-              <button key={r.id} onClick={() => setRide(r)} style={{ display:'flex', alignItems:'center', gap:16, padding:'14px 18px', borderRadius:18, border:'2px solid ' + (ride.id===r.id ? r.color : BORDER), background: ride.id===r.id ? r.bg : '#fff', cursor:'pointer', transition:'all 0.2s', position:'relative', overflow:'hidden' }}>
-                <div style={{ width:52, height:52, borderRadius:16, background: ride.id===r.id ? r.color : '#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'background 0.2s' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={ride.id===r.id ? '#fff' : '#94A3B8'} strokeWidth="1.8" strokeLinecap="round">
+              <button key={r.id} onClick={() => setRide(r)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'12px 16px', borderRadius:16, border:'2px solid ' + (ride.id===r.id ? r.color : BORDER), background: ride.id===r.id ? r.bg : '#fff', cursor:'pointer', flexShrink:0, minWidth:90, transition:'all 0.2s' }}>
+                <div style={{ width:44, height:44, borderRadius:14, background: ride.id===r.id ? r.color : '#F1F5F9', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={ride.id===r.id ? '#fff' : '#94A3B8'} strokeWidth="1.8" strokeLinecap="round">
                     {r.id==='moto'
                       ? <><circle cx="5.5" cy="17.5" r="3"/><circle cx="18.5" cy="17.5" r="3"/><path d="M14 6h3l3 5.5H8.5L11 6h3z"/><path d="M5.5 17.5L9 11.5"/></>
                       : r.id==='xl'
@@ -467,31 +475,30 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
                     }
                   </svg>
                 </div>
-                <div style={{ flex:1, textAlign:'left' }}>
-                  <div style={{ fontSize:16, fontWeight:800, color: ride.id===r.id ? r.color : TEXT }}>{r.name}</div>
-                  <div style={{ fontSize:12, color:SUB, marginTop:2 }}>{r.sub} · {r.eta}</div>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:13, fontWeight:800, color: ride.id===r.id ? r.color : TEXT }}>{r.name}</div>
+                  <div style={{ fontSize:11, color:SUB }}>{r.eta}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color: ride.id===r.id ? r.color : TEXT, marginTop:2 }}>{r.price.toLocaleString()} XAF</div>
                 </div>
-                <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:18, fontWeight:900, color: ride.id===r.id ? r.color : TEXT }}>{r.price.toLocaleString()}</div>
-                  <div style={{ fontSize:11, color:SUB }}>XAF</div>
-                </div>
-                {ride.id===r.id && <div style={{ position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:4, height:36, background:r.color, borderRadius:'0 3px 3px 0' }} />}
               </button>
             ))}
           </div>
-        </div>
 
-        <div style={{ margin:'16px 20px 0', padding:'12px 18px', background:ACCENT_L, borderRadius:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ fontSize:13, color:ACCENT, fontWeight:600 }}>Saldo disponible</span>
-          <span style={{ fontSize:15, fontWeight:800, color: userBalance>=ride.price ? GREEN : RED }}>{userBalance.toLocaleString()} XAF</span>
-        </div>
-        <div style={{ height:110 }} />
-      </div>
+          {/* SALDO + BOTON PEDIR */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <div style={{ fontSize:12, color:SUB }}>Saldo: <span style={{ fontWeight:700, color: userBalance>=ride.price ? GREEN : RED }}>{userBalance.toLocaleString()} XAF</span></div>
+            <div style={{ fontSize:12, color:SUB }}>{ride.sub}</div>
+          </div>
 
-      <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'16px 20px 24px', background:'#fff', borderTop:'1px solid ' + BORDER }}>
-        <button onClick={() => { if(canGo) setScreen('searching'); }} disabled={!canGo} style={btnStyle(!canGo)}>
-          {canGo ? 'Pedir ' + ride.name + ' · ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
-        </button>
+          <button
+            onClick={() => { if(canGo) setScreen('searching'); }}
+            disabled={!canGo}
+            style={{ width:'100%', padding:'17px', background: canGo ? ACCENT : '#E2E8F0', color: canGo ? '#fff' : '#94A3B8', border:'none', borderRadius:16, fontSize:16, fontWeight:800, cursor: canGo ? 'pointer' : 'not-allowed', transition:'all 0.2s', marginBottom:8, letterSpacing:0.3, boxShadow: canGo ? '0 4px 20px rgba(99,102,241,0.35)' : 'none' }}
+          >
+            {canGo ? 'Pedir ' + ride.name + ' · ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
+          </button>
+          <div style={{ height:8 }} />
+        </div>
       </div>
     </div>
   );
