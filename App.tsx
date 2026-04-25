@@ -263,7 +263,7 @@ const App: React.FC = () => {
   const [newChatPhone, setNewChatPhone] = useState<string>('');
   const [newChatLoading, setNewChatLoading] = useState<boolean>(false);
   const [chatEmojiTab, setChatEmojiTab] = useState<'system'|'custom'>('system');
-  const [chatEmojiCategory, setChatEmojiCategory] = useState<string>('recientes');
+  const [chatEmojiCategory, setChatEmojiCategory] = useState<string>('stickers');
   const [emojiSearch, setEmojiSearch] = useState<string>('');
   const [isRecordingAudio, setIsRecordingAudio] = useState<boolean>(false);
   const [customEmojis, setCustomEmojis] = useState<Array<{id:string; label:string; title:string; source:'created'|'copied'; from?:string}>>([
@@ -5507,12 +5507,13 @@ const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Barra categoras  estilo EGCHAT */}
+                  {/* Barra categorías estilo EGCHAT */}
                   <div style={{ display: 'flex', borderTop: '1px solid rgba(0,0,0,0.07)', overflowX: 'auto' }}>
                     {Object.entries(emojiCats).map(([key, cat]) => (
                       <button key={key} onClick={() => { setChatEmojiCategory(key); setEmojiSearch(''); setShowEmojiEditor(false); }}
-                        style={{ background: 'none', border: 'none', borderTop: chatEmojiCategory === key ? '2px solid #00b4e6' : '2px solid transparent', padding: '7px 10px', cursor: 'pointer', outline: 'none', fontSize: '18px', lineHeight: 1, flexShrink: 0, opacity: chatEmojiCategory === key ? 1 : 0.4, transition: 'all 0.15s' }}>
+                        style={{ background: key === 'stickers' && chatEmojiCategory === key ? 'rgba(0,180,230,0.08)' : 'none', border: 'none', borderTop: chatEmojiCategory === key ? '2px solid #00b4e6' : '2px solid transparent', padding: key === 'stickers' ? '5px 12px' : '7px 10px', cursor: 'pointer', outline: 'none', fontSize: '18px', lineHeight: 1, flexShrink: 0, opacity: chatEmojiCategory === key ? 1 : 0.4, transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
                         {cat.icon}
+                        {key === 'stickers' && <span style={{ fontSize: '8px', fontWeight: '700', color: chatEmojiCategory === key ? '#00b4e6' : '#9ca3af', letterSpacing: '0.3px' }}>STICKERS</span>}
                       </button>
                     ))}
                   </div>
