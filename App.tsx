@@ -163,8 +163,10 @@ const App: React.FC = () => {
   const [msgNotif, setMsgNotif] = useState<{id:string; sender:string; text:string; chatId:string; avatar?:string} | null>(null);
   const msgNotifTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMsgIds = React.useRef<Record<string, string>>({});
-  // IDs de mensajes eliminados "para mí" localmente (respaldo por si el API falla)
-  const deletedForMeIds = React.useRef<Set<string>>(new Set());
+  // IDs de mensajes eliminados "para mí" — persistidos en localStorage
+  const deletedForMeIds = React.useRef<Set<string>>(new Set(
+    JSON.parse(localStorage.getItem('deletedForMeIds') || '[]')
+  ));
   // -- Toast system --
   const [toast, setToast] = useState<{msg:string; type:'success'|'error'|'info'} | null>(null);
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -8732,6 +8734,7 @@ const App: React.FC = () => {
                 setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
                 // Guardar en respaldo local para que el polling no lo traiga de vuelta
                 deletedForMeIds.current.add(msgId);
+                localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
                 setMsgContextMenu(null);
                 // Llamar al API si es un UUID real (tiene guiones y longitud de UUID)
                 if (msgId && msgId.length > 10) {
@@ -8758,6 +8761,7 @@ const App: React.FC = () => {
                   setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
                   // Guardar en respaldo local por si el API tarda
                   deletedForMeIds.current.add(msgId);
+                  localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
                   setMsgContextMenu(null);
                   // Llamar al API si es un UUID real
                   if (msgId && msgId.length > 10) {
