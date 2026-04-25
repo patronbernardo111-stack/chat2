@@ -157,6 +157,15 @@ export const chatAPI = {
   // Crear chat grupal
   createGroup: (name:string, participant_ids: string[], avatar_url?: string) => 
     post<any>('/chats/group', { name, participant_ids, avatar_url }),
+
+  // Añadir miembros a grupo existente
+  addGroupMembers: async (groupId: string, user_ids: string[]) => {
+    // Add each member one by one using existing endpoint
+    const results = await Promise.allSettled(
+      user_ids.map(uid => post<any>(`/chats/${groupId}/participants`, { user_id: uid }))
+    );
+    return results;
+  },
   
   // Marcar mensajes como leídos
   markAsRead: (chatId:string, message_id: string) => 

@@ -314,6 +314,9 @@ const App: React.FC = () => {
   const [showReadReceipts, setShowReadReceipts] = useState(true);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showContactProfile, setShowContactProfile] = useState<any>(null);
+  const [showAddMembersModal, setShowAddMembersModal] = useState(false);
+  const [addMembersGroupId, setAddMembersGroupId] = useState('');
+  const [addMembersSelected, setAddMembersSelected] = useState<string[]>([]);
   const [mutedChats, setMutedChats] = useState<string[]>([]);
   const [blockedChats, setBlockedChats] = useState<string[]>([]);
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
@@ -10820,7 +10823,67 @@ const App: React.FC = () => {
               }
             } catch {}
           }}
+          onAddGroupMembers={showContactProfile?.isGroup ? () => {
+            setAddMembersGroupId(showContactProfile.id?.toString() || '');
+            setAddMembersSelected([]);
+            setShowAddMembersModal(true);
+          } : undefined}
         />
+      )}
+
+      {/* -- MODAL AÑADIR INTEGRANTES AL GRUPO --------------------------------- */}
+      {showAddMembersModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:5000, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowAddMembersModal(false); }}>
+          <div style={{ background:'#fff', borderRadius:'20px 20px 0 0', width:'100%', maxWidth:'480px', maxHeight:'85vh', display:'flex', flexDirection:'column' }}>
+            {/* Header */}
+            <div style={{ padding:'16px 16px 12px', borderBottom:'1px solid #F0F2F5', display:'flex', alignItems:'center', gap:'12px' }}>
+              <button onClick={() => setShowAddMembersModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#374151', padding:'4px', display:'flex' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <div style={{ flex:1, fontSize:'16px', fontWeight:'700', color:'#111827' }}>Añadir integrantes</div>
+              {addMembersSelected.length > 0 && (
+                <button onClick={async () => {
+                  try {
+                    await chatAPI.addGroupMembers(addMembersGroupId, addMembersSelected);
+                    showToast(`${addMembersSelected.length} integrante${addMembersSelected.length > 1 ? 's' : ''} añadido${addMembersSelected.length > 1 ? 's' : ''}`, 'success');
+                    loadChats();
+                  } catch { showToast('Error al añadir integrantes', 'error'); }
+                  setShowAddMembersModal(false);
+                }} style={{ background:'linear-gradient(135deg,#a855f7,#6366f1)', border:'none', borderRadius:'10px', padding:'8px 16px', color:'#fff', fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>
+                  Añadir ({addMembersSelected.length})
+                </button>
+              )}
+            </div>
+            {/* Lista de contactos */}
+            <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }}>
+              {allContacts.length === 0 ? (
+                <div style={{ padding:'32px', textAlign:'center', color:'#9CA3AF', fontSize:'14px' }}>No tienes contactos</div>
+              ) : allContacts.map((c: any) => {
+                const isSelected = addMembersSelected.includes(c.id?.toString() || '');
+                return (
+                  <button key={c.id} onClick={() => {
+                    const id = c.id?.toString() || '';
+                    setAddMembersSelected(prev => isSelected ? prev.filter(x => x !== id) : [...prev, id]);
+                  }} style={{ width:'100%', background: isSelected ? '#F3E8FF' : 'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'12px', cursor:'pointer', textAlign:'left', fontFamily:'inherit' }}>
+                    <div style={{ width:'44px', height:'44px', borderRadius:'50%', background: c.color || '#00c8a0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', fontWeight:'700', color:'#fff', flexShrink:0, overflow:'hidden' }}>
+                      {c.avatarUrl ? <img src={c.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : (c.avatar || c.name?.slice(0,2).toUpperCase() || '?')}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:'15px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
+                      <div style={{ fontSize:'12px', color:'#9CA3AF' }}>{c.phone || ''}</div>
+                    </div>
+                    {isSelected && (
+                      <div style={{ width:'24px', height:'24px', borderRadius:'50%', background:'linear-gradient(135deg,#a855f7,#6366f1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* -- MODAL RECARGA MONEDERO ------------------------------------------ */}
