@@ -8297,10 +8297,8 @@ const App: React.FC = () => {
     loadContacts();
     // Cargar contactos favoritos reales
     contactsAPI.getFavorites().then((data: any[]) => setFavoriteContacts(data || [])).catch(() => {});
-    // Cargar grupos favoritos reales
-    chatAPI.getFavoriteChats().then((data: any[]) => {
-      setFavoriteGroupIds((data || []).map((c: any) => c.id?.toString()));
-    }).catch(() => {});
+    // Cargar grupos favoritos reales - endpoint deshabilitado hasta que el backend lo implemente
+    // chatAPI.getFavoriteChats().then(...)
     // Registrar Web Push (con peque?o delay para que el SW est listo)
     setTimeout(() => {
       if (typeof (window as any).__egchat_registerPush === 'function') {

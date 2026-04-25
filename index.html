@@ -32,24 +32,10 @@
     
     <!-- Forzar limpieza de SW y cache antigua -->
     <script>
-      const BUILD = '20260425-1600';
+      // Eliminar SW y caché completamente - no usar SW
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          regs.forEach(r => r.unregister());
-        });
-        if ('caches' in window) {
-          caches.keys().then(keys => {
-            keys.forEach(k => caches.delete(k));
-          });
-        }
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-        }
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=' + BUILD).then(reg => {
-            reg.update();
-          });
-        });
+        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
     </script>
   </body>
