@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { authAPI } from './api';
 import { MessageCircle, CreditCard, Bot, UserPlus, LogIn } from 'lucide-react';
+import { AvatarCropModal } from './AvatarCropModal';
 
 // Usar la misma base URL que el authAPI
 const _apiUrl = (import.meta as any).env?.VITE_API_URL || '';
@@ -54,6 +55,7 @@ export default function AuthScreen({onAuth}:Props) {
   const [pass2, setPass2] = useState('');
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
   const [showP, setShowP] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
@@ -135,29 +137,8 @@ export default function AuthScreen({onAuth}:Props) {
         const reader=new FileReader();
         reader.onload=e=>{
           const dataUrl = e.target?.result as string;
-          // Comprimir imagen grande a máx 800x800 para evitar errores
-          const img = new Image();
-          img.onload = () => {
-            const MAX = 800;
-            let w = img.width, h = img.height;
-            if(w > MAX || h > MAX){
-              if(w > h){ h = Math.round(h * MAX / w); w = MAX; }
-              else { w = Math.round(w * MAX / h); h = MAX; }
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d')!;
-            // Recorte centrado (zoom automático para llenar el cuadrado)
-            const size = Math.min(img.width, img.height);
-            const sx = (img.width - size) / 2;
-            const sy = (img.height - size) / 2;
-            canvas.width = MAX; canvas.height = MAX;
-            ctx.drawImage(img, sx, sy, size, size, 0, 0, MAX, MAX);
-            const compressed = canvas.toDataURL('image/jpeg', 0.85);
-            setAvatar(compressed);
-            setErr('');
-          };
-          img.src = dataUrl;
+          // Mostrar el crop modal en lugar de comprimir automáticamente
+          setCropImageUrl(dataUrl);
         };
         reader.readAsDataURL(f);
       }
@@ -426,5 +407,18 @@ export default function AuthScreen({onAuth}:Props) {
         </>}
       </div>
     </div>
+
+    {/* Crop modal — aparece al seleccionar foto */}
+    {cropImageUrl && (
+      <AvatarCropModal
+        imageUrl={cropImageUrl}
+        onSave={(croppedUrl) => {
+          setAvatar(croppedUrl);
+          setCropImageUrl(null);
+          setErr('');
+        }}
+        onClose={() => setCropImageUrl(null)}
+      />
+    )}
   );
 }
