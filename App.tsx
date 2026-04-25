@@ -8352,6 +8352,15 @@ const App: React.FC = () => {
     loadContacts();
   }, [currentView, loadContacts]);
 
+  // -- Polling de chats cada 15s para refrescar nombre/avatar de contactos --
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const iv = setInterval(() => {
+      loadChats();
+    }, 15000);
+    return () => clearInterval(iv);
+  }, [isAuthenticated, loadChats]);
+
   // -- Auth check  todos los hooks declarados -------------------
   if (!isAuthenticated) return <AuthScreen onAuth={(user) => {
     if (user) {
