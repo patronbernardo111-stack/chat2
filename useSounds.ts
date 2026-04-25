@@ -9,26 +9,6 @@ export interface SoundSettings {
   soundEnabled: boolean;
 }
 
-export const MESSAGE_TONES = [
-  { id: 'default', label: 'Por defecto' },
-  { id: 'chime',   label: 'Campana' },
-  { id: 'pop',     label: 'Pop' },
-  { id: 'none',    label: 'Silencio' },
-];
-
-export const RINGTONES = [
-  { id: 'default', label: 'Por defecto' },
-  { id: 'classic', label: 'Clásico' },
-  { id: 'digital', label: 'Digital' },
-  { id: 'none',    label: 'Silencio' },
-];
-
-export const NOTIFICATION_TONES = [
-  { id: 'default', label: 'Por defecto' },
-  { id: 'soft',    label: 'Suave' },
-  { id: 'none',    label: 'Silencio' },
-];
-
 const DEFAULT_SETTINGS: SoundSettings = {
   messageTone: 'default',
   ringtone: 'default',
@@ -54,7 +34,7 @@ export function saveSoundSettings(settings: Partial<SoundSettings>): void {
   } catch { /* ignore */ }
 }
 
-// ─── Audio context helper ─────────────────────────────────────────────────────
+// ─── Audio context ────────────────────────────────────────────────────────────
 let _ctx: AudioContext | null = null;
 
 function getCtx(): AudioContext | null {
@@ -73,9 +53,8 @@ export function unlockAudio(): void {
   if (ctx && ctx.state === 'suspended') ctx.resume();
 }
 
-function playTone(freqs: number[], duration = 0.3, volume = 0.3, type: OscillatorType = 'sine'): void {
-  const settings = getSoundSettings();
-  if (!settings.soundEnabled) return;
+// Plays with explicit volume (used by tone objects)
+function playToneImmediate(freqs: number[], duration = 0.3, volume = 0.3, type: OscillatorType = 'sine'): void {
   const ctx = getCtx();
   if (!ctx) return;
   try {
@@ -87,7 +66,7 @@ function playTone(freqs: number[], duration = 0.3, volume = 0.3, type: Oscillato
       osc.type = type;
       const t = ctx.currentTime + i * (duration / freqs.length);
       osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(settings.volume * volume, t);
+      gain.gain.setValueAtTime(Math.max(0.001, volume), t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + duration / freqs.length);
       osc.start(t);
       osc.stop(t + duration / freqs.length + 0.05);
@@ -95,7 +74,42 @@ function playTone(freqs: number[], duration = 0.3, volume = 0.3, type: Oscillato
   } catch { /* ignore */ }
 }
 
-// ─── Ringtone / dialing loop ──────────────────────────────────────────────────
+// Plays respecting soundEnabled setting
+function playTone(freqs: number[], duration = 0.3, volume = 0.3, type: OscillatorType = 'sine'): void {
+  const settings = getSoundSettings();
+  if (!settings.soundEnabled) return;
+  playToneImmediate(freqs, duration, settings.volume * volume, type);
+}
+
+export function vibrate(pattern: number | number[]): void {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch { /* ignore */ }
+}
+
+// ─── Tone catalogs ────────────────────────────────────────────────────────────
+export const MESSAGE_TONES = [
+  { id: 'default', label: 'Por defecto', name: 'Por defecto', play: (vol = 1) => playToneImmediate([523, 659], 0.25, 0.25 * vol) },
+  { id: 'chime',   label: 'Campana',     name: 'Campana',     play: (vol = 1) => playToneImmediate([880, 1100], 0.3, 0.25 * vol) },
+  { id: 'pop',     label: 'Pop',         name: 'Pop',         play: (vol = 1) => playToneImmediate([1200], 0.15, 0.3 * vol) },
+  { id: 'none',    label: 'Silencio',    name: 'Silencio',    play: (_vol = 1) => {} },
+];
+
+export const RINGTONES = [
+  { id: 'default',      label: 'Por defecto', name: 'Por defecto', play: (vol = 1) => playToneImmediate([880, 1100, 880, 1100], 0.8, 0.4 * vol) },
+  { id: 'classic',      label: 'Clásico',     name: 'Clásico',     play: (vol = 1) => playToneImmediate([440, 550, 440, 550], 0.8, 0.4 * vol) },
+  { id: 'digital',      label: 'Digital',     name: 'Digital',     play: (vol = 1) => playToneImmediate([1000, 1200, 1000, 1200], 0.6, 0.35 * vol) },
+  { id: 'vibrate_only', label: 'Solo vibrar', name: 'Solo vibrar', play: (_vol = 1) => vibrate([300, 100, 300]) },
+  { id: 'none',         label: 'Silencio',    name: 'Silencio',    play: (_vol = 1) => {} },
+];
+
+export const NOTIFICATION_TONES = [
+  { id: 'default', label: 'Por defecto', name: 'Por defecto', play: (vol = 1) => playToneImmediate([880], 0.3, 0.2 * vol) },
+  { id: 'soft',    label: 'Suave',       name: 'Suave',       play: (vol = 1) => playToneImmediate([660], 0.25, 0.15 * vol) },
+  { id: 'none',    label: 'Silencio',    name: 'Silencio',    play: (_vol = 1) => {} },
+];
+
+// ─── Ringtone / dialing loops ─────────────────────────────────────────────────
 let _ringtoneInterval: ReturnType<typeof setInterval> | null = null;
 let _dialingInterval:  ReturnType<typeof setInterval> | null = null;
 
@@ -120,36 +134,10 @@ export function stopDialingTone(): void {
 }
 
 // ─── One-shot sounds ──────────────────────────────────────────────────────────
-export function playMessageReceived(volume = 1.0): void {
-  playTone([523, 659], 0.25, 0.25 * volume);
-}
-
-export function playMessageSent(volume = 1.0): void {
-  playTone([659, 523], 0.2, 0.2 * volume);
-}
-
-export function playNotification(volume = 1.0): void {
-  playTone([880], 0.3, 0.2 * volume);
-}
-
-export function playCallConnected(volume = 1.0): void {
-  playTone([523, 659, 784], 0.4, 0.3 * volume);
-}
-
-export function playCallEnded(volume = 1.0): void {
-  playTone([784, 659, 523], 0.4, 0.3 * volume);
-}
-
-export function playError(volume = 1.0): void {
-  playTone([300, 250], 0.4, 0.3 * volume, 'sawtooth');
-}
-
-export function playSuccess(volume = 1.0): void {
-  playTone([523, 659, 784], 0.5, 0.3 * volume);
-}
-
-export function vibrate(pattern: number | number[]): void {
-  try {
-    if (navigator.vibrate) navigator.vibrate(pattern);
-  } catch { /* ignore */ }
-}
+export function playMessageReceived(volume = 1.0): void { playTone([523, 659], 0.25, 0.25 * volume); }
+export function playMessageSent(volume = 1.0): void     { playTone([659, 523], 0.2,  0.2  * volume); }
+export function playNotification(volume = 1.0): void    { playTone([880],      0.3,  0.2  * volume); }
+export function playCallConnected(volume = 1.0): void   { playTone([523, 659, 784], 0.4, 0.3 * volume); }
+export function playCallEnded(volume = 1.0): void       { playTone([784, 659, 523], 0.4, 0.3 * volume); }
+export function playError(volume = 1.0): void           { playTone([300, 250], 0.4, 0.3 * volume, 'sawtooth'); }
+export function playSuccess(volume = 1.0): void         { playTone([523, 659, 784], 0.5, 0.3 * volume); }

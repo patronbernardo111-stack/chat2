@@ -1,4 +1,27 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Component, type ReactNode } from 'react';
+
+// ─── Error Boundary para capturar crashes de vistas ──────────────────────────
+class ViewErrorBoundary extends Component<{ name: string; onBack: () => void; children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#111827', color: '#fff', padding: '24px', fontFamily: 'sans-serif' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>{this.props.name} — Error</div>
+          <div style={{ fontSize: '12px', color: '#ef4444', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', padding: '12px', maxWidth: '400px', wordBreak: 'break-all', marginBottom: '20px' }}>
+            {(this.state.error as Error).message}
+          </div>
+          <button onClick={this.props.onBack} style={{ background: '#facc15', border: 'none', borderRadius: '12px', padding: '12px 24px', fontWeight: '700', cursor: 'pointer' }}>
+            Volver
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import './index.css';
 import { chatAPI, authAPI, contactsAPI } from './api';
 import AuthScreen from './AuthScreen';
@@ -8872,7 +8895,11 @@ const App: React.FC = () => {
           {currentView === 'estados' && <EstadosView onBack={() => setCurrentView(previousView || 'home')} />}
           {currentView === 'apuestas' && <ApuestasView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} />}
           {currentView === 'cemac' && <CemacView onBack={() => setCurrentView(previousView || 'home')} />}
-          {currentView === 'mitaxi' && <MiTaxiView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} userName={userProfile.name} userPhone={userProfile.phone} />}
+          {currentView === 'mitaxi' && (
+            <ViewErrorBoundary name="MiTaxi" onBack={() => setCurrentView(previousView || 'home')}>
+              <MiTaxiView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} userName={userProfile.name} userPhone={userProfile.phone} />
+            </ViewErrorBoundary>
+          )}
         </div>
       )}
 
