@@ -4442,10 +4442,10 @@ const App: React.FC = () => {
           };
 
           return (
-            <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', overflow: 'hidden', position: 'relative' }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
-              {/* Wallpaper del chat - cubre el área de mensajes (debajo del header) */}
+            <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+              {/* Wallpaper del chat */}
               {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', top: 'calc(44px + env(safe-area-inset-top, 0px))', left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
                   {(() => {
                     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
                     if (custom) {
@@ -4503,7 +4503,7 @@ const App: React.FC = () => {
                 </div>
               )}
               {/* Header conversacin */}
-              <div style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', padding: '4px 8px 4px 4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
+              <div style={{ position: 'sticky', top: 0, left: 0, right: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -4564,7 +4564,7 @@ const App: React.FC = () => {
               {/* Dropdown men del chat  cae desde arriba */}
               {showChatMenu && (
                 <div style={{position:'fixed',inset:0,zIndex:200}} onClick={()=>setShowChatMenu(false)}>
-                  <div style={{position:'absolute',top:'100px',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)'}}
+                  <div style={{position:'absolute',top:'calc(60px + env(safe-area-inset-top, 0px))',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)'}}
                     onClick={e=>e.stopPropagation()}>
                     {/* Seccin principal */}
                     {[
