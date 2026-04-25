@@ -260,6 +260,7 @@ export default function AuthScreen({onAuth}:Props) {
   );
 
   return (
+    <React.Fragment>
     <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
       <div style={{padding:'32px 20px 12px'}}>
         <button onClick={()=>{step===1?setSc('welcome'):setStep(s=>s-1);setErr('');}} style={{background:'none',border:'none',color:'#374151',cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontSize:'14px',fontWeight:'600',marginBottom:'8px',padding:'8px',borderRadius:'8px',transition:'all 0.2s ease'}}>
@@ -420,5 +421,6 @@ export default function AuthScreen({onAuth}:Props) {
         onClose={() => setCropImageUrl(null)}
       />
     )}
+  </React.Fragment>
   );
 }

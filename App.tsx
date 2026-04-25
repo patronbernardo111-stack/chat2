@@ -8923,10 +8923,15 @@ const App: React.FC = () => {
         <AvatarCropModal
           imageUrl={avatarCropUrl}
           onClose={() => setAvatarCropUrl(null)}
-          onSave={(croppedUrl) => {
+          onSave={async (croppedUrl) => {
             localStorage.setItem('user_avatar', croppedUrl);
             setUserProfile((p: any) => ({ ...p, avatarUrl: croppedUrl }));
             setAvatarCropUrl(null);
+            // Subir al servidor
+            try {
+              await authAPI.updateProfile({ avatar_url: croppedUrl });
+              showToast('Foto de perfil actualizada', 'success');
+            } catch { showToast('Error al guardar foto', 'error'); }
           }}
         />
       )}

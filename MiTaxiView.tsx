@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useGPS } from './useGPS';
 import { playSuccess, playNotification, vibrate } from './useSounds';
 
