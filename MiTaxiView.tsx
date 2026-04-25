@@ -1,6 +1,99 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGPS } from './useGPS';
 import { playSuccess, playNotification, vibrate } from './useSounds';
+// ─── ICONOS ───────────────────────────────────────────────────────────────────
+const UserIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const TaxiIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
+  </svg>
+);
+const UberTaxiIcon = TaxiIcon;
+const LocationIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const StarIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+);
+const WalletIcon: React.FC<{ size?: number; color?: string; filled?: boolean }> = ({ size = 24, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h2"/>
+  </svg>
+);
+const NavigationIcon: React.FC<{ size?: number; color?: string; rotation?: number }> = ({ size = 24, color = 'currentColor', rotation = 0 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ transform: `rotate(${rotation}deg)` }}>
+    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+  </svg>
+);
+const CheckIcon: React.FC<{ size?: number; color?: string }> = ({ size = 24, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+const PBtn: React.FC<{ title: string; onPress: () => void; type?: string; icon?: React.ReactNode; disabled?: boolean }> = ({ title, onPress, type = 'primary', icon, disabled = false }) => (
+  <button onClick={onPress} disabled={disabled} style={{ width: '100%', padding: '15px', background: type === 'primary' ? '#facc15' : '#EEF2F7', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: '700', color: type === 'primary' ? '#1E293B' : '#5A7090', cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: disabled ? 0.6 : 1, fontFamily: 'inherit' }}>
+    {icon}{title}
+  </button>
+);
+const ServiceCard: React.FC<{ title: string; subtitle: string; price: string; time: string; rating: number; onSelect: () => void; selected: boolean; iconColor: string; capacity: number; premium?: boolean }> = ({ title, subtitle, price, time, rating, onSelect, selected, iconColor, capacity, premium }) => (
+  <button onClick={onSelect} style={{ width: '100%', background: selected ? '#FFFBF0' : '#fff', border: `2px solid ${selected ? iconColor : '#E2E8F0'}`, borderRadius: '14px', padding: '12px 14px', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', fontFamily: 'inherit' }}>
+    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: `${iconColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <TaxiIcon size={24} color={iconColor} filled/>
+    </div>
+    <div style={{ flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '14px', fontWeight: '700', color: '#1A2B4A' }}>{title}</span>
+        {premium && <span style={{ fontSize: '9px', background: '#facc15', color: '#111', borderRadius: '4px', padding: '1px 5px', fontWeight: '700' }}>PRO</span>}
+      </div>
+      <div style={{ fontSize: '11px', color: '#8A9BB5' }}>{subtitle} · {capacity} 👤</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+        <StarIcon size={11} filled color="#FFB800"/><span style={{ fontSize: '11px', color: '#FFB800', fontWeight: '600' }}>{rating}</span>
+        <span style={{ fontSize: '11px', color: '#8A9BB5' }}>· {time}</span>
+      </div>
+    </div>
+    <div style={{ fontSize: '15px', fontWeight: '800', color: '#1A2B4A', flexShrink: 0 }}>{price}</div>
+  </button>
+);
+const SafetyCenter: React.FC<{ onClose: () => void; driver?: any }> = ({ onClose, driver }) => (
+  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 700, display: 'flex', alignItems: 'flex-end' }}>
+    <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px 40px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ fontSize: '18px', fontWeight: '800', color: '#1A2B4A' }}>🛡️ Centro de Seguridad</div>
+        <button onClick={onClose} style={{ background: '#EEF2F7', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+      </div>
+      {driver && <div style={{ background: '#EEF2F7', borderRadius: '12px', padding: '12px', marginBottom: '16px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '700', color: '#1A2B4A' }}>{driver.name}</div>
+        <div style={{ fontSize: '12px', color: '#8A9BB5' }}>{driver.car} · {driver.plate}</div>
+      </div>}
+      {[['🚨', 'Emergencia', '#ef4444'], ['📞', 'Llamar al 112', '#3b82f6'], ['📍', 'Compartir ubicación', '#10b981']].map(([icon, label, color]) => (
+        <button key={String(label)} style={{ width: '100%', padding: '14px', background: `${color}15`, border: `1px solid ${color}30`, borderRadius: '12px', marginBottom: '8px', fontSize: '14px', fontWeight: '700', color: String(color), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'inherit' }}>
+          {icon} {label}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+function getVehicleIcon(iconId: string, size: number, color: string, _filled: boolean): React.ReactNode {
+  const icons: Record<string, React.ReactNode> = {
+    basic:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>,
+    comfort: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>,
+    suv:     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="8" width="22" height="10" rx="2"/><path d="M5 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
+    xl:      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="7" width="22" height="11" rx="2"/><path d="M5 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
+    minivan: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="7" width="22" height="11" rx="2"/><path d="M5 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
+    moto:    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="17" r="3"/><path d="M5 17l4-8h6l4 8"/></svg>,
+    mujer:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="7" r="4"/><path d="M8 21v-2a4 4 0 0 1 8 0v2"/></svg>,
+    cargo:   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+  };
+  return icons[iconId] || icons['basic'];
+}
 
 // Cache del SDK de MapTiler para carga instantánea en reusos
 let _maptilerCache: any = null;
