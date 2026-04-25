@@ -216,7 +216,7 @@ export const ChatConversation: React.FC<Props> = ({
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#f0f2f5', zIndex: 1100 }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#fff', zIndex: 1100 }}>
 
       {/* Header */}
       <div style={{
@@ -224,10 +224,12 @@ export const ChatConversation: React.FC<Props> = ({
         borderBottom: 'none',
         flexShrink: 0, zIndex: 10,
         paddingTop: 'env(safe-area-inset-top, 0px)',
+        marginTop: 0,
       }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '8px 4px 8px 2px',
+        background: '#fff',
       }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex', flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
