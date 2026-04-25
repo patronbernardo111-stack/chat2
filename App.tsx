@@ -70,7 +70,21 @@ const App: React.FC = () => {
 
   const loadChats = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
-    try { const d = await chatAPI.getChats(); if (Array.isArray(d)) { setRealChats(d); realChatsRef.current = d; } } catch {}
+    try {
+      const d = await chatAPI.getChats();
+      if (Array.isArray(d)) {
+        // Detectar nuevos grupos añadidos
+        const prevIds = new Set(realChatsRef.current.map((c: any) => c.id?.toString()));
+        const newGroups = d.filter((c: any) => c.type === 'group' && !prevIds.has(c.id?.toString()));
+        if (newGroups.length > 0 && prevIds.size > 0) {
+          newGroups.forEach((g: any) => {
+            showToast(`📢 Te añadieron al grupo "${g.name || g.title || 'Nuevo grupo'}"`, 'info');
+          });
+        }
+        setRealChats(d);
+        realChatsRef.current = d;
+      }
+    } catch {}
   }, []);
 
   const loadMessages = useCallback(async (chatId: string) => {
@@ -8301,12 +8315,20 @@ const App: React.FC = () => {
     chatAPI.getFavoriteChats().then((data: any[]) => {
       setFavoriteGroupIds((data || []).map((c: any) => c.id?.toString()));
     }).catch(() => {});
+    // Polling de chats en background cada 15s — detecta nuevos grupos, cambios de nombre/foto
+    const chatPollInterval = setInterval(() => {
+      if (localStorage.getItem('token')) {
+        loadChats();
+        loadContacts();
+      }
+    }, 15000);
     // Registrar Web Push (con peque?o delay para que el SW est listo)
     setTimeout(() => {
       if (typeof (window as any).__egchat_registerPush === 'function') {
         (window as any).__egchat_registerPush();
       }
     }, 2000);
+    return () => clearInterval(chatPollInterval);
   }, [isAuthenticated, loadChats, loadContacts]);
 
   // Escuchar evento de token expirado desde api.ts
