@@ -4518,7 +4518,7 @@ const App: React.FC = () => {
               {/* Header conversacin */}
               <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(44px, env(safe-area-inset-top))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
                 <button
-                  onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); }}
+                  onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); setSelectionMode(false); setSelectedMsgIds([]); }}
                   style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -4651,7 +4651,12 @@ const App: React.FC = () => {
                 style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: selectedWallpaper === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
-                  <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px' }}>
+                  <div key={msg.id} onClick={() => { if (selectionMode) { setSelectedMsgIds(prev => prev.includes(msg.id) ? prev.filter(x => x !== msg.id) : [...prev, msg.id]); } }} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px', alignItems: 'center', gap: '8px', padding: selectionMode ? '2px 8px' : '0', background: selectionMode && selectedMsgIds.includes(msg.id) ? 'rgba(0,180,230,0.10)' : 'transparent', borderRadius: '8px', transition: 'background 0.15s', cursor: selectionMode ? 'pointer' : 'default' }}>
+                    {selectionMode && (
+                      <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${selectedMsgIds.includes(msg.id) ? '#00b4e6' : '#ccc'}`, background: selectedMsgIds.includes(msg.id) ? '#00b4e6' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, order: msg.from === 'me' ? 1 : 0, transition: 'all 0.15s' }}>
+                        {selectedMsgIds.includes(msg.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </div>
+                    )}
                     <div
                       style={{
                         maxWidth: '72%',
@@ -4661,11 +4666,12 @@ const App: React.FC = () => {
                         boxShadow: '0 1px 2px rgba(0,0,0,0.13)',
                         position: 'relative',
                         overflow: 'hidden',
-                        cursor: 'pointer',
+                        cursor: selectionMode ? 'pointer' : 'pointer',
                         userSelect: 'none',
                       }}
-                      onContextMenu={e => { e.preventDefault(); setMsgContextMenu({ msg, x: e.clientX, y: e.clientY }); }}
+                      onContextMenu={e => { if (selectionMode) return; e.preventDefault(); setMsgContextMenu({ msg, x: e.clientX, y: e.clientY }); }}
                       onTouchStart={e => {
+                        if (selectionMode) return;
                         const touch = e.touches[0];
                         const timer = setTimeout(() => setMsgContextMenu({ msg, x: touch.clientX, y: touch.clientY }), 500);
                         const cancel = () => clearTimeout(timer);
@@ -5424,6 +5430,43 @@ const App: React.FC = () => {
                 </div>
                 );
               })()}
+
+              {/* Barra de selección múltiple */}
+              {selectionMode && (
+                <div style={{ flexShrink: 0, background: '#fff', borderTop: '1px solid #E5E7EB', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 2 }}>
+                  <button onClick={() => { setSelectionMode(false); setSelectedMsgIds([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: '600' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    Cancelar
+                  </button>
+                  <span style={{ flex: 1, fontSize: '13px', color: '#374151', fontWeight: '600', textAlign: 'center' }}>
+                    {selectedMsgIds.length} seleccionado{selectedMsgIds.length !== 1 ? 's' : ''}
+                  </span>
+                  {selectedMsgIds.length > 0 && (
+                    <>
+                      <button onClick={() => {
+                        const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
+                        setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => !selectedMsgIds.includes(m.id)) }));
+                        showToast(`${selectedMsgIds.length} mensaje${selectedMsgIds.length !== 1 ? 's' : ''} eliminado${selectedMsgIds.length !== 1 ? 's' : ''}`, 'info');
+                        setSelectionMode(false); setSelectedMsgIds([]);
+                      }} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '8px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                        Eliminar
+                      </button>
+                      <button onClick={() => {
+                        const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
+                        const msgsToForward = (chatMessages[cid]||[]).filter(m => selectedMsgIds.includes(m.id));
+                        const texts = msgsToForward.map(m => m.text).filter(Boolean).join('\n');
+                        navigator.clipboard?.writeText(texts);
+                        showToast('Mensajes copiados', 'success');
+                        setSelectionMode(false); setSelectedMsgIds([]);
+                      }} style={{ background: 'rgba(0,180,230,0.1)', border: 'none', cursor: 'pointer', color: '#00b4e6', padding: '8px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copiar
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Barra de input */}
               <div style={{
