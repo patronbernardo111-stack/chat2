@@ -221,6 +221,23 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   const timer = useRef<any>(null);
   const watchId = useRef<number | null>(null);
 
+  // Tema activo - definido aquí para que esté disponible en todo el componente
+  const BG = customBg ? 'transparent' : theme.bg;
+  const CARD = theme.card;
+  const ACCENT = theme.accent;
+  const AL = ACCENT + '18';
+  const TEXT = theme.id === 'midnight' ? '#F1F5F9' : '#0F172A';
+  const SUB = theme.id === 'midnight' ? '#94A3B8' : '#64748B';
+  const BORDER = theme.id === 'midnight' ? '#334155' : '#EEF0F8';
+  const GREEN = '#10B981'; const RED = '#EF4444';
+
+  const wrap: React.CSSProperties = { position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', fontFamily: "'Inter',system-ui,sans-serif", zIndex: 600, color: TEXT, background: customBg ? 'url(' + customBg + ') center/cover no-repeat' : BG };
+  const card: React.CSSProperties = { background: CARD, borderRadius: 20, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06)' };
+  const btn = (dis = false): React.CSSProperties => ({ width: '100%', padding: '16px', background: dis ? '#E2E8F0' : ACCENT, color: dis ? '#94A3B8' : '#fff', border: 'none', borderRadius: 16, fontSize: 16, fontWeight: 700, cursor: dis ? 'not-allowed' : 'pointer', transition: 'all 0.2s' });
+  const fld = (active = false): React.CSSProperties => ({ background: active ? CARD : (theme.id === 'midnight' ? '#1E293B' : '#F1F5F9'), borderRadius: 14, padding: '14px 16px', border: '1.5px solid ' + (active ? ACCENT : 'transparent'), transition: 'all 0.2s' });
+  const hdr: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, paddingTop: 'max(14px, env(safe-area-inset-top))', paddingBottom: '12px', paddingLeft: '16px', paddingRight: '16px', background: theme.id === 'midnight' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid ' + BORDER };
+  const bk: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 10, display: 'flex', alignItems: 'center' };
+
   // GPS
   useEffect(() => {
     if (!navigator.geolocation) { setUserPos({ lat: 3.7523, lng: 8.7741 }); return; }
@@ -277,23 +294,6 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     if (focus === 'd') { setDest(s); geocodeDest(s); } else setOrigin(s);
     setSugg([]);
   };
-
-  // Tema activo
-  const BG = customBg ? 'transparent' : theme.bg;
-  const CARD = theme.card;
-  const ACCENT = theme.accent;
-  const AL = ACCENT + '18';
-  const TEXT = theme.id === 'midnight' ? '#F1F5F9' : '#0F172A';
-  const SUB = theme.id === 'midnight' ? '#94A3B8' : '#64748B';
-  const BORDER = theme.id === 'midnight' ? '#334155' : '#EEF0F8';
-  const GREEN = '#10B981'; const RED = '#EF4444';
-
-  const wrap: React.CSSProperties = { position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', fontFamily: "'Inter',system-ui,sans-serif", zIndex: 600, color: TEXT, background: customBg ? 'url(' + customBg + ') center/cover no-repeat' : BG };
-  const card: React.CSSProperties = { background: CARD, borderRadius: 20, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06)' };
-  const btn = (dis = false): React.CSSProperties => ({ width: '100%', padding: '16px', background: dis ? '#E2E8F0' : ACCENT, color: dis ? '#94A3B8' : '#fff', border: 'none', borderRadius: 16, fontSize: 16, fontWeight: 700, cursor: dis ? 'not-allowed' : 'pointer', transition: 'all 0.2s' });
-  const fld = (active = false): React.CSSProperties => ({ background: active ? CARD : (theme.id === 'midnight' ? '#1E293B' : '#F1F5F9'), borderRadius: 14, padding: '14px 16px', border: '1.5px solid ' + (active ? ACCENT : 'transparent'), transition: 'all 0.2s' });
-  const hdr: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, paddingTop: 'max(14px, env(safe-area-inset-top))', paddingBottom: '12px', paddingLeft: '16px', paddingRight: '16px', background: theme.id === 'midnight' ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid ' + BORDER };
-  const bk: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 10, display: 'flex', alignItems: 'center' };
 
   // Panel de temas
   const ThemePanel = () => (
