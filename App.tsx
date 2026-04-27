@@ -5998,7 +5998,8 @@ const App: React.FC = () => {
                     color: '#9ca3af',
                     margin: 0,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.8px'
+                    letterSpacing: '0.8px',
+                    fontFamily: 'inherit'
                   }}>
                     Contactos Favoritos
                   </h3>
@@ -6095,7 +6096,8 @@ const App: React.FC = () => {
                     color: '#9ca3af',
                     margin: 0,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.8px'
+                    letterSpacing: '0.8px',
+                    fontFamily: 'inherit'
                   }}>
                     Grupos Favoritos
                   </h3>
