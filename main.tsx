@@ -96,18 +96,10 @@ if ('serviceWorker' in navigator) {
         if (event.data?.type === 'NOTIFICATION_CLICK') {
           window.dispatchEvent(new CustomEvent('sw-notification-click', { detail: event.data }));
         }
-        // SW actualizado — recargar solo una vez
-        if (event.data?.type === 'SW_UPDATED') {
-          if (!sessionStorage.getItem('sw_reloaded')) {
-            sessionStorage.setItem('sw_reloaded', '1');
-            window.location.reload();
-          }
-        }
         // Bufferizar mensajes de llamada para cuando App.tsx aún no esté listo
         if (event.data?.type === 'INCOMING_CALL' || event.data?.type === 'CALL_REJECTED') {
           (window as any).__pendingSWMessage = event.data;
           window.dispatchEvent(new CustomEvent('sw-call-message', { detail: event.data }));
-          // También intentar despachar al handler de App.tsx si ya está montado
           if (typeof (window as any).__egchat_processCallMessage === 'function') {
             (window as any).__egchat_processCallMessage(event.data);
           }
