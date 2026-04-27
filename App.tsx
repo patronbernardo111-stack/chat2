@@ -9358,9 +9358,10 @@ const App: React.FC = () => {
                 if (!phone && /^[+\d\s]{6,15}$/.test(trimmed)) phone = trimmed;
               }
 
-              if (phone) {
-                await contactsAPI.add(userId || undefined, phone, name || undefined);
-                showToast(`✓ ${name || phone} añadido a contactos`, 'success');
+              if (userId || phone) {
+                // Preferir userId directo (más fiable que buscar por teléfono)
+                await contactsAPI.add(userId || undefined, phone || undefined, name || undefined);
+                showToast(`✓ ${name || phone || 'Contacto'} añadido`, 'success');
                 await loadContacts();
               } else {
                 showToast('QR no reconocido como contacto EGCHAT', 'error');
