@@ -2,6 +2,7 @@
 import './index.css';
 import { chatAPI, authAPI, contactsAPI } from './api';
 import AuthScreen from './AuthScreen';
+import { ContactImportModal } from './ContactImportModal';
 import { EstadosView } from './EstadosView';
 import { ApuestasView } from './ApuestasView';
 import { CemacView } from './CemacView';
@@ -514,6 +515,7 @@ const App: React.FC = () => {
   const [newContactData, setNewContactData] = useState<{ name: string; phone: string }>({ name: '', phone: '' });
   const [showQRScannerModal, setShowQRScannerModal] = useState<boolean>(false);
   const [qrScanResult, setQrScanResult] = useState<string>('');
+  const [showContactImportModal, setShowContactImportModal] = useState<boolean>(false);
 
   // Gestion de Grupos - Ahora usa datos reales del backend
   const [allGroups, setAllGroups] = useState<Array<{ id: string; name: string; description: string; members: number; avatar: string; avatarUrl?: string; createdDate: string; lastMessage: string; unread: number; is_favorite?: boolean }>>([]);
@@ -8528,6 +8530,11 @@ const App: React.FC = () => {
         avatar: (user.full_name||'U').split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase(),
         avatarUrl: savedAvatar,
       }));
+      // Mostrar modal de importación de contactos solo en el primer registro
+      const isNewRegistration = !localStorage.getItem('egchat_contacts_imported');
+      if (isNewRegistration) {
+        setTimeout(() => setShowContactImportModal(true), 800);
+      }
     }
     setIsAuthenticated(true);
     // En iOS PWA, el permiso push DEBE pedirse desde un gesto del usuario
@@ -9043,6 +9050,22 @@ const App: React.FC = () => {
       {renderProfileView()}
       {renderAddContactModal()}
       {renderCreateGroupModal()}
+      
+      {/* Modal de importación de contactos - primera vez */}
+      {showContactImportModal && (
+        <ContactImportModal
+          currentUserId={userProfile.id || ''}
+          onClose={() => {
+            setShowContactImportModal(false);
+            localStorage.setItem('egchat_contacts_imported', 'true');
+          }}
+          onComplete={() => {
+            setShowContactImportModal(false);
+            localStorage.setItem('egchat_contacts_imported', 'true');
+            loadContacts();
+          }}
+        />
+      )}
       
       {/* Vistas secundarias - fuera del stacking context del wallpaper */}
       {(currentView === 'estados' || currentView === 'apuestas' || currentView === 'cemac' || currentView === 'mitaxi') && (
