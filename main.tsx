@@ -25,14 +25,37 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
 
 async function registerPush(registration: ServiceWorkerRegistration) {
   try {
+    if (!('PushManager' in window)) return; // navegador no soporta push
+
     // Si el permiso no está concedido, pedirlo
     if (Notification.permission !== 'granted') {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return;
     }
 
-    // Suscribirse al push
+    // Suscribirse al push — siempre forzar nueva suscripción si la actual puede estar expirada
     let subscription = await registration.pushManager.getSubscription();
+
+    // Verificar si la suscripción sigue siendo válida enviándola al backend
+    // Si el backend devuelve 410/404 significa que expiró — crear una nueva
+    if (subscription) {
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token') || localStorage.getItem('egchat_token') || localStorage.getItem('egchat_token_backup') || '';
+      if (token) {
+        try {
+          const check = await fetch(`${API_BASE}/api/push/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ subscription: subscription.toJSON() }),
+          });
+          if (!check.ok) {
+            // Suscripción inválida — crear nueva
+            await subscription.unsubscribe();
+            subscription = null;
+          }
+        } catch {}
+      }
+    }
+
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -54,6 +77,8 @@ async function registerPush(registration: ServiceWorkerRegistration) {
     });
     if (resp.ok) {
       console.log('Push subscription registered successfully');
+      // Guardar timestamp para saber cuándo fue la última renovación
+      localStorage.setItem('egchat_push_registered_at', Date.now().toString());
     } else {
       console.warn('Push subscription failed:', await resp.text());
     }
@@ -122,6 +147,11 @@ if ('serviceWorker' in navigator) {
             (window as any).__egchat_processCallMessage(event.data);
           }
         }
+        // El SW pide el token para renovar la suscripción push (pushsubscriptionchange)
+        if (event.data?.type === 'GET_TOKEN' && event.ports?.[0]) {
+          const token = localStorage.getItem('token') || localStorage.getItem('auth_token') || localStorage.getItem('egchat_token') || '';
+          event.ports[0].postMessage({ token });
+        }
       });
 
       // Suscribirse al push cuando el usuario ya esté autenticado
@@ -140,6 +170,21 @@ if ('serviceWorker' in navigator) {
         trySubscribe();
         if (attempts >= 12) clearInterval(interval);
       }, 5000);
+
+      // Renovar suscripción push cuando la app vuelve al primer plano
+      // Esto cubre el caso de teléfono hibernado que invalida la suscripción
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          const token = localStorage.getItem('token') || localStorage.getItem('auth_token') || localStorage.getItem('egchat_token') || '';
+          if (!token) return;
+          // Renovar si han pasado más de 6 horas desde la última renovación
+          const lastReg = parseInt(localStorage.getItem('egchat_push_registered_at') || '0');
+          const sixHours = 6 * 60 * 60 * 1000;
+          if (Date.now() - lastReg > sixHours) {
+            registerPush(registration);
+          }
+        }
+      });
 
     } catch (e) {
       console.warn('SW registration failed:', e);

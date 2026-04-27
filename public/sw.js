@@ -1,5 +1,7 @@
-// Service Worker v20260427e — Web Push + llamadas + mensajes
-const CACHE = 'egchat-v20260427e';
+// Service Worker v20260427f — Web Push + llamadas + mensajes + auto-renovación
+const CACHE = 'egchat-v20260427f';
+const API_BASE = 'https://egchat-api.onrender.com';
+const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -26,6 +28,47 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   // No interceptar nada — solo dejar pasar
+});
+
+// ── AUTO-RENOVACIÓN DE SUSCRIPCIÓN PUSH ─────────────────────────────────────
+// Se dispara cuando el navegador invalida la suscripción (teléfono hibernado, etc.)
+self.addEventListener('pushsubscriptionchange', e => {
+  e.waitUntil(
+    (async () => {
+      try {
+        // Re-suscribirse con la misma clave VAPID
+        const newSubscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: VAPID_PUBLIC_KEY,
+        });
+
+        // Obtener token del cliente para enviar al backend
+        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        let token = '';
+        for (const client of clients) {
+          // Pedir el token al cliente
+          const channel = new MessageChannel();
+          const tokenPromise = new Promise(resolve => {
+            channel.port1.onmessage = e => resolve(e.data?.token || '');
+            setTimeout(() => resolve(''), 2000);
+          });
+          client.postMessage({ type: 'GET_TOKEN' }, [channel.port2]);
+          token = await tokenPromise;
+          if (token) break;
+        }
+
+        if (!token) return; // Sin token no podemos renovar
+
+        await fetch(`${API_BASE}/api/push/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ subscription: newSubscription.toJSON() }),
+        });
+      } catch (err) {
+        console.warn('pushsubscriptionchange renewal failed:', err);
+      }
+    })()
+  );
 });
 
 // ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────

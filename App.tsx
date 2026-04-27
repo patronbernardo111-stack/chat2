@@ -8933,10 +8933,14 @@ const App: React.FC = () => {
       }
     }
     setIsAuthenticated(true);
-    // En iOS PWA, el permiso push DEBE pedirse desde un gesto del usuario
-    // Solo pedimos en no-iOS o si ya fue concedido
+    // Pedir permiso push — en iOS solo funciona desde un gesto del usuario
+    // En Android/desktop se puede pedir directamente
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isIOS && 'Notification' in window && Notification.permission === 'default') {
+    const iosVersion = isIOS ? parseInt((navigator.userAgent.match(/OS (\d+)_/) || [])[1] || '0') : 0;
+    const iosSupported = isIOS && iosVersion >= 16; // iOS 16.4+ soporta push en PWA instalada
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+
+    if ((!isIOS || (iosSupported && isPWA)) && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().then(perm => {
         if (perm === 'granted' && typeof (window as any).__egchat_registerPush === 'function') {
           (window as any).__egchat_registerPush();
