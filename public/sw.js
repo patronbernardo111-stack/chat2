@@ -6,17 +6,15 @@ self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
-  // La app avisa que ya procesó la llamada — cancelar renotificaciones
+  // La app avisa que ya procesó la llamada
   if (e.data?.type === 'CALL_HANDLED') {
     const callId = e.data.callId;
-    if (callId && pendingCallRenotify[callId]) {
-      clearTimeout(pendingCallRenotify[callId]);
-      delete pendingCallRenotify[callId];
-    }
     // Cerrar la notificación de llamada si sigue visible
-    self.registration.getNotifications({ tag: `call-${callId}` }).then(notifs => {
-      notifs.forEach(n => n.close());
-    });
+    if (callId) {
+      self.registration.getNotifications({ tag: `call-${callId}` }).then(notifs => {
+        notifs.forEach(n => n.close());
+      });
+    }
   }
 });
 
@@ -39,9 +37,6 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.pathname.endsWith('.html')) return;
 });
-
-// ── Registro de renotificaciones pendientes (para teléfono hibernado) ────────
-const pendingCallRenotify = {};
 
 // ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
 self.addEventListener('push', e => {
@@ -100,43 +95,7 @@ self.addEventListener('push', e => {
       };
 
   e.waitUntil(
-    self.registration.showNotification(title, options).then(() => {
-      // Para llamadas: re-vibrar cada 4s durante 2 minutos si el teléfono sigue sin responder
-      // Esto asegura que el usuario note la llamada aunque el teléfono esté hibernado
-      if (isCall && data.callId) {
-        const callId = data.callId;
-        let renotifyCount = 0;
-        const maxRenotify = 12; // ~96 segundos de intentos (12 × 8s)
-
-        const renotify = () => {
-          if (renotifyCount >= maxRenotify || !pendingCallRenotify[callId]) return;
-          renotifyCount++;
-          self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
-            const appOpen = wins.some(w => w.url.includes(self.location.origin));
-            if (appOpen) {
-              // App ya abierta — no re-notificar más
-              delete pendingCallRenotify[callId];
-              return;
-            }
-            // Solo re-vibrar sin reemplazar la notificación (evita parpadeo)
-            // Usamos un tag diferente para que coexistan sin parpadear
-            self.registration.showNotification(title, {
-              ...options,
-              silent: true,        // sin sonido en el reenvío, solo vibración
-              renotify: false,     // no reemplazar — solo vibrar
-              tag: `call-${callId}-ping-${renotifyCount}`,
-            }).then(() => {
-              // Cerrar inmediatamente el ping — solo queríamos la vibración
-              self.registration.getNotifications({ tag: `call-${callId}-ping-${renotifyCount}` })
-                .then(ns => ns.forEach(n => n.close()));
-            }).catch(() => {});
-            pendingCallRenotify[callId] = setTimeout(renotify, 8000); // cada 8s, no 4s
-          });
-        };
-
-        pendingCallRenotify[callId] = setTimeout(renotify, 8000);
-      }
-    })
+    self.registration.showNotification(title, options)
   );
 });
 
@@ -148,9 +107,9 @@ self.addEventListener('notificationclick', e => {
   const action = e.action;
 
   // Cancelar renotificaciones al interactuar
-  if (notifData.callId && pendingCallRenotify[notifData.callId]) {
-    clearTimeout(pendingCallRenotify[notifData.callId]);
-    delete pendingCallRenotify[notifData.callId];
+  if (notifData.callId) {
+    self.registration.getNotifications({ tag: `call-${notifData.callId}` })
+      .then(ns => ns.forEach(n => n.close()));
   }
 
   // ── Llamada ──
@@ -223,11 +182,6 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener('notificationclose', e => {
   const notifData = e.notification.data || {};
   if (notifData.notificationType === 'incoming_call') {
-    // Cancelar renotificaciones
-    if (notifData.callId && pendingCallRenotify[notifData.callId]) {
-      clearTimeout(pendingCallRenotify[notifData.callId]);
-      delete pendingCallRenotify[notifData.callId];
-    }
     // Informar a la app que la notificación fue cerrada (llamada perdida)
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
       for (const w of wins) {
