@@ -7111,7 +7111,7 @@ const App: React.FC = () => {
                 + Agregar
               </button>
               <button
-                onClick={() => setShowQRScannerModal(true)}
+                onClick={() => setShowQRScannerCamera(true)}
                 style={{
                   background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.2))',
                   border: '1px solid rgba(59, 130, 246, 0.4)',
