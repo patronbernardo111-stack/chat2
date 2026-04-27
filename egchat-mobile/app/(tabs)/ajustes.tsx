@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { authAPI, userAPI } from '../../src/api';
+import { runPushDiagnostic } from '../../src/pushDiagnostic';
 
 export default function AjustesScreen() {
   const [user, setUser] = useState<any>(null);
@@ -25,6 +26,7 @@ export default function AjustesScreen() {
     { icon: '🌐', label: 'Idioma', sub: 'Español', action: () => {} },
     { icon: '❓', label: 'Ayuda', sub: 'Centro de ayuda', action: () => {} },
     { icon: '📋', label: 'Términos', sub: 'Términos y condiciones', action: () => {} },
+    { icon: '🛠️', label: 'Diagnóstico Push', sub: 'Verificar notificaciones', action: () => runPushDiagnostic() },
   ];
 
   return (
