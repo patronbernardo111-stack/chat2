@@ -8561,15 +8561,15 @@ const App: React.FC = () => {
   // -- Polling llamadas entrantes ? solo se inicia una vez al autenticarse
   useEffect(() => {
     if (!isAuthenticated) return;
+
+    let stopFn: (() => void) | null = null;
+
     const startPolling = () => {
       const uid = currentUserId.current;
       if (!uid) {
         const t = setTimeout(startPolling, 2000);
         return () => clearTimeout(t);
       }
-
-      // Ref local para el callId entrante actual (sin depender del estado React)
-      let currentIncomingCallId: string | null = null;
 
       const stop = webrtc.pollIncoming(uid, (call) => {
         if (incomingCallIdRef.current) return; // ya hay una llamada activa
@@ -8583,13 +8583,26 @@ const App: React.FC = () => {
         setIncomingCall(null);
       });
 
-      return () => {
-        stop();
-        incomingCallIdRef.current = null;
-      };
+      stopFn = stop;
+      return () => { stop(); incomingCallIdRef.current = null; };
     };
+
     const cleanup = startPolling();
-    return () => { if (typeof cleanup === 'function') cleanup(); };
+
+    // Reactivar polling cuando la app vuelve a primer plano (móvil/tab)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        if (stopFn) { stopFn(); stopFn = null; }
+        startPolling();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      if (typeof cleanup === 'function') cleanup();
+      if (stopFn) stopFn();
+    };
   }, [isAuthenticated]);
 
   // -- Listener de mensajes del Service Worker (llamadas desde notificación push) --
@@ -8664,10 +8677,28 @@ const App: React.FC = () => {
     navigator.serviceWorker.addEventListener('message', handler);
     window.addEventListener('sw-call-message', customHandler);
 
+    // Exponer para que main.tsx pueda llamarlo directamente si el listener ya está montado
+    (window as any).__egchat_processCallMessage = processCallMessage;
+
     // Procesar mensajes que llegaron antes de que este listener estuviera listo
     if ((window as any).__pendingSWMessage) {
-      processCallMessage((window as any).__pendingSWMessage);
+      const pending = (window as any).__pendingSWMessage;
       delete (window as any).__pendingSWMessage;
+      // Reintentar con delay si aún no hay token (app recién abierta)
+      const token = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
+      if (token) {
+        processCallMessage(pending);
+      } else {
+        let retries = 0;
+        const retryInterval = setInterval(() => {
+          retries++;
+          const t = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
+          if (t || retries >= 15) {
+            clearInterval(retryInterval);
+            if (t) processCallMessage(pending);
+          }
+        }, 1000);
+      }
     }
 
     return () => {
@@ -8759,19 +8790,30 @@ const App: React.FC = () => {
     const autoAccept = urlParams.get('accept') === '1';
     if (callId) {
       window.history.replaceState({}, '', window.location.pathname);
-      setTimeout(async () => {
+      // Reintentar hasta 10 veces con backoff — el servidor Render puede tardar en despertar
+      const fetchCallSession = async (attempt = 0) => {
         try {
           const token = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
-          if (!token) return;
-          const apiBase = (import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com';
+          if (!token) { if (attempt < 10) setTimeout(() => fetchCallSession(attempt + 1), 2000); return; }
+          const apiBase = ((import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com').replace(/\/+$/, '');
           const r = await fetch(`${apiBase}/api/call/${callId}`, { headers: { Authorization: `Bearer ${token}` } });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const session = await r.json();
-          if (!session || session.ended || !session.offer) return;
+          if (!session || session.ended || !session.offer) {
+            // Llamada ya terminada — mostrar notificación de perdida
+            if (callerNameParam) showToast(`📵 Llamada perdida de ${callerNameParam}`, 'error');
+            return;
+          }
+          if (incomingCallIdRef.current) return; // ya hay otra llamada activa
           incomingCallIdRef.current = callId;
-          setIncomingCall({ callId, callerId: session.callerId, type: session.type || callType, offer: session.offer });
+          setIncomingCall({ callId, callerId: session.callerId || session.caller_id, type: session.type || callType, offer: session.offer });
           startRingtone(); vibrate([500, 200, 500, 200, 500]);
-        } catch (err) { console.warn('URL call param error:', err); }
-      }, 1500);
+        } catch (err) {
+          console.warn(`URL call param error (attempt ${attempt}):`, err);
+          if (attempt < 10) setTimeout(() => fetchCallSession(attempt + 1), 3000);
+        }
+      };
+      setTimeout(() => fetchCallSession(0), 800);
     }
     authAPI.me().then((u: any) => {
       if (u?.id) {
