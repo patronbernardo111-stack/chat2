@@ -91,14 +91,17 @@ if ('serviceWorker' in navigator) {
         }
       });
 
-      // Escuchar mensajes del SW (click en notificación + actualización)
+      // Escuchar mensajes del SW (click en notificación)
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'NOTIFICATION_CLICK') {
           window.dispatchEvent(new CustomEvent('sw-notification-click', { detail: event.data }));
         }
-        // Recargar automáticamente cuando el SW se actualiza
+        // SW actualizado — recargar solo una vez
         if (event.data?.type === 'SW_UPDATED') {
-          window.location.reload();
+          if (!sessionStorage.getItem('sw_reloaded')) {
+            sessionStorage.setItem('sw_reloaded', '1');
+            window.location.reload();
+          }
         }
       });
 
