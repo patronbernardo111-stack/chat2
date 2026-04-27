@@ -2902,7 +2902,10 @@ const App: React.FC = () => {
     if (!showProfileView) return null;
 
     // QR real con link para añadir contacto directamente
-    const qrLink = `https://egchat-v2.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}&id=${userProfile.id}`;
+    const userId = userProfile.id || currentUserId.current || '';
+    const qrLink = userId
+      ? `https://egchat-v2.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}&id=${userId}`
+      : `https://egchat-v2.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}`;
 
     const fields = [
       { key: 'name', label: 'Nombre completo', icon: 'contactos' },
