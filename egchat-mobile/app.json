@@ -11,12 +11,30 @@
     },
     "android": {
       "package": "com.egchat.app",
-      "permissions": ["CAMERA", "RECORD_AUDIO", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_FULL_SCREEN_INTENT",
+        "POST_NOTIFICATIONS"
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
       ["expo-camera", { "cameraPermission": "EGCHAT necesita la camara para fotos de perfil." }],
-      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "EGCHAT necesita tu ubicacion para servicios de taxi." }]
+      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "EGCHAT necesita tu ubicacion para servicios de taxi." }],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#00c8a0",
+          "defaultChannel": "egchat-messages",
+          "sounds": ["./assets/notification.wav"]
+        }
+      ]
     ],
     "scheme": "egchat",
     "extra": {

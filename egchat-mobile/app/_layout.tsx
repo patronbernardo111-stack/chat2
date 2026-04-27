@@ -1,22 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Stack, router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, TouchableOpacity, Text, StyleSheet, Linking, Alert, Platform } from 'react-native';
 import { authAPI } from '../src/api';
+import { registerForPushNotifications, setupNotificationListeners, clearBadge } from '../src/notifications';
 
 export default function RootLayout() {
   const [checking, setChecking] = useState(true);
   const [showQR, setShowQR] = useState(false);
+  const notifCleanup = useRef<(() => void) | null>(null);
 
   // Check authentication status
   useEffect(() => {
-    authAPI.isAuthenticated().then(auth => {
-      if (auth) router.replace('/(tabs)');
-      else router.replace('/(auth)/login');
+    authAPI.isAuthenticated().then(async (auth) => {
+      if (auth) {
+        router.replace('/(tabs)');
+        // Registrar notificaciones push solo si está autenticado
+        await registerForPushNotifications();
+        // Escuchar notificaciones
+        notifCleanup.current = setupNotificationListeners(
+          (chatId) => router.push(`/(tabs)` as any),
+          (callData) => router.push(`/(tabs)` as any)
+        );
+        clearBadge();
+      } else {
+        router.replace('/(auth)/login');
+      }
       setChecking(false);
     });
+
+    return () => { notifCleanup.current?.(); };
   }, []);
 
   // Handle deep linking and QR codes
