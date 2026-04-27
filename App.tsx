@@ -222,7 +222,7 @@ const App: React.FC = () => {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   const [showAddContact, setShowAddContact] = useState<boolean>(false);
   const [showCreateGroup, setShowCreateGroup] = useState<boolean>(false);
-  const [addContactTab, setAddContactTab] = useState<'phone'|'qr'>('phone');
+  const [addContactTab, setAddContactTab] = useState<'phone'|'qr'|'repertorio'>('phone');
   const [newContactPhone, setNewContactPhone] = useState<string>('');
   const [newContactName, setNewContactName] = useState<string>('');
   const [groupName, setGroupName] = useState<string>('');
@@ -3140,27 +3140,69 @@ const App: React.FC = () => {
     );
   };
 
-  // Modal: Aaadir contacto
+  // Modal: Añadir contacto
+  const [repertorioUsers, setRepertorioUsers] = React.useState<any[]>([]);
+  const [repertorioSearch, setRepertorioSearch] = React.useState('');
+  const [repertorioSelected, setRepertorioSelected] = React.useState<Set<string>>(new Set());
+  const [repertorioLoading, setRepertorioLoading] = React.useState(false);
+  const [repertorioAdding, setRepertorioAdding] = React.useState(false);
+
+  const loadRepertorioUsers = React.useCallback(async () => {
+    try {
+      setRepertorioLoading(true);
+      const users = await chatAPI.searchUsers('');
+      const existingIds = new Set(allContacts.map((c: any) => (c.contact_user_id || c.id)?.toString()));
+      const myId = currentUserId.current?.toString();
+      const filtered = (users || [])
+        .filter((u: any) => u.id?.toString() !== myId && !existingIds.has(u.id?.toString()))
+        .map((u: any) => ({ id: u.id?.toString() || '', full_name: u.full_name || 'Usuario', phone: u.phone || '', avatar_url: u.avatar_url || '' }));
+      setRepertorioUsers(filtered);
+    } catch { setRepertorioUsers([]); }
+    finally { setRepertorioLoading(false); }
+  }, [allContacts]);
+
   const renderAddContactModal = () => {
     if (!showAddContact) return null;
+
+    const filteredRep = repertorioUsers.filter(u =>
+      u.full_name.toLowerCase().includes(repertorioSearch.toLowerCase()) || u.phone.includes(repertorioSearch)
+    );
+
+    const handleAddRepertorio = async () => {
+      if (repertorioSelected.size === 0) return;
+      try {
+        setRepertorioAdding(true);
+        await Promise.all(Array.from(repertorioSelected).map(id => contactsAPI.add(id)));
+        showToast(`✓ ${repertorioSelected.size} contacto${repertorioSelected.size > 1 ? 's' : ''} añadido${repertorioSelected.size > 1 ? 's' : ''}`, 'success');
+        setRepertorioSelected(new Set());
+        setShowAddContact(false);
+        await loadContacts();
+      } catch { showToast('Error al añadir contactos', 'error'); }
+      finally { setRepertorioAdding(false); }
+    };
+
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}
         onClick={() => setShowAddContact(false)}>
-        <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#FFFFFF', borderRadius: '18px 18px 0 0', border: '1px solid rgba(0,0,0,0.07)', padding: '20px 16px 32px' }}>
+        <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#FFFFFF', borderRadius: '18px 18px 0 0', border: '1px solid rgba(0,0,0,0.07)', padding: '20px 16px 28px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
           <div style={{ width: '36px', height: '3px', background: '#e5e7eb', borderRadius: '2px', margin: '0 auto 16px' }}/>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', marginBottom: '14px' }}>Aaadir contacto</div>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', marginBottom: '14px' }}>Añadir contacto</div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', background: 'rgba(249,250,251,0.88)', borderRadius: '8px', padding: '3px', marginBottom: '16px' }}>
-            {(['phone','qr'] as const).map(tab => (
-              <button key={tab} onClick={() => setAddContactTab(tab)}
-                style={{ flex: 1, padding: '7px', background: addContactTab === tab ? 'rgba(0,180,230,0.3)' : 'none', border: addContactTab === tab ? '1px solid rgba(0,180,230,0.4)' : '1px solid transparent', borderRadius: '6px', color: addContactTab === tab ? '#00b4e6' : '#9ca3af', fontSize: '14px', fontWeight: '600', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
-                {tab === 'phone' ? ' Por Teléfono' : ' Escanear QR'}
+          <div style={{ display: 'flex', background: 'rgba(249,250,251,0.88)', borderRadius: '8px', padding: '3px', marginBottom: '16px', flexShrink: 0 }}>
+            {(['phone','qr','repertorio'] as const).map(tab => (
+              <button key={tab} onClick={() => {
+                setAddContactTab(tab as any);
+                if (tab === 'repertorio' && repertorioUsers.length === 0) loadRepertorioUsers();
+              }}
+                style={{ flex: 1, padding: '7px 4px', background: addContactTab === tab ? 'rgba(0,180,230,0.3)' : 'none', border: addContactTab === tab ? '1px solid rgba(0,180,230,0.4)' : '1px solid transparent', borderRadius: '6px', color: addContactTab === tab ? '#00b4e6' : '#9ca3af', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
+                {tab === 'phone' ? '📞 Teléfono' : tab === 'qr' ? '📷 QR' : '👥 Repertorio'}
               </button>
             ))}
           </div>
 
-          {addContactTab === 'phone' ? (
+          {/* Tab: Teléfono */}
+          {addContactTab === 'phone' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input value={newContactName} onChange={e => setNewContactName(e.target.value)}
                 placeholder="Nombre del contacto"
@@ -3168,48 +3210,105 @@ const App: React.FC = () => {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div style={{ background: 'rgba(249,250,251,0.88)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', padding: '10px 12px', color: '#6b7280', fontSize: '13px', flexShrink: 0 }}>+240</div>
                 <input value={newContactPhone} onChange={e => setNewContactPhone(e.target.value)}
-                  placeholder="numero de telafono" type="tel"
+                  placeholder="numero de telefono" type="tel"
                   style={{ flex: 1, background: 'rgba(249,250,251,0.88)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', padding: '10px 12px', color: '#0d0d0d', fontSize: '13px', outline: 'none', fontFamily: 'inherit' }}/>
               </div>
-              <button onClick={async () => { 
-                if (newContactPhone.trim()) { 
+              <button onClick={async () => {
+                if (newContactPhone.trim()) {
                   try {
                     const phone = newContactPhone.startsWith('+') ? newContactPhone : '+240' + newContactPhone.replace(/\D/g, '').slice(-9);
                     await contactsAPI.add(undefined, phone, newContactName.trim() || undefined);
                     showToast('✓ Contacto añadido', 'success');
-                    setShowAddContact(false);
-                    setNewContactPhone(''); setNewContactName('');
+                    setShowAddContact(false); setNewContactPhone(''); setNewContactName('');
                     await loadContacts();
                   } catch (err: any) {
                     const msg = err?.message || '';
-                    if (msg.includes('no encontrado') || msg.includes('404')) {
-                      showToast('No se encontr? ningn usuario con ese nmero.', 'error');
-                    } else if (msg.includes('Token invlido') || msg.includes('Token expirado')) {
-                      showToast('sesión expirada. Inicia sesión de nuevo.', 'error');
-                    } else if (msg.includes('ya existe') || msg.includes('409') || msg.includes('duplicate')) {
-                      showToast('Este contacto ya est en tu lista.', 'info');
-                      setNewContactPhone(''); setNewContactName(''); setShowAddContact(false);
-                    } else {
-                      showToast(msg || 'Error al añadir contacto. Intenta de nuevo.', 'error');
-                    }
+                    if (msg.includes('no encontrado') || msg.includes('404')) showToast('No se encontró ningún usuario con ese número.', 'error');
+                    else if (msg.includes('ya existe') || msg.includes('409') || msg.includes('duplicate')) { showToast('Este contacto ya está en tu lista.', 'info'); setNewContactPhone(''); setNewContactName(''); setShowAddContact(false); }
+                    else showToast(msg || 'Error al añadir contacto.', 'error');
                   }
-                } }}
+                }
+              }}
                 style={{ background: '#00b4e6', border: 'none', borderRadius: '10px', padding: '12px', color: 'white', fontSize: '13px', fontWeight: '700', cursor: 'pointer', outline: 'none', marginTop: '4px' }}>
                 Añadir contacto
               </button>
             </div>
-          ) : (
+          )}
+
+          {/* Tab: QR */}
+          {addContactTab === 'qr' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
               <div style={{ width: '200px', height: '200px', background: 'rgba(250,250,250,0.88)', border: '2px dashed rgba(0,180,230,0.4)', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                 <svg width="48" height="48" viewBox="0 0 24 24" stroke="rgba(0,180,230,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
                 </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>Apunta la camara al QR del contacto</span>
+                <span style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>Apunta la cámara al QR del contacto</span>
               </div>
               <button onClick={() => { setShowAddContact(false); setShowQRScannerCamera(true); }}
                 style={{ background: '#00b4e6', border: 'none', borderRadius: '10px', padding: '12px 24px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                Activar camara
+                Activar cámara
+              </button>
+            </div>
+          )}
+
+          {/* Tab: Repertorio */}
+          {addContactTab === 'repertorio' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {/* Buscador */}
+              <div style={{ position: 'relative', marginBottom: '10px', flexShrink: 0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" value={repertorioSearch} onChange={e => setRepertorioSearch(e.target.value)}
+                  placeholder="Buscar por nombre o teléfono..."
+                  style={{ width: '100%', padding: '9px 12px 9px 30px', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', fontSize: '13px', background: 'rgba(249,250,251,0.88)', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Lista */}
+              <div style={{ flex: 1, overflowY: 'auto', marginBottom: '10px' }}>
+                {repertorioLoading ? (
+                  <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>Cargando usuarios...</div>
+                ) : filteredRep.length === 0 ? (
+                  <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                    {repertorioSearch ? 'No se encontraron usuarios' : 'No hay usuarios disponibles'}
+                  </div>
+                ) : filteredRep.map(user => {
+                  const isSel = repertorioSelected.has(user.id);
+                  const initials = user.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+                  return (
+                    <button key={user.id} onClick={() => {
+                      const next = new Set(repertorioSelected);
+                      isSel ? next.delete(user.id) : next.add(user.id);
+                      setRepertorioSelected(next);
+                    }}
+                      style={{ width: '100%', padding: '9px 12px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: isSel ? 'rgba(0,180,230,0.07)' : 'transparent', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}>
+                      {/* Avatar */}
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, background: user.avatar_url ? 'transparent' : 'linear-gradient(135deg,#00c8a0,#00b894)', backgroundImage: user.avatar_url ? `url(${user.avatar_url})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: '700' }}>
+                        {!user.avatar_url && initials}
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.full_name}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{user.phone}</div>
+                      </div>
+                      {/* Check */}
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: isSel ? 'none' : '2px solid #d1d5db', background: isSel ? '#00b4e6' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Botón añadir */}
+              {repertorioSelected.size > 0 && (
+                <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', marginBottom: '6px' }}>
+                  {repertorioSelected.size} {repertorioSelected.size === 1 ? 'contacto seleccionado' : 'contactos seleccionados'}
+                </div>
+              )}
+              <button onClick={handleAddRepertorio} disabled={repertorioSelected.size === 0 || repertorioAdding}
+                style={{ background: repertorioSelected.size > 0 ? '#00b4e6' : '#d1d5db', border: 'none', borderRadius: '10px', padding: '12px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: repertorioSelected.size > 0 ? 'pointer' : 'not-allowed', outline: 'none', opacity: repertorioAdding ? 0.7 : 1, flexShrink: 0 }}>
+                {repertorioAdding ? 'Añadiendo...' : `Añadir${repertorioSelected.size > 0 ? ` (${repertorioSelected.size})` : ''} contacto${repertorioSelected.size !== 1 ? 's' : ''}`}
               </button>
             </div>
           )}
