@@ -144,8 +144,14 @@ const App: React.FC = () => {
           }
           // Fusionar: conservar mensajes locales (fotos, audio, archivos) que no están en el backend
           const backendIds = new Set(fmt.map((m: any) => m.id));
+          // También excluir mensajes locales cuya URL de archivo ya existe en el backend (evita duplicados durante el upload)
+          const backendFileUrls = new Set(fmt.map((m: any) => m.imageUrl || m.audioUrl || m.fileUrl).filter(Boolean));
           const localOnly = (prev[chatId] || []).filter((m: any) =>
-            !backendIds.has(m.id) && (m.type === 'image' || m.type === 'audio' || m.imageUrl || m.audioUrl || m.status === 'pending')
+            !backendIds.has(m.id) &&
+            !(m.imageUrl && backendFileUrls.has(m.imageUrl)) &&
+            !(m.audioUrl && backendFileUrls.has(m.audioUrl)) &&
+            !(m.fileUrl && backendFileUrls.has(m.fileUrl)) &&
+            (m.type === 'image' || m.type === 'audio' || m.imageUrl || m.audioUrl || m.status === 'pending')
           );
           // Filtrar mensajes eliminados para mí localmente (respaldo)
           const filteredFmt = fmt.filter((m: any) => !deletedForMeIds.current.has(m.id));
@@ -5458,9 +5464,10 @@ const App: React.FC = () => {
                               const result = await chatAPI.uploadFile(chatId, file);
                               const serverUrl = result.file_url;
                               // Enviar mensaje al backend con la URL real
-                              await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: serverUrl });
-                              // Actualizar mensaje local con URL del servidor
-                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, imageUrl: serverUrl, status: 'delivered' } : m) }));
+                              const sent = await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: serverUrl });
+                              // Reemplazar ID local con ID del servidor para evitar duplicados en el polling
+                              const serverId = sent?.id || msgId;
+                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: serverUrl, status: 'delivered' } : m) }));
                             } catch (e) {
                               showToast('Error al subir foto', 'error');
                             }
@@ -5489,8 +5496,9 @@ const App: React.FC = () => {
                             setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} MB)`, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
-                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, fileUrl: result.file_url, fileName: file.name, fileSize: size + ' MB', fileExt: 'mp4', status: 'delivered' } : m) }));
+                              const sent = await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
+                              const serverId = sent?.id || msgId;
+                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, fileName: file.name, fileSize: size + ' MB', fileExt: 'mp4', status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir video', 'error'); }
                           };
                           inp.click();
@@ -5519,8 +5527,9 @@ const App: React.FC = () => {
                             setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} KB)`, time: tm, status: 'pending' as const, fileName: file.name, fileSize: size + ' KB', fileExt: ext } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} KB)`, type: 'file', file_url: result.file_url });
-                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, fileUrl: result.file_url, status: 'delivered' } : m) }));
+                              const sent = await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} KB)`, type: 'file', file_url: result.file_url });
+                              const serverId = sent?.id || msgId;
+                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir archivo', 'error'); }
                           };
                           inp.click();
@@ -5903,10 +5912,11 @@ const App: React.FC = () => {
                             const audioFile = new File([blob], `audio_${msgId}.${ext}`, { type: mimeType });
                             const result = await chatAPI.uploadFile(chatId, audioFile);
                             if (result.file_url) {
-                              await chatAPI.sendMessage(chatId, { text: '📌 Mensaje de voz', type: 'audio', file_url: result.file_url });
-                              // Actualizar URL local con la del servidor
+                              const sent = await chatAPI.sendMessage(chatId, { text: '📌 Mensaje de voz', type: 'audio', file_url: result.file_url });
+                              // Reemplazar ID local con ID del servidor para evitar duplicados en el polling
+                              const serverId = sent?.id || msgId;
                               const key = sc?.id?.toString() || sc?.title;
-                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, audioUrl: result.file_url, status: 'delivered' } : m) }));
+                              setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, audioUrl: result.file_url, status: 'delivered' } : m) }));
                             }
                           } catch {}
                         }
