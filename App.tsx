@@ -3190,15 +3190,35 @@ const App: React.FC = () => {
 
           {/* Tabs */}
           <div style={{ display: 'flex', background: 'rgba(249,250,251,0.88)', borderRadius: '8px', padding: '3px', marginBottom: '16px', flexShrink: 0 }}>
-            {(['phone','qr','repertorio'] as const).map(tab => (
-              <button key={tab} onClick={() => {
-                setAddContactTab(tab as any);
-                if (tab === 'repertorio' && repertorioUsers.length === 0) loadRepertorioUsers();
-              }}
-                style={{ flex: 1, padding: '7px 4px', background: addContactTab === tab ? 'rgba(0,180,230,0.3)' : 'none', border: addContactTab === tab ? '1px solid rgba(0,180,230,0.4)' : '1px solid transparent', borderRadius: '6px', color: addContactTab === tab ? '#00b4e6' : '#9ca3af', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', transition: 'all 0.15s' }}>
-                {tab === 'phone' ? '📞 Teléfono' : tab === 'qr' ? '📷 QR' : '👥 Repertorio'}
-              </button>
-            ))}
+            {(['phone','qr','repertorio'] as const).map(tab => {
+              const active = addContactTab === tab;
+              return (
+                <button key={tab} onClick={() => {
+                  setAddContactTab(tab as any);
+                  if (tab === 'repertorio' && repertorioUsers.length === 0) loadRepertorioUsers();
+                }}
+                  style={{ flex: 1, padding: '8px 4px', background: active ? '#fff' : 'none', border: 'none', borderRadius: '6px', color: active ? '#00b4e6' : '#9ca3af', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.1)' : 'none' }}>
+                  {tab === 'phone' && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  )}
+                  {tab === 'qr' && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                      <path d="M14 14h3v3h-3z"/><path d="M17 17h4"/><path d="M17 21v-4"/>
+                    </svg>
+                  )}
+                  {tab === 'repertorio' && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  )}
+                  {tab === 'phone' ? 'Teléfono' : tab === 'qr' ? 'QR' : 'Repertorio'}
+                </button>
+              );
+            })}
           </div>
 
           {/* Tab: Teléfono */}
