@@ -487,7 +487,22 @@ const App: React.FC = () => {
   const isBalanceVisible = (key: string) => !!balanceVisibleMap[key];
 
   // Ajustes
-  const [currentSettingsTab, setCurrentSettingsTab] = useState<'perfil' | 'sonidos' | 'ayuda' | 'actividad'>('perfil');
+  const [currentSettingsTab, setCurrentSettingsTab] = useState<'perfil' | 'sonidos' | 'ayuda' | 'actividad' | 'apariencia'>('perfil');
+  const [appFontSize, setAppFontSize] = useState<number>(() => parseFloat(localStorage.getItem('egchat_fontsize') || '1'));
+  const [appFontFamily, setAppFontFamily] = useState<string>(() => localStorage.getItem('egchat_fontfamily') || 'default');
+
+  // Aplicar fuente y tamaño a toda la app
+  React.useEffect(() => {
+    const fonts: Record<string, string> = {
+      default: "'Segoe UI', system-ui, -apple-system, sans-serif",
+      rounded: "'Nunito', 'Varela Round', sans-serif",
+      modern: "'Inter', 'Helvetica Neue', sans-serif",
+      classic: "'Georgia', 'Times New Roman', serif",
+      mono: "'Courier New', 'Consolas', monospace",
+    };
+    document.documentElement.style.fontSize = `${appFontSize * 16}px`;
+    document.documentElement.style.fontFamily = fonts[appFontFamily] || fonts.default;
+  }, [appFontSize, appFontFamily]);
   const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings);
   const updateSoundSetting = (key: keyof SoundSettings, value: any) => {
     const updated = { ...soundSettings, [key]: value };
@@ -7569,6 +7584,13 @@ const App: React.FC = () => {
                 <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Actividad
               </button>
+              <button
+                onClick={() => setCurrentSettingsTab('apariencia')}
+                style={{ padding: '8px 12px', background: currentSettingsTab === 'apariencia' ? 'rgba(0,180,230,0.15)' : '#f3f4f6', border: currentSettingsTab === 'apariencia' ? '1.5px solid rgba(0,180,230,0.5)' : '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: currentSettingsTab === 'apariencia' ? '#00b4e6' : '#374151', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                Apariencia
+              </button>
             </div>
 
             {/* Contenido */}
@@ -8289,6 +8311,63 @@ const App: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* TAB APARIENCIA */}
+              {currentSettingsTab === 'apariencia' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                  {/* Tamaño de fuente */}
+                  <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid rgba(0,0,0,0.07)' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '12px' }}>
+                      🔡 Tamaño de letra
+                    </div>
+                    <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', marginBottom: '12px', fontSize: `${appFontSize * 14}px`, color: '#374151', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      Vista previa del texto en EGCHAT
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '700' }}>A</span>
+                      <input type="range" min="0.8" max="1.5" step="0.05" value={appFontSize}
+                        onChange={e => { const v = parseFloat(e.target.value); setAppFontSize(v); localStorage.setItem('egchat_fontsize', String(v)); }}
+                        style={{ flex: 1, accentColor: '#00b4e6' }} />
+                      <span style={{ fontSize: '18px', color: '#374151', fontWeight: '700' }}>A</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      {[{ label: 'Pequeña', v: 0.85 }, { label: 'Normal', v: 1 }, { label: 'Grande', v: 1.15 }, { label: 'Muy grande', v: 1.35 }].map(opt => (
+                        <button key={opt.v} onClick={() => { setAppFontSize(opt.v); localStorage.setItem('egchat_fontsize', String(opt.v)); }}
+                          style={{ padding: '5px 10px', borderRadius: '8px', border: Math.abs(appFontSize - opt.v) < 0.03 ? '1.5px solid #00b4e6' : '1px solid rgba(0,0,0,0.1)', background: Math.abs(appFontSize - opt.v) < 0.03 ? 'rgba(0,180,230,0.1)' : '#f3f4f6', color: Math.abs(appFontSize - opt.v) < 0.03 ? '#00b4e6' : '#374151', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none' }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tipografía */}
+                  <div style={{ background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid rgba(0,0,0,0.07)' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#374151', marginBottom: '12px' }}>
+                      ✍️ Estilo de letra
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {[
+                        { id: 'default', name: 'Sistema (por defecto)', sample: 'Hola, ¿cómo estás?', font: "'Segoe UI', system-ui, sans-serif" },
+                        { id: 'rounded', name: 'Redondeada', sample: 'Hola, ¿cómo estás?', font: "'Nunito', 'Varela Round', sans-serif" },
+                        { id: 'modern', name: 'Moderna', sample: 'Hola, ¿cómo estás?', font: "'Inter', 'Helvetica Neue', sans-serif" },
+                        { id: 'classic', name: 'Clásica', sample: 'Hola, ¿cómo estás?', font: 'Georgia, serif' },
+                        { id: 'mono', name: 'Monoespaciada', sample: 'Hola, ¿cómo estás?', font: "'Courier New', monospace" },
+                      ].map(f => (
+                        <button key={f.id} onClick={() => { setAppFontFamily(f.id); localStorage.setItem('egchat_fontfamily', f.id); }}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', border: appFontFamily === f.id ? '1.5px solid #00b4e6' : '1px solid rgba(0,0,0,0.08)', background: appFontFamily === f.id ? 'rgba(0,180,230,0.07)' : '#f9fafb', cursor: 'pointer', outline: 'none', textAlign: 'left', width: '100%' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: appFontFamily === f.id ? '#00b4e6' : '#374151', marginBottom: '2px' }}>{f.name}</div>
+                            <div style={{ fontSize: '13px', color: '#6b7280', fontFamily: f.font }}>{f.sample}</div>
+                          </div>
+                          {appFontFamily === f.id && <svg width="16" height="16" viewBox="0 0 24 24" stroke="#00b4e6" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
