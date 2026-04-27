@@ -20,7 +20,7 @@ export interface SoundSettings {
 }
 
 const DEFAULT_SETTINGS: SoundSettings = {
-  messageTone: 'whatsapp',
+  messageTone: 'egchat',
   ringtone: 'classic',
   notificationTone: 'pop',
   volume: 0.7,
@@ -44,7 +44,7 @@ export const saveSoundSettings = (settings: Partial<SoundSettings>) => {
 // ── Tonos de mensaje disponibles ─────────────────────────────────────────────
 export const MESSAGE_TONES: { id: string; name: string; play: (vol: number) => void }[] = [
   {
-    id: 'whatsapp', name: 'WhatsApp',
+    id: 'egchat', name: 'EGCHAT',
     play: (vol) => {
       const ctx = getCtx(); const t = ctx.currentTime;
       [{ freq: 880, start: 0, dur: 0.08 }, { freq: 1100, start: 0.1, dur: 0.1 }].forEach(({ freq, start, dur }) => {

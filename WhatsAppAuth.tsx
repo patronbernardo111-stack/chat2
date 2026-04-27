@@ -87,7 +87,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
       localStorage.setItem('egchat_user', JSON.stringify(data));
       localStorage.setItem('egchat_authenticated', 'true');
       localStorage.setItem('egchat_welcome_shown', 'true');
-      await authAPI.sendWhatsApp(phoneNumber, `¡Bienvenido a EGCHAT! ${fullName}, tu cuenta ha sido creada exitosamente.`);
+      await authAPI.sendSMS(phoneNumber, `¡Bienvenido a EGCHAT! ${fullName}, tu cuenta ha sido creada exitosamente.`);
       setTimeout(() => {
         window.location.reload();
       }, 2000);
@@ -98,10 +98,10 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
     }
   };
 
-  const sendWhatsAppMessage = async (phone: string, name: string) => {
+  const sendNotificationMessage = async (phone: string, name: string) => {
     try {
-      // Send WhatsApp message for window registration
-      await fetch(`${BASE}/auth/send-whatsapp`, {
+      // Send notification message for window registration
+      await fetch(`${BASE}/auth/send-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         })
       });
     } catch (err) {
-      console.error('Error sending WhatsApp message:', err);
+      console.error('Error sending notification message:', err);
     }
   };
 
@@ -638,7 +638,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
             ¡Cuenta creada exitosamente!
           </h2>
           <p style={{ fontSize: '14px', color: '#667781', lineHeight: '1.5' }}>
-            Te hemos enviado un mensaje WhatsApp con las instrucciones para completar tu inscripción por ventana.
+            Te hemos enviado un mensaje con las instrucciones para completar tu inscripción por ventana.
           </p>
         </div>
 

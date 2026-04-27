@@ -109,7 +109,7 @@ export const authAPI = {
   verifyCode: (phone: string, code: string, platform?: string) => post<{verified:boolean; message?:string}>('/auth/verify-code', { phone, code, platform }),
   registerWindow: (data: {phone:string; full_name:string; verification_code:string; window_registration?: boolean}) => post<{token:string; user:any}>('/auth/register-window', data),
   registerSocial: (data: {phone:string; full_name:string; email:string; password:string; birthday:string; gender:string; region:string; security_question:string; security_answer:string; verification_code:string; platform:string}) => post<{token:string; user:any}>('/auth/register-wechat', data),
-  sendSMS: (phone: string, message: string) => post<{success:boolean; message?:string}>('/auth/send-whatsapp', { phone, message }),
+  sendSMS: (phone: string, message: string) => post<{success:boolean; message?:string}>('/auth/send-notification', { phone, message }),
   getToken,
   setToken,
   clearToken,

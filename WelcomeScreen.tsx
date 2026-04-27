@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRGenerator from './QRGenerator';
 import { useTranslation } from './translations';
-import WhatsAppAuth from './WhatsAppAuth';
+import EGChatAuth from './WhatsAppAuth';
 import WeChatAuth from './WeChatAuth';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
   const [showQR, setShowQR] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showWhatsAppAuth, setShowWhatsAppAuth] = useState(false);
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const [showWeChatAuth, setShowWeChatAuth] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('es');
   
@@ -54,8 +54,8 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
     localStorage.setItem('egchat_language', detectedLanguage);
   }, []);
 
-  const handleWhatsAppAuth = () => {
-    setShowWhatsAppAuth(true);
+  const handlePhoneAuth = () => {
+    setShowPhoneAuth(true);
   };
 
   const handleWeChatAuth = () => {
@@ -70,7 +70,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
   };
 
   const handleBackToWelcome = () => {
-    setShowWhatsAppAuth(false);
+    setShowPhoneAuth(false);
     setShowWeChatAuth(false);
   };
 
@@ -86,7 +86,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
         qrRegistration: true,
         multiLanguage: true,
         glassmorphism: true,
-        whatsappAuth: true,
+        egchatAuth: true,
         wechatAuth: true
       }
     }));
@@ -172,9 +172,9 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
 
   return (
     <div>
-      {/* Mostrar WhatsAppAuth cuando se active */}
-      {showWhatsAppAuth && (
-        <WhatsAppAuth
+      {/* Mostrar EGChatAuth cuando se active */}
+      {showPhoneAuth && (
+        <EGChatAuth
           onAuthSuccess={handleAuthSuccess}
           onBack={handleBackToWelcome}
         />
@@ -189,7 +189,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
       )}
       
       {/* WelcomeScreen normal */}
-      {!showWhatsAppAuth && !showWeChatAuth && (
+      {!showPhoneAuth && !showWeChatAuth && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -277,7 +277,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
               {t.welcome.subtitle}
             </div>
 
-            {/* Características con iconos estilo WhatsApp */}
+            {/* Características */}
             <div style={{ 
               background: 'rgba(255, 255, 255, 0.1)', 
               borderRadius: '16px', 
@@ -349,7 +349,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
             {/* Botones de Acción */}
             <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
               <button
-                onClick={handleWhatsAppAuth}
+                onClick={handlePhoneAuth}
                 style={{
                   width: '100%',
                   background: '#25d366',
@@ -381,7 +381,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
-                Crear cuenta con WhatsApp
+                Crear cuenta con teléfono
               </button>
 
               <button
