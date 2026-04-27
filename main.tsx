@@ -91,6 +91,24 @@ if ('serviceWorker' in navigator) {
         }
       });
 
+      // Cuando el SW nuevo toma control, recargar silenciosamente
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        // Solo recargar si la app está en background — evita flash visible en iOS
+        if (document.visibilityState === 'hidden') {
+          window.location.reload();
+        } else {
+          // App visible — esperar a que vaya a background para recargar
+          const onHide = () => {
+            document.removeEventListener('visibilitychange', onHide);
+            window.location.reload();
+          };
+          document.addEventListener('visibilitychange', onHide);
+        }
+      });
+
       // Escuchar mensajes del SW (click en notificación)
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'NOTIFICATION_CLICK') {
