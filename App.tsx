@@ -4550,62 +4550,54 @@ const App: React.FC = () => {
                 </div>
               )}
               {/* Header conversacin */}
-              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(44px, env(safe-area-inset-top))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '4px', background: '#ffffff', borderBottom: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
+              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(44px, env(safe-area-inset-top))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); setSelectionMode(false); setSelectedMsgIds([]); }}
-                  style={{ background: 'transparent', border: 'none', color: '#0d0d0d', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
+                  style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={() => setShowContactProfile(sc)}>
-                  <Avatar name={sc.title} size={48} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
+                  <Avatar name={sc.title} size={42} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
-                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '8px' }} onClick={() => setShowContactProfile(sc)}>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sc.title}</div>
-                  <div style={{ fontSize: '11px', color: sc.isGroup ? '#a855f7' : sc.status === 'online' ? '#00c8a0' : sc.status === 'away' ? '#f59e0b' : '#9ca3af' }}>
-                    {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? 'En línea' : sc.status === 'away' ? 'Ausente' : 'Desconectado'}
+                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={() => setShowContactProfile(sc)}>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: sc.isGroup ? 'rgba(255,255,255,0.85)' : sc.status === 'online' ? '#a8ffdd' : sc.status === 'away' ? '#ffe08a' : 'rgba(255,255,255,0.6)' }}>
+                    {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '0px', alignItems: 'center', flexShrink: 0 }}>
                   {/* Llamada de audio */}
                   <button onClick={() => startCall('audio', sc)}
-                    style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                     </svg>
                   </button>
                   {/* Videollamada */}
                   <button onClick={() => startCall('video', sc)}
-                    style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="23 7 16 12 23 17 23 7"/>
                       <rect x="1" y="5" width="15" height="14" rx="2"/>
                     </svg>
                   </button>
                   {/* Camara */}
                   <button onClick={() => { setLiveCameraChatId(sc.id?.toString()||''); setShowLiveCamera(true); }}
-                    style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                       <circle cx="12" cy="13" r="4"/>
                     </svg>
                   </button>
-                  {/* Galeria */}
-                  <button onClick={() => setShowWallpaperCatalog(true)}
-                    style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <polyline points="21 15 16 10 5 21"/>
-                    </svg>
-                  </button>
                   {/* Tres puntos */}
                   <button onClick={e => { e.stopPropagation(); setShowChatMenu(p => !p); }}
-                    style={{ background: 'transparent', border: 'none', color: '#374151', cursor: 'pointer', outline: 'none', padding: '6px', display: 'flex', borderRadius: '50%' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '7px', display: 'flex', borderRadius: '50%' }}>
+                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
                     </svg>
-                  </button>                </div>
+                  </button>
+                </div>
               </div>
 
               {/* Dropdown men del chat  cae desde arriba */}
