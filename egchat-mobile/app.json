@@ -18,33 +18,53 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "USE_FULL_SCREEN_INTENT",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
-      ["expo-camera", { "cameraPermission": "EGCHAT necesita la camara para fotos de perfil." }],
-      ["expo-location", { "locationAlwaysAndWhenInUsePermission": "EGCHAT necesita tu ubicacion para servicios de taxi." }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "EGCHAT necesita la camara para fotos de perfil."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "EGCHAT necesita tu ubicacion para servicios de taxi."
+        }
+      ],
       [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
           "color": "#00c8a0",
           "defaultChannel": "egchat-messages",
-          "sounds": ["./assets/notification.wav"]
+          "sounds": [
+            "./assets/notification.wav"
+          ]
         }
       ]
     ],
     "scheme": "egchat",
     "extra": {
       "apiUrl": "https://egchat-api-1.onrender.com",
-      "router": { "origin": false },
-      "eas": {}
-
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "6200ec00-54d7-4ef4-a348-56e80a1452f6"
+      }
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "owner": "reddington120"
   }
 }
