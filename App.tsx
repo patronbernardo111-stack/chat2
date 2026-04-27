@@ -5993,12 +5993,12 @@ const App: React.FC = () => {
                   }}
                 >
                   <h3 style={{
-                    fontSize: '14px',
+                    fontSize: '11px',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#9ca3af',
                     margin: 0,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: '0.8px'
                   }}>
                     Contactos Favoritos
                   </h3>
@@ -6090,12 +6090,12 @@ const App: React.FC = () => {
                   }}
                 >
                   <h3 style={{
-                    fontSize: '14px',
+                    fontSize: '11px',
                     fontWeight: '600',
-                    color: '#374151',
+                    color: '#9ca3af',
                     margin: 0,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: '0.8px'
                   }}>
                     Grupos Favoritos
                   </h3>
