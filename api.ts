@@ -336,6 +336,18 @@ export const userAPI = {
 };
 
 // ══════════════════════════════════════════════════════════════════
+// STORIES / ESTADOS
+// ══════════════════════════════════════════════════════════════════
+export const storiesAPI = {
+  getAll: () => get<any[]>('/stories'),
+  publish: (media: { type: string; content: string; bg: string; emoji?: string; music?: string; duration?: number }[]) =>
+    post<any>('/stories', { media }),
+  deleteAll: () => del<void>('/stories'),
+  deleteSlide: (storyId: string, slideIdx: number) => del<any>(`/stories/${storyId}/slide/${slideIdx}`),
+  registerView: (storyId: string) => post<void>(`/stories/${storyId}/view`, {}),
+};
+
+// ══════════════════════════════════════════════════════════════════
 // KEEP-ALIVE — ping cada 4 min para que Render no duerma
 // ══════════════════════════════════════════════════════════════════
 const keepAlive = () => {
@@ -361,5 +373,6 @@ export default {
   seguros:  segurosAPI,
   noticias: noticiasAPI,
   user:     userAPI,
+  stories:  storiesAPI,
   BASE,
 };

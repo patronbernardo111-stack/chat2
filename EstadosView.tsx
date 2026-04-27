@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { storiesAPI } from './api';
 
 interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface Reply { id: string; user: string; text: string; time: string; }
@@ -323,6 +324,8 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
       : s
     )
   );
+  const [myStoryId, setMyStoryId] = useState<string | null>(null);
+  const [loadingStories, setLoadingStories] = useState(false);
   const [viewing, setViewing] = useState<Story | null>(null);
   const [slideIdx, setSlideIdx] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -399,6 +402,64 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
 
   useEffect(() => () => { stopCam(); if (progressTimer.current) clearInterval(progressTimer.current); }, []);
   useEffect(() => { if (cameraStream && videoRef.current) videoRef.current.srcObject = cameraStream; }, [cameraStream, createMode]);
+
+  // Cargar stories reales del servidor
+  const loadStories = useCallback(async () => {
+    setLoadingStories(true);
+    try {
+      const data = await storiesAPI.getAll();
+      if (!Array.isArray(data)) return;
+
+      // Construir lista: primero "me" (local), luego los del servidor
+      const myEntry = stories.find(s => s.userId === 'me')!;
+      const serverMe = data.find((s: any) => s.isMe);
+      const others = data.filter((s: any) => !s.isMe);
+
+      // Actualizar mi story con datos del servidor si existe
+      const updatedMe: Story = serverMe
+        ? { ...myEntry, media: serverMe.media || [], time: 'ahora', publishedAt: serverMe.publishedAt, views: serverMe.views }
+        : { ...myEntry };
+
+      if (serverMe) setMyStoryId(serverMe.id);
+
+      // Convertir stories del servidor a formato local
+      const serverStories: Story[] = others.map((s: any) => {
+        const initials = (s.userName || 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+        return {
+          id: s.id,
+          userId: s.userId,
+          userName: s.userName,
+          avatar: initials,
+          avatarUrl: s.avatarUrl || '',
+          color: '#00c8a0',
+          media: s.media || [],
+          time: 'ahora',
+          seen: s.seen,
+          views: s.views || 0,
+          reactions: s.reactions?.length ? s.reactions : [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+          replies: [],
+          publishedAt: s.publishedAt,
+        };
+      });
+
+      // Mantener stories demo para usuarios sin contactos reales, pero priorizar reales
+      const demoStories = STORIES.filter(s => s.userId !== 'me');
+      const hasRealStories = serverStories.length > 0;
+
+      setStories([updatedMe, ...serverStories, ...(hasRealStories ? [] : demoStories)]);
+    } catch {
+      // Si falla la API, mantener datos demo
+    } finally {
+      setLoadingStories(false);
+    }
+  }, []);
+
+  // Cargar al montar y refrescar cada 30s
+  useEffect(() => {
+    loadStories();
+    const interval = setInterval(loadStories, 30000);
+    return () => clearInterval(interval);
+  }, [loadStories]);
 
   // Limpieza automática cada minuto — elimina estados expirados (>24h)
   useEffect(() => {
@@ -490,6 +551,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     if (liveTimer.current) clearInterval(liveTimer.current);
     setIsLive(false);
     const newMedia: StoryMedia = { type: 'text' as const, content: `En vivo terminado - ${liveViewers} espectadores`, bg: 'linear-gradient(135deg,#dc2626,#7c3aed)' };
+    storiesAPI.publish([newMedia]).then(res => {
+      if (res?.id) setMyStoryId(res.id);
+      loadStories();
+    }).catch(() => {});
     setStories(prev => {
       const updated = prev.map(s => s.userId === 'me'
         ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
@@ -517,12 +582,17 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const publishVideo = () => {
     if (!recordedUrl) return;
     const newMedia: StoryMedia = { type: createMode as 'video' | 'clip', content: recordedUrl, bg: '#000', duration: recordSeconds };
+    // Publicar en servidor
+    storiesAPI.publish([newMedia]).then(res => {
+      if (res?.id) setMyStoryId(res.id);
+      loadStories();
+    }).catch(() => {});
+    // Actualizar local inmediatamente
     setStories(prev => {
       const updated = prev.map(s => s.userId === 'me'
         ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
         : s
       );
-      // Añadir/actualizar entrada visible en lista de contactos
       const meStory = updated.find(s => s.userId === 'me')!;
       const hasContact = updated.some(s => s.userId === 'me-contact');
       if (hasContact) {
@@ -545,6 +615,12 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const publishText = () => {
     if (!newText.trim()) return;
     const newMedia: StoryMedia = { type: 'text' as const, content: newText, bg: newBg, emoji: newEmoji, music: newMusic !== 'Sin musica' ? newMusic : undefined };
+    // Publicar en servidor
+    storiesAPI.publish([newMedia]).then(res => {
+      if (res?.id) setMyStoryId(res.id);
+      loadStories();
+    }).catch(() => {});
+    // Actualizar local inmediatamente
     setStories(prev => {
       const updated = prev.map(s => s.userId === 'me'
         ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
@@ -609,11 +685,14 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   };
 
   const openStory = (s: Story) => {
-    if ((s.userId === 'me' || s.userId === 'me-contact') && s.userId !== 'me-contact') return;
     if (s.userId === 'me') return;
     if (!s.media.length) return;
     setViewing({ ...s, views: s.views + 1 }); setSlideIdx(0); setShowReplies(false);
     setStories(prev => prev.map(x => x.id === s.id ? { ...x, seen: true, views: x.views + 1 } : x));
+    // Registrar vista en servidor si tiene ID real
+    if (s.id && s.id !== 'me-contact' && !s.id.startsWith('me')) {
+      storiesAPI.registerView(s.id).catch(() => {});
+    }
     startProgress();
   };
 
@@ -653,6 +732,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const [editText, setEditText] = useState('');
 
   const deleteSlide = (idx: number) => {
+    // Eliminar en servidor si tenemos ID
+    if (myStoryId) {
+      storiesAPI.deleteSlide(myStoryId, idx).then(() => loadStories()).catch(() => {});
+    }
     setStories(prev => {
       const updated = prev.map(s => s.userId === 'me'
         ? { ...s, media: s.media.filter((_, i) => i !== idx) }
@@ -691,10 +774,12 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   };
 
   const deleteAllMyStory = () => {
+    storiesAPI.deleteAll().catch(() => {});
     setStories(prev => prev
       .map(s => s.userId === 'me' ? { ...s, media: [], time: '' } : s)
       .filter(s => s.userId !== 'me-contact')
     );
+    setMyStoryId(null);
     setMyStoryMenu(false);
     if (viewing?.userId === 'me' || viewing?.userId === 'me-contact') closeViewer();
   };

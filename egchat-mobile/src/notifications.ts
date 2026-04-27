@@ -4,6 +4,7 @@
  */
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from './api';
@@ -87,11 +88,34 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   // Obtener token Expo Push (que internamente usa FCM en Android)
-  const tokenData = await Notifications.getExpoPushTokenAsync({
-    projectId: 'egchat', // debe coincidir con el slug en app.json
-  });
+  // projectId debe ser el EAS Project ID (UUID de expo.dev/accounts/<user>/projects/<slug>)
+  // Si no tienes EAS configurado, corre: npx eas init
+  let expoPushToken: string | null = null;
+  try {
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId
+        ?? Constants.easConfig?.projectId
+        ?? undefined,
+    });
+    expoPushToken = tokenData.data;
+  } catch (e) {
+    console.warn('No se pudo obtener Expo Push Token:', e);
+    // Intentar con token FCM nativo directamente (solo Android)
+    if (Platform.OS === 'android') {
+      try {
+        const nativeToken = await Notifications.getDevicePushTokenAsync();
+        expoPushToken = nativeToken.data as string;
+      } catch (e2) {
+        console.warn('No se pudo obtener token FCM nativo:', e2);
+      }
+    }
+  }
 
-  const expoPushToken = tokenData.data;
+  if (!expoPushToken) {
+    console.warn('Sin token push — las notificaciones no funcionarán en background');
+    return null;
+  }
+
   await AsyncStorage.setItem('expoPushToken', expoPushToken);
 
   // Registrar en el servidor

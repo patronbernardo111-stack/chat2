@@ -18,7 +18,12 @@ export default function RootLayout() {
       if (auth) {
         router.replace('/(tabs)');
         // Registrar notificaciones push solo si está autenticado
-        await registerForPushNotifications();
+        const pushToken = await registerForPushNotifications();
+        if (!pushToken) {
+          console.warn('⚠️ Push token no obtenido — notificaciones en background desactivadas');
+        } else {
+          console.log('✅ Push token registrado:', pushToken.substring(0, 30) + '...');
+        }
         // Escuchar notificaciones
         notifCleanup.current = setupNotificationListeners(
           (chatId) => router.push(`/(tabs)` as any),

@@ -39,7 +39,13 @@
     "scheme": "egchat",
     "extra": {
       "apiUrl": "https://egchat-api-1.onrender.com",
-      "router": { "origin": false }
+      "router": { "origin": false },
+      "eas": {
+        "projectId": "TU_EAS_PROJECT_ID_AQUI"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
