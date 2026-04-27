@@ -2902,7 +2902,7 @@ const App: React.FC = () => {
     if (!showProfileView) return null;
 
     // QR real con link para añadir contacto directamente
-    const qrLink = `https://egchat-app.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}&id=${userProfile.id}`;
+    const qrLink = `https://egchat-v2.vercel.app/add?phone=${encodeURIComponent(userProfile.phone)}&name=${encodeURIComponent(userProfile.name)}&id=${userProfile.id}`;
 
     const fields = [
       { key: 'name', label: 'Nombre completo', icon: 'contactos' },
@@ -8596,18 +8596,20 @@ const App: React.FC = () => {
         if (p.id) currentUserId.current = p.id;
       } catch {}
     }
-    // Manejar link de añadir contacto desde QR: /add?phone=...&name=...
+    // Manejar link de añadir contacto desde QR: /add?phone=...&name=...&id=...
     const urlParams = new URLSearchParams(window.location.search);
     const addPhone = urlParams.get('phone');
     const addName = urlParams.get('name');
-    if (addPhone) {
+    const addId = urlParams.get('id');
+    if (addId || addPhone) {
       // Limpiar URL sin recargar
       window.history.replaceState({}, '', window.location.pathname);
-      // Añadir contacto autom?ticamente despus de login
+      // Añadir contacto automáticamente después de login
       setTimeout(async () => {
         try {
-          await contactsAPI.add(undefined, addPhone, addName || undefined);
-          showToast(`? ${addName || addPhone} aadido a contactos`, 'success');
+          await contactsAPI.add(addId || undefined, addPhone || undefined, addName || undefined);
+          showToast(`✓ ${addName || addPhone || 'Contacto'} añadido a contactos`, 'success');
+          await loadContacts();
         } catch {}
       }, 2000);
     }

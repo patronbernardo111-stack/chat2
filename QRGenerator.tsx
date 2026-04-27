@@ -17,7 +17,7 @@ export const QRGenerator: React.FC<QRGeneratorProps> = ({ onGenerated, showQR = 
   const generateRegistrationData = () => {
     const timestamp = new Date().toISOString();
     const uniqueId = Math.random().toString(36).substring(2, 15);
-    const baseUrl = import.meta.env.VITE_APP_URL || 'https://egchat-app.vercel.app';
+    const baseUrl = import.meta.env.VITE_APP_URL || 'https://egchat-v2.vercel.app';
     
     return {
       type: 'registration',
