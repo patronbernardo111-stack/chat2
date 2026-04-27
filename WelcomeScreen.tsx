@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import QRGenerator from './QRGenerator';
 import { useTranslation } from './translations';
-import EGChatAuth from './WhatsAppAuth';
-import SocialAuth from './WeChatAuth';
+import EGChatAuth from './EGChatAuth';
+import SocialAuth from './EGChatSocialAuth';
 
 interface Props {
   onComplete: () => void;
