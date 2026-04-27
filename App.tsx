@@ -353,11 +353,13 @@ const App: React.FC = () => {
   const [finStep, setFinStep] = useState<string>('main');
   const [finData, setFinData] = useState<Record<string,string>>({});
 
-  const [selectedWallpaper, setSelectedWallpaper] = useState<string>('none');
+  const [selectedWallpaper, setSelectedWallpaper] = useState<string>(() => localStorage.getItem('egchat_wallpaper') || 'none');
   const [showWallpaperCatalog, setShowWallpaperCatalog] = useState<boolean>(false);
   const [showLayoutPanel, setShowLayoutPanel] = useState<boolean>(false);
   const [homeLayout, setHomeLayout] = useState<string>('default');
-  const [customWallpapers, setCustomWallpapers] = useState<Array<{ id: string; label: string; url: string; type: 'image' | 'video' }>>([]);
+  const [customWallpapers, setCustomWallpapers] = useState<Array<{ id: string; label: string; url: string; type: 'image' | 'video' }>>(() => {
+    try { return JSON.parse(localStorage.getItem('egchat_custom_wallpapers') || '[]'); } catch { return []; }
+  });
   const [transferAmount, setTransferAmount] = useState<string>('');
   const [transferRecipient, setTransferRecipient] = useState<string>('');
   const [aiMessages, setAiMessages] = useState<Array<{ id: string; type: 'user' | 'assistant'; content: string; timestamp: string }>>([
@@ -3498,6 +3500,8 @@ const App: React.FC = () => {
           const label = result.path.split(/[\\/]/).pop().replace(/\.[^.]+$/, '').slice(0, 20);
           setCustomWallpapers(prev => [...prev, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]);
           setSelectedWallpaper(id);
+          localStorage.setItem('egchat_wallpaper', id);
+          localStorage.setItem('egchat_custom_wallpapers', JSON.stringify([...customWallpapers, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]));
           setShowWallpaperCatalog(false);
           return;
         } catch {}
@@ -3515,13 +3519,14 @@ const App: React.FC = () => {
         const type = file.type.startsWith('video') ? 'video' : 'image';
         setCustomWallpapers(prev => [...prev, { id, label, url, type }]);
         setSelectedWallpaper(id);
+        localStorage.setItem('egchat_wallpaper', id);
         setShowWallpaperCatalog(false);
       };
       input.click();
     };
 
     const WpThumb = ({ w }: { w: typeof wallpapers[0] }) => (
-      <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); setShowWallpaperCatalog(false); }}
+      <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); localStorage.setItem('egchat_wallpaper', w.id); setShowWallpaperCatalog(false); }}
         title={w.label}
         style={{ border: selectedWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
         <div style={{ height: '90px', background: w.type === 'none'
@@ -3587,7 +3592,7 @@ const App: React.FC = () => {
               {/* Fondos personalizados subidos */}
               {customWallpapers.map(cw => (
                 <div key={cw.id} style={{ position: 'relative' }}>
-                  <button onClick={() => { setSelectedWallpaper(cw.id); setShowWallpaperCatalog(false); }}
+                  <button onClick={() => { setSelectedWallpaper(cw.id); localStorage.setItem('egchat_wallpaper', cw.id); setShowWallpaperCatalog(false); }}
                     title={cw.label}
                     style={{ width: '100%', border: selectedWallpaper === cw.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none' }}>
                     <div style={{ height: '90px', position: 'relative', overflow: 'hidden', background: '#111' }}>
@@ -3609,7 +3614,7 @@ const App: React.FC = () => {
                     </div>
                   </button>
                   {/* Botón eliminar */}
-                  <button onClick={() => { setCustomWallpapers(prev => prev.filter(w => w.id !== cw.id)); if (selectedWallpaper === cw.id) setSelectedWallpaper('none'); }}
+                  <button onClick={() => { setCustomWallpapers(prev => prev.filter(w => w.id !== cw.id)); if (selectedWallpaper === cw.id) { setSelectedWallpaper('none'); localStorage.setItem('egchat_wallpaper', 'none'); } }}
                     style={{ position: 'absolute', top: '4px', left: '4px', width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>
                     <svg width="7" height="7" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
