@@ -1,5 +1,5 @@
-// Service Worker v20260427b — Web Push + llamadas + mensajes
-const CACHE = 'egchat-v20260427b';
+// Service Worker v20260427c — Web Push + llamadas + mensajes + auto-update
+const CACHE = 'egchat-v20260427c';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -13,6 +13,12 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Notificar a todos los clientes que el SW se actualizó
+        self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 

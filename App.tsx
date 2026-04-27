@@ -13,6 +13,7 @@ import { RecargaMonederoModal, RetiroMonederoModal } from './WalletSystem';
 import { useWallet } from './WalletSystem';
 import { ContactProfileModal } from './ContactProfileModal';
 import { CameraModal } from './CameraModal';
+import { UpdateBanner } from './UpdateBanner';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { Avatar } from './Avatar';
 import { Lia25View } from './Lia25View';
@@ -8992,6 +8993,9 @@ const App: React.FC = () => {
       {renderWeatherModal()}
       {renderTimeModal()}
       {renderActiveCall()}
+
+      {/* Banner de actualización automática */}
+      <UpdateBanner />
 
       {/* Toast global */}
       {toast && (
