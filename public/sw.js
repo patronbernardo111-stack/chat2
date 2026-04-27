@@ -56,8 +56,8 @@ self.addEventListener('push', e => {
         icon: data.icon || '/favicon.svg',
         badge: '/favicon.svg',
         tag: `call-${data.callId || Date.now()}`,
-        renotify: true,
-        requireInteraction: true,          // No desaparece sola — crítico para llamadas
+        renotify: false,                       // NO reanimar — evita parpadeo
+        requireInteraction: true,              // No desaparece sola
         silent: false,
         vibrate: [500, 200, 500, 200, 500, 200, 500, 200, 500],
         data: {
