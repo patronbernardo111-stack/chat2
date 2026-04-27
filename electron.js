@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url';
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('disable-gpu-compositing');
+// Habilitar acceso a cámara y micrófono para WebRTC/getUserMedia en Electron
+app.commandLine.appendSwitch('enable-usermedia-screen-capturing');
+app.commandLine.appendSwitch('allow-http-screen-capture');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +48,14 @@ function createWindow() {
 
   mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
     return ['media','camera','microphone','audioCapture','videoCapture'].includes(permission);
+  });
+
+  // Permitir acceso a dispositivos de cámara y micrófono (Electron 20+)
+  mainWindow.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.deviceType === 'camera' || details.deviceType === 'microphone' || details.deviceType === 'media') {
+      return true;
+    }
+    return false;
   });
 
   // Inyectar cabeceras CORS en todas las peticiones al backend

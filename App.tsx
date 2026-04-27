@@ -2259,6 +2259,19 @@ const App: React.FC = () => {
           </button>
         </div>
 
+        {/* Escáner QR inteligente */}
+        <button
+          onClick={() => setShowQRScannerCamera(true)}
+          style={{ background: 'rgba(10,20,40,0.75)', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}
+          title="Escanear QR"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/>
+            <path d="M21 16h-3v3"/><path d="M21 21h-3"/><path d="M16 21v-3"/>
+            <path d="M10 3h1"/><path d="M10 8h1"/><path d="M3 10v1"/><path d="M8 10v1"/><path d="M10 13v1"/><path d="M13 10h1"/><path d="M13 13h1"/><path d="M13 16v1"/>
+          </svg>
+        </button>
+
         {/* Notificaciones */}
         <div style={{ position: 'relative' }}>
           <button
@@ -2529,9 +2542,24 @@ const App: React.FC = () => {
         await webrtc.startCall(type, targetUserId);
         setActiveCall({ type, contact, status: 'calling' });
         setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
-      } catch (err) {
+      } catch (err: any) {
         console.error('WebRTC startCall error:', err);
-        // Fallback si WebRTC falla
+        // Si el error es de cámara/micrófono, avisar al usuario
+        const isMediaError = err?.message?.includes('cámara') || err?.message?.includes('micrófono')
+          || err?.name === 'NotAllowedError' || err?.name === 'NotFoundError'
+          || err?.name === 'NotReadableError' || err?.name === 'OverconstrainedError';
+        if (isMediaError) {
+          alert('No se pudo acceder a la cámara o micrófono.\nVerifica que los permisos estén concedidos y que ninguna otra app esté usando la cámara.');
+          return;
+        }
+        // Fallback si WebRTC falla por otro motivo — intentar obtener stream local
+        try {
+          const constraints = type === 'video'
+            ? { audio: true, video: { facingMode: 'user' as const } }
+            : { audio: true, video: false };
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          setLocalStream(stream);
+        } catch {}
         setActiveCall({ type, contact, status: 'calling' });
         setCallDuration(0); setIsMuted(false); setIsCameraOff(false);
         // Solo pasar a 'connected' si la llamada sigue activa (no fue colgada)
@@ -2816,8 +2844,11 @@ const App: React.FC = () => {
           {/* Camara (solo videollamada) */}
           {type === 'video' && (
             <button onClick={() => {
-              setIsCameraOff(c => !c);
-              localStream?.getVideoTracks().forEach(t => { t.enabled = isCameraOff; });
+              const newCamOff = !isCameraOff;
+              setIsCameraOff(newCamOff);
+              // Aplicar al stream local (demo) y al stream WebRTC real
+              const stream = webrtc.localStream || localStream;
+              stream?.getVideoTracks().forEach(t => { t.enabled = !newCamOff; });
             }} title={isCameraOff ? "Activar cámara" : "Desactivar cámara"} style={{ width: '60px', height: '60px', borderRadius: '50%', background: isCameraOff ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.15)', border: isCameraOff ? '1.5px solid rgba(239,68,68,0.5)' : '1.5px solid rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', transition: 'all 0.2s ease', backdropFilter: 'blur(12px)' }}>
               {isCameraOff ? (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -9445,50 +9476,81 @@ const App: React.FC = () => {
           onClose={() => setShowQRScannerCamera(false)}
           onScan={async (data) => {
             setShowQRScannerCamera(false);
-            console.log('[QR] Raw data scanned:', data);
-            try {
-              const trimmed = data.trim();
-              let phone: string | null = null;
-              let name: string | null = null;
-              let userId: string | null = null;
+            const trimmed = data.trim();
+            console.log('[QR] Escaneado:', trimmed);
 
-              // Intentar parsear como URL (formato estándar EGCHAT)
-              try {
-                const url = new URL(trimmed);
-                phone = url.searchParams.get('phone');
-                name = url.searchParams.get('name');
-                userId = url.searchParams.get('id');
-                console.log('[QR] Parsed → userId:', userId, 'phone:', phone, 'name:', name);
-              } catch {
-                const phoneMatch = trimmed.match(/phone[=:]([+\d\s]+)/i);
-                const nameMatch = trimmed.match(/name[=:]([^&\n]+)/i);
-                if (phoneMatch) phone = phoneMatch[1].trim();
-                if (nameMatch) name = nameMatch[1].trim();
-                if (!phone && /^[+\d\s]{6,15}$/.test(trimmed)) phone = trimmed;
+            try {
+              // ── 1. PAGO EGCHAT (egchat://pay?to=...&amount=...) ──────────
+              if (trimmed.startsWith('egchat://pay') || trimmed.includes('egchat_pay')) {
+                const url = new URL(trimmed.replace('egchat://', 'https://'));
+                const to = url.searchParams.get('to') || url.searchParams.get('phone') || '';
+                const amount = url.searchParams.get('amount') || '';
+                const concept = url.searchParams.get('concept') || 'Pago QR';
+                showToast(`💳 Pago a ${to} — ${amount} XAF`, 'info');
+                setCurrentView('monedero');
+                return;
               }
 
-              if (userId || phone) {
-                try {
-                  await contactsAPI.add(userId || undefined, phone || undefined, name || undefined);
-                  showToast(`✓ ${name || phone || 'Contacto'} añadido`, 'success');
-                  await loadContacts();
-                } catch (addErr: any) {
-                  const msg = addErr?.message || '';
-                  console.error('[QR] Add contact error:', msg);
-                  if (msg.includes('ya es tu contacto') || msg.includes('409')) {
-                    showToast(`${name || phone || 'Contacto'} ya está en tu lista`, 'info');
-                  } else if (msg.includes('no encontrado') || msg.includes('404')) {
-                    showToast('Este usuario no tiene cuenta en EGCHAT', 'error');
-                  } else {
-                    showToast(msg || 'No se pudo añadir el contacto', 'error');
+              // ── 2. CONTACTO EGCHAT (egchat://add?phone=...&name=...) ─────
+              if (trimmed.startsWith('egchat://') || trimmed.includes('egchat.app') || trimmed.includes('egchat-v2.vercel.app')) {
+                let url: URL;
+                try { url = new URL(trimmed.replace('egchat://', 'https://')); } catch { url = new URL('https://x.com?' + trimmed.split('?')[1]); }
+                const phone = url.searchParams.get('phone');
+                const name = url.searchParams.get('name');
+                const userId = url.searchParams.get('id');
+                if (userId || phone) {
+                  try {
+                    await contactsAPI.add(userId || undefined, phone || undefined, name || undefined);
+                    showToast(`✅ ${name || phone} añadido como contacto`, 'success');
+                    await loadContacts();
+                  } catch (e: any) {
+                    showToast(e?.message?.includes('ya es') ? `${name || phone} ya está en tu lista` : 'No se pudo añadir', 'info');
                   }
                 }
-              } else {
-                showToast('QR no reconocido como contacto EGCHAT', 'error');
+                return;
               }
+
+              // ── 3. URL EXTERNA (http/https) ──────────────────────────────
+              if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                showToast(`🌐 Abriendo enlace...`, 'info');
+                window.open(trimmed, '_blank');
+                return;
+              }
+
+              // ── 4. NÚMERO DE TELÉFONO ────────────────────────────────────
+              if (/^[+\d\s\-()]{6,20}$/.test(trimmed)) {
+                const phone = trimmed.replace(/\s/g, '');
+                showToast(`📞 Número: ${phone}`, 'info');
+                try {
+                  await contactsAPI.add(undefined, phone, undefined);
+                  showToast(`✅ ${phone} añadido como contacto`, 'success');
+                  await loadContacts();
+                } catch {}
+                return;
+              }
+
+              // ── 5. WIFI (WIFI:S:nombre;T:WPA;P:clave;;) ─────────────────
+              if (trimmed.startsWith('WIFI:')) {
+                const ssid = trimmed.match(/S:([^;]+)/)?.[1] || '';
+                const pass = trimmed.match(/P:([^;]+)/)?.[1] || '';
+                showToast(`📶 WiFi: ${ssid} — Contraseña: ${pass}`, 'info');
+                navigator.clipboard?.writeText(pass);
+                return;
+              }
+
+              // ── 6. EMAIL ─────────────────────────────────────────────────
+              if (trimmed.startsWith('mailto:') || trimmed.includes('@') && !trimmed.includes(' ')) {
+                showToast(`📧 Email: ${trimmed.replace('mailto:', '')}`, 'info');
+                navigator.clipboard?.writeText(trimmed.replace('mailto:', ''));
+                return;
+              }
+
+              // ── 7. TEXTO GENÉRICO ────────────────────────────────────────
+              navigator.clipboard?.writeText(trimmed);
+              showToast(`📋 Copiado: ${trimmed.slice(0, 60)}${trimmed.length > 60 ? '...' : ''}`, 'info');
+
             } catch (err: any) {
-              console.error('[QR] Parse error:', err);
-              showToast('No se pudo procesar el QR. Inténtalo de nuevo.', 'error');
+              showToast('No se pudo procesar el QR', 'error');
             }
           }}
         />
