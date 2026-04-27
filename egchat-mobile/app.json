@@ -40,9 +40,8 @@
     "extra": {
       "apiUrl": "https://egchat-api-1.onrender.com",
       "router": { "origin": false },
-      "eas": {
-        "projectId": "TU_EAS_PROJECT_ID_AQUI"
-      }
+      "eas": {}
+
     },
     "runtimeVersion": {
       "policy": "appVersion"
