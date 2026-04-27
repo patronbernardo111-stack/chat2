@@ -9337,20 +9337,37 @@ const App: React.FC = () => {
           onScan={async (data) => {
             setShowQRScannerCamera(false);
             try {
-              // Parsear el link escaneado: https://egchat-app.vercel.app/add?phone=...&name=...
-              const url = new URL(data);
-              const phone = url.searchParams.get('phone');
-              const name = url.searchParams.get('name');
+              const trimmed = data.trim();
+              let phone: string | null = null;
+              let name: string | null = null;
+              let userId: string | null = null;
+
+              // Intentar parsear como URL (formato estándar EGCHAT)
+              try {
+                const url = new URL(trimmed);
+                phone = url.searchParams.get('phone');
+                name = url.searchParams.get('name');
+                userId = url.searchParams.get('id');
+              } catch {
+                // No es una URL válida — intentar parsear como texto plano "phone:XXX name:YYY"
+                const phoneMatch = trimmed.match(/phone[=:]([+\d\s]+)/i);
+                const nameMatch = trimmed.match(/name[=:]([^&\n]+)/i);
+                if (phoneMatch) phone = phoneMatch[1].trim();
+                if (nameMatch) name = nameMatch[1].trim();
+                // O si es solo un número de teléfono
+                if (!phone && /^[+\d\s]{6,15}$/.test(trimmed)) phone = trimmed;
+              }
+
               if (phone) {
-                const result = await contactsAPI.add(undefined, phone, name || undefined);
+                await contactsAPI.add(userId || undefined, phone, name || undefined);
                 showToast(`✓ ${name || phone} añadido a contactos`, 'success');
-                // Recargar contactos
                 await loadContacts();
               } else {
                 showToast('QR no reconocido como contacto EGCHAT', 'error');
               }
-            } catch {
-              showToast('QR no válido o no es un contacto EGCHAT', 'error');
+            } catch (err: any) {
+              console.error('QR scan error:', err);
+              showToast('No se pudo añadir el contacto. Inténtalo de nuevo.', 'error');
             }
           }}
         />
