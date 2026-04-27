@@ -248,11 +248,62 @@ export const playNotification = () => {
 
 // ── Ringtone ──────────────────────────────────────────────────────────────────
 let ringtoneInterval: ReturnType<typeof setInterval> | null = null;
+let ringtoneAudio: HTMLAudioElement | null = null;
+
+// Genera un tono de llamada como WAV en base64 para funcionar en iOS sin interacción
+const generateRingtoneWav = (): string => {
+  const sampleRate = 22050;
+  const duration = 1.5; // segundos
+  const numSamples = Math.floor(sampleRate * duration);
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+  // WAV header
+  const writeStr = (offset: number, str: string) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+  writeStr(0, 'RIFF'); view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+  writeStr(36, 'data'); view.setUint32(40, numSamples * 2, true);
+  // Generar tono: dos frecuencias alternando (estilo teléfono)
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const freq = t < 0.5 ? 480 : t < 1.0 ? 620 : 480;
+    const envelope = t < 0.05 ? t / 0.05 : t > 1.45 ? (1.5 - t) / 0.05 : 1;
+    const sample = Math.sin(2 * Math.PI * freq * t) * 0.6 * envelope;
+    view.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, sample * 32767)), true);
+  }
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return 'data:audio/wav;base64,' + btoa(binary);
+};
+
+let ringtoneDataUrl: string | null = null;
 
 export const startRingtone = () => {
   stopRingtone();
   const s = getSoundSettings();
   if (s.ringtone === 'none') return;
+
+  // Intentar primero con <audio> HTML (funciona en iOS sin interacción previa)
+  try {
+    if (!ringtoneDataUrl) ringtoneDataUrl = generateRingtoneWav();
+    ringtoneAudio = new Audio(ringtoneDataUrl);
+    ringtoneAudio.loop = true;
+    ringtoneAudio.volume = s.volume;
+    ringtoneAudio.play().catch(() => {
+      // Fallback a Web Audio API si falla
+      ringtoneAudio = null;
+      const tone = RINGTONES.find(t => t.id === s.ringtone) || RINGTONES[0];
+      const playRing = () => { try { tone.play(s.volume); } catch {} };
+      playRing();
+      ringtoneInterval = setInterval(playRing, 2000);
+    });
+    return;
+  } catch {}
+
+  // Fallback Web Audio API
   const tone = RINGTONES.find(t => t.id === s.ringtone) || RINGTONES[0];
   const playRing = () => { try { tone.play(s.volume); } catch {} };
   playRing();
@@ -261,6 +312,7 @@ export const startRingtone = () => {
 
 export const stopRingtone = () => {
   if (ringtoneInterval) { clearInterval(ringtoneInterval); ringtoneInterval = null; }
+  if (ringtoneAudio) { try { ringtoneAudio.pause(); ringtoneAudio.currentTime = 0; } catch {} ringtoneAudio = null; }
 };
 
 // ── Tono de marcación ─────────────────────────────────────────────────────────

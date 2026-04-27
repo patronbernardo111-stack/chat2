@@ -103,6 +103,11 @@ if ('serviceWorker' in navigator) {
             window.location.reload();
           }
         }
+        // Bufferizar mensajes de llamada para cuando App.tsx aún no esté listo
+        if (event.data?.type === 'INCOMING_CALL' || event.data?.type === 'CALL_REJECTED') {
+          (window as any).__pendingSWMessage = event.data;
+          window.dispatchEvent(new CustomEvent('sw-call-message', { detail: event.data }));
+        }
       });
 
       // Suscribirse al push cuando el usuario ya esté autenticado

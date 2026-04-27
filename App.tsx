@@ -8564,14 +8564,13 @@ const App: React.FC = () => {
   // -- Listener de mensajes del Service Worker (llamadas desde notificación push) --
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    const handler = (event: MessageEvent) => {
-      const data = event.data;
+
+    const processCallMessage = (data: any) => {
       if (!data) return;
 
       // Llamada entrante desde notificación push (app estaba cerrada/hibernada)
       if (data.type === 'INCOMING_CALL') {
-        if (incomingCallIdRef.current) return; // ya hay una activa
-        // Buscar la sesión de llamada en el servidor
+        if (incomingCallIdRef.current) return;
         const callId = data.callId;
         const token = localStorage.getItem('egchat_token') || localStorage.getItem('token') || '';
         if (!callId || !token) return;
@@ -8587,7 +8586,6 @@ const App: React.FC = () => {
             offer: session.offer,
           });
           startRingtone(); vibrate([500, 200, 500, 200, 500]);
-          // Si el usuario tocó "Aceptar" en la notificación, auto-aceptar
           if (data.autoAccept) {
             setTimeout(async () => {
               try {
@@ -8604,14 +8602,12 @@ const App: React.FC = () => {
         }).catch(err => console.warn('SW call fetch error:', err));
       }
 
-      // Llamada rechazada desde notificación
       if (data.type === 'CALL_REJECTED' && data.callId === incomingCallIdRef.current) {
         stopRingtone();
         incomingCallIdRef.current = null;
         setIncomingCall(null);
       }
 
-      // Click en notificación de mensaje
       if (data.type === 'NOTIFICATION_CLICK' && data.chatId) {
         setCurrentView('Mensajería');
         const chatId = data.chatId?.toString();
@@ -8626,14 +8622,27 @@ const App: React.FC = () => {
           }
           setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
         } else {
-          // Chats aún no cargados — guardar el chatId pendiente y abrir cuando carguen
           (window as any).__pendingOpenChatId = chatId;
         }
       }
     };
 
+    const handler = (event: MessageEvent) => processCallMessage(event.data);
+    const customHandler = (event: Event) => processCallMessage((event as CustomEvent).detail);
+
     navigator.serviceWorker.addEventListener('message', handler);
-    return () => navigator.serviceWorker.removeEventListener('message', handler);
+    window.addEventListener('sw-call-message', customHandler);
+
+    // Procesar mensajes que llegaron antes de que este listener estuviera listo
+    if ((window as any).__pendingSWMessage) {
+      processCallMessage((window as any).__pendingSWMessage);
+      delete (window as any).__pendingSWMessage;
+    }
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handler);
+      window.removeEventListener('sw-call-message', customHandler);
+    };
   }, [isAuthenticated, realChats]);
 
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
