@@ -59,7 +59,7 @@ export const MESSAGE_TONES: { id: string; name: string; play: (vol: number) => v
     }
   },
   {
-    id: 'telegram', name: 'Telegram',
+    id: 'notif', name: 'Notificación',
     play: (vol) => {
       const ctx = getCtx(); const t = ctx.currentTime;
       [523, 659, 784, 1047].forEach((freq, i) => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QRGenerator from './QRGenerator';
 import { useTranslation } from './translations';
 import EGChatAuth from './WhatsAppAuth';
-import WeChatAuth from './WeChatAuth';
+import SocialAuth from './WeChatAuth';
 
 interface Props {
   onComplete: () => void;
@@ -12,7 +12,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
   const [showQR, setShowQR] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
-  const [showWeChatAuth, setShowWeChatAuth] = useState(false);
+  const [showSocialAuth, setShowSocialAuth] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('es');
   
   const { t, direction } = useTranslation(currentLanguage);
@@ -58,8 +58,8 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
     setShowPhoneAuth(true);
   };
 
-  const handleWeChatAuth = () => {
-    setShowWeChatAuth(true);
+  const handleSocialAuth = () => {
+    setShowSocialAuth(true);
   };
 
   const handleAuthSuccess = (user: any) => {
@@ -71,7 +71,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
 
   const handleBackToWelcome = () => {
     setShowPhoneAuth(false);
-    setShowWeChatAuth(false);
+    setShowSocialAuth(false);
   };
 
   const handleStart = () => {
@@ -87,7 +87,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
         multiLanguage: true,
         glassmorphism: true,
         egchatAuth: true,
-        wechatAuth: true
+        socialAuth: true
       }
     }));
     onComplete();
@@ -180,16 +180,16 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
         />
       )}
       
-      {/* Mostrar WeChatAuth cuando se active */}
-      {showWeChatAuth && (
-        <WeChatAuth
+      {/* Registro social */}
+      {showSocialAuth && (
+        <SocialAuth
           onAuthSuccess={handleAuthSuccess}
           onBack={handleBackToWelcome}
         />
       )}
       
       {/* WelcomeScreen normal */}
-      {!showPhoneAuth && !showWeChatAuth && (
+      {!showPhoneAuth && !showSocialAuth && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -385,7 +385,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
               </button>
 
               <button
-                onClick={handleWeChatAuth}
+                onClick={handleSocialAuth}
                 style={{
                   width: '100%',
                   background: '#07c160',
@@ -420,7 +420,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                   <circle cx="9" cy="13" r="2"/>
                   <circle cx="15" cy="13" r="2"/>
                 </svg>
-                Crear cuenta con WeChat
+                Crear cuenta con correo
               </button>
 
               <button

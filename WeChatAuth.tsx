@@ -50,7 +50,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
         body: JSON.stringify({
           phone: phoneNumber,
           method: 'sms',
-          platform: 'wechat'
+          platform: 'egchat'
         })
       });
 
@@ -81,7 +81,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
         body: JSON.stringify({
           phone: phoneNumber,
           code: verificationCode,
-          platform: 'wechat'
+          platform: 'egchat'
         })
       });
 
@@ -164,7 +164,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
     setError('');
 
     try {
-      const response = await fetch(`${BASE}/auth/register-wechat`, {
+      const response = await fetch(`${BASE}/auth/register-social`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -180,7 +180,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
           security_question: securityQuestion,
           security_answer: securityAnswer,
           verification_code: verificationCode,
-          platform: 'wechat'
+          platform: 'egchat'
         })
       });
 
@@ -251,7 +251,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
         </button>
         <div>
           <div style={{ fontSize: '18px', fontWeight: '600' }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
             Registro de cuenta
@@ -268,7 +268,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        {/* WeChat Logo */}
+        {/* EGCHAT Logo */}
         <div style={{
           width: '100px',
           height: '100px',
@@ -414,7 +414,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             Verificación de teléfono
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
         </div>
       </div>
@@ -591,7 +591,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             Información personal
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
         </div>
       </div>
@@ -825,7 +825,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             Configurar contraseña
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
         </div>
       </div>
@@ -1000,7 +1000,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             Seguridad de cuenta
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
         </div>
       </div>
@@ -1188,7 +1188,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             ¡Cuenta creada!
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            WeChat - EGCHAT
+            EGCHAT
           </div>
         </div>
       </div>
