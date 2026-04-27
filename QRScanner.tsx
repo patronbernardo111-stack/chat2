@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import jsQR from 'jsqr';
 
 interface Props {
   onScan: (data: string) => void;
@@ -56,11 +57,25 @@ export const QRScanner: React.FC<Props> = ({ onScan, onClose }) => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Usar BarcodeDetector si está disponible (Chrome/Edge modernos)
+        // Intentar con jsQR primero (funciona en todos los navegadores)
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+        
+        if (code && code.data) {
+          setScanning(false);
+          stopCamera();
+          // Vibrar si está disponible
+          if ('vibrate' in navigator) navigator.vibrate(100);
+          onScan(code.data);
+          return;
+        }
+        
+        // Fallback: usar BarcodeDetector si está disponible (Chrome/Edge modernos)
         if ('BarcodeDetector' in window) {
           const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
           detector.detect(canvas).then((barcodes: any[]) => {
-            if (barcodes.length > 0) {
+            if (barcodes.length > 0 && scanning) {
               setScanning(false);
               stopCamera();
               onScan(barcodes[0].rawValue);

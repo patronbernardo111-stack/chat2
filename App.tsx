@@ -9264,14 +9264,14 @@ const App: React.FC = () => {
               const name = url.searchParams.get('name');
               if (phone) {
                 const result = await contactsAPI.add(undefined, phone, name || undefined);
-                showToast(`? ${name || phone} aadido a contactos`, 'success');
+                showToast(`✓ ${name || phone} añadido a contactos`, 'success');
                 // Recargar contactos
                 await loadContacts();
               } else {
                 showToast('QR no reconocido como contacto EGCHAT', 'error');
               }
             } catch {
-              showToast('QR no vlido o no es un contacto EGCHAT', 'error');
+              showToast('QR no válido o no es un contacto EGCHAT', 'error');
             }
           }}
         />
