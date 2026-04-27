@@ -9338,6 +9338,7 @@ const App: React.FC = () => {
           onClose={() => setShowQRScannerCamera(false)}
           onScan={async (data) => {
             setShowQRScannerCamera(false);
+            console.log('[QR] Raw data scanned:', data);
             try {
               const trimmed = data.trim();
               let phone: string | null = null;
@@ -9350,27 +9351,37 @@ const App: React.FC = () => {
                 phone = url.searchParams.get('phone');
                 name = url.searchParams.get('name');
                 userId = url.searchParams.get('id');
+                console.log('[QR] Parsed → userId:', userId, 'phone:', phone, 'name:', name);
               } catch {
-                // No es una URL válida — intentar parsear como texto plano "phone:XXX name:YYY"
                 const phoneMatch = trimmed.match(/phone[=:]([+\d\s]+)/i);
                 const nameMatch = trimmed.match(/name[=:]([^&\n]+)/i);
                 if (phoneMatch) phone = phoneMatch[1].trim();
                 if (nameMatch) name = nameMatch[1].trim();
-                // O si es solo un número de teléfono
                 if (!phone && /^[+\d\s]{6,15}$/.test(trimmed)) phone = trimmed;
               }
 
               if (userId || phone) {
-                // Preferir userId directo (más fiable que buscar por teléfono)
-                await contactsAPI.add(userId || undefined, phone || undefined, name || undefined);
-                showToast(`✓ ${name || phone || 'Contacto'} añadido`, 'success');
-                await loadContacts();
+                try {
+                  await contactsAPI.add(userId || undefined, phone || undefined, name || undefined);
+                  showToast(`✓ ${name || phone || 'Contacto'} añadido`, 'success');
+                  await loadContacts();
+                } catch (addErr: any) {
+                  const msg = addErr?.message || '';
+                  console.error('[QR] Add contact error:', msg);
+                  if (msg.includes('ya es tu contacto') || msg.includes('409')) {
+                    showToast(`${name || phone || 'Contacto'} ya está en tu lista`, 'info');
+                  } else if (msg.includes('no encontrado') || msg.includes('404')) {
+                    showToast('Este usuario no tiene cuenta en EGCHAT', 'error');
+                  } else {
+                    showToast(msg || 'No se pudo añadir el contacto', 'error');
+                  }
+                }
               } else {
                 showToast('QR no reconocido como contacto EGCHAT', 'error');
               }
             } catch (err: any) {
-              console.error('QR scan error:', err);
-              showToast('No se pudo añadir el contacto. Inténtalo de nuevo.', 'error');
+              console.error('[QR] Parse error:', err);
+              showToast('No se pudo procesar el QR. Inténtalo de nuevo.', 'error');
             }
           }}
         />
