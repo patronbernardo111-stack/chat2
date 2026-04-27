@@ -11,7 +11,10 @@ interface Story {
 }
 interface EspacioPost { id: string; author: string; avatar: string; color: string; text: string; time: string; likes: number; comments: number; liked: boolean; }
 interface Espacio { id: string; name: string; cover: string; emoji: string; description: string; type: 'publico' | 'comunidad'; followers: number; following: boolean; posts: EspacioPost[]; }
-interface Props { onBack: () => void; }
+interface Props {
+  onBack: () => void;
+  currentUser?: { id?: string; name?: string; avatar?: string; avatarUrl?: string; color?: string };
+}
 type CreateMode = 'text' | 'video' | 'clip' | 'live' | null;
 
 const NOW = Date.now();
@@ -308,8 +311,18 @@ const VideoEditor: React.FC<VideoEditorProps> = ({
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const EstadosView: React.FC<Props> = ({ onBack }) => {
-  const [stories, setStories] = useState<Story[]>(STORIES);
+export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
+  // Inicializar el story "me" con datos reales del usuario si están disponibles
+  const myAvatar = currentUser?.avatarUrl ? '' : (currentUser?.name ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : 'JP');
+  const myColor = currentUser?.color || '#00c8a0';
+  const myName = currentUser?.name || 'Mi estado';
+
+  const [stories, setStories] = useState<Story[]>(() =>
+    STORIES.map(s => s.userId === 'me'
+      ? { ...s, userName: myName, avatar: myAvatar, color: myColor }
+      : s
+    )
+  );
   const [viewing, setViewing] = useState<Story | null>(null);
   const [slideIdx, setSlideIdx] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -476,19 +489,83 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
   const stopLive = () => {
     if (liveTimer.current) clearInterval(liveTimer.current);
     setIsLive(false);
-    setStories(prev => prev.map(s => s.userId === 'me' ? { ...s, media: [...s.media, { type: 'text' as const, content: `En vivo terminado - ${liveViewers} espectadores`, bg: 'linear-gradient(135deg,#dc2626,#7c3aed)' }], time: 'ahora', publishedAt: Date.now() } : s));
+    const newMedia: StoryMedia = { type: 'text' as const, content: `En vivo terminado - ${liveViewers} espectadores`, bg: 'linear-gradient(135deg,#dc2626,#7c3aed)' };
+    setStories(prev => {
+      const updated = prev.map(s => s.userId === 'me'
+        ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
+        : s
+      );
+      const meStory = updated.find(s => s.userId === 'me')!;
+      const hasContact = updated.some(s => s.userId === 'me-contact');
+      if (hasContact) {
+        return updated.map(s => s.userId === 'me-contact'
+          ? { ...s, media: meStory.media, time: 'ahora', publishedAt: meStory.publishedAt, seen: false }
+          : s
+        );
+      }
+      return [...updated, {
+        id: 'me-contact', userId: 'me-contact',
+        userName: myName, avatar: myAvatar, color: myColor,
+        media: meStory.media, time: 'ahora', seen: false, views: 0,
+        reactions: [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [], publishedAt: meStory.publishedAt,
+      }];
+    });
     closeCreate();
   };
 
   const publishVideo = () => {
     if (!recordedUrl) return;
-    setStories(prev => prev.map(s => s.userId === 'me' ? { ...s, media: [...s.media, { type: createMode as 'video' | 'clip', content: recordedUrl, bg: '#000', duration: recordSeconds }], time: 'ahora', publishedAt: Date.now() } : s));
+    const newMedia: StoryMedia = { type: createMode as 'video' | 'clip', content: recordedUrl, bg: '#000', duration: recordSeconds };
+    setStories(prev => {
+      const updated = prev.map(s => s.userId === 'me'
+        ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
+        : s
+      );
+      // Añadir/actualizar entrada visible en lista de contactos
+      const meStory = updated.find(s => s.userId === 'me')!;
+      const hasContact = updated.some(s => s.userId === 'me-contact');
+      if (hasContact) {
+        return updated.map(s => s.userId === 'me-contact'
+          ? { ...s, media: meStory.media, time: 'ahora', publishedAt: meStory.publishedAt, seen: false }
+          : s
+        );
+      }
+      return [...updated, {
+        id: 'me-contact', userId: 'me-contact',
+        userName: myName, avatar: myAvatar, color: myColor,
+        media: meStory.media, time: 'ahora', seen: false, views: 0,
+        reactions: [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [], publishedAt: meStory.publishedAt,
+      }];
+    });
     closeCreate();
   };
 
   const publishText = () => {
     if (!newText.trim()) return;
-    setStories(prev => prev.map(s => s.userId === 'me' ? { ...s, media: [...s.media, { type: 'text' as const, content: newText, bg: newBg, emoji: newEmoji, music: newMusic !== 'Sin musica' ? newMusic : undefined }], time: 'ahora', publishedAt: Date.now() } : s));
+    const newMedia: StoryMedia = { type: 'text' as const, content: newText, bg: newBg, emoji: newEmoji, music: newMusic !== 'Sin musica' ? newMusic : undefined };
+    setStories(prev => {
+      const updated = prev.map(s => s.userId === 'me'
+        ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
+        : s
+      );
+      const meStory = updated.find(s => s.userId === 'me')!;
+      const hasContact = updated.some(s => s.userId === 'me-contact');
+      if (hasContact) {
+        return updated.map(s => s.userId === 'me-contact'
+          ? { ...s, media: meStory.media, time: 'ahora', publishedAt: meStory.publishedAt, seen: false }
+          : s
+        );
+      }
+      return [...updated, {
+        id: 'me-contact', userId: 'me-contact',
+        userName: myName, avatar: myAvatar, color: myColor,
+        media: meStory.media, time: 'ahora', seen: false, views: 0,
+        reactions: [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [], publishedAt: meStory.publishedAt,
+      }];
+    });
     closeCreate();
   };
 
@@ -532,7 +609,9 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
   };
 
   const openStory = (s: Story) => {
-    if (s.userId === 'me' || !s.media.length) return;
+    if ((s.userId === 'me' || s.userId === 'me-contact') && s.userId !== 'me-contact') return;
+    if (s.userId === 'me') return;
+    if (!s.media.length) return;
     setViewing({ ...s, views: s.views + 1 }); setSlideIdx(0); setShowReplies(false);
     setStories(prev => prev.map(x => x.id === s.id ? { ...x, seen: true, views: x.views + 1 } : x));
     startProgress();
@@ -574,10 +653,20 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
   const [editText, setEditText] = useState('');
 
   const deleteSlide = (idx: number) => {
-    setStories(prev => prev.map(s => s.userId === 'me'
-      ? { ...s, media: s.media.filter((_, i) => i !== idx) }
-      : s
-    ));
+    setStories(prev => {
+      const updated = prev.map(s => s.userId === 'me'
+        ? { ...s, media: s.media.filter((_, i) => i !== idx) }
+        : s
+      );
+      const meStory = updated.find(s => s.userId === 'me')!;
+      if (meStory.media.length === 0) {
+        return updated.filter(s => s.userId !== 'me-contact');
+      }
+      return updated.map(s => s.userId === 'me-contact'
+        ? { ...s, media: meStory.media }
+        : s
+      );
+    });
     if (viewing?.userId === 'me') {
       const newMedia = viewing.media.filter((_, i) => i !== idx);
       if (newMedia.length === 0) { closeViewer(); return; }
@@ -602,9 +691,12 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
   };
 
   const deleteAllMyStory = () => {
-    setStories(prev => prev.map(s => s.userId === 'me' ? { ...s, media: [], time: '' } : s));
+    setStories(prev => prev
+      .map(s => s.userId === 'me' ? { ...s, media: [], time: '' } : s)
+      .filter(s => s.userId !== 'me-contact')
+    );
     setMyStoryMenu(false);
-    if (viewing?.userId === 'me') closeViewer();
+    if (viewing?.userId === 'me' || viewing?.userId === 'me-contact') closeViewer();
   };
 
   const manualRefresh = () => {
@@ -660,8 +752,8 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
   };
 
   const me = stories.find(s => s.userId === 'me')!;
-  const recent = stories.filter(s => s.userId !== 'me' && !s.seen);
-  const seen = stories.filter(s => s.userId !== 'me' && s.seen);
+  const recent = stories.filter(s => s.userId !== 'me' && !s.seen && s.media.length > 0);
+  const seen = stories.filter(s => s.userId !== 'me' && s.seen && s.media.length > 0);
   const displayed = activeTab === 'recientes' ? recent : seen;
   const maxSec = createMode === 'clip' ? 15 : 60;
 
@@ -784,7 +876,11 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #f5f5f5' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ position: 'relative', cursor: 'pointer' }} onClick={openMyStory}>
-                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: me.media.length ? 'linear-gradient(135deg,#00c8a0,#00b4e6)' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px', fontWeight: '700', color: me.media.length ? '#fff' : '#9ca3af' }}>{me.avatar}</div>
+                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: me.media.length ? 'linear-gradient(135deg,#00c8a0,#00b4e6)' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px', fontWeight: '700', color: me.media.length ? '#fff' : '#9ca3af', overflow: 'hidden' }}>
+                      {currentUser?.avatarUrl
+                        ? <img src={currentUser.avatarUrl} alt={myName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : me.avatar}
+                    </div>
                     <div style={{ position: 'absolute', bottom: 0, right: 0, width: '20px', height: '20px', borderRadius: '50%', background: '#00c8a0', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </div>
@@ -837,10 +933,16 @@ export const EstadosView: React.FC<Props> = ({ onBack }) => {
               displayed.map(s => (
                 <div key={s.id} onClick={() => openStory(s)} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #f9f9f9' }}>
                   <div style={{ padding: '2.5px', borderRadius: '50%', background: s.seen ? '#e5e7eb' : 'linear-gradient(135deg,#00c8a0,#00b4e6)', flexShrink: 0 }}>
-                    <div style={{ width: '46px', height: '46px', borderRadius: '50%', background: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff', border: '2px solid #fff' }}>{s.avatar}</div>
+                    <div style={{ width: '46px', height: '46px', borderRadius: '50%', background: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff', border: '2px solid #fff', overflow: 'hidden' }}>
+                      {s.userId === 'me-contact' && currentUser?.avatarUrl
+                        ? <img src={currentUser.avatarUrl} alt={s.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : s.avatar}
+                    </div>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '15px', fontWeight: s.seen ? '400' : '600', color: s.seen ? '#555' : '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.userName}</div>
+                    <div style={{ fontSize: '15px', fontWeight: s.seen ? '400' : '600', color: s.seen ? '#555' : '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.userId === 'me-contact' ? `${s.userName} (tú)` : s.userName}
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                       <span style={{ fontSize: '12px', color: '#aaa' }}>hace {timeAgo(s.publishedAt)}</span>
                       <span style={{ color: '#ccc' }}>·</span>

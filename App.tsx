@@ -9473,7 +9473,7 @@ const App: React.FC = () => {
       {/* Vistas secundarias - fuera del stacking context del wallpaper */}
       {(currentView === 'estados' || currentView === 'apuestas' || currentView === 'cemac' || currentView === 'mitaxi') && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 600 }}>
-          {currentView === 'estados' && <EstadosView onBack={() => setCurrentView(previousView || 'home')} />}
+          {currentView === 'estados' && <EstadosView onBack={() => setCurrentView(previousView || 'home')} currentUser={{ id: userProfile.id, name: userProfile.name, avatar: userProfile.avatar, avatarUrl: userProfile.avatarUrl, color: '#00c8a0' }} />}
           {currentView === 'apuestas' && <ApuestasView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} />}
           {currentView === 'cemac' && <CemacView onBack={() => setCurrentView(previousView || 'home')} />}
           {currentView === 'mitaxi' && <MiTaxiView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} userName={userProfile.name} userPhone={userProfile.phone} />}
