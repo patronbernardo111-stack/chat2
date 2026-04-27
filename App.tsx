@@ -8704,6 +8704,7 @@ const App: React.FC = () => {
     return () => {
       navigator.serviceWorker.removeEventListener('message', handler);
       window.removeEventListener('sw-call-message', customHandler);
+      delete (window as any).__egchat_processCallMessage;
     };
   }, [isAuthenticated, realChats]);
 

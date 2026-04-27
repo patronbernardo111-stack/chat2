@@ -104,7 +104,7 @@ self.addEventListener('notificationclick', e => {
 
     // Aceptar o tocar la notificación — abrir app y pasar datos de llamada
     e.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async wins => {
         const msg = {
           type: 'INCOMING_CALL',
           callId: notifData.callId,
@@ -113,15 +113,23 @@ self.addEventListener('notificationclick', e => {
           callType: notifData.callType,
           autoAccept: action === 'accept',
         };
+
+        // Buscar ventana ya abierta de la app
         for (const w of wins) {
-          if (w.url.includes(self.location.origin) && 'focus' in w) {
+          if (w.url.includes(self.location.origin)) {
             w.postMessage(msg);
-            return w.focus();
+            if ('focus' in w) w.focus();
+            return;
           }
         }
-        // No hay ventana abierta — abrir una nueva y pasar datos via URL
+
+        // No hay ventana abierta — abrir una nueva con params en URL
         const url = `/?call=${notifData.callId}&caller=${encodeURIComponent(notifData.callerName || '')}&type=${notifData.callType || 'audio'}${action === 'accept' ? '&accept=1' : ''}`;
-        return clients.openWindow(url);
+        const newWin = await clients.openWindow(url);
+        // Enviar también el mensaje después de que cargue (backup por si los URL params fallan)
+        if (newWin) {
+          setTimeout(() => { try { newWin.postMessage(msg); } catch {} }, 4000);
+        }
       })
     );
     return;

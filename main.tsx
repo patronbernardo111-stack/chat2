@@ -107,6 +107,10 @@ if ('serviceWorker' in navigator) {
         if (event.data?.type === 'INCOMING_CALL' || event.data?.type === 'CALL_REJECTED') {
           (window as any).__pendingSWMessage = event.data;
           window.dispatchEvent(new CustomEvent('sw-call-message', { detail: event.data }));
+          // También intentar despachar al handler de App.tsx si ya está montado
+          if (typeof (window as any).__egchat_processCallMessage === 'function') {
+            (window as any).__egchat_processCallMessage(event.data);
+          }
         }
       });
 
