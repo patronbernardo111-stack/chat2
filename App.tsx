@@ -3164,20 +3164,88 @@ const App: React.FC = () => {
   const [repertorioSelected, setRepertorioSelected] = React.useState<Set<string>>(new Set());
   const [repertorioLoading, setRepertorioLoading] = React.useState(false);
   const [repertorioAdding, setRepertorioAdding] = React.useState(false);
+  // Contactos del teléfono enriquecidos con info de EGCHAT
+  const [deviceContacts, setDeviceContacts] = React.useState<any[]>([]);
+  const [deviceContactsLoaded, setDeviceContactsLoaded] = React.useState(false);
 
   const loadRepertorioUsers = React.useCallback(async () => {
     try {
       setRepertorioLoading(true);
-      const users = await chatAPI.searchUsers('');
+
+      // 1. Intentar leer contactos del dispositivo (API de Contactos del navegador - Chrome Android)
+      let phoneContacts: any[] = [];
+      if ('contacts' in navigator && 'ContactsManager' in window) {
+        try {
+          const raw = await (navigator as any).contacts.select(['name', 'tel'], { multiple: true });
+          phoneContacts = (raw || []).flatMap((c: any) =>
+            (c.tel || []).map((tel: string) => ({
+              name: (c.name?.[0] || tel).trim(),
+              phone: tel.replace(/\s+/g, '').trim(),
+            }))
+          ).filter((c: any) => c.phone);
+        } catch {
+          // Usuario canceló o no hay permiso — continuar con búsqueda en EGCHAT
+        }
+      }
+
+      // 2. Obtener todos los usuarios de EGCHAT para cruzar
+      const egchatUsers = await chatAPI.searchUsers('');
       const existingIds = new Set(allContacts.map((c: any) => (c.contact_user_id || c.id)?.toString()));
-      const myId = currentUserId.current?.toString();
-      const filtered = (users || [])
-        .filter((u: any) => u.id?.toString() !== myId && !existingIds.has(u.id?.toString()))
-        .map((u: any) => ({ id: u.id?.toString() || '', full_name: u.full_name || 'Usuario', phone: u.phone || '', avatar_url: u.avatar_url || '' }));
-      setRepertorioUsers(filtered);
-    } catch { setRepertorioUsers([]); }
-    finally { setRepertorioLoading(false); }
-  }, [allContacts]);
+      const myId = userProfile.id || currentUserId.current?.toString() || '';
+
+      // 3. Mapa de teléfonos EGCHAT normalizado
+      const egchatByPhone = new Map<string, any>();
+      (egchatUsers || []).forEach((u: any) => {
+        if (!u.phone) return;
+        const norm = u.phone.replace(/\s+/g, '').replace(/^\+/, '');
+        egchatByPhone.set(norm, u);
+        egchatByPhone.set('+' + norm, u);
+        egchatByPhone.set(u.phone, u);
+      });
+
+      if (phoneContacts.length > 0) {
+        // Cruzar contactos del dispositivo con EGCHAT
+        const enriched = phoneContacts.map((c: any) => {
+          const normPhone = c.phone.replace(/\s+/g, '').replace(/^\+/, '');
+          const egUser = egchatByPhone.get(c.phone) || egchatByPhone.get(normPhone) || egchatByPhone.get('+' + normPhone);
+          return {
+            id: egUser?.id?.toString() || null,
+            full_name: c.name,
+            phone: c.phone,
+            avatar_url: egUser?.avatar_url || '',
+            onEgchat: !!egUser && egUser.id?.toString() !== myId,
+            alreadyContact: egUser ? existingIds.has(egUser.id?.toString()) : false,
+          };
+        }).filter((c: any) => c.id !== myId);
+
+        // Ordenar: primero los que tienen EGCHAT y no son contactos aún
+        enriched.sort((a: any, b: any) => {
+          if (a.onEgchat && !a.alreadyContact && !(b.onEgchat && !b.alreadyContact)) return -1;
+          if (b.onEgchat && !b.alreadyContact && !(a.onEgchat && !a.alreadyContact)) return 1;
+          if (a.onEgchat && !b.onEgchat) return -1;
+          if (b.onEgchat && !a.onEgchat) return 1;
+          return a.full_name.localeCompare(b.full_name);
+        });
+
+        setDeviceContacts(enriched);
+        setDeviceContactsLoaded(true);
+        setRepertorioUsers(enriched.filter((c: any) => c.onEgchat && !c.alreadyContact));
+      } else {
+        // Sin API de contactos del dispositivo — mostrar usuarios de EGCHAT
+        const filtered = (egchatUsers || [])
+          .filter((u: any) => u.id?.toString() !== myId && !existingIds.has(u.id?.toString()))
+          .map((u: any) => ({ id: u.id?.toString() || '', full_name: u.full_name || 'Usuario', phone: u.phone || '', avatar_url: u.avatar_url || '', onEgchat: true, alreadyContact: false }));
+        setDeviceContacts(filtered);
+        setDeviceContactsLoaded(true);
+        setRepertorioUsers(filtered);
+      }
+    } catch {
+      setRepertorioUsers([]);
+      setDeviceContacts([]);
+    } finally {
+      setRepertorioLoading(false);
+    }
+  }, [allContacts, userProfile.id]);
 
   const renderAddContactModal = () => {
     if (!showAddContact) return null;
@@ -3305,35 +3373,60 @@ const App: React.FC = () => {
               {/* Lista */}
               <div style={{ flex: 1, overflowY: 'auto', marginBottom: '10px' }}>
                 {repertorioLoading ? (
-                  <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>Cargando usuarios...</div>
-                ) : filteredRep.length === 0 ? (
+                  <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>Cargando contactos...</div>
+                ) : (deviceContactsLoaded ? deviceContacts : repertorioUsers).filter((u: any) =>
+                    u.full_name.toLowerCase().includes(repertorioSearch.toLowerCase()) || u.phone.includes(repertorioSearch)
+                  ).length === 0 ? (
                   <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                    {repertorioSearch ? 'No se encontraron usuarios' : 'No hay usuarios disponibles'}
+                    {repertorioSearch ? 'No se encontraron contactos' : 'No hay contactos disponibles'}
                   </div>
-                ) : filteredRep.map(user => {
-                  const isSel = repertorioSelected.has(user.id);
+                ) : (deviceContactsLoaded ? deviceContacts : repertorioUsers)
+                    .filter((u: any) => u.full_name.toLowerCase().includes(repertorioSearch.toLowerCase()) || u.phone.includes(repertorioSearch))
+                    .map((user: any) => {
+                  const isSel = repertorioSelected.has(user.id || user.phone);
                   const initials = user.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+                  const canSelect = user.onEgchat && !user.alreadyContact;
                   return (
-                    <button key={user.id} onClick={() => {
-                      const next = new Set(repertorioSelected);
-                      isSel ? next.delete(user.id) : next.add(user.id);
-                      setRepertorioSelected(next);
-                    }}
-                      style={{ width: '100%', padding: '9px 12px', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', background: isSel ? 'rgba(0,180,230,0.07)' : 'transparent', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}>
-                      {/* Avatar */}
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, background: user.avatar_url ? 'transparent' : 'linear-gradient(135deg,#00c8a0,#00b894)', backgroundImage: user.avatar_url ? `url(${user.avatar_url})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: '700' }}>
-                        {!user.avatar_url && initials}
+                    <div key={user.id || user.phone} style={{ width: '100%', padding: '9px 12px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f3f4f6', background: isSel ? 'rgba(0,180,230,0.07)' : 'transparent' }}>
+                      {/* Avatar con indicador verde */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: user.avatar_url ? 'transparent' : 'linear-gradient(135deg,#00c8a0,#00b894)', backgroundImage: user.avatar_url ? `url(${user.avatar_url})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '14px', fontWeight: '700' }}>
+                          {!user.avatar_url && initials}
+                        </div>
+                        {/* Señal verde si tiene EGCHAT */}
+                        {user.onEgchat && (
+                          <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff' }}/>
+                        )}
                       </div>
                       {/* Info */}
                       <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
                         <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.full_name}</div>
-                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{user.phone}</div>
+                        <div style={{ fontSize: '11px', color: user.onEgchat ? '#22c55e' : '#9ca3af' }}>
+                          {user.alreadyContact ? '✓ Ya es tu contacto' : user.onEgchat ? 'En EGCHAT' : user.phone}
+                        </div>
                       </div>
-                      {/* Check */}
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: isSel ? 'none' : '2px solid #d1d5db', background: isSel ? '#00b4e6' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                      </div>
-                    </button>
+                      {/* Acción */}
+                      {user.alreadyContact ? (
+                        <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>✓</span>
+                      ) : user.onEgchat ? (
+                        // Checkbox para añadir
+                        <button onClick={() => {
+                          const next = new Set(repertorioSelected);
+                          isSel ? next.delete(user.id) : next.add(user.id);
+                          setRepertorioSelected(next);
+                        }} style={{ width: '22px', height: '22px', borderRadius: '50%', border: isSel ? 'none' : '2px solid #d1d5db', background: isSel ? '#00b4e6' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', outline: 'none' }}>
+                          {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </button>
+                      ) : (
+                        // Botón invitar por SMS/WhatsApp
+                        <button onClick={() => {
+                          const msg = `Hola ${user.full_name.split(' ')[0]}, únete a EGCHAT, la app de mensajería de Guinea Ecuatorial 🇬🇶 https://egchat-v2.vercel.app`;
+                          window.open(`sms:${user.phone}?body=${encodeURIComponent(msg)}`, '_blank');
+                        }} style={{ background: 'rgba(0,180,230,0.1)', border: '1px solid rgba(0,180,230,0.3)', borderRadius: '8px', padding: '4px 8px', color: '#00b4e6', fontSize: '11px', fontWeight: '600', cursor: 'pointer', outline: 'none', whiteSpace: 'nowrap' }}>
+                          Invitar
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -3346,7 +3439,7 @@ const App: React.FC = () => {
               )}
               <button onClick={handleAddRepertorio} disabled={repertorioSelected.size === 0 || repertorioAdding}
                 style={{ background: repertorioSelected.size > 0 ? '#00b4e6' : '#d1d5db', border: 'none', borderRadius: '10px', padding: '12px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: repertorioSelected.size > 0 ? 'pointer' : 'not-allowed', outline: 'none', opacity: repertorioAdding ? 0.7 : 1, flexShrink: 0 }}>
-                {repertorioAdding ? 'Añadiendo...' : `Añadir${repertorioSelected.size > 0 ? ` (${repertorioSelected.size})` : ''} contacto${repertorioSelected.size !== 1 ? 's' : ''}`}
+                {repertorioAdding ? 'Añadiendo...' : `Añadir${repertorioSelected.size > 0 ? ` (${repertorioSelected.size})` : ''} a contactos`}
               </button>
             </div>
           )}
