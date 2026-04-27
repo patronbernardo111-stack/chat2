@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -84,19 +84,21 @@ if ('serviceWorker' in navigator) {
         const newWorker = registration.installing;
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (newWorker.state === 'installed') {
               newWorker.postMessage({ type: 'SKIP_WAITING' });
-              // No recargar automáticamente para evitar parpadeo en móvil
             }
           });
         }
       });
 
-      // Escuchar mensajes del SW (click en notificación)
+      // Escuchar mensajes del SW (click en notificación + actualización)
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'NOTIFICATION_CLICK') {
-          // Disparar evento global para que App.tsx lo maneje
           window.dispatchEvent(new CustomEvent('sw-notification-click', { detail: event.data }));
+        }
+        // Recargar automáticamente cuando el SW se actualiza
+        if (event.data?.type === 'SW_UPDATED') {
+          window.location.reload();
         }
       });
 

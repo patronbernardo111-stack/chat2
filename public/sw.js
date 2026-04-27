@@ -1,5 +1,5 @@
-// Service Worker v20260427a — Web Push + llamadas + mensajes
-const CACHE = 'egchat-v20260427a';
+// Service Worker v20260427b — Web Push + llamadas + mensajes
+const CACHE = 'egchat-v20260427b';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -11,8 +11,14 @@ self.addEventListener('message', (e) => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Notificar a todos los clientes que recarguen
+        return self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 
