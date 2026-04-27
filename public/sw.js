@@ -106,30 +106,35 @@ self.addEventListener('push', e => {
       if (isCall && data.callId) {
         const callId = data.callId;
         let renotifyCount = 0;
-        const maxRenotify = 25; // ~100 segundos de intentos
+        const maxRenotify = 12; // ~96 segundos de intentos (12 × 8s)
 
         const renotify = () => {
           if (renotifyCount >= maxRenotify || !pendingCallRenotify[callId]) return;
           renotifyCount++;
-          // Verificar si la app ya está activa y procesó la llamada
           self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
             const appOpen = wins.some(w => w.url.includes(self.location.origin));
-            if (appOpen && renotifyCount > 3) {
-              // App ya abierta — dejar de re-notificar después de unos intentos
+            if (appOpen) {
+              // App ya abierta — no re-notificar más
               delete pendingCallRenotify[callId];
               return;
             }
-            // Re-vibrar para despertar el teléfono
+            // Solo re-vibrar sin reemplazar la notificación (evita parpadeo)
+            // Usamos un tag diferente para que coexistan sin parpadear
             self.registration.showNotification(title, {
               ...options,
-              renotify: true,
-              tag: `call-${callId}`, // mismo tag para reemplazar la anterior
+              silent: true,        // sin sonido en el reenvío, solo vibración
+              renotify: false,     // no reemplazar — solo vibrar
+              tag: `call-${callId}-ping-${renotifyCount}`,
+            }).then(() => {
+              // Cerrar inmediatamente el ping — solo queríamos la vibración
+              self.registration.getNotifications({ tag: `call-${callId}-ping-${renotifyCount}` })
+                .then(ns => ns.forEach(n => n.close()));
             }).catch(() => {});
-            pendingCallRenotify[callId] = setTimeout(renotify, 4000);
+            pendingCallRenotify[callId] = setTimeout(renotify, 8000); // cada 8s, no 4s
           });
         };
 
-        pendingCallRenotify[callId] = setTimeout(renotify, 4000);
+        pendingCallRenotify[callId] = setTimeout(renotify, 8000);
       }
     })
   );
