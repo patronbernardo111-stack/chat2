@@ -8583,6 +8583,10 @@ const App: React.FC = () => {
         incomingCallIdRef.current = call.callId;
         setIncomingCall(call);
         startRingtone(); vibrate([500, 200, 500, 200, 500]);
+        // Avisar al SW que la llamada ya fue recibida — cancela re-notificaciones push
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'CALL_HANDLED', callId: call.callId });
+        }
       }, () => {
         // El caller canceló antes de que aceptáramos
         stopRingtone();
@@ -8637,6 +8641,10 @@ const App: React.FC = () => {
             offer: session.offer,
           });
           startRingtone(); vibrate([500, 200, 500, 200, 500]);
+          // Avisar al SW que la llamada ya fue recibida — cancela re-notificaciones
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'CALL_HANDLED', callId });
+          }
           if (data.autoAccept) {
             setTimeout(async () => {
               try {

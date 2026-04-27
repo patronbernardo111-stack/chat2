@@ -1,11 +1,23 @@
-// Service Worker v20260427c — Web Push + llamadas + mensajes + auto-update
-const CACHE = 'egchat-v20260427c';
+// Service Worker v20260427d — Web Push + llamadas + mensajes + auto-update
+const CACHE = 'egchat-v20260427d';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  // La app avisa que ya procesó la llamada — cancelar renotificaciones
+  if (e.data?.type === 'CALL_HANDLED') {
+    const callId = e.data.callId;
+    if (callId && pendingCallRenotify[callId]) {
+      clearTimeout(pendingCallRenotify[callId]);
+      delete pendingCallRenotify[callId];
+    }
+    // Cerrar la notificación de llamada si sigue visible
+    self.registration.getNotifications({ tag: `call-${callId}` }).then(notifs => {
+      notifs.forEach(n => n.close());
+    });
+  }
 });
 
 self.addEventListener('activate', e => {
@@ -28,6 +40,9 @@ self.addEventListener('fetch', e => {
   if (url.pathname.endsWith('.html')) return;
 });
 
+// ── Registro de renotificaciones pendientes (para teléfono hibernado) ────────
+const pendingCallRenotify = {};
+
 // ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
 self.addEventListener('push', e => {
   let data = {};
@@ -38,7 +53,6 @@ self.addEventListener('push', e => {
   }
 
   const isCall = data.notificationType === 'incoming_call';
-
   const title = data.title || 'EGChat';
 
   const options = isCall
@@ -46,11 +60,11 @@ self.addEventListener('push', e => {
         body: data.body || 'Llamada entrante',
         icon: data.icon || '/favicon.svg',
         badge: '/favicon.svg',
-        tag: data.tag || `call-${Date.now()}`,
+        tag: `call-${data.callId || Date.now()}`,
         renotify: true,
         requireInteraction: true,          // No desaparece sola — crítico para llamadas
         silent: false,
-        vibrate: [500, 200, 500, 200, 500, 200, 500],
+        vibrate: [500, 200, 500, 200, 500, 200, 500, 200, 500],
         data: {
           url: '/',
           callId: data.callId,
@@ -58,6 +72,7 @@ self.addEventListener('push', e => {
           callerName: data.callerName,
           callType: data.callType || 'audio',
           notificationType: 'incoming_call',
+          receivedAt: Date.now(),
         },
         actions: [
           { action: 'accept', title: '✅ Aceptar' },
@@ -84,7 +99,40 @@ self.addEventListener('push', e => {
         ],
       };
 
-  e.waitUntil(self.registration.showNotification(title, options));
+  e.waitUntil(
+    self.registration.showNotification(title, options).then(() => {
+      // Para llamadas: re-vibrar cada 4s durante 2 minutos si el teléfono sigue sin responder
+      // Esto asegura que el usuario note la llamada aunque el teléfono esté hibernado
+      if (isCall && data.callId) {
+        const callId = data.callId;
+        let renotifyCount = 0;
+        const maxRenotify = 25; // ~100 segundos de intentos
+
+        const renotify = () => {
+          if (renotifyCount >= maxRenotify || !pendingCallRenotify[callId]) return;
+          renotifyCount++;
+          // Verificar si la app ya está activa y procesó la llamada
+          self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+            const appOpen = wins.some(w => w.url.includes(self.location.origin));
+            if (appOpen && renotifyCount > 3) {
+              // App ya abierta — dejar de re-notificar después de unos intentos
+              delete pendingCallRenotify[callId];
+              return;
+            }
+            // Re-vibrar para despertar el teléfono
+            self.registration.showNotification(title, {
+              ...options,
+              renotify: true,
+              tag: `call-${callId}`, // mismo tag para reemplazar la anterior
+            }).catch(() => {});
+            pendingCallRenotify[callId] = setTimeout(renotify, 4000);
+          });
+        };
+
+        pendingCallRenotify[callId] = setTimeout(renotify, 4000);
+      }
+    })
+  );
 });
 
 // ── CLICK EN NOTIFICACIÓN ───────────────────────────────────────────────────
@@ -93,6 +141,12 @@ self.addEventListener('notificationclick', e => {
 
   const notifData = e.notification.data || {};
   const action = e.action;
+
+  // Cancelar renotificaciones al interactuar
+  if (notifData.callId && pendingCallRenotify[notifData.callId]) {
+    clearTimeout(pendingCallRenotify[notifData.callId]);
+    delete pendingCallRenotify[notifData.callId];
+  }
 
   // ── Llamada ──
   if (notifData.notificationType === 'incoming_call') {
@@ -132,9 +186,12 @@ self.addEventListener('notificationclick', e => {
         // No hay ventana abierta — abrir una nueva con params en URL
         const url = `/?call=${notifData.callId}&caller=${encodeURIComponent(notifData.callerName || '')}&type=${notifData.callType || 'audio'}${action === 'accept' ? '&accept=1' : ''}`;
         const newWin = await clients.openWindow(url);
-        // Enviar también el mensaje después de que cargue (backup por si los URL params fallan)
+        // Enviar el mensaje en múltiples intentos para asegurar que llegue
+        // (la app puede tardar en cargar cuando el teléfono estaba hibernado)
         if (newWin) {
+          setTimeout(() => { try { newWin.postMessage(msg); } catch {} }, 2000);
           setTimeout(() => { try { newWin.postMessage(msg); } catch {} }, 4000);
+          setTimeout(() => { try { newWin.postMessage(msg); } catch {} }, 7000);
         }
       })
     );
@@ -161,6 +218,11 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener('notificationclose', e => {
   const notifData = e.notification.data || {};
   if (notifData.notificationType === 'incoming_call') {
+    // Cancelar renotificaciones
+    if (notifData.callId && pendingCallRenotify[notifData.callId]) {
+      clearTimeout(pendingCallRenotify[notifData.callId]);
+      delete pendingCallRenotify[notifData.callId];
+    }
     // Informar a la app que la notificación fue cerrada (llamada perdida)
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
       for (const w of wins) {

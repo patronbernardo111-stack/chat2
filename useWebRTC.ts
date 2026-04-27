@@ -238,17 +238,17 @@ export function useWebRTC() {
           }
           calleeCandidatesApplied = cands.length;
         }
-        // Timeout 60s sin respuesta (aumentado de 45s)
-        if (pollCount > 40 && !answerSet) triggerEnded();
+        // Timeout 120s sin respuesta (el receptor puede estar desbloqueando el teléfono)
+        if (pollCount > 80 && !answerSet) triggerEnded();
       } catch (err: any) {
         consecutiveErrors++;
-        // Solo cortar si hay 5+ errores consecutivos Y la conexión WebRTC está caída
+        // Solo cortar si hay 10+ errores consecutivos Y la conexión WebRTC está definitivamente caída
         const rtcState = p.connectionState || p.iceConnectionState;
-        const rtcFailed = rtcState === 'failed' || rtcState === 'disconnected' || rtcState === 'closed';
-        if (consecutiveErrors >= 5 && rtcFailed) {
+        const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
+        // 'disconnected' es transitorio — NO cortar por eso
+        if (consecutiveErrors >= 10 && rtcFailed) {
           triggerEnded();
         }
-        // Si es 404 pero WebRTC sigue conectado, ignorar (servidor reiniciado)
       }
     }, 1500);
   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
@@ -313,10 +313,11 @@ export function useWebRTC() {
         callerCandidatesApplied = cands.length;
       } catch (err: any) {
         calleeConsecutiveErrors++;
-        // Solo cortar si hay 5+ errores Y WebRTC está caído
+        // Solo cortar si hay 10+ errores Y WebRTC está definitivamente caído
         const rtcState = p.connectionState || p.iceConnectionState;
-        const rtcFailed = rtcState === 'failed' || rtcState === 'disconnected' || rtcState === 'closed';
-        if (calleeConsecutiveErrors >= 5 && rtcFailed) triggerEnded();
+        const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
+        // 'disconnected' es transitorio — NO cortar por eso, puede recuperarse
+        if (calleeConsecutiveErrors >= 10 && rtcFailed) triggerEnded();
       }
     }, 1500);
   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
