@@ -492,7 +492,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     try {
       const data = await spacesAPI.getAll();
       if (!Array.isArray(data)) return;
-      setEspacios(data.map(s => ({
+      const fromApi = data.map(s => ({
         id: s.id,
         name: s.name,
         cover: s.cover || 'linear-gradient(135deg,#00c8a0,#00b4e6)',
@@ -502,7 +502,13 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
         followers: s.followers_count || 0,
         following: s.following || false,
         posts: [],
-      })));
+      }));
+      // Fusionar con estáticos: los estáticos que no estén en la API se conservan
+      setEspacios(prev => {
+        const apiIds = new Set(fromApi.map(e => e.id));
+        const staticOnly = prev.filter(e => !apiIds.has(e.id));
+        return [...staticOnly, ...fromApi];
+      });
     } catch {}
   }, []);
 
