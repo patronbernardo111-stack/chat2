@@ -5906,7 +5906,7 @@ const App: React.FC = () => {
                         const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
                         const msgId = Date.now().toString();
                         const localUrl = URL.createObjectURL(blob);
-                        const newMsg = { id: msgId, from: 'me' as const, text: `📌 Mensaje de voz`, time, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
+                        const newMsg = { id: msgId, from: 'me' as const, text: `🎤 Mensaje de voz`, time, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'audio' as const, audioUrl: localUrl };
                         addMsg(newMsg);
                         // Subir al servidor para que persista
                         const chatId = sc?.id?.toString() || '';
@@ -5915,7 +5915,7 @@ const App: React.FC = () => {
                             const audioFile = new File([blob], `audio_${msgId}.${ext}`, { type: mimeType });
                             const result = await chatAPI.uploadFile(chatId, audioFile);
                             if (result.file_url) {
-                              const sent = await chatAPI.sendMessage(chatId, { text: '📌 Mensaje de voz', type: 'audio', file_url: result.file_url });
+                              const sent = await chatAPI.sendMessage(chatId, { text: '🎤 Mensaje de voz', type: 'audio', file_url: result.file_url });
                               // Reemplazar ID local con ID del servidor para evitar duplicados en el polling
                               const serverId = sent?.id || msgId;
                               const key = sc?.id?.toString() || sc?.title;
