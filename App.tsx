@@ -7280,7 +7280,7 @@ const App: React.FC = () => {
               <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px', textTransform: 'uppercase' }}>
                 Total: {allContacts.length} contactos
               </div>
-              {allContacts.map((contact) => (
+              {[...allContacts].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })).map((contact) => (
                 <button
                   key={contact.id}
                   onClick={async () => {
@@ -8777,7 +8777,7 @@ const App: React.FC = () => {
           }
         });
 
-        setAllContacts([...backendContacts, ...extraContacts]);
+        setAllContacts([...backendContacts, ...extraContacts].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })));
       }
     } catch {}
   }, []);
@@ -11581,7 +11581,7 @@ const App: React.FC = () => {
               <div style={{marginBottom:'12px'}}>
                 <div style={{fontSize:'11px',color:'#9ca3af',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'8px'}}>Tus contactos</div>
                 <div style={{display:'flex',flexDirection:'column',gap:'4px',maxHeight:'160px',overflowY:'auto'}}>
-                  {allContacts.filter(c => !newChatPhone || c.name.toLowerCase().includes(newChatPhone.toLowerCase()) || c.phone.includes(newChatPhone)).slice(0,5).map(c => (
+                  {[...allContacts].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })).filter(c => !newChatPhone || c.name.toLowerCase().includes(newChatPhone.toLowerCase()) || c.phone.includes(newChatPhone)).slice(0,5).map(c => (
                     <button key={c.id} onClick={async () => {
                       setNewChatSearching(true);
                       try {
