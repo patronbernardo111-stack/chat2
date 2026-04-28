@@ -18,7 +18,7 @@ interface Props {
   onBack: () => void;
   currentUser?: { id?: string; name?: string; avatar?: string; avatarUrl?: string; color?: string };
 }
-type CreateMode = 'text' | 'video' | 'clip' | 'live' | null;
+type CreateMode = 'text' | 'video' | 'clip' | 'live' | 'gallery' | null;
 
 const NOW = Date.now();
 const H = 3600000; // 1 hora en ms
@@ -656,12 +656,27 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     } catch { setCamError('Sin acceso a la camara. Verifica los permisos.'); }
   };
 
+  const [galleryFile, setGalleryFile] = useState<string>('');
+  const [galleryCaption, setGalleryCaption] = useState('');
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
   const openCreate = async (mode: CreateMode) => {
     setCreateMode(mode); setRecordedUrl(''); setRecordSeconds(0); setCamError('');
+    setGalleryFile(''); setGalleryCaption('');
+    if (mode === 'gallery') return; // no necesita cámara
     if (mode !== 'text') await startCam();
   };
 
-  const closeCreate = () => { stopCam(); setCreateMode(null); setNewText(''); setNewEmoji(''); setNewMusic('Sin musica'); setRecordedUrl(''); };
+  const closeCreate = () => { 
+    stopCam(); 
+    setCreateMode(null); 
+    setNewText(''); 
+    setNewEmoji(''); 
+    setNewMusic('Sin musica'); 
+    setRecordedUrl(''); 
+    setGalleryFile(''); 
+    setGalleryCaption('');
+  };
 
   const startRec = () => {
     if (!cameraStream) return;
