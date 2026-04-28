@@ -173,6 +173,48 @@ export const ChatConversation: React.FC<Props> = ({
       : (selectedWallpaper && selectedWallpaper !== 'none' ? 'rgba(255,255,255,0.92)' : '#ffffff');
     const radius = isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px';
 
+    // ── Burbuja de llamada — compacta y profesional ──
+    if (msg.type === 'call') {
+      const isVideo = msg.text?.toLowerCase().includes('video');
+      const isOutgoing = msg.text?.toLowerCase().includes('saliente') || msg.text?.toLowerCase().includes('outgoing');
+      const isMissed = msg.text?.toLowerCase().includes('perdida') || msg.text?.toLowerCase().includes('missed');
+      const iconColor = isMissed ? '#ef4444' : isMe ? '#00c8a0' : '#6b7280';
+      const label = isVideo
+        ? (isOutgoing ? 'Videollamada saliente' : isMissed ? 'Videollamada perdida' : 'Videollamada recibida')
+        : (isOutgoing ? 'Llamada saliente' : isMissed ? 'Llamada perdida' : 'Llamada recibida');
+      return (
+        <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: '2px' }}>
+          <div style={{
+            background: isMe ? '#d9fdd3' : '#fff',
+            borderRadius: radius,
+            padding: '7px 10px 6px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            minWidth: '150px', maxWidth: '210px',
+          }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `${iconColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {isVideo
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              }
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                {isOutgoing
+                  ? <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                  : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>
+                }
+                <span style={{ fontSize: '12px', fontWeight: '600', color: isMissed ? '#ef4444' : '#111827' }}>{label}</span>
+              </div>
+              <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '1px' }}>{isVideo ? 'Videollamada' : 'Llamada de voz'}</div>
+            </div>
+            <span style={{ fontSize: '10px', color: '#9ca3af', flexShrink: 0, alignSelf: 'flex-end' }}>{msg.time}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Burbuja normal ──
     return (
       <div
         key={msg.id}
@@ -227,43 +269,43 @@ export const ChatConversation: React.FC<Props> = ({
         marginTop: 0,
       }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        padding: '8px 4px 8px 2px',
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '6px 8px 6px 4px',
         background: '#fff',
       }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#374151', display: 'flex', flexShrink: 0 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px', color: '#374151', display: 'flex', flexShrink: 0 }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
 
         <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={onOpenProfile}>
-          <Avatar name={chat.title} size={42} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
+          <Avatar name={chat.title} size={38} status={chat.status as any} showStatus={!chat.isGroup} photo={chat.avatarUrl} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={onOpenProfile}>
           <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{chat.title}</div>
-          <div style={{ fontSize: '12px', color: chat.status === 'online' ? '#00c8a0' : '#9ca3af' }}>
-            {chat.isGroup ? `${chat.members || ''} miembros` : chat.status === 'online' ? 'En línea' : 'Desconectado'}
+          <div style={{ fontSize: '11px', color: chat.status === 'online' ? '#00c8a0' : '#9ca3af' }}>
+            {chat.isGroup ? `${chat.members || ''} miembros` : chat.status === 'online' ? '● En línea' : 'Desconectado'}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '0px', flexShrink: 0 }}>
           {onStartCall && (
             <>
-              <button onClick={() => onStartCall('audio')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <button onClick={() => onStartCall('audio')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               </button>
-              <button onClick={() => onStartCall('video')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              <button onClick={() => onStartCall('video')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
               </button>
             </>
           )}
           {onOpenCamera && (
-            <button onClick={onOpenCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <button onClick={onOpenCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>
           )}
-          <button onClick={() => setShowMenu(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#54656f', display: 'flex' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          <button onClick={() => setShowMenu(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#54656f', display: 'flex' }}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
           </button>
         </div>
       </div>
