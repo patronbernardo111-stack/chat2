@@ -980,6 +980,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
 
   const saveEditSlide = () => {
     if (editingSlide === null || !editText.trim()) return;
+    // Persistir en servidor si tenemos ID
+    if (myStoryId) {
+      storiesAPI.updateSlide(myStoryId, editingSlide, { content: editText.trim() }).catch(() => {});
+    }
     setStories(prev => prev.map(s => s.userId === 'me'
       ? { ...s, media: s.media.map((m, i) => i === editingSlide ? { ...m, content: editText } : m) }
       : s
@@ -1367,10 +1371,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                     <>
                       <div onClick={() => setSlideMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 3099 }} />
                       <div style={{ position: 'absolute', right: 0, top: '40px', background: '#1a1a1a', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.4)', zIndex: 3100, minWidth: '190px', overflow: 'hidden' }}>
-                        {viewing.media[slideIdx]?.type === 'text' && (
-                          <button onClick={() => { setEditingSlide(slideIdx); setEditText(viewing.media[slideIdx].content); setSlideMenu(false); }} style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#fff', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        {(viewing.media[slideIdx]?.type === 'text' || (viewing.media[slideIdx]?.type as any) === 'image') && (
+                          <button onClick={() => { setEditingSlide(slideIdx); setEditText(viewing.media[slideIdx].type === 'text' ? viewing.media[slideIdx].content : ((viewing.media[slideIdx] as any).caption || '')); setSlideMenu(false); }} style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#fff', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            Editar texto
+                            {(viewing.media[slideIdx]?.type as any) === 'image' ? 'Editar descripción' : 'Editar texto'}
                           </button>
                         )}
                         <button onClick={() => { openCreate('text'); setSlideMenu(false); }} style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#fff', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>

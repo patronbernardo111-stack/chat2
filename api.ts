@@ -81,6 +81,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 const get  = <T>(path: string, headers?: Record<string,string>) => request<T>(path, { method:'GET', headers });
 const post = <T>(path: string, body: unknown) => request<T>(path, { method:'POST', body: JSON.stringify(body) });
 const put  = <T>(path: string, body: unknown) => request<T>(path, { method:'PUT',  body: JSON.stringify(body) });
+const patch = <T>(path: string, body: unknown) => request<T>(path, { method:'PATCH', body: JSON.stringify(body) });
 const del  = <T>(path: string) => request<T>(path, { method:'DELETE' });
 
 // ══════════════════════════════════════════════════════════════════
@@ -366,6 +367,8 @@ export const storiesAPI = {
     post<any>('/stories', { media }),
   deleteAll: () => del<void>('/stories'),
   deleteSlide: (storyId: string, slideIdx: number) => del<any>(`/stories/${storyId}/slide/${slideIdx}`),
+  updateSlide: (storyId: string, slideIdx: number, fields: { content?: string; bg?: string; emoji?: string; music?: string }) =>
+    patch<any>(`/stories/${storyId}/slide/${slideIdx}`, fields),
   registerView: (storyId: string) => post<void>(`/stories/${storyId}/view`, {}),
 };
 
