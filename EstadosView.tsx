@@ -1643,7 +1643,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
         </div>
       )}
 
-      {/* GALERÍA — subir foto/video del dispositivo */}
+      {/* GALERÍA — subir fotos/videos del dispositivo (múltiples) */}
       {createMode === 'gallery' && (
         <div style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 3000, display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
@@ -1651,88 +1651,102 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
             <button onClick={closeCreate} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111', padding: '4px', display: 'flex' }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             </button>
-            <span style={{ fontSize: '17px', fontWeight: '700', flex: 1 }}>Subir foto o video</span>
-            {galleryFile && (
+            <span style={{ fontSize: '17px', fontWeight: '700', flex: 1 }}>
+              Subir fotos/videos {galleryFiles.length > 0 && <span style={{ fontSize: '13px', color: '#00c8a0', fontWeight: '600' }}>({galleryFiles.length})</span>}
+            </span>
+            {galleryFiles.length > 0 && (
               <button onClick={publishGallery} style={{ background: '#00c8a0', border: 'none', borderRadius: '20px', padding: '8px 18px', color: '#fff', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
                 Publicar
               </button>
             )}
           </div>
 
-          {/* Área de selección */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', gap: '20px' }}>
-            {!galleryFile ? (
-              <>
-                <div
-                  onClick={() => galleryInputRef.current?.click()}
-                  style={{ width: '100%', maxWidth: '340px', aspectRatio: '1', border: '2px dashed #d1d5db', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', background: '#fafafa' }}
-                >
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                  <span style={{ fontSize: '15px', fontWeight: '600', color: '#374151' }}>Toca para elegir</span>
-                  <span style={{ fontSize: '13px', color: '#9ca3af' }}>Foto o video de tu dispositivo</span>
-                </div>
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = ev => setGalleryFile(ev.target?.result as string);
-                    reader.readAsDataURL(file);
-                  }}
-                />
-              </>
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={e => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length) return;
+              const remaining = 10 - galleryFiles.length;
+              const toRead = files.slice(0, remaining);
+              let loaded: string[] = [];
+              toRead.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                  loaded.push(ev.target?.result as string);
+                  if (loaded.length === toRead.length) {
+                    setGalleryFiles(prev => [...prev, ...loaded]);
+                  }
+                };
+                reader.readAsDataURL(file);
+              });
+              if (galleryInputRef.current) galleryInputRef.current.value = '';
+            }}
+          />
+
+          {/* Área de selección / previews */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {galleryFiles.length === 0 ? (
+              <div
+                onClick={() => galleryInputRef.current?.click()}
+                style={{ width: '100%', aspectRatio: '1', border: '2px dashed #d1d5db', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', background: '#fafafa' }}
+              >
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span style={{ fontSize: '15px', fontWeight: '600', color: '#374151' }}>Toca para elegir</span>
+                <span style={{ fontSize: '13px', color: '#9ca3af' }}>Puedes seleccionar varias fotos/videos</span>
+              </div>
             ) : (
-              <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {/* Preview */}
-                <div style={{ width: '100%', aspectRatio: '9/16', borderRadius: '16px', overflow: 'hidden', background: '#000', position: 'relative' }}>
-                  {galleryFile.startsWith('data:video') ? (
-                    <video src={galleryFile} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                  ) : (
-                    <img src={galleryFile} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <>
+                {/* Grid de previews */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                  {galleryFiles.map((file, idx) => (
+                    <div key={idx} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#000' }}>
+                      {file.startsWith('data:video') ? (
+                        <video src={file} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <img src={file} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      )}
+                      {/* Badge número */}
+                      <div style={{ position: 'absolute', top: '5px', left: '5px', background: '#00c8a0', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', color: '#fff' }}>{idx + 1}</div>
+                      {/* Botón eliminar */}
+                      <button
+                        onClick={() => setGalleryFiles(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.55)', border: 'none', borderRadius: '50%', width: '22px', height: '22px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                  {/* Botón añadir más (máx 10) */}
+                  {galleryFiles.length < 10 && (
+                    <div
+                      onClick={() => galleryInputRef.current?.click()}
+                      style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #d1d5db', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer', background: '#fafafa' }}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '600' }}>Añadir</span>
+                    </div>
                   )}
-                  <button
-                    onClick={() => { setGalleryFile(''); if (galleryInputRef.current) galleryInputRef.current.value = ''; }}
-                    style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
                 </div>
                 {/* Caption */}
                 <input
                   value={galleryCaption}
                   onChange={e => setGalleryCaption(e.target.value)}
-                  placeholder="Añadir descripción..."
+                  placeholder="Añadir descripción (opcional)..."
                   maxLength={120}
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box', color: '#111' }}
                 />
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = ev => setGalleryFile(ev.target?.result as string);
-                    reader.readAsDataURL(file);
-                  }}
-                />
-                <button
-                  onClick={() => galleryInputRef.current?.click()}
-                  style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px', fontSize: '13px', color: '#6b7280', cursor: 'pointer' }}
-                >
-                  Cambiar archivo
-                </button>
-              </div>
+                <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: 0 }}>
+                  {galleryFiles.length}/10 · Cada archivo se publica como un slide separado
+                </p>
+              </>
             )}
           </div>
         </div>
