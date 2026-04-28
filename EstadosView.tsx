@@ -325,7 +325,6 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     )
   );
   const [myStoryId, setMyStoryId] = useState<string | null>(null);
-  const [loadingStories, setLoadingStories] = useState(false);
   const [viewing, setViewing] = useState<Story | null>(null);
   const [slideIdx, setSlideIdx] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -405,52 +404,44 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
 
   // Cargar stories reales del servidor
   const loadStories = useCallback(async () => {
-    setLoadingStories(true);
     try {
       const data = await storiesAPI.getAll();
       if (!Array.isArray(data)) return;
 
-      // Construir lista: primero "me" (local), luego los del servidor
-      const myEntry = stories.find(s => s.userId === 'me')!;
       const serverMe = data.find((s: any) => s.isMe);
       const others = data.filter((s: any) => !s.isMe);
-
-      // Actualizar mi story con datos del servidor si existe
-      const updatedMe: Story = serverMe
-        ? { ...myEntry, media: serverMe.media || [], time: 'ahora', publishedAt: serverMe.publishedAt, views: serverMe.views }
-        : { ...myEntry };
 
       if (serverMe) setMyStoryId(serverMe.id);
 
       // Convertir stories del servidor a formato local
-      const serverStories: Story[] = others.map((s: any) => {
-        const initials = (s.userName || 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-        return {
-          id: s.id,
-          userId: s.userId,
-          userName: s.userName,
-          avatar: initials,
-          avatarUrl: s.avatarUrl || '',
-          color: '#00c8a0',
-          media: s.media || [],
-          time: 'ahora',
-          seen: s.seen,
-          views: s.views || 0,
-          reactions: s.reactions?.length ? s.reactions : [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
-          replies: [],
-          publishedAt: s.publishedAt,
-        };
+      const serverStories: Story[] = others.map((s: any) => ({
+        id: s.id,
+        userId: s.userId,
+        userName: s.userName || 'Usuario',
+        avatar: (s.userName || 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+        avatarUrl: s.avatarUrl || '',
+        color: '#00c8a0',
+        media: Array.isArray(s.media) ? s.media : [],
+        time: 'ahora',
+        seen: s.seen || false,
+        views: s.views || 0,
+        reactions: s.reactions?.length ? s.reactions : [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [],
+        publishedAt: s.publishedAt || Date.now(),
+      }));
+
+      // Usar setStories con función para acceder al estado actual (evita stale closure)
+      setStories(prev => {
+        const myEntry = prev.find(s => s.userId === 'me') || prev[0];
+        const updatedMe: Story = serverMe
+          ? { ...myEntry, media: Array.isArray(serverMe.media) ? serverMe.media : [], time: 'ahora', publishedAt: serverMe.publishedAt || Date.now(), views: serverMe.views || 0 }
+          : { ...myEntry };
+
+        const demoStories = STORIES.filter(s => s.userId !== 'me');
+        return [updatedMe, ...serverStories, ...(serverStories.length > 0 ? [] : demoStories)];
       });
-
-      // Mantener stories demo para usuarios sin contactos reales, pero priorizar reales
-      const demoStories = STORIES.filter(s => s.userId !== 'me');
-      const hasRealStories = serverStories.length > 0;
-
-      setStories([updatedMe, ...serverStories, ...(hasRealStories ? [] : demoStories)]);
     } catch {
-      // Si falla la API, mantener datos demo
-    } finally {
-      setLoadingStories(false);
+      // mantener estado actual si falla
     }
   }, []);
 
