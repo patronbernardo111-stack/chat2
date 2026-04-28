@@ -1,5 +1,5 @@
-// Service Worker v20260427f — Web Push + llamadas + mensajes + auto-renovación
-const CACHE = 'egchat-v20260427f';
+// Service Worker v20260428a — Web Push + llamadas + mensajes + auto-renovación
+const CACHE = 'egchat-v20260428a';
 const API_BASE = 'https://egchat-api.onrender.com';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
