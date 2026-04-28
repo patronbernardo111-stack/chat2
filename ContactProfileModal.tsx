@@ -137,7 +137,22 @@ export const ContactProfileModal: React.FC<Props> = ({
           <div style={{fontSize:'13px',color:cp.status==='online'?'#22c55e':cp.status==='away'?'#f59e0b':'#9CA3AF',marginBottom:'4px'}}>
             {cp.status==='online'?'En línea':cp.status==='away'?'Ausente':'Desconectado'}
           </div>
-          <div style={{fontSize:'13px',color:'#9CA3AF'}}>{cp.phone||cp.subtitle||'+240 222 *** ***'}</div>
+          <div style={{fontSize:'13px',color:'#9CA3AF',display:'flex',alignItems:'center',gap:'5px',justifyContent:'center'}}>
+            {(cp.phone||cp.subtitle||'+240 222 *** ***').includes('Mensaje de voz') || (cp.phone||cp.subtitle||'').includes('🎤') ? (
+              <>
+                <svg width="14" height="10" viewBox="0 0 40 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="0" y="8" width="3" height="4" rx="1.5" fill="#9ca3af"/>
+                  <rect x="5" y="5" width="3" height="10" rx="1.5" fill="#9ca3af"/>
+                  <rect x="10" y="2" width="3" height="16" rx="1.5" fill="#9ca3af"/>
+                  <rect x="15" y="5" width="3" height="10" rx="1.5" fill="#9ca3af"/>
+                  <rect x="20" y="7" width="3" height="6" rx="1.5" fill="#9ca3af"/>
+                  <rect x="25" y="4" width="3" height="12" rx="1.5" fill="#9ca3af"/>
+                  <rect x="30" y="6" width="3" height="8" rx="1.5" fill="#9ca3af"/>
+                  <rect x="35" y="8" width="3" height="4" rx="1.5" fill="#9ca3af"/>
+                </svg>
+                <span>Audio</span>
+              </>
+            ) : (cp.phone||cp.subtitle||'+240 222 *** ***')}</div>
 
           {/* Acciones rápidas — estilo EGCHAT */}
           <div style={{display:'flex',justifyContent:'center',gap:'24px',marginTop:'20px'}}>
