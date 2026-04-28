@@ -48,7 +48,7 @@ const getCountryFlag = (countryCode: string) => {
 interface Props { onAuth:(user:any)=>void }
 
 export default function AuthScreen({onAuth}:Props) {
-  const [sc, setSc] = useState<'welcome'|'login'|'reg'>('welcome');
+  const [sc, setSc] = useState<'welcome'|'login'|'reg'|'recover'>('welcome');
   const [countryCode, setCountryCode] = useState('+240');
   const [phone, setPhone] = useState('');
   const [pass, setPass] = useState('');
@@ -61,6 +61,12 @@ export default function AuthScreen({onAuth}:Props) {
   const [err, setErr] = useState('');
   const [step, setStep] = useState(1);
   const [serverReady, setServerReady] = useState(false);
+  // Recuperación de cuenta
+  const [recoverStep, setRecoverStep] = useState<1|2|3>(1);
+  const [recoverCode, setRecoverCode] = useState('');
+  const [recoverPass, setRecoverPass] = useState('');
+  const [recoverPass2, setRecoverPass2] = useState('');
+  const [recoverOk, setRecoverOk] = useState(false);
 
   // Despertar Render al cargar la pantalla
   React.useEffect(() => {
@@ -264,6 +270,7 @@ export default function AuthScreen({onAuth}:Props) {
           <LogIn size={18}/>
           {loading?'Entrando...':'Entrar'}
         </button>
+        <button onClick={()=>{setSc('recover');setErr('');setRecoverStep(1);setPhone('');setRecoverCode('');setRecoverPass('');setRecoverPass2('');setRecoverOk(false);}} style={{background:'none',border:'none',color:'#00c8a0',fontSize:'13px',fontWeight:'600',cursor:'pointer',width:'100%',padding:'6px',marginBottom:'8px'}}>¿Olvidaste tu contraseña?</button>
         <button onClick={()=>{setSc('reg');setErr('');setStep(1);}} style={{...btnO,borderRadius:'14px',padding:'15px',fontSize:'16px',fontWeight:'600',border:'2px solid #E5E7EB',transition:'all 0.2s ease',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
           <UserPlus size={18}/>
           Crear cuenta nueva
