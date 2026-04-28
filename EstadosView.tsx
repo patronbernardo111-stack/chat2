@@ -980,16 +980,19 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
 
   const saveEditSlide = () => {
     if (editingSlide === null || !editText.trim()) return;
+    const slide = viewing?.media[editingSlide];
+    const isImage = (slide?.type as any) === 'image';
+    const fields = isImage ? { caption: editText.trim() } : { content: editText.trim() };
     // Persistir en servidor si tenemos ID
     if (myStoryId) {
-      storiesAPI.updateSlide(myStoryId, editingSlide, { content: editText.trim() }).catch(() => {});
+      storiesAPI.updateSlide(myStoryId, editingSlide, isImage ? {} : { content: editText.trim() }).catch(() => {});
     }
     setStories(prev => prev.map(s => s.userId === 'me'
-      ? { ...s, media: s.media.map((m, i) => i === editingSlide ? { ...m, content: editText } : m) }
+      ? { ...s, media: s.media.map((m, i) => i === editingSlide ? { ...m, ...fields } : m) }
       : s
     ));
     if (viewing?.userId === 'me') {
-      setViewing({ ...viewing, media: viewing.media.map((m, i) => i === editingSlide ? { ...m, content: editText } : m) });
+      setViewing({ ...viewing, media: viewing.media.map((m, i) => i === editingSlide ? { ...m, ...fields } : m) });
     }
     setEditingSlide(null);
     setEditText('');
@@ -1451,6 +1454,28 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                 <input value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Responder..." onKeyDown={e => e.key === 'Enter' && sendReply()} style={{ flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '24px', padding: '10px 16px', color: '#fff', fontSize: '13px', outline: 'none' }} />
                 <button onClick={sendReply} style={{ background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{Icon.send}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY EDITAR SLIDE */}
+      {editingSlide !== null && viewing?.userId === 'me' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 4000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end' }}>
+          <div style={{ width: '100%', background: '#1a1a1a', borderRadius: '20px 20px 0 0', padding: '20px 16px 40px' }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginBottom: '14px' }}>
+              {(viewing.media[editingSlide]?.type as any) === 'image' ? 'Editar descripción' : 'Editar texto'}
+            </div>
+            <textarea
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              autoFocus
+              maxLength={200}
+              style={{ width: '100%', minHeight: '90px', background: '#2a2a2a', border: '1px solid #444', borderRadius: '12px', color: '#fff', fontSize: '15px', padding: '12px', outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+            />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+              <button onClick={() => { setEditingSlide(null); setEditText(''); }} style={{ flex: 1, padding: '12px', background: '#2a2a2a', border: 'none', borderRadius: '12px', color: '#aaa', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={saveEditSlide} disabled={!editText.trim()} style={{ flex: 1, padding: '12px', background: editText.trim() ? '#00c8a0' : '#333', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '14px', fontWeight: '700', cursor: editText.trim() ? 'pointer' : 'default' }}>Guardar</button>
             </div>
           </div>
         </div>
