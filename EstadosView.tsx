@@ -10,8 +10,9 @@ interface Story {
   reactions: Reaction[]; replies: Reply[]; trending?: boolean; isLive?: boolean;
   publishedAt: number; // timestamp ms
 }
-interface EspacioPost { id: string; author: string; avatar: string; avatarUrl?: string; color: string; text: string; imageUrl?: string; time: string; likes: number; comments: number; liked: boolean; }
-interface Espacio { id: string; name: string; cover: string; emoji: string; description: string; type: 'publico' | 'comunidad'; followers: number; following: boolean; posts: EspacioPost[]; }
+interface EspacioPost { id: string; author: string; avatar: string; avatarUrl?: string; color: string; text: string; imageUrl?: string; time: string; likes: number; comments: number; liked: boolean; category?: string; isOfficial?: boolean; publishedAt?: number; }
+interface Criterio { id: string; user: string; avatar: string; text: string; tipo: 'apoyo' | 'critica' | 'pregunta' | 'sugerencia'; time: string; likes: number; liked: boolean; }
+interface Espacio { id: string; name: string; cover: string; emoji: string; description: string; type: 'publico' | 'comunidad'; followers: number; following: boolean; posts: EspacioPost[]; isGov?: boolean; }
 interface Props {
   onBack: () => void;
   currentUser?: { id?: string; name?: string; avatar?: string; avatarUrl?: string; color?: string };
@@ -60,9 +61,9 @@ const timeLeft = (ts: number): string => {
 };
 
 const ESPACIOS: Espacio[] = [
-  { id: 'e1', name: 'Gobierno GE', cover: 'linear-gradient(135deg,#1e3a5f,#0369a1)', emoji: '🏛️', description: 'Noticias y comunicados oficiales del Gobierno de Guinea Ecuatorial', type: 'publico', followers: 48200, following: true, posts: [
-    { id: 'p1', author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Nueva infraestructura vial en Malabo. El presidente inaugura el tramo norte de la autopista.', time: '2h', likes: 1240, comments: 89, liked: false },
-    { id: 'p2', author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Convocatoria de becas universitarias 2026. Plazo hasta el 30 de abril.', time: '5h', likes: 3400, comments: 210, liked: true },
+  { id: 'e1', name: 'Gobierno GE', cover: 'linear-gradient(135deg,#1e3a5f,#0369a1)', emoji: '🏛️', description: 'Noticias y comunicados oficiales del Gobierno de Guinea Ecuatorial', type: 'publico', followers: 48200, following: true, isGov: true, posts: [
+    { id: 'p1', author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Nueva infraestructura vial en Malabo. El presidente inaugura el tramo norte de la autopista.', time: '2h', likes: 1240, comments: 89, liked: false, isOfficial: true, category: 'Infraestructura', publishedAt: Date.now() - 2 * 3600000 },
+    { id: 'p2', author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Convocatoria de becas universitarias 2026. Plazo hasta el 30 de abril.', time: '5h', likes: 3400, comments: 210, liked: true, isOfficial: true, category: 'Educacion', publishedAt: Date.now() - 5 * 3600000 },
   ]},
   { id: 'e2', name: 'Musica GQ', cover: 'linear-gradient(135deg,#7c3aed,#db2777)', emoji: '🎵', description: 'Lo mejor de la musica de Guinea Ecuatorial y Africa Central', type: 'comunidad', followers: 12800, following: false, posts: [
     { id: 'p3', author: 'DJ Malabo', avatar: 'DM', color: '#7c3aed', text: 'Nueva mezcla de Afrobeat + Makossa disponible ahora', time: '1h', likes: 567, comments: 43, liked: false },
@@ -94,14 +95,23 @@ const MUSIC_OPTIONS = ['Afrobeat Vibes','Makossa Mix','Chill Sunday','Motivacion
 const formatFollowers = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : String(n);
 
 // ─── Pool de noticias simuladas por espacio ───────────────────────────────────
-const NEWS_POOL: Record<string, { author: string; avatar: string; color: string; text: string }[]> = {
+const NEWS_POOL: Record<string, { author: string; avatar: string; color: string; text: string; category?: string; isOfficial?: boolean }[]> = {
   e1: [
-    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'El Ministerio de Sanidad anuncia nueva campana de vacunacion gratuita en todo el territorio nacional.' },
-    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Aprobado el presupuesto nacional 2026. Prioridad en educacion e infraestructuras.' },
-    { author: 'Presidencia GE', avatar: '🏛️', color: '#1e3a5f', text: 'El Presidente recibe a delegacion de inversores internacionales en el Palacio del Pueblo.' },
-    { author: 'Ministerio Educacion', avatar: '📚', color: '#0369a1', text: 'Apertura de 12 nuevas escuelas en zonas rurales de Bioko Sur y Litoral.' },
-    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Guinea Ecuatorial firma acuerdo de cooperacion energetica con tres paises africanos.' },
-    { author: 'Ministerio Interior', avatar: '🛡️', color: '#1e3a5f', text: 'Nuevo sistema de identificacion digital para ciudadanos. Tramite disponible en todas las delegaciones.' },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'El Ministerio de Sanidad anuncia nueva campana de vacunacion gratuita en todo el territorio nacional.', category: 'Salud', isOfficial: true },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Aprobado el presupuesto nacional 2026. Prioridad en educacion e infraestructuras.', category: 'Economia', isOfficial: true },
+    { author: 'Presidencia GE', avatar: '🏛️', color: '#1e3a5f', text: 'El Presidente recibe a delegacion de inversores internacionales en el Palacio del Pueblo.', category: 'Diplomacia', isOfficial: true },
+    { author: 'Ministerio Educacion', avatar: '📚', color: '#0369a1', text: 'Apertura de 12 nuevas escuelas en zonas rurales de Bioko Sur y Litoral.', category: 'Educacion', isOfficial: true },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Guinea Ecuatorial firma acuerdo de cooperacion energetica con tres paises africanos.', category: 'Energia', isOfficial: true },
+    { author: 'Ministerio Interior', avatar: '🛡️', color: '#1e3a5f', text: 'Nuevo sistema de identificacion digital para ciudadanos. Tramite disponible en todas las delegaciones.', category: 'Administracion', isOfficial: true },
+    { author: 'Ministerio Obras Publicas', avatar: '🏗️', color: '#0369a1', text: 'Inicio de obras del nuevo hospital de referencia en Bata. Inversion de 45 millones de dolares.', category: 'Salud', isOfficial: true },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Plan Nacional de Empleo Juvenil 2026: 10.000 puestos de trabajo para jovenes guineanos.', category: 'Empleo', isOfficial: true },
+    { author: 'Ministerio Agricultura', avatar: '🌾', color: '#059669', text: 'Distribucion gratuita de semillas y fertilizantes a agricultores de las provincias continentales.', category: 'Agricultura', isOfficial: true },
+    { author: 'Presidencia GE', avatar: '🏛️', color: '#1e3a5f', text: 'Guinea Ecuatorial asume la presidencia rotativa de la CEMAC para el periodo 2026-2027.', category: 'Diplomacia', isOfficial: true },
+    { author: 'Ministerio Hacienda', avatar: '💰', color: '#0369a1', text: 'Reduccion del IVA en productos de primera necesidad del 15% al 8% a partir del 1 de mayo.', category: 'Economia', isOfficial: true },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Nuevo programa de vivienda social: 5.000 unidades habitacionales en Malabo y Bata.', category: 'Vivienda', isOfficial: true },
+    { author: 'Ministerio Transporte', avatar: '🚢', color: '#0369a1', text: 'Ampliacion del puerto de Malabo: nueva terminal de contenedores operativa en 2027.', category: 'Infraestructura', isOfficial: true },
+    { author: 'Ministerio Educacion', avatar: '📚', color: '#0369a1', text: 'Programa de tablets para estudiantes de secundaria: 25.000 dispositivos distribuidos este trimestre.', category: 'Educacion', isOfficial: true },
+    { author: 'Gobierno GE', avatar: '🏛️', color: '#0369a1', text: 'Inauguracion del Parque Tecnologico de Malabo. Hub de innovacion para startups guineanas.', category: 'Tecnologia', isOfficial: true },
   ],
   e2: [
     { author: 'DJ Malabo', avatar: 'DM', color: '#7c3aed', text: 'Nuevo tema disponible: "Malabo de Noche" feat. Artistas de Camerun y GE. Escuchalo ahora.' },
@@ -147,6 +157,9 @@ const getRandomPost = (espacioId: string): EspacioPost => {
     likes: Math.floor(Math.random() * 200),
     comments: Math.floor(Math.random() * 40),
     liked: false,
+    category: (item as any).category,
+    isOfficial: (item as any).isOfficial,
+    publishedAt: Date.now(),
   };
 };
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,6 +381,14 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const [postingComment, setPostingComment] = useState(false);
   const [spacePosts, setSpacePosts] = useState<Record<string, any[]>>({});
 
+  // Criterios ciudadanos — Gobierno GE
+  const [criterios, setCriterios] = useState<Record<string, Criterio[]>>({});
+  const [activeCriterios, setActiveCriterios] = useState<string | null>(null); // postId
+  const [newCriterioText, setNewCriterioText] = useState('');
+  const [newCriterioTipo, setNewCriterioTipo] = useState<Criterio['tipo']>('apoyo');
+  const [postingCriterio, setPostingCriterio] = useState(false);
+  const govAutoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Editor de video
   const [processingVideo, setProcessingVideo] = useState(false);
   const [videoFilter, setVideoFilter] = useState('none');
@@ -510,6 +531,26 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
       ));
     }, 60000);
     return () => clearInterval(tick);
+  }, []);
+
+  // Auto-actualización Gobierno GE — añade nueva noticia cada 30s
+  useEffect(() => {
+    govAutoRefreshRef.current = setInterval(() => {
+      const newPost = getRandomPost('e1');
+      setEspacios(prev => prev.map(e =>
+        e.id === 'e1'
+          ? { ...e, posts: [newPost, ...e.posts].slice(0, 20) }
+          : e
+      ));
+      setActiveEspacio(prev =>
+        prev?.id === 'e1'
+          ? { ...prev, posts: [newPost, ...prev.posts].slice(0, 20) }
+          : prev
+      );
+      setNewPostsBadge(prev => ({ ...prev, e1: (prev.e1 || 0) + 1 }));
+      setLastUpdated(Date.now());
+    }, 30000);
+    return () => { if (govAutoRefreshRef.current) clearInterval(govAutoRefreshRef.current); };
   }, []);
 
   const stopCam = useCallback(() => {
@@ -905,6 +946,33 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     }
   };
 
+  const submitCriterio = (postId: string) => {
+    if (!newCriterioText.trim()) return;
+    setPostingCriterio(true);
+    const c: Criterio = {
+      id: `c-${Date.now()}`,
+      user: currentUser?.name || 'Ciudadano',
+      avatar: currentUser?.name ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : 'CI',
+      text: newCriterioText.trim(),
+      tipo: newCriterioTipo,
+      time: 'ahora',
+      likes: 0,
+      liked: false,
+    };
+    setCriterios(prev => ({ ...prev, [postId]: [c, ...(prev[postId] || [])] }));
+    setNewCriterioText('');
+    setPostingCriterio(false);
+  };
+
+  const toggleLikeCriterio = (postId: string, criterioId: string) => {
+    setCriterios(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || []).map(c =>
+        c.id === criterioId ? { ...c, liked: !c.liked, likes: c.liked ? c.likes - 1 : c.likes + 1 } : c
+      ),
+    }));
+  };
+
   const me = stories.find(s => s.userId === 'me')!;
   const recent = stories.filter(s => s.userId !== 'me' && !s.seen && s.media.length > 0);
   const seen = stories.filter(s => s.userId !== 'me' && s.seen && s.media.length > 0);
@@ -1254,11 +1322,18 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
               </button>
             </div>
           </div>
-          {/* Descripcion */}
+          {/* Descripcion + indicador gov */}
           <div style={{ background: '#fff', padding: '12px 16px', borderBottom: '1px solid #ebebeb', flexShrink: 0 }}>
             <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>{activeEspacio.description}</div>
+            {activeEspacio.isGov && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', padding: '6px 10px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0369a1', animation: 'pulse 2s infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', color: '#0369a1', fontWeight: '600' }}>Noticias actualizadas automaticamente cada 30 segundos</span>
+              </div>
+            )}
           </div>
-          {/* Caja publicar post */}
+          {/* Caja publicar post — solo en espacios no oficiales de gobierno */}
+          {!activeEspacio.isGov && (
           <div style={{ background: '#fff', padding: '10px 16px', borderBottom: '1px solid #ebebeb', flexShrink: 0 }}>
             {activePostEspacio === activeEspacio.id ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1277,6 +1352,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
               </button>
             )}
           </div>
+          )}
           {/* Posts */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {activeEspacio.posts.length === 0 && (
@@ -1287,34 +1363,56 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
               const isLiked = likedPosts[key] ?? post.liked;
               const postComments = comments[post.id] || [];
               const showComments = activeComments === post.id;
+              const isGovSpace = activeEspacio.isGov;
+              const postCriterios = criterios[post.id] || [];
+              const showCriterios = activeCriterios === post.id;
+              const TIPO_CONFIG: Record<Criterio['tipo'], { label: string; color: string; bg: string; icon: string }> = {
+                apoyo:     { label: 'Apoyo',      color: '#059669', bg: '#f0fdf4', icon: '👍' },
+                critica:   { label: 'Critica',    color: '#dc2626', bg: '#fef2f2', icon: '⚠️' },
+                pregunta:  { label: 'Pregunta',   color: '#0369a1', bg: '#eff6ff', icon: '❓' },
+                sugerencia:{ label: 'Sugerencia', color: '#7c3aed', bg: '#f5f3ff', icon: '💡' },
+              };
               return (
-                <div key={post.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #ebebeb', padding: '14px 14px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: post.color || '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                <div key={post.id} style={{ background: '#fff', borderRadius: '14px', border: post.isOfficial ? '1.5px solid #bfdbfe' : '1px solid #ebebeb', padding: '14px 14px 10px', boxShadow: post.isOfficial ? '0 2px 8px rgba(3,105,161,0.08)' : '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  {/* Cabecera post */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: post.color || '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: post.isOfficial ? '18px' : '12px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden', border: post.isOfficial ? '2px solid #0369a1' : 'none' }}>
                       {post.avatarUrl ? <img src={post.avatarUrl} alt={post.author} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : post.avatar}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>{post.author}</div>
-                      <div style={{ fontSize: '11px', color: '#bbb' }}>hace {post.time}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>{post.author}</span>
+                        {post.isOfficial && <span style={{ fontSize: '9px', background: '#0369a1', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: '700', letterSpacing: '0.3px' }}>OFICIAL</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
+                        <span style={{ fontSize: '11px', color: '#bbb' }}>hace {post.time}</span>
+                        {post.category && <span style={{ fontSize: '10px', color: '#0369a1', background: '#eff6ff', padding: '1px 6px', borderRadius: '8px', fontWeight: '600' }}>{post.category}</span>}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.55, marginBottom: '12px' }}>{post.text}</div>
+                  <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.6, marginBottom: '12px' }}>{post.text}</div>
                   {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', objectFit: 'cover', maxHeight: '200px' }} />}
-                  <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #f2f2f2', paddingTop: '10px' }}>
+                  {/* Acciones */}
+                  <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid #f2f2f2', paddingTop: '10px', alignItems: 'center' }}>
                     <button onClick={() => toggleLikePost(activeEspacio.id, post.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: isLiked ? '#e53935' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill={isLiked ? '#e53935' : 'none'} stroke={isLiked ? '#e53935' : '#aaa'} strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                       <span>{post.likes}</span>
                     </button>
-                    <button onClick={() => {
-                      if (showComments) { setActiveComments(null); }
-                      else { setActiveComments(post.id); loadComments(post.id); }
-                    }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: showComments ? '#00c8a0' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      <span>{post.comments}</span>
-                    </button>
+                    {!isGovSpace && (
+                      <button onClick={() => { if (showComments) { setActiveComments(null); } else { setActiveComments(post.id); loadComments(post.id); } }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: showComments ? '#00c8a0' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <span>{post.comments}</span>
+                      </button>
+                    )}
+                    {isGovSpace && (
+                      <button onClick={() => setActiveCriterios(showCriterios ? null : post.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: showCriterios ? '#0369a1' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>{postCriterios.length} criterios</span>
+                      </button>
+                    )}
                   </div>
-                  {/* Comentarios */}
-                  {showComments && (
+                  {/* Comentarios normales (no gov) */}
+                  {!isGovSpace && showComments && (
                     <div style={{ marginTop: '10px', borderTop: '1px solid #f5f5f5', paddingTop: '10px' }}>
                       {postComments.map(c => (
                         <div key={c.id} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -1332,6 +1430,56 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                           {postingComment ? '...' : 'Enviar'}
                         </button>
                       </div>
+                    </div>
+                  )}
+                  {/* Criterios ciudadanos (solo Gobierno GE) */}
+                  {isGovSpace && showCriterios && (
+                    <div style={{ marginTop: '12px', borderTop: '1px solid #e0f2fe', paddingTop: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#0369a1', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        Criterios ciudadanos
+                      </div>
+                      {/* Selector tipo */}
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                        {(Object.entries(TIPO_CONFIG) as [Criterio['tipo'], typeof TIPO_CONFIG[Criterio['tipo']]][]).map(([tipo, cfg]) => (
+                          <button key={tipo} onClick={() => setNewCriterioTipo(tipo)} style={{ padding: '4px 10px', borderRadius: '14px', border: `1.5px solid ${newCriterioTipo === tipo ? cfg.color : '#e5e7eb'}`, background: newCriterioTipo === tipo ? cfg.bg : '#fff', color: newCriterioTipo === tipo ? cfg.color : '#888', fontSize: '11px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            {cfg.icon} {cfg.label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Input criterio */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input value={newCriterioText} onChange={e => setNewCriterioText(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitCriterio(post.id)} placeholder={`Tu ${TIPO_CONFIG[newCriterioTipo].label.toLowerCase()} sobre esta noticia...`} style={{ flex: 1, padding: '8px 12px', background: '#f0f9ff', border: `1px solid ${TIPO_CONFIG[newCriterioTipo].color}40`, borderRadius: '20px', fontSize: '13px', outline: 'none', color: '#111', fontFamily: 'inherit' }} />
+                        <button onClick={() => submitCriterio(post.id)} disabled={!newCriterioText.trim() || postingCriterio} style={{ padding: '8px 14px', background: newCriterioText.trim() ? TIPO_CONFIG[newCriterioTipo].color : '#e5e7eb', border: 'none', borderRadius: '20px', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: newCriterioText.trim() ? 'pointer' : 'default' }}>
+                          {postingCriterio ? '...' : 'Emitir'}
+                        </button>
+                      </div>
+                      {/* Lista criterios */}
+                      {postCriterios.length === 0 && (
+                        <div style={{ textAlign: 'center', color: '#bbb', fontSize: '12px', padding: '12px 0' }}>Se el primero en emitir tu criterio</div>
+                      )}
+                      {postCriterios.map(c => {
+                        const cfg = TIPO_CONFIG[c.tipo];
+                        return (
+                          <div key={c.id} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{c.avatar}</div>
+                            <div style={{ flex: 1, background: cfg.bg, borderRadius: '10px', padding: '8px 10px', border: `1px solid ${cfg.color}30` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#111' }}>{c.user}</span>
+                                <span style={{ fontSize: '9px', background: cfg.color, color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: '700' }}>{cfg.icon} {cfg.label}</span>
+                              </div>
+                              <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>{c.text}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+                                <span style={{ fontSize: '10px', color: '#bbb' }}>hace {c.time}</span>
+                                <button onClick={() => toggleLikeCriterio(post.id, c.id)} style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'none', border: 'none', cursor: 'pointer', color: c.liked ? '#e53935' : '#bbb', fontSize: '11px', fontWeight: '600', padding: 0 }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill={c.liked ? '#e53935' : 'none'} stroke={c.liked ? '#e53935' : '#bbb'} strokeWidth="2.5" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                  {c.likes > 0 && c.likes}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
