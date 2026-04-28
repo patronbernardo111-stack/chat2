@@ -8,8 +8,10 @@ const config: CapacitorConfig = {
     // OTA gratuito: la app siempre carga desde Vercel
     // Cada deploy actualiza la app automáticamente sin reinstalar
     url: 'https://egchat-v2.vercel.app',
-    cleartext: true,
-    androidScheme: 'https'
+    cleartext: false,
+    androidScheme: 'https',
+    hostname: 'egchat-v2.vercel.app',
+    allowNavigation: ['egchat-v2.vercel.app', '*.vercel.app', '*.supabase.co']
   },
   android: {
     allowMixedContent: true,
