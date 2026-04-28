@@ -1,12 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
-import imgEstados from '/assets/apps/estados.png';
-import imgApuestas from '/assets/apps/apuestas.png';
-import imgCemac from '/assets/apps/cemac.png';
-import imgMiTaxi from '/assets/apps/mitaxi.png';
-
-// Helper para rutas de assets — funciona en web, Capacitor y Electron
-const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
 import { chatAPI, authAPI, contactsAPI } from './api';
 import AuthScreen from './AuthScreen';
 import { ContactImportModal } from './ContactImportModal';
@@ -30,6 +23,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import { RestaurantesModule, VuelosModule, GasolinerasModule } from './ServiciosDiarios';
 import { useWebRTC } from './useWebRTC';
 import { playMessageReceived, playMessageSent, playNotification, startRingtone, stopRingtone, startDialingTone, stopDialingTone, playCallConnected, playCallEnded, playError, playSuccess, vibrate, unlockAudio, getSoundSettings, saveSoundSettings, MESSAGE_TONES, RINGTONES, NOTIFICATION_TONES, type SoundSettings } from './useSounds';
+
+// Helper para rutas de assets — funciona en web, Capacitor y Electron
+const asset = (path: string) => (window.location.protocol === 'file:' ? '.' : '') + path;
 
 interface Bank {
   id: string;
@@ -4573,10 +4569,10 @@ const App: React.FC = () => {
         <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', justifyItems: 'center' }}>
           {[
-            { id: 'estados',  label: 'Estados',  img: imgEstados },
-            { id: 'apuestas', label: 'Juegos',   img: imgApuestas },
-            { id: 'cemac',    label: 'Cemac',    img: imgCemac },
-            { id: 'mitaxi',   label: 'MiTaxi',   img: imgMiTaxi },
+            { id: 'estados',  label: 'Estados',  img: asset('/assets/apps/estados.png') },
+            { id: 'apuestas', label: 'Juegos',   img: asset('/assets/apps/apuestas.png') },
+            { id: 'cemac',    label: 'Cemac',    img: asset('/assets/apps/cemac.png') },
+            { id: 'mitaxi',   label: 'MiTaxi',   img: asset('/assets/apps/mitaxi.png') },
           ].map(item => (
             <button
               key={item.id}

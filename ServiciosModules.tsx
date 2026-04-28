@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useGPS, distanceKm } from './useGPS';
 
 // Helper para rutas de assets — funciona en web, Capacitor y Electron
-const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+const asset = (path: string) => (window.location.protocol === 'file:' ? '.' : '') + path;
 
 // ─── DATOS INTERNET ───────────────────────────────────────────────────────────
 const INTERNET_PROVIDERS = [
