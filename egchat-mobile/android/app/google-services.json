@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "745900172350",
+    "project_id": "egchat-4efe7",
+    "storage_bucket": "egchat-4efe7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:745900172350:android:758256b45294a7db695d6f",
+        "android_client_info": {
+          "package_name": "com.egchat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1VKzNGKOOI99QR9r_RIU1qRIo_f_H0Zw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
