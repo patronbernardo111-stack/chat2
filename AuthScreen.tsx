@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { authAPI } from './api';
 import { MessageCircle, CreditCard, Bot, UserPlus, LogIn } from 'lucide-react';
 import { AvatarCropModal } from './AvatarCropModal';
@@ -67,6 +67,7 @@ export default function AuthScreen({onAuth}:Props) {
   const [recoverPass, setRecoverPass] = useState('');
   const [recoverPass2, setRecoverPass2] = useState('');
   const [recoverOk, setRecoverOk] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Despertar Render al cargar la pantalla
   React.useEffect(() => {
@@ -147,23 +148,8 @@ export default function AuthScreen({onAuth}:Props) {
     finally{setLoading(false);}
   };
 
-  const pickImg=()=>{
-    const i=document.createElement('input');
-    i.type='file';
-    i.accept='image/*';
-    i.onchange=()=>{
-      const f=i.files?.[0];
-      if(f){
-        const reader=new FileReader();
-        reader.onload=e=>{
-          const dataUrl = e.target?.result as string;
-          // Mostrar el crop modal en lugar de comprimir automáticamente
-          setCropImageUrl(dataUrl);
-        };
-        reader.readAsDataURL(f);
-      }
-    };
-    i.click();
+  const pickImg = () => {
+    avatarInputRef.current?.click();
   };
 
   const BG = 'linear-gradient(160deg,rgba(0,200,160,0.12) 0%,rgba(0,180,230,0.08) 50%,rgba(180,255,0,0.06) 100%)';
@@ -525,6 +511,26 @@ export default function AuthScreen({onAuth}:Props) {
         </>}
       </div>
     </div>
+
+    {/* Input de archivo para avatar — real en el DOM para compatibilidad móvil */}
+    <input
+      ref={avatarInputRef}
+      type="file"
+      accept="image/*"
+      style={{ display: 'none' }}
+      onChange={e => {
+        const f = e.target.files?.[0];
+        if (f) {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            setCropImageUrl(ev.target?.result as string);
+          };
+          reader.readAsDataURL(f);
+        }
+        // Reset para permitir seleccionar el mismo archivo de nuevo
+        if (avatarInputRef.current) avatarInputRef.current.value = '';
+      }}
+    />
 
     {/* Crop modal — aparece al seleccionar foto */}
     {cropImageUrl && (
