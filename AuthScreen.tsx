@@ -280,6 +280,102 @@ export default function AuthScreen({onAuth}:Props) {
     </div>
   );
 
+  if(sc==='recover') return (
+    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
+      <div style={{padding:'36px 20px 14px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
+        <div style={{width:'80px',height:'80px',borderRadius:'16px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.1)'}}>
+          <img src="/logo-transparent.png" alt="EgChat" style={{width:60,height:60,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
+        </div>
+      </div>
+      <div style={{flex:1,padding:'12px 20px 28px'}}>
+        {recoverOk ? (
+          <div style={{textAlign:'center',paddingTop:'20px'}}>
+            <div style={{fontSize:'56px',marginBottom:'16px'}}>✅</div>
+            <h2 style={{fontSize:'20px',fontWeight:'800',color:'#111827',margin:'0 0 8px'}}>¡Contraseña cambiada!</h2>
+            <p style={{fontSize:'14px',color:'#6B7280',marginBottom:'24px'}}>Ya puedes iniciar sesión con tu nueva contraseña.</p>
+            <button onClick={()=>{setSc('login');setErr('');setPhone('');setPass('');}} style={{...btnG,borderRadius:'14px',padding:'14px',fontSize:'15px',fontWeight:'700',border:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+              <LogIn size={18}/>Ir a iniciar sesión
+            </button>
+          </div>
+        ) : recoverStep===1 ? (<>
+          <h2 style={{fontSize:'20px',fontWeight:'800',color:'#111827',margin:'0 0 6px',textAlign:'center'}}>Recuperar cuenta</h2>
+          <p style={{fontSize:'14px',color:'#6B7280',margin:'0 0 20px',textAlign:'center'}}>Introduce tu número de teléfono y te enviaremos un código</p>
+          {countrySelector}
+          {phoneInput}
+          <Err/>
+          <button onClick={async()=>{
+            if(!phone){setErr('Introduce tu número de teléfono');return;}
+            setLoading(true);setErr('');
+            try{
+              await authAPI.sendVerification(fullPhone,'sms');
+              setRecoverStep(2);
+            }catch(e:any){setErr(e.message||'Error al enviar el código');}
+            finally{setLoading(false);}
+          }} disabled={loading||!phone.trim()} style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',border:'none',opacity:phone.trim()&&!loading?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+            {loading?'Enviando...':'Enviar código SMS'}
+          </button>
+        </>) : recoverStep===2 ? (<>
+          <h2 style={{fontSize:'20px',fontWeight:'800',color:'#111827',margin:'0 0 6px',textAlign:'center'}}>Introduce el código</h2>
+          <p style={{fontSize:'14px',color:'#6B7280',margin:'0 0 20px',textAlign:'center'}}>Enviamos un código a <strong>{fullPhone}</strong></p>
+          <div style={{marginBottom:'16px'}}>
+            <label style={lbl}>Código de verificación</label>
+            <input value={recoverCode} onChange={e=>setRecoverCode(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="000000" maxLength={6} style={{...inp,textAlign:'center',fontSize:'24px',fontWeight:'800',letterSpacing:'8px'}}/>
+          </div>
+          <Err/>
+          <button onClick={async()=>{
+            if(recoverCode.length<4){setErr('Introduce el código completo');return;}
+            setLoading(true);setErr('');
+            try{
+              const r=await authAPI.verifyCode(fullPhone,recoverCode);
+              if(r.verified) setRecoverStep(3);
+              else setErr('Código incorrecto. Inténtalo de nuevo.');
+            }catch(e:any){setErr(e.message||'Código inválido');}
+            finally{setLoading(false);}
+          }} disabled={loading||recoverCode.length<4} style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',border:'none',opacity:recoverCode.length>=4&&!loading?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'12px'}}>
+            {loading?'Verificando...':'Verificar código'}
+          </button>
+          <button onClick={async()=>{
+            setLoading(true);setErr('');
+            try{await authAPI.sendVerification(fullPhone,'sms');setErr('');}
+            catch(e:any){setErr(e.message||'Error al reenviar');}
+            finally{setLoading(false);}
+          }} style={{background:'none',border:'none',color:'#00c8a0',fontSize:'13px',fontWeight:'600',cursor:'pointer',width:'100%',padding:'6px'}}>
+            {loading?'Enviando...':'Reenviar código'}
+          </button>
+        </>) : (<>
+          <h2 style={{fontSize:'20px',fontWeight:'800',color:'#111827',margin:'0 0 6px',textAlign:'center'}}>Nueva contraseña</h2>
+          <p style={{fontSize:'14px',color:'#6B7280',margin:'0 0 20px',textAlign:'center'}}>Crea una contraseña segura para tu cuenta</p>
+          <div style={{marginBottom:'14px'}}>
+            <label style={lbl}>Nueva contraseña</label>
+            <div style={{position:'relative'}}>
+              <input value={recoverPass} onChange={e=>setRecoverPass(e.target.value)} type={showP?'text':'password'} placeholder="Mínimo 6 caracteres" style={{...inp,paddingRight:'42px'}}/>
+              <button onClick={()=>setShowP(p=>!p)} style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#9CA3AF'}}><Eye o={showP}/></button>
+            </div>
+          </div>
+          <div style={{marginBottom:'16px'}}>
+            <label style={lbl}>Confirmar contraseña</label>
+            <input value={recoverPass2} onChange={e=>setRecoverPass2(e.target.value)} type="password" placeholder="Repite la contraseña" style={{...inp,borderColor:recoverPass2&&recoverPass!==recoverPass2?'#EF4444':'#E5E7EB'}}/>
+            {recoverPass2&&recoverPass!==recoverPass2&&<p style={{fontSize:'12px',color:'#EF4444',margin:'4px 0 0'}}>Las contraseñas no coinciden</p>}
+          </div>
+          <Err/>
+          <button onClick={async()=>{
+            if(recoverPass.length<6){setErr('La contraseña debe tener al menos 6 caracteres');return;}
+            if(recoverPass!==recoverPass2){setErr('Las contraseñas no coinciden');return;}
+            setLoading(true);setErr('');
+            try{
+              await authAPI.resetPassword(fullPhone,recoverCode,recoverPass);
+              setRecoverOk(true);
+            }catch(e:any){setErr(e.message||'Error al cambiar la contraseña');}
+            finally{setLoading(false);}
+          }} disabled={loading||recoverPass.length<6||recoverPass!==recoverPass2} style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',border:'none',opacity:recoverPass.length>=6&&recoverPass===recoverPass2&&!loading?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+            {loading?'Guardando...':'Guardar nueva contraseña'}
+          </button>
+        </>)}
+        {!recoverOk&&<button onClick={()=>{setSc('login');setErr('');}} style={{background:'none',border:'none',color:'#9CA3AF',fontSize:'14px',cursor:'pointer',width:'100%',marginTop:'16px',padding:'8px',borderRadius:'8px'}}>← Volver al login</button>}
+      </div>
+    </div>
+  );
+
   return (
     <React.Fragment>
     <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
