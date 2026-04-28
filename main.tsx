@@ -90,11 +90,21 @@ async function registerPush(registration: ServiceWorkerRegistration) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // Desregistrar SWs viejos que no sean el nuestro
+      // Desregistrar SWs viejos — solo conservar el que apunta exactamente a /sw.js
       const registrations = await navigator.serviceWorker.getRegistrations();
       for (const reg of registrations) {
-        if (!reg.active?.scriptURL?.includes('/sw.js')) {
+        const scriptURL = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || '';
+        const isOurSW = scriptURL.endsWith('/sw.js');
+        if (!isOurSW) {
+          console.log('[SW] Desregistrando SW viejo:', scriptURL);
           await reg.unregister();
+        }
+      }
+      // Limpiar caches de SWs viejos (updateServiceWorker, etc.)
+      const cacheKeys = await caches.keys();
+      for (const key of cacheKeys) {
+        if (!key.startsWith('egchat-v')) {
+          await caches.delete(key);
         }
       }
 

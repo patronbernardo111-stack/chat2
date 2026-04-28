@@ -22,7 +22,13 @@ self.addEventListener('activate', e => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
-    // ⚠️ NO enviar SW_UPDATED — en iOS causa reload/flash de la PWA
+      .then(() => {
+        // Notificar a los clientes que el SW está activo — SIN disparar reload
+        // (NO enviar SW_UPDATED — causa reload/flash en iOS y móviles)
+        return self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(client => client.postMessage({ type: 'SW_READY' }));
+        });
+      })
   );
 });
 
