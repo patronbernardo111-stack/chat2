@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { storiesAPI, spacesAPI } from './api';
+import { storiesAPI, spacesAPI, noticiasGobAPI } from './api';
 
 interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface Reply { id: string; user: string; text: string; time: string; }
@@ -10,7 +10,8 @@ interface Story {
   reactions: Reaction[]; replies: Reply[]; trending?: boolean; isLive?: boolean;
   publishedAt: number; // timestamp ms
 }
-interface EspacioPost { id: string; author: string; avatar: string; avatarUrl?: string; color: string; text: string; imageUrl?: string; time: string; likes: number; comments: number; liked: boolean; category?: string; isOfficial?: boolean; publishedAt?: number; }
+interface EspacioPost { id: string; author: string; avatar: string; avatarUrl?: string; color: string; text: string; imageUrl?: string; time: string; likes: number; comments: number; liked: boolean; category?: string; isOfficial?: boolean; publishedAt?: number; sourceUrl?: string; sourceName?: string; }
+interface NoticiaGob { id: string; title: string; url: string; fuente: string; dominio: string; color: string; category: string; publishedAt: string; scrapedAt: number; }
 interface Criterio { id: string; user: string; avatar: string; text: string; tipo: 'apoyo' | 'critica' | 'pregunta' | 'sugerencia'; time: string; likes: number; liked: boolean; }
 interface Espacio { id: string; name: string; cover: string; emoji: string; description: string; type: 'publico' | 'comunidad'; followers: number; following: boolean; posts: EspacioPost[]; isGov?: boolean; }
 interface Props {
@@ -533,25 +534,62 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     return () => clearInterval(tick);
   }, []);
 
-  // Auto-actualización Gobierno GE — añade nueva noticia cada 30s
-  useEffect(() => {
-    govAutoRefreshRef.current = setInterval(() => {
-      const newPost = getRandomPost('e1');
+  // Auto-actualización Gobierno GE — carga noticias reales de fuentes oficiales
+  const loadGovNews = useCallback(async () => {
+    try {
+      const res = await noticiasGobAPI.getAll();
+      if (!res?.noticias?.length) return;
+      const posts: EspacioPost[] = res.noticias.map((n: NoticiaGob) => ({
+        id: n.id,
+        author: n.fuente,
+        avatar: '🏛️',
+        color: n.color || '#0369a1',
+        text: n.title,
+        time: n.publishedAt || 'reciente',
+        likes: Math.floor(Math.random() * 500) + 50,
+        comments: 0,
+        liked: false,
+        category: n.category,
+        isOfficial: true,
+        publishedAt: n.scrapedAt || Date.now(),
+        sourceUrl: n.url,
+        sourceName: n.fuente,
+      }));
       setEspacios(prev => prev.map(e =>
-        e.id === 'e1'
-          ? { ...e, posts: [newPost, ...e.posts].slice(0, 20) }
-          : e
+        e.id === 'e1' ? { ...e, posts } : e
       ));
       setActiveEspacio(prev =>
-        prev?.id === 'e1'
-          ? { ...prev, posts: [newPost, ...prev.posts].slice(0, 20) }
-          : prev
+        prev?.id === 'e1' ? { ...prev, posts } : prev
+      );
+      setNewPostsBadge(prev => ({ ...prev, e1: posts.length }));
+      setLastUpdated(Date.now());
+    } catch {
+      // Si falla la API, el auto-refresh con pool local sigue funcionando
+    }
+  }, []);
+
+  useEffect(() => {
+    // Carga inicial de noticias reales
+    loadGovNews();
+    // Refresco cada 5 minutos (la API tiene cache de 5 min)
+    govAutoRefreshRef.current = setInterval(loadGovNews, 5 * 60 * 1000);
+    // Mientras tanto, cada 30s añade una noticia del pool local para dar sensación de vida
+    const localTick = setInterval(() => {
+      const newPost = getRandomPost('e1');
+      setEspacios(prev => prev.map(e =>
+        e.id === 'e1' ? { ...e, posts: [newPost, ...e.posts].slice(0, 20) } : e
+      ));
+      setActiveEspacio(prev =>
+        prev?.id === 'e1' ? { ...prev, posts: [newPost, ...prev.posts].slice(0, 20) } : prev
       );
       setNewPostsBadge(prev => ({ ...prev, e1: (prev.e1 || 0) + 1 }));
       setLastUpdated(Date.now());
     }, 30000);
-    return () => { if (govAutoRefreshRef.current) clearInterval(govAutoRefreshRef.current); };
-  }, []);
+    return () => {
+      if (govAutoRefreshRef.current) clearInterval(govAutoRefreshRef.current);
+      clearInterval(localTick);
+    };
+  }, [loadGovNews]);
 
   const stopCam = useCallback(() => {
     cameraStream?.getTracks().forEach(t => t.stop());
@@ -1390,7 +1428,14 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                       </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.6, marginBottom: '12px' }}>{post.text}</div>
+                  <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.6, marginBottom: '8px' }}>{post.text}</div>
+                  {/* Fuente con enlace — solo posts oficiales */}
+                  {post.sourceUrl && post.sourceName && (
+                    <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#0369a1', textDecoration: 'none', background: '#eff6ff', padding: '4px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #bfdbfe' }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      Fuente: {post.sourceName} · {post.sourceUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                    </a>
+                  )}
                   {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', objectFit: 'cover', maxHeight: '200px' }} />}
                   {/* Acciones */}
                   <div style={{ display: 'flex', gap: '16px', borderTop: '1px solid #f2f2f2', paddingTop: '10px', alignItems: 'center' }}>

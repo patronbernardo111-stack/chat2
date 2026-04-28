@@ -351,6 +351,13 @@ export const spacesAPI = {
 };
 
 // ══════════════════════════════════════════════════════════════════
+// NOTICIAS GOBIERNO GE
+// ══════════════════════════════════════════════════════════════════
+export const noticiasGobAPI = {
+  getAll: () => get<{ noticias: any[]; fromCache: boolean; updatedAt: number }>('/noticias/gobierno'),
+};
+
+// ══════════════════════════════════════════════════════════════════
 // STORIES / ESTADOS
 // ══════════════════════════════════════════════════════════════════
 export const storiesAPI = {
