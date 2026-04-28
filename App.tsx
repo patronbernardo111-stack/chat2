@@ -1,5 +1,12 @@
 ﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
+import imgEstados from '/assets/apps/estados.png';
+import imgApuestas from '/assets/apps/apuestas.png';
+import imgCemac from '/assets/apps/cemac.png';
+import imgMiTaxi from '/assets/apps/mitaxi.png';
+
+// Helper para rutas de assets — funciona en web, Capacitor y Electron
+const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
 import { chatAPI, authAPI, contactsAPI } from './api';
 import AuthScreen from './AuthScreen';
 import { ContactImportModal } from './ContactImportModal';
@@ -4566,10 +4573,10 @@ const App: React.FC = () => {
         <div style={{ fontSize: '12px', fontWeight: '600', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Apps</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', justifyItems: 'center' }}>
           {[
-            { id: 'estados',  label: 'Estados',  img: '/assets/apps/estados.png' },
-            { id: 'apuestas', label: 'Juegos',   img: '/assets/apps/apuestas.png' },
-            { id: 'cemac',    label: 'Cemac',    img: '/assets/apps/cemac.png' },
-            { id: 'mitaxi',   label: 'MiTaxi',   img: '/assets/apps/mitaxi.png' },
+            { id: 'estados',  label: 'Estados',  img: imgEstados },
+            { id: 'apuestas', label: 'Juegos',   img: imgApuestas },
+            { id: 'cemac',    label: 'Cemac',    img: imgCemac },
+            { id: 'mitaxi',   label: 'MiTaxi',   img: imgMiTaxi },
           ].map(item => (
             <button
               key={item.id}
@@ -10238,7 +10245,7 @@ const App: React.FC = () => {
                 <div style={{ background:'linear-gradient(135deg,#1A3A6B,#2A5298)', padding:'20px 16px', marginBottom:'0' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'16px' }}>
                     <div style={{ width:'56px', height:'56px', borderRadius:'14px', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <img src="/assets/services/segesa.svg" alt="SEGESA" style={{ width:'52px', height:'52px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
+                      <img src={asset('assets/services/segesa.svg')} alt="SEGESA" style={{ width:'52px', height:'52px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
                     </div>
                     <div>
                       <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>SEGESA</div>
@@ -10335,7 +10342,7 @@ const App: React.FC = () => {
                 <div style={{ background:'linear-gradient(135deg,#0A4A8A,#1565C0)', padding:'20px 16px', marginBottom:'0' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'12px' }}>
                     <div style={{ width:'56px', height:'56px', borderRadius:'14px', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <img src="/assets/services/snge.svg" alt="SNGE" style={{ width:'52px', height:'52px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
+                      <img src={asset('assets/services/snge.svg')} alt="SNGE" style={{ width:'52px', height:'52px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
                     </div>
                     <div>
                       <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>SNGE</div>
@@ -10549,7 +10556,7 @@ const App: React.FC = () => {
               <div style={{ padding:'0 0 24px' }}>
                 <div style={{ background:'linear-gradient(135deg,#C62828,#E53935)', padding:'16px', marginBottom:'0', display:'flex', alignItems:'center', gap:'14px' }}>
                   <div style={{ width:'52px', height:'52px', borderRadius:'12px', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <img src="/assets/services/correos.svg" alt="Correos" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
+                    <img src={asset('assets/services/correos.svg')} alt="Correos" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
                   </div>
                   <div><div style={{ fontSize:'16px', fontWeight:'800', color:'#fff' }}>Correos GQ</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Correos de Guinea Ecuatorial</div></div>
                 </div>
@@ -10603,7 +10610,7 @@ const App: React.FC = () => {
               <div style={{ padding:'0 0 24px' }}>
                 <div style={{ background:'linear-gradient(135deg,#1B3A6B,#2A5298)', padding:'16px', marginBottom:'0', display:'flex', alignItems:'center', gap:'14px' }}>
                   <div style={{ width:'52px', height:'52px', borderRadius:'12px', overflow:'hidden', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <img src="/assets/services/dgi.svg" alt="DGI" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
+                    <img src={asset('assets/services/dgi.svg')} alt="DGI" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={(e)=>{ (e.target as HTMLImageElement).style.display='none'; }}/>
                   </div>
                   <div><div style={{ fontSize:'16px', fontWeight:'800', color:'#fff' }}>DGI</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>dirección General de Impuestos</div></div>
                 </div>
