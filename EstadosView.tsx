@@ -390,6 +390,9 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const [postingCriterio, setPostingCriterio] = useState(false);
   const govAutoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Modal de lectura de noticia del gobierno
+  const [govNewsModal, setGovNewsModal] = useState<{ title: string; url: string; source: string } | null>(null);
+
   // Editor de video
   const [processingVideo, setProcessingVideo] = useState(false);
   const [videoFilter, setVideoFilter] = useState('none');
@@ -590,6 +593,52 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
       clearInterval(localTick);
     };
   }, [loadGovNews]);
+
+  // ── Detectar noticia del gobierno llegada desde push notification ─────────
+  useEffect(() => {
+    const checkPendingGovNews = () => {
+      const url = (window as any).__pendingGovNewsUrl;
+      const source = (window as any).__pendingGovNewsSource;
+      if (url) {
+        delete (window as any).__pendingGovNewsUrl;
+        delete (window as any).__pendingGovNewsSource;
+        // Abrir el espacio Gobierno GE
+        const govEspacio = espacios.find(e => e.id === 'e1');
+        if (govEspacio) setActiveEspacio(govEspacio);
+        // Mostrar modal con la noticia
+        const post = activeEspacio?.posts?.find(p => p.sourceUrl === url) || espacios.find(e => e.id === 'e1')?.posts?.find(p => p.sourceUrl === url);
+        setGovNewsModal({
+          title: post?.text || 'Nueva noticia oficial',
+          url,
+          source: source || post?.sourceName || 'Gobierno GE',
+        });
+      }
+    };
+    // Revisar al montar
+    checkPendingGovNews();
+    // También escuchar mensajes del SW directamente
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'OPEN_GOV_NEWS') {
+        const govEspacio = espacios.find(e => e.id === 'e1');
+        if (govEspacio) setActiveEspacio(govEspacio);
+        if (event.data.newsUrl) {
+          setGovNewsModal({
+            title: 'Nueva noticia oficial',
+            url: event.data.newsUrl,
+            source: event.data.newsSource || 'Gobierno GE',
+          });
+        }
+      }
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handler);
+    }
+    return () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handler);
+      }
+    };
+  }, [espacios, activeEspacio]);
 
   const stopCam = useCallback(() => {
     cameraStream?.getTracks().forEach(t => t.stop());
@@ -1431,10 +1480,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                   <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.6, marginBottom: '8px' }}>{post.text}</div>
                   {/* Fuente con enlace — solo posts oficiales */}
                   {post.sourceUrl && post.sourceName && (
-                    <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#0369a1', textDecoration: 'none', background: '#eff6ff', padding: '4px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #bfdbfe' }}>
+                    <button onClick={() => setGovNewsModal({ title: post.text, url: post.sourceUrl!, source: post.sourceName! })} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#0369a1', background: '#eff6ff', padding: '4px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #bfdbfe', cursor: 'pointer', textDecoration: 'none' }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                      Fuente: {post.sourceName} · {post.sourceUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
-                    </a>
+                      Leer noticia · {post.sourceName}
+                    </button>
                   )}
                   {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', objectFit: 'cover', maxHeight: '200px' }} />}
                   {/* Acciones */}
@@ -1874,6 +1923,47 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
             </div>
             <textarea value={editText} onChange={e => setEditText(e.target.value)} maxLength={200} autoFocus style={{ width: '100%', minHeight: '90px', background: '#f5f5f5', border: '1px solid #e5e7eb', borderRadius: '12px', color: '#111', fontSize: '15px', padding: '12px', outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: '12px' }} />
             <button onClick={saveEditSlide} style={{ width: '100%', padding: '13px', background: '#00c8a0', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '15px', fontWeight: '700', cursor: 'pointer' }}>Guardar</button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NOTICIA DEL GOBIERNO — se abre al recibir push notification */}
+      {govNewsModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'flex-end', fontFamily: '-apple-system, sans-serif' }}>
+          <div style={{ width: '100%', background: '#fff', borderRadius: '20px 20px 0 0', padding: '0 0 env(safe-area-inset-bottom, 20px)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 16px 12px', borderBottom: '1px solid #f0f0f0' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#1e3a5f,#0369a1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🏛️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>{govNewsModal.source}</div>
+                <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: '600' }}>Noticia Oficial</div>
+              </div>
+              <button onClick={() => setGovNewsModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '4px' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            {/* Contenido */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>🔔 Nueva noticia</div>
+              <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#111', lineHeight: 1.4, marginBottom: '16px', margin: '0 0 16px' }}>{govNewsModal.title}</h3>
+              <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, margin: '0 0 20px' }}>
+                Esta noticia ha sido publicada por <strong>{govNewsModal.source}</strong>. Toca el botón para leer el artículo completo en la fuente oficial.
+              </p>
+              <div style={{ background: '#f0f9ff', borderRadius: '12px', padding: '12px', border: '1px solid #bfdbfe', marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: '700', marginBottom: '4px' }}>🔗 Fuente oficial</div>
+                <div style={{ fontSize: '12px', color: '#374151', wordBreak: 'break-all' }}>{govNewsModal.url.replace(/^https?:\/\/(www\.)?/, '')}</div>
+              </div>
+            </div>
+            {/* Acciones */}
+            <div style={{ padding: '12px 16px', display: 'flex', gap: '10px', borderTop: '1px solid #f0f0f0' }}>
+              <button onClick={() => setGovNewsModal(null)} style={{ flex: 1, padding: '13px', background: '#f3f4f6', border: 'none', borderRadius: '12px', color: '#374151', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                Cerrar
+              </button>
+              <a href={govNewsModal.url} target="_blank" rel="noopener noreferrer" onClick={() => setGovNewsModal(null)} style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg,#1e3a5f,#0369a1)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '14px', fontWeight: '700', cursor: 'pointer', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Leer noticia completa
+              </a>
+            </div>
           </div>
         </div>
       )}

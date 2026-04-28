@@ -8667,6 +8667,16 @@ const App: React.FC = () => {
         setIncomingCall(null);
       }
 
+      // Noticia del gobierno — abrir espacio Gobierno GE en EstadosView
+      if (data.type === 'OPEN_GOV_NEWS') {
+        setCurrentView('estados');
+        // Guardar la URL de la noticia para que EstadosView la abra
+        if (data.newsUrl) {
+          (window as any).__pendingGovNewsUrl = data.newsUrl;
+          (window as any).__pendingGovNewsSource = data.newsSource;
+        }
+      }
+
       if (data.type === 'NOTIFICATION_CLICK' && data.chatId) {
         setCurrentView('Mensajería');
         const chatId = data.chatId?.toString();

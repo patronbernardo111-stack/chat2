@@ -87,6 +87,7 @@ self.addEventListener('push', e => {
   }
 
   const isCall = data.notificationType === 'incoming_call';
+  const isGovNews = data.notificationType === 'government_news';
   const title = data.title || 'EGChat';
 
   // iOS no soporta: vibrate, actions, requireInteraction
@@ -107,6 +108,22 @@ self.addEventListener('push', e => {
           callerName: data.callerName,
           callType: data.callType || 'audio',
           notificationType: 'incoming_call',
+        },
+      }
+    : isGovNews
+    ? {
+        body: data.body || 'Nueva noticia oficial',
+        icon: '/favicon.svg',
+        badge: '/favicon.svg',
+        tag: data.tag || 'gov-news',
+        renotify: true,
+        requireInteraction: false,
+        silent: false,
+        data: {
+          url: data.url || '/?view=estados&espacio=e1',
+          notificationType: 'government_news',
+          newsUrl: data.newsUrl || '',
+          newsSource: data.newsSource || '',
         },
       }
     : {
@@ -180,13 +197,19 @@ self.addEventListener('notificationclick', e => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(wins => {
+      const targetUrl = notifData.url || '/';
       for (const w of wins) {
         if (w.url.includes(self.location.origin) && 'focus' in w) {
-          w.postMessage({ type: 'NOTIFICATION_CLICK', chatId: notifData.chatId });
+          // Si es noticia del gobierno, navegar al espacio Gobierno GE
+          if (notifData.notificationType === 'government_news') {
+            w.postMessage({ type: 'OPEN_GOV_NEWS', newsUrl: notifData.newsUrl, newsSource: notifData.newsSource });
+          } else {
+            w.postMessage({ type: 'NOTIFICATION_CLICK', chatId: notifData.chatId });
+          }
           return w.focus();
         }
       }
-      return clients.openWindow(notifData.url || '/');
+      return clients.openWindow(targetUrl);
     })
   );
 });
