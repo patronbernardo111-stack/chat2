@@ -809,6 +809,43 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     closeCreate();
   };
 
+  const publishGallery = () => {
+    if (!galleryFile) return;
+    const isVideo = galleryFile.startsWith('data:video') || galleryFile.includes('video/');
+    const newMedia: StoryMedia = {
+      type: isVideo ? 'video' : 'image' as any,
+      content: galleryFile,
+      bg: '#000',
+      ...(galleryCaption.trim() ? { caption: galleryCaption.trim() } as any : {}),
+    };
+    storiesAPI.publish([newMedia]).then(res => {
+      if (res?.id) setMyStoryId(res.id);
+      loadStories();
+    }).catch(() => {});
+    setStories(prev => {
+      const updated = prev.map(s => s.userId === 'me'
+        ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
+        : s
+      );
+      const meStory = updated.find(s => s.userId === 'me')!;
+      const hasContact = updated.some(s => s.userId === 'me-contact');
+      if (hasContact) {
+        return updated.map(s => s.userId === 'me-contact'
+          ? { ...s, media: meStory.media, time: 'ahora', publishedAt: meStory.publishedAt, seen: false }
+          : s
+        );
+      }
+      return [...updated, {
+        id: 'me-contact', userId: 'me-contact',
+        userName: myName, avatar: myAvatar, color: myColor,
+        media: meStory.media, time: 'ahora', seen: false, views: 0,
+        reactions: [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [], publishedAt: meStory.publishedAt,
+      }];
+    });
+    closeCreate();
+  };
+
   const COVER_OPTIONS = [
     'linear-gradient(135deg,#1e3a5f,#0369a1)',
     'linear-gradient(135deg,#7c3aed,#db2777)',
@@ -1215,7 +1252,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                   </div>
                   {/* Botones acción */}
                   <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
-                    {([{ mode: 'clip' as CreateMode, icon: Icon.clip, color: '#f59e0b' }, { mode: 'video' as CreateMode, icon: Icon.video, color: '#06b6d4' }, { mode: 'live' as CreateMode, icon: Icon.live, color: '#ef4444' }]).map(b => (
+                    {([{ mode: 'gallery' as CreateMode, icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>, color: '#a855f7' }, { mode: 'clip' as CreateMode, icon: Icon.clip, color: '#f59e0b' }, { mode: 'video' as CreateMode, icon: Icon.video, color: '#06b6d4' }, { mode: 'live' as CreateMode, icon: Icon.live, color: '#ef4444' }]).map(b => (
                       <button key={b.mode} onClick={() => openCreate(b.mode)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: b.color, padding: '6px', display: 'flex', borderRadius: '50%' }}>{b.icon}</button>
                     ))}
                     {/* Menú opciones */}
@@ -1227,6 +1264,10 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                         <>
                           <div onClick={() => setMyStoryMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
                           <div style={{ position: 'absolute', right: 0, top: '36px', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid #f0f0f0', zIndex: 100, minWidth: '180px', overflow: 'hidden' }}>
+                            <button onClick={() => { openCreate('gallery'); setMyStoryMenu(false); }} style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#111', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f5f5f5' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                              Subir foto/video
+                            </button>
                             <button onClick={() => { openCreate('text'); setMyStoryMenu(false); }} style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#111', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f5f5f5' }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                               Anadir estado
