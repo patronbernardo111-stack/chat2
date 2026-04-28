@@ -144,7 +144,18 @@ export default function AuthScreen({onAuth}:Props) {
       }
       onAuth(r.user);
     }
-    catch(e:any){setErr(e.message||'Error al registrarse');}
+    catch(e:any){
+      const msg = e.message || '';
+      if(msg.includes('ya está registrado') || msg.includes('409') || msg.includes('already')) {
+        setErr('Este número ya está registrado. Usa "Ya tengo cuenta" para iniciar sesión.');
+      } else if(msg.includes('fetch') || msg.includes('network') || msg.includes('Failed')) {
+        setErr('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      } else if(msg.includes('500') || msg.includes('Internal')) {
+        setErr('Error del servidor. Intenta de nuevo en unos segundos.');
+      } else {
+        setErr(msg || 'Error al registrarse. Intenta de nuevo.');
+      }
+    }
     finally{setLoading(false);}
   };
 
@@ -379,7 +390,7 @@ export default function AuthScreen({onAuth}:Props) {
 
           {/* Foto de perfil — OBLIGATORIA con zoom/recorte */}
           <div style={{marginBottom:'20px'}}>
-            <label style={{...lbl, marginBottom:'8px'}}>Foto de Perfil <span style={{color:'#ef4444'}}>*</span></label>
+            <label style={{...lbl, marginBottom:'8px'}}>Foto de Perfil <span style={{color:'#9CA3AF',fontWeight:'400'}}>(opcional)</span></label>
             <div
               onClick={pickImg}
               style={{
@@ -429,7 +440,7 @@ export default function AuthScreen({onAuth}:Props) {
                   <span style={{fontSize:'48px',marginBottom:'8px'}}>📷</span>
                   <span style={{fontSize:'15px',fontWeight:'700',color:'#374151'}}>Subir foto de perfil</span>
                   <span style={{fontSize:'12px',color:'#9CA3AF',marginTop:'4px'}}>Toca para seleccionar</span>
-                  <span style={{fontSize:'11px',color:'#ef4444',marginTop:'6px',fontWeight:'600'}}>Obligatorio para continuar</span>
+                  <span style={{fontSize:'11px',color:'#9CA3AF',marginTop:'6px',fontWeight:'500'}}>Puedes añadirla después</span>
                 </>
               )}
             </div>
@@ -455,12 +466,12 @@ export default function AuthScreen({onAuth}:Props) {
           </div>
 
           <button
-            onClick={()=>{ if(!avatar){setErr('La foto de perfil es obligatoria');return;} setErr(''); setStep(2); }}
+            onClick={()=>{ setErr(''); setStep(2); }}
             disabled={!name.trim()}
             style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',boxShadow:'0 4px 16px rgba(34, 197, 94, 0.3)',border:'none',transition:'all 0.2s ease',opacity:name.trim()?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
           >
             <UserPlus size={18}/>
-            {!name.trim() ? 'Escribe tu nombre primero' : !avatar ? 'Sube tu foto para continuar' : 'Continuar →'}
+            {!name.trim() ? 'Escribe tu nombre primero' : 'Continuar →'}
           </button>
         </>}
         {step===2&&<>
@@ -472,7 +483,6 @@ export default function AuthScreen({onAuth}:Props) {
             const digits = phone.replace(/\D/g,'');
             if(digits.length < 6){setErr('Introduce un número de teléfono válido');return;}
             setErr('');
-            // Verificar si el teléfono ya está registrado
             setLoading(true);
             try {
               const r = await fetch(`${BASE}/auth/check-phone`, {
@@ -482,7 +492,10 @@ export default function AuthScreen({onAuth}:Props) {
               });
               const d = await r.json().catch(()=>({}));
               if(d.exists){setErr('Este número ya está registrado. Inicia sesión.');setLoading(false);return;}
-            } catch {}
+            } catch {
+              // Si el servidor no responde, continuar igualmente
+              // El registro fallará con error claro si el número ya existe
+            }
             setLoading(false);
             setStep(3);
           }} disabled={!phone.trim()||loading} style={{...btnG,borderRadius:'14px',padding:'16px',fontSize:'16px',fontWeight:'700',boxShadow:'0 4px 16px rgba(34, 197, 94, 0.3)',border:'none',transition:'all 0.2s ease',opacity:phone.trim()&&!loading?1:0.5,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
