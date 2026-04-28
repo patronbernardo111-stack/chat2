@@ -7280,7 +7280,32 @@ const App: React.FC = () => {
               <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px', textTransform: 'uppercase' }}>
                 Total: {allContacts.length} contactos
               </div>
-              {[...allContacts].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })).map((contact) => (
+              {(() => {
+                const sorted = [...allContacts].sort((a, b) => {
+                  const aFirst = a.name.trim()[0]?.toUpperCase() || '';
+                  const bFirst = b.name.trim()[0]?.toUpperCase() || '';
+                  const aIsLetter = /[A-ZÁÉÍÓÚÑ]/.test(aFirst);
+                  const bIsLetter = /[A-ZÁÉÍÓÚÑ]/.test(bFirst);
+                  if (aIsLetter && !bIsLetter) return -1;
+                  if (!aIsLetter && bIsLetter) return 1;
+                  return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+                });
+                const groups: { letter: string; contacts: typeof sorted }[] = [];
+                sorted.forEach(contact => {
+                  const first = contact.name.trim()[0]?.toUpperCase() || '#';
+                  const letter = /[A-ZÁÉÍÓÚÑ]/.test(first) ? first.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '#';
+                  const last = groups[groups.length - 1];
+                  if (last && last.letter === letter) { last.contacts.push(contact); }
+                  else { groups.push({ letter, contacts: [contact] }); }
+                });
+                return (<>
+                  {groups.map(group => (
+                  <div key={group.letter}>
+                    {/* Cabecera de letra */}
+                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#00c8a0', padding: '6px 4px 4px', letterSpacing: '0.5px', borderBottom: '1px solid #f0f0f0', marginBottom: '4px' }}>
+                      {group.letter === '#' ? '# 0-9' : group.letter}
+                    </div>
+                    {group.contacts.map((contact) => (
                 <button
                   key={contact.id}
                   onClick={async () => {
@@ -7406,7 +7431,11 @@ const App: React.FC = () => {
                     {contact.status === 'online' ? '● En línea' : contact.status === 'away' ? '● Ausente' : '○ Desconectado'}
                   </div>
                 </button>
-              ))}
+                    ))}
+                  </div>
+                ))}
+                </>);
+              })()}
             </div>
           </div>
         );
