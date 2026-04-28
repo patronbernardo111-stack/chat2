@@ -656,13 +656,13 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     } catch { setCamError('Sin acceso a la camara. Verifica los permisos.'); }
   };
 
-  const [galleryFile, setGalleryFile] = useState<string>('');
+  const [galleryFiles, setGalleryFiles] = useState<string[]>([]);
   const [galleryCaption, setGalleryCaption] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const openCreate = async (mode: CreateMode) => {
     setCreateMode(mode); setRecordedUrl(''); setRecordSeconds(0); setCamError('');
-    setGalleryFile(''); setGalleryCaption('');
+    setGalleryFiles([]); setGalleryCaption('');
     if (mode === 'gallery') return; // no necesita cámara
     if (mode !== 'text') await startCam();
   };
@@ -674,7 +674,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     setNewEmoji(''); 
     setNewMusic('Sin musica'); 
     setRecordedUrl(''); 
-    setGalleryFile(''); 
+    setGalleryFiles([]); 
     setGalleryCaption('');
   };
 
@@ -810,21 +810,23 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   };
 
   const publishGallery = () => {
-    if (!galleryFile) return;
-    const isVideo = galleryFile.startsWith('data:video') || galleryFile.includes('video/');
-    const newMedia: StoryMedia = {
-      type: isVideo ? 'video' : 'image' as any,
-      content: galleryFile,
-      bg: '#000',
-      ...(galleryCaption.trim() ? { caption: galleryCaption.trim() } as any : {}),
-    };
-    storiesAPI.publish([newMedia]).then(res => {
+    if (!galleryFiles.length) return;
+    const mediaItems: StoryMedia[] = galleryFiles.map(file => {
+      const isVideo = file.startsWith('data:video') || file.includes('video/');
+      return {
+        type: isVideo ? 'video' : 'image' as any,
+        content: file,
+        bg: '#000',
+        ...(galleryCaption.trim() ? { caption: galleryCaption.trim() } as any : {}),
+      };
+    });
+    storiesAPI.publish(mediaItems).then(res => {
       if (res?.id) setMyStoryId(res.id);
       loadStories();
     }).catch(() => {});
     setStories(prev => {
       const updated = prev.map(s => s.userId === 'me'
-        ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() }
+        ? { ...s, media: [...s.media, ...mediaItems], time: 'ahora', publishedAt: Date.now() }
         : s
       );
       const meStory = updated.find(s => s.userId === 'me')!;
@@ -1388,6 +1390,8 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
             <div style={{ flex: 1, margin: '0 10px', borderRadius: '18px', overflow: 'hidden', background: viewing.media[slideIdx]?.bg || '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px', position: 'relative' }}>
               {(viewing.media[slideIdx]?.type === 'video' || viewing.media[slideIdx]?.type === 'clip') ? (
                 <video src={viewing.media[slideIdx].content} autoPlay controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (viewing.media[slideIdx]?.type as any) === 'image' ? (
+                <img src={viewing.media[slideIdx].content} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
                 <>
                   {viewing.media[slideIdx]?.emoji && <div style={{ fontSize: '72px' }}>{viewing.media[slideIdx].emoji}</div>}
