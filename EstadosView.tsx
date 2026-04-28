@@ -10,7 +10,7 @@ interface Story {
   reactions: Reaction[]; replies: Reply[]; trending?: boolean; isLive?: boolean;
   publishedAt: number; // timestamp ms
 }
-interface EspacioPost { id: string; author: string; avatar: string; color: string; text: string; time: string; likes: number; comments: number; liked: boolean; }
+interface EspacioPost { id: string; author: string; avatar: string; avatarUrl?: string; color: string; text: string; imageUrl?: string; time: string; likes: number; comments: number; liked: boolean; }
 interface Espacio { id: string; name: string; cover: string; emoji: string; description: string; type: 'publico' | 'comunidad'; followers: number; following: boolean; posts: EspacioPost[]; }
 interface Props {
   onBack: () => void;
