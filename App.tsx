@@ -8883,7 +8883,7 @@ const App: React.FC = () => {
     if (currentView === 'Mensajería') loadChats();
   }, [currentView, loadChats]);
 
-  // -- Polling: actualizar mensajes del chat abierto cada 3s ---
+  // -- Polling: actualizar mensajes del chat abierto cada 1.5s ---
   useEffect(() => {
     if (!selectedChat) {
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
@@ -8891,14 +8891,31 @@ const App: React.FC = () => {
     }
     const chatId = selectedChat.id?.toString() || '';
     if (!chatId || !chatId.includes('-') || chatId.length < 20) return;
+
     // Cargar mensajes inmediatamente al abrir
     loadMessages(chatId);
-    // Polling cada 3 segundos
-    pollingRef.current = setInterval(() => {
-      loadMessages(chatId);
-    }, 1500);
+
+    const startInterval = () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      pollingRef.current = setInterval(() => {
+        if (document.visibilityState === 'visible') loadMessages(chatId);
+      }, 1500);
+    };
+
+    startInterval();
+
+    // Reiniciar el intervalo al volver al primer plano (el setInterval se congela en background)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadMessages(chatId);
+        startInterval();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [selectedChat, loadMessages]);
 
@@ -8916,6 +8933,29 @@ const App: React.FC = () => {
     }, 15000);
     return () => clearInterval(iv);
   }, [isAuthenticated, loadChats, loadContacts]);
+
+  // -- Reconexión automática al volver al primer plano (evita pantalla en blanco) --
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Recargar chats y mensajes activos sin recargar la página
+      loadChats();
+      if (selectedChat) {
+        const chatId = selectedChat.id?.toString() || '';
+        if (chatId && chatId.includes('-') && chatId.length >= 20) {
+          loadMessages(chatId);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    // También escuchar el evento online (cuando recupera red)
+    window.addEventListener('online', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
+    };
+  }, [isAuthenticated, loadChats, loadMessages, selectedChat]);
 
   // -- Auth check  todos los hooks declarados -------------------
   if (!isAuthenticated) return <AuthScreen onAuth={(user) => {

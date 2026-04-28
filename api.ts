@@ -336,6 +336,21 @@ export const userAPI = {
 };
 
 // ══════════════════════════════════════════════════════════════════
+// ESPACIO DULCE — Canales y Comunidades
+// ══════════════════════════════════════════════════════════════════
+export const spacesAPI = {
+  getAll:          () => get<any[]>('/spaces'),
+  create:          (data: { name: string; description?: string; type: string; cover?: string; emoji?: string }) => post<any>('/spaces', data),
+  follow:          (id: string) => post<any>(`/spaces/${id}/follow`, {}),
+  getPosts:        (id: string, page = 1) => get<any[]>(`/spaces/${id}/posts?page=${page}`),
+  createPost:      (id: string, text: string, image_url?: string) => post<any>(`/spaces/${id}/posts`, { text, image_url }),
+  likePost:        (postId: string) => post<any>(`/spaces/posts/${postId}/like`, {}),
+  getComments:     (postId: string) => get<any[]>(`/spaces/posts/${postId}/comments`),
+  addComment:      (postId: string, text: string) => post<any>(`/spaces/posts/${postId}/comments`, { text }),
+  deletePost:      (postId: string) => del<void>(`/spaces/posts/${postId}`),
+};
+
+// ══════════════════════════════════════════════════════════════════
 // STORIES / ESTADOS
 // ══════════════════════════════════════════════════════════════════
 export const storiesAPI = {
@@ -374,5 +389,6 @@ export default {
   noticias: noticiasAPI,
   user:     userAPI,
   stories:  storiesAPI,
+  spaces:   spacesAPI,
   BASE,
 };

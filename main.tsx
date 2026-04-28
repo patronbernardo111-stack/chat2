@@ -126,11 +126,21 @@ if ('serviceWorker' in navigator) {
           window.location.reload();
         } else {
           // App visible — esperar a que vaya a background para recargar
+          // Usar un flag para que solo se recargue UNA vez y no en cada visibilitychange
+          let reloadScheduled = false;
           const onHide = () => {
-            document.removeEventListener('visibilitychange', onHide);
-            window.location.reload();
+            if (reloadScheduled) return;
+            if (document.visibilityState === 'hidden') {
+              reloadScheduled = true;
+              document.removeEventListener('visibilitychange', onHide);
+              window.location.reload();
+            }
           };
           document.addEventListener('visibilitychange', onHide);
+          // Si pasan 30 minutos sin ir a background, cancelar el reload pendiente
+          setTimeout(() => {
+            document.removeEventListener('visibilitychange', onHide);
+          }, 30 * 60 * 1000);
         }
       });
 

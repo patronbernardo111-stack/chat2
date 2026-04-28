@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { storiesAPI } from './api';
+import { storiesAPI, spacesAPI } from './api';
 
 interface Reaction { emoji: string; count: number; reacted: boolean; }
 interface Reply { id: string; user: string; text: string; time: string; }
@@ -358,6 +358,16 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const [newPostsBadge, setNewPostsBadge] = useState<Record<string, number>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Espacio Dulce — estado para publicar posts y comentarios
+  const [activePostEspacio, setActivePostEspacio] = useState<string | null>(null);
+  const [newPostText, setNewPostText] = useState('');
+  const [postingPost, setPostingPost] = useState(false);
+  const [activeComments, setActiveComments] = useState<string | null>(null); // postId
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+  const [spacePosts, setSpacePosts] = useState<Record<string, any[]>>({});
+
   // Editor de video
   const [processingVideo, setProcessingVideo] = useState(false);
   const [videoFilter, setVideoFilter] = useState('none');
@@ -452,6 +462,44 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     return () => clearInterval(interval);
   }, [loadStories]);
 
+  // Cargar espacios reales del servidor
+  const loadSpaces = useCallback(async () => {
+    try {
+      const data = await spacesAPI.getAll();
+      if (!Array.isArray(data)) return;
+      setEspacios(data.map(s => ({
+        id: s.id,
+        name: s.name,
+        cover: s.cover || 'linear-gradient(135deg,#00c8a0,#00b4e6)',
+        emoji: s.emoji || '📢',
+        description: s.description || '',
+        type: s.type || 'publico',
+        followers: s.followers_count || 0,
+        following: s.following || false,
+        posts: [],
+      })));
+    } catch {}
+  }, []);
+
+  const loadSpacePosts = useCallback(async (spaceId: string) => {
+    try {
+      const data = await spacesAPI.getPosts(spaceId);
+      if (!Array.isArray(data)) return;
+      setSpacePosts(prev => ({ ...prev, [spaceId]: data }));
+      setEspacios(prev => prev.map(e => e.id === spaceId ? { ...e, posts: data } : e));
+      setActiveEspacio(prev => prev?.id === spaceId ? { ...prev, posts: data } : prev);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadSpaces();
+  }, [loadSpaces]);
+
+  // Cuando se abre un espacio, cargar sus posts
+  useEffect(() => {
+    if (activeEspacio) loadSpacePosts(activeEspacio.id);
+  }, [activeEspacio?.id]);
+
   // Limpieza automática cada minuto — elimina estados expirados (>24h)
   useEffect(() => {
     const tick = setInterval(() => {
@@ -462,24 +510,6 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
       ));
     }, 60000);
     return () => clearInterval(tick);
-  }, []);
-
-  // Auto-actualización Espacio Dulce — cada 30s inyecta un post nuevo en un espacio aleatorio
-  useEffect(() => {
-    const autoUpdate = setInterval(() => {
-      const ids = Object.keys(NEWS_POOL);
-      const targetId = ids[Math.floor(Math.random() * ids.length)];
-      const newPost = getRandomPost(targetId);
-      setEspacios(prev => prev.map(e =>
-        e.id === targetId ? { ...e, posts: [newPost, ...e.posts].slice(0, 20) } : e
-      ));
-      setActiveEspacio(prev =>
-        prev?.id === targetId ? { ...prev, posts: [newPost, ...prev.posts].slice(0, 20) } : prev
-      );
-      setNewPostsBadge(prev => ({ ...prev, [targetId]: (prev[targetId] ?? 0) + 1 }));
-      setLastUpdated(Date.now());
-    }, 30000);
-    return () => clearInterval(autoUpdate);
   }, []);
 
   const stopCam = useCallback(() => {
@@ -647,26 +677,35 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     'linear-gradient(135deg,#f59e0b,#ef4444)',
   ];
 
-  const publishEspacio = () => {
+  const publishEspacio = async () => {
     if (!newEspacioName.trim()) return;
-    const nuevo: Espacio = {
-      id: `e${Date.now()}`,
-      name: newEspacioName.trim(),
-      cover: COVER_OPTIONS[newEspacioCover],
-      emoji: newEspacioType === 'publico' ? '📢' : '👥',
-      description: newEspacioDesc.trim() || `${newEspacioType === 'publico' ? 'Canal' : 'Comunidad'} creado por ti`,
-      type: newEspacioType,
-      followers: 1,
-      following: true,
-      posts: [],
-    };
-    setEspacios(prev => [nuevo, ...prev]);
-    setCreatingEspacio(false);
-    setNewEspacioStep(1);
-    setNewEspacioName('');
-    setNewEspacioDesc('');
-    setNewEspacioCover(0);
-    setActiveEspacio(nuevo);
+    try {
+      const nuevo = await spacesAPI.create({
+        name: newEspacioName.trim(),
+        description: newEspacioDesc.trim() || `${newEspacioType === 'publico' ? 'Canal' : 'Comunidad'} creado por ti`,
+        type: newEspacioType,
+        cover: COVER_OPTIONS[newEspacioCover],
+        emoji: newEspacioType === 'publico' ? '📢' : '👥',
+      });
+      const formatted = {
+        id: nuevo.id,
+        name: nuevo.name,
+        cover: nuevo.cover || COVER_OPTIONS[newEspacioCover],
+        emoji: nuevo.emoji || '📢',
+        description: nuevo.description || '',
+        type: nuevo.type || newEspacioType,
+        followers: nuevo.followers_count || 1,
+        following: true,
+        posts: [],
+      };
+      setEspacios(prev => [formatted, ...prev]);
+      setCreatingEspacio(false);
+      setNewEspacioStep(1);
+      setNewEspacioName('');
+      setNewEspacioDesc('');
+      setNewEspacioCover(0);
+      setActiveEspacio(formatted);
+    } catch {}
   };
 
   const startProgress = () => {
@@ -775,26 +814,16 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     if (viewing?.userId === 'me' || viewing?.userId === 'me-contact') closeViewer();
   };
 
-  const manualRefresh = () => {
+  const manualRefresh = async () => {
     setIsRefreshing(true);
-    // Simula latencia de red (600ms) y luego inyecta 1-2 posts nuevos
-    setTimeout(() => {
-      const ids = Object.keys(NEWS_POOL);
-      const count = Math.random() > 0.4 ? 2 : 1;
-      for (let i = 0; i < count; i++) {
-        const targetId = ids[Math.floor(Math.random() * ids.length)];
-        const newPost = getRandomPost(targetId);
-        setEspacios(prev => prev.map(e =>
-          e.id === targetId ? { ...e, posts: [newPost, ...e.posts].slice(0, 20) } : e
-        ));
-        setActiveEspacio(prev =>
-          prev?.id === targetId ? { ...prev, posts: [newPost, ...prev.posts].slice(0, 20) } : prev
-        );
-      }
+    try {
+      await loadSpaces();
+      if (activeEspacio) await loadSpacePosts(activeEspacio.id);
       setNewPostsBadge({});
       setLastUpdated(Date.now());
+    } finally {
       setIsRefreshing(false);
-    }, 600);
+    }
   };
 
   const sinceUpdate = (): string => {
@@ -804,7 +833,8 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     return `hace ${Math.floor(diff / H)}h`;
   };
 
-  const toggleFollow = (espacioId: string) => {
+  const toggleFollow = async (espacioId: string) => {
+    // Optimistic update
     setEspacios(prev => prev.map(e => e.id === espacioId
       ? { ...e, following: !e.following, followers: e.following ? e.followers - 1 : e.followers + 1 }
       : e
@@ -813,9 +843,18 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
       ? { ...prev, following: !prev.following, followers: prev.following ? prev.followers - 1 : prev.followers + 1 }
       : prev
     );
+    try {
+      await spacesAPI.follow(espacioId);
+    } catch {
+      // Revertir si falla
+      setEspacios(prev => prev.map(e => e.id === espacioId
+        ? { ...e, following: !e.following, followers: e.following ? e.followers - 1 : e.followers + 1 }
+        : e
+      ));
+    }
   };
 
-  const toggleLikePost = (espacioId: string, postId: string) => {
+  const toggleLikePost = async (espacioId: string, postId: string) => {
     const key = `${espacioId}-${postId}`;
     const wasLiked = likedPosts[key] ?? false;
     setLikedPosts(prev => ({ ...prev, [key]: !wasLiked }));
@@ -825,6 +864,45 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     );
     setEspacios(prev => prev.map(e => e.id === espacioId ? { ...e, posts: updatePosts(e.posts) } : e));
     setActiveEspacio(prev => prev?.id === espacioId ? { ...prev, posts: updatePosts(prev.posts) } : prev);
+    try {
+      await spacesAPI.likePost(postId);
+    } catch {}
+  };
+
+  const submitPost = async () => {
+    if (!newPostText.trim() || !activePostEspacio) return;
+    setPostingPost(true);
+    try {
+      await spacesAPI.createPost(activePostEspacio, newPostText.trim());
+      setNewPostText('');
+      setActivePostEspacio(null);
+      await loadSpacePosts(activePostEspacio);
+    } catch {} finally {
+      setPostingPost(false);
+    }
+  };
+
+  const loadComments = async (postId: string) => {
+    try {
+      const data = await spacesAPI.getComments(postId);
+      setComments(prev => ({ ...prev, [postId]: data }));
+    } catch {}
+  };
+
+  const submitComment = async (postId: string, spaceId: string) => {
+    if (!newComment.trim()) return;
+    setPostingComment(true);
+    try {
+      const c = await spacesAPI.addComment(postId, newComment.trim());
+      setComments(prev => ({ ...prev, [postId]: [...(prev[postId] || []), c] }));
+      setNewComment('');
+      // Actualizar contador
+      const updatePosts = (posts: EspacioPost[]) => posts.map(p => p.id === postId ? { ...p, comments: p.comments + 1 } : p);
+      setEspacios(prev => prev.map(e => e.id === spaceId ? { ...e, posts: updatePosts(e.posts) } : e));
+      setActiveEspacio(prev => prev?.id === spaceId ? { ...prev, posts: updatePosts(prev.posts) } : prev);
+    } catch {} finally {
+      setPostingComment(false);
+    }
   };
 
   const me = stories.find(s => s.userId === 'me')!;
@@ -1164,7 +1242,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                 <div style={{ fontSize: '16px', fontWeight: '800', color: '#fff', letterSpacing: '-0.2px' }}>{activeEspacio.name}</div>
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80' }} />
-                  {activeEspacio.type === 'publico' ? 'Canal' : 'Comunidad'} · {formatFollowers(activeEspacio.followers)} {activeEspacio.type === 'publico' ? 'seguidores' : 'miembros'} · {sinceUpdate()}
+                  {activeEspacio.type === 'publico' ? 'Canal' : 'Comunidad'} · {formatFollowers(activeEspacio.followers)} {activeEspacio.type === 'publico' ? 'seguidores' : 'miembros'}
                 </div>
               </div>
               <button onClick={() => toggleFollow(activeEspacio.id)}
@@ -1180,31 +1258,82 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
           <div style={{ background: '#fff', padding: '12px 16px', borderBottom: '1px solid #ebebeb', flexShrink: 0 }}>
             <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>{activeEspacio.description}</div>
           </div>
+          {/* Caja publicar post */}
+          <div style={{ background: '#fff', padding: '10px 16px', borderBottom: '1px solid #ebebeb', flexShrink: 0 }}>
+            {activePostEspacio === activeEspacio.id ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <textarea value={newPostText} onChange={e => setNewPostText(e.target.value)} placeholder="Escribe algo para compartir..." maxLength={500} autoFocus style={{ width: '100%', minHeight: '70px', background: '#f9f9f9', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#111', fontSize: '14px', padding: '10px', outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button onClick={() => { setActivePostEspacio(null); setNewPostText(''); }} style={{ padding: '7px 14px', background: '#f5f5f5', border: 'none', borderRadius: '10px', color: '#666', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>Cancelar</button>
+                  <button onClick={submitPost} disabled={!newPostText.trim() || postingPost} style={{ padding: '7px 16px', background: newPostText.trim() ? '#00c8a0' : '#ccc', border: 'none', borderRadius: '10px', color: '#fff', fontSize: '13px', cursor: newPostText.trim() ? 'pointer' : 'default', fontWeight: '700' }}>
+                    {postingPost ? 'Publicando...' : 'Publicar'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setActivePostEspacio(activeEspacio.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', background: '#f5f5f5', border: 'none', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer', textAlign: 'left' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span style={{ fontSize: '13px', color: '#aaa' }}>Publicar en {activeEspacio.name}...</span>
+              </button>
+            )}
+          </div>
           {/* Posts */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {activeEspacio.posts.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#bbb', fontSize: '13px', padding: '40px 0' }}>No hay publicaciones aun. ¡Se el primero!</div>
+            )}
             {activeEspacio.posts.map(post => {
               const key = `${activeEspacio.id}-${post.id}`;
               const isLiked = likedPosts[key] ?? post.liked;
+              const postComments = comments[post.id] || [];
+              const showComments = activeComments === post.id;
               return (
                 <div key={post.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #ebebeb', padding: '14px 14px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: post.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{post.avatar}</div>
+                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: post.color || '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                      {post.avatarUrl ? <img src={post.avatarUrl} alt={post.author} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : post.avatar}
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>{post.author}</div>
                       <div style={{ fontSize: '11px', color: '#bbb' }}>hace {post.time}</div>
                     </div>
                   </div>
                   <div style={{ fontSize: '14px', color: '#222', lineHeight: 1.55, marginBottom: '12px' }}>{post.text}</div>
+                  {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', objectFit: 'cover', maxHeight: '200px' }} />}
                   <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid #f2f2f2', paddingTop: '10px' }}>
                     <button onClick={() => toggleLikePost(activeEspacio.id, post.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: isLiked ? '#e53935' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill={isLiked ? '#e53935' : 'none'} stroke={isLiked ? '#e53935' : '#aaa'} strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                      <span style={{ color: isLiked ? '#e53935' : '#999' }}>{post.likes + (isLiked && !post.liked ? 1 : !isLiked && post.liked ? -1 : 0)}</span>
+                      <span>{post.likes}</span>
                     </button>
-                    <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                      <span style={{ color: '#999' }}>{post.comments}</span>
+                    <button onClick={() => {
+                      if (showComments) { setActiveComments(null); }
+                      else { setActiveComments(post.id); loadComments(post.id); }
+                    }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', color: showComments ? '#00c8a0' : '#aaa', fontSize: '13px', fontWeight: '600', padding: 0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>{post.comments}</span>
                     </button>
                   </div>
+                  {/* Comentarios */}
+                  {showComments && (
+                    <div style={{ marginTop: '10px', borderTop: '1px solid #f5f5f5', paddingTop: '10px' }}>
+                      {postComments.map(c => (
+                        <div key={c.id} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{c.avatar}</div>
+                          <div style={{ flex: 1, background: '#f5f5f5', borderRadius: '10px', padding: '7px 10px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: '#111' }}>{c.author}</div>
+                            <div style={{ fontSize: '13px', color: '#333', marginTop: '2px' }}>{c.text}</div>
+                            <div style={{ fontSize: '10px', color: '#bbb', marginTop: '3px' }}>hace {c.time}</div>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                        <input value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitComment(post.id, activeEspacio.id)} placeholder="Escribe un comentario..." style={{ flex: 1, padding: '8px 12px', background: '#f5f5f5', border: '1px solid #e5e7eb', borderRadius: '20px', fontSize: '13px', outline: 'none', color: '#111', fontFamily: 'inherit' }} />
+                        <button onClick={() => submitComment(post.id, activeEspacio.id)} disabled={!newComment.trim() || postingComment} style={{ padding: '8px 14px', background: newComment.trim() ? '#00c8a0' : '#e5e7eb', border: 'none', borderRadius: '20px', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: newComment.trim() ? 'pointer' : 'default' }}>
+                          {postingComment ? '...' : 'Enviar'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

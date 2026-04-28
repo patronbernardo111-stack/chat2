@@ -20,11 +20,18 @@ export const UpdateBanner: React.FC<Props> = ({ onUpdate }) => {
         if (document.visibilityState === 'hidden') {
           window.location.reload();
         } else {
+          let reloadScheduled = false;
           const onHide = () => {
-            document.removeEventListener('visibilitychange', onHide);
-            window.location.reload();
+            if (reloadScheduled) return;
+            if (document.visibilityState === 'hidden') {
+              reloadScheduled = true;
+              document.removeEventListener('visibilitychange', onHide);
+              window.location.reload();
+            }
           };
           document.addEventListener('visibilitychange', onHide);
+          // Cancelar si pasan 30 minutos sin ir a background
+          setTimeout(() => document.removeEventListener('visibilitychange', onHide), 30 * 60 * 1000);
         }
       }, { once: true });
     };
