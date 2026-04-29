@@ -144,20 +144,8 @@ if ('serviceWorker' in navigator) {
       // Registrar nuestro SW
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
 
-      // Forzar activación inmediata si hay una nueva versión esperando
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed') {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-            }
-          });
-        }
-      });
+      // NO forzar activación inmediata — evita el flash en iOS Safari
+      // El SW nuevo se activará cuando el usuario cierre y reabra la app
 
       // Cuando el SW nuevo toma control, NO recargar automáticamente en iOS
       // ya que causa un flash de pantalla completa. El usuario verá los cambios

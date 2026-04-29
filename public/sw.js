@@ -14,14 +14,15 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  self.skipWaiting();
-  // Pre-cachear el app shell para arranque instantáneo sin red
+  // NO llamar skipWaiting() aquí — evita el flash en iOS Safari
+  // El SW nuevo esperará a que todas las pestañas se cierren antes de activarse
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
   );
 });
 
 self.addEventListener('message', (e) => {
+  // Solo hacer skipWaiting si el cliente lo pide explícitamente (actualización manual)
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
   if (e.data?.type === 'CALL_HANDLED') {
     const callId = e.data.callId;
@@ -37,12 +38,8 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-      .then(() => {
-        return self.clients.matchAll({ type: 'window' }).then(clients => {
-          clients.forEach(client => client.postMessage({ type: 'SW_READY' }));
-        });
-      })
+      // NO llamar clients.claim() — evita tomar control de páginas ya abiertas en iOS
+      // Las páginas existentes seguirán usando el SW anterior hasta que se recarguen
   );
 });
 

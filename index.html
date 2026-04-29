@@ -37,6 +37,19 @@
         navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
         if ('caches' in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
       }
+      // Status bar height para Android WebView (Capacitor)
+      (function() {
+        var isAndroid = /android/i.test(navigator.userAgent);
+        var isCapacitor = typeof window !== 'undefined' && !!(window.Capacitor);
+        if (isAndroid || isCapacitor) {
+          // Android status bar: 24-28px según densidad
+          document.documentElement.style.setProperty('--status-bar-height', '28px');
+          document.documentElement.style.setProperty('--header-top-padding', '28px');
+        } else {
+          document.documentElement.style.setProperty('--status-bar-height', '0px');
+          document.documentElement.style.setProperty('--header-top-padding', '0px');
+        }
+      })();
     </script>
   </body>
 </html>

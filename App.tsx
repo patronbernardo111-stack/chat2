@@ -543,10 +543,8 @@ const App: React.FC = () => {
     const isAndroid = /android/i.test(navigator.userAgent);
     const isCapacitor = !!(window as any).Capacitor;
     if (isAndroid || isCapacitor) {
-      // Android status bar típica: 24dp en densidades normales, hasta 48px en alta densidad
-      // Usamos 28px como valor seguro para la mayoría de dispositivos Android
-      const statusBarH = isCapacitor ? '28px' : '24px';
-      document.documentElement.style.setProperty('--status-bar-height', statusBarH);
+      document.documentElement.style.setProperty('--status-bar-height', '28px');
+      document.documentElement.style.setProperty('--header-top-padding', '28px');
     }
   }, []);
   const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings);
