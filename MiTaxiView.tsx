@@ -511,10 +511,90 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
       </div>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 20px', background: CARD, borderTop: '1px solid ' + BORDER, display: 'flex', gap: 10 }}>
         <button onClick={() => setScreen('home')} style={{ flex: 1, padding: '14px', background: BORDER, color: SUB, border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+        {/* Botón chat conductor */}
+        <button onClick={() => setShowDriverChat(true)} style={{ padding: '14px 16px', background: ACCENT_LIGHT, color: ACCENT, border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
         <button onClick={() => { if (userBalance >= ride.price) { onDebit(ride.price); setScreen('riding'); } else alert('Saldo insuficiente'); }} style={{ flex: 2, padding: '14px', background: ACCENT, color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-          Confirmar � {ride.price.toLocaleString()} XAF
+          Confirmar · {ride.price.toLocaleString()} XAF
         </button>
       </div>
+
+      {/* Mini-chat con el conductor */}
+      {showDriverChat && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: CARD }}>
+          {/* Header chat */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid ' + BORDER, paddingTop: 'max(14px, env(safe-area-inset-top))' }}>
+            <button onClick={() => setShowDriverChat(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 10 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: driver.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{driver.ini}</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div>
+              <div style={{ fontSize: 11, color: GREEN, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: GREEN }} />
+                En camino · {driver.plate}
+              </div>
+            </div>
+          </div>
+          {/* Mensajes */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {driverChatMsgs.map(msg => (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start' }}>
+                <div style={{ maxWidth: '75%', padding: '10px 14px', borderRadius: msg.from === 'me' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: msg.from === 'me' ? ACCENT : (theme.id === 'midnight' ? '#1E293B' : '#F1F5F9'), color: msg.from === 'me' ? '#fff' : TEXT, fontSize: 14, lineHeight: 1.4 }}>
+                  {msg.text}
+                  <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: 'right' }}>{msg.time}</div>
+                </div>
+              </div>
+            ))}
+            <div ref={driverChatEndRef} />
+          </div>
+          {/* Input */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid ' + BORDER, display: 'flex', gap: 10, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <input
+              value={driverChatInput}
+              onChange={e => setDriverChatInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && driverChatInput.trim()) {
+                  const t = new Date();
+                  const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                  const newMsg = { id: Date.now().toString(), from: 'me' as const, text: driverChatInput.trim(), time: tm };
+                  setDriverChatMsgs(prev => [...prev, newMsg]);
+                  setDriverChatInput('');
+                  // Respuesta automática del conductor
+                  setTimeout(() => {
+                    const replies = ['Ok, entendido!', 'Estoy en camino, ya casi llego.', 'Perfecto, te veo pronto.', 'De acuerdo.'];
+                    const t2 = new Date();
+                    const tm2 = `${t2.getHours().toString().padStart(2,'0')}:${t2.getMinutes().toString().padStart(2,'0')}`;
+                    setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'driver', text: replies[Math.floor(Math.random()*replies.length)], time: tm2 }]);
+                  }, 1200);
+                }
+              }}
+              placeholder="Escribe al conductor..."
+              style={{ flex: 1, padding: '12px 16px', background: theme.id === 'midnight' ? '#1E293B' : '#F1F5F9', border: 'none', borderRadius: 24, fontSize: 14, color: TEXT, outline: 'none' }}
+            />
+            <button
+              onClick={() => {
+                if (!driverChatInput.trim()) return;
+                const t = new Date();
+                const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                const newMsg = { id: Date.now().toString(), from: 'me' as const, text: driverChatInput.trim(), time: tm };
+                setDriverChatMsgs(prev => [...prev, newMsg]);
+                setDriverChatInput('');
+                setTimeout(() => {
+                  const replies = ['Ok, entendido!', 'Estoy en camino, ya casi llego.', 'Perfecto, te veo pronto.', 'De acuerdo.'];
+                  const t2 = new Date();
+                  const tm2 = `${t2.getHours().toString().padStart(2,'0')}:${t2.getMinutes().toString().padStart(2,'0')}`;
+                  setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'driver', text: replies[Math.floor(Math.random()*replies.length)], time: tm2 }]);
+                }, 1200);
+              }}
+              style={{ width: 44, height: 44, borderRadius: '50%', background: ACCENT, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -542,10 +622,82 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           </div>
           {progress >= 100
             ? <button onClick={() => setScreen('rating')} style={{ ...btn(), background: GREEN }}>Calificar viaje</button>
-            : <button onClick={() => setScreen('home')} style={{ ...btn(), background: BORDER, color: SUB }}>Cancelar viaje</button>
+            : <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setShowDriverChat(true)} style={{ padding: '14px 16px', background: ACCENT_LIGHT, color: ACCENT, border: 'none', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Chat
+                </button>
+                <button onClick={() => setScreen('home')} style={{ ...btn(), background: BORDER, color: SUB }}>Cancelar viaje</button>
+              </div>
           }
         </div>
       </div>
+
+      {/* Mini-chat con el conductor durante el viaje */}
+      {showDriverChat && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: CARD }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid ' + BORDER, paddingTop: 'max(14px, env(safe-area-inset-top))' }}>
+            <button onClick={() => setShowDriverChat(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 10 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT} strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            </button>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: driver.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff' }}>{driver.ini}</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div>
+              <div style={{ fontSize: 11, color: ACCENT, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT }} />
+                Viaje en curso · {Math.round(progress)}%
+              </div>
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {driverChatMsgs.map(msg => (
+              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start' }}>
+                <div style={{ maxWidth: '75%', padding: '10px 14px', borderRadius: msg.from === 'me' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: msg.from === 'me' ? ACCENT : (theme.id === 'midnight' ? '#1E293B' : '#F1F5F9'), color: msg.from === 'me' ? '#fff' : TEXT, fontSize: 14, lineHeight: 1.4 }}>
+                  {msg.text}
+                  <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: 'right' }}>{msg.time}</div>
+                </div>
+              </div>
+            ))}
+            <div ref={driverChatEndRef} />
+          </div>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid ' + BORDER, display: 'flex', gap: 10, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <input
+              value={driverChatInput}
+              onChange={e => setDriverChatInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && driverChatInput.trim()) {
+                  const t = new Date(); const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                  setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'me', text: driverChatInput.trim(), time: tm }]);
+                  setDriverChatInput('');
+                  setTimeout(() => {
+                    const replies = ['Ok!', 'Entendido.', 'Vamos bien.', 'Casi llegamos.'];
+                    const t2 = new Date(); const tm2 = `${t2.getHours().toString().padStart(2,'0')}:${t2.getMinutes().toString().padStart(2,'0')}`;
+                    setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'driver', text: replies[Math.floor(Math.random()*replies.length)], time: tm2 }]);
+                  }, 1000);
+                }
+              }}
+              placeholder="Escribe al conductor..."
+              style={{ flex: 1, padding: '12px 16px', background: theme.id === 'midnight' ? '#1E293B' : '#F1F5F9', border: 'none', borderRadius: 24, fontSize: 14, color: TEXT, outline: 'none' }}
+            />
+            <button
+              onClick={() => {
+                if (!driverChatInput.trim()) return;
+                const t = new Date(); const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'me', text: driverChatInput.trim(), time: tm }]);
+                setDriverChatInput('');
+                setTimeout(() => {
+                  const replies = ['Ok!', 'Entendido.', 'Vamos bien.', 'Casi llegamos.'];
+                  const t2 = new Date(); const tm2 = `${t2.getHours().toString().padStart(2,'0')}:${t2.getMinutes().toString().padStart(2,'0')}`;
+                  setDriverChatMsgs(prev => [...prev, { id: Date.now().toString(), from: 'driver', text: replies[Math.floor(Math.random()*replies.length)], time: tm2 }]);
+                }, 1000);
+              }}
+              style={{ width: 44, height: 44, borderRadius: '50%', background: ACCENT, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
