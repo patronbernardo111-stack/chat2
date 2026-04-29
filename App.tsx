@@ -2287,18 +2287,6 @@ const App: React.FC = () => {
       {/* Hora, clima y controles */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
 
-        {/* Clima */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={(e) => { setEditWeather({ temp: String(weather.temp), city: weather.city, condition: weather.condition }); setShowWeatherModal(true); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(10,20,40,0.75)', padding: '2px 5px', borderRadius: '50px', border: 'none', cursor: 'pointer', outline: 'none' }}
-          >
-            <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain',  10)}</div>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}°</span>
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)' }}>{weather.city}</span>
-          </button>
-        </div>
-
         {/* Hora */}
         <div style={{ position: 'relative' }}>
           <button
@@ -2477,88 +2465,6 @@ const App: React.FC = () => {
           )}
         </div>
       </div>
-    );
-  };
-
-  // Dropdown del tiempo ? peque?o, se cierra al tocar fuera
-  const renderWeatherModal = () => {
-    if (!showWeatherModal) return null;
-    const conditions = [
-      { id: 'sunny', label: 'Soleado', icon: 'sun', color: '#fbbf24' },
-      { id: 'cloudy', label: 'Nublado', icon: 'cloud', color: '#9ca3af' },
-      { id: 'rain',   label: 'Lluvia',  icon: 'rain',  color: '#60a5fa' },
-    ];
-    const weatherIcon = weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain';
-    return (
-      <>
-        {/* Capa invisible para cerrar al tocar fuera */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1099 }} onClick={() => setShowWeatherModal(false)} />
-        {/* Dropdown anclado bajo el botón de clima */}
-        <div style={{
-          position: 'fixed', top: '52px', right: '80px',
-          background: 'rgba(12,22,48,0.95)', backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: '14px', border: '1px solid rgba(0,200,160,0.25)',
-          width: '210px', padding: '12px',
-          boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
-          zIndex: 1100,
-          animation: 'dropdownIn 0.18s cubic-bezier(0.34,1.56,0.64,1)',
-        }} onClick={e => e.stopPropagation()}>
-          <style>{`@keyframes dropdownIn{from{opacity:0;transform:translateY(-6px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-
-          {/* Ciudad + temp actual */}
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
-            <div>
-              <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.45)', marginBottom:'1px' }}>Mi ubicación</div>
-              <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{weather.city}</div>
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:'5px' }}>
-              <div style={{ color: conditions.find(c=>c.id===weather.condition)?.color || '#fbbf24' }}>
-                {renderIcon(weatherIcon, 20)}
-              </div>
-              <span style={{ fontSize:'20px', fontWeight:'800', color:'#fff' }}>{weather.temp}°</span>
-            </div>
-          </div>
-
-          {/* Separador */}
-          <div style={{ height:'1px', background:'rgba(255,255,255,0.08)', marginBottom:'10px' }} />
-
-          {/* Editar manualmente */}
-          <div style={{ display:'flex', gap:'5px', marginBottom:'8px' }}>
-            <input type="number" value={editWeather.temp}
-              onChange={e => setEditWeather({ ...editWeather, temp: e.target.value })}
-              placeholder="C"
-              style={{ width:'48px', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', padding:'5px 6px', color:'#fff', fontSize:'11px', outline:'none' }} />
-            <input type="text" value={editWeather.city}
-              onChange={e => setEditWeather({ ...editWeather, city: e.target.value })}
-              placeholder="Ciudad"
-              style={{ flex:1, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'7px', padding:'5px 7px', color:'#fff', fontSize:'11px', outline:'none' }} />
-          </div>
-
-          {/* Condición */}
-          <div style={{ display:'flex', gap:'4px', marginBottom:'10px' }}>
-            {conditions.map(c => {
-              const sel = editWeather.condition === c.id;
-              return (
-                <button key={c.id} onClick={() => setEditWeather({ ...editWeather, condition: c.id })}
-                  style={{ flex:1, padding:'5px 2px', background: sel ? 'rgba(0,200,160,0.2)' : 'rgba(255,255,255,0.05)', border: sel ? '1px solid rgba(0,200,160,0.5)' : '1px solid rgba(255,255,255,0.08)', borderRadius:'7px', cursor:'pointer', outline:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
-                  <div style={{ color: sel ? c.color : 'rgba(255,255,255,0.4)' }}>{renderIcon(c.icon, 12)}</div>
-                  <span style={{ fontSize:'8px', fontWeight:'600', color: sel ? '#fff' : 'rgba(255,255,255,0.4)' }}>{c.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Guardar */}
-          <button onClick={() => {
-            const temp = parseInt(editWeather.temp);
-            if (!isNaN(temp) && editWeather.city.trim()) setWeather({ temp, city: editWeather.city.trim(), condition: editWeather.condition });
-            setShowWeatherModal(false);
-          }} style={{ width:'100%', background:'linear-gradient(90deg,#00c8a0,#00b4e6)', border:'none', borderRadius:'8px', padding:'7px', color:'#fff', fontSize:'11px', fontWeight:'700', cursor:'pointer', outline:'none' }}>
-            Guardar
-          </button>
-        </div>
-      </>
     );
   };
 
@@ -4148,7 +4054,7 @@ const App: React.FC = () => {
       <>
       <div style={{
         position: 'fixed',
-        bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 16px)',
+        bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 24px)',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1002,
@@ -4314,7 +4220,7 @@ const App: React.FC = () => {
         }}
         style={{
           position: 'fixed',
-          bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 16px)',
+          bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 24px)',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '65px',
@@ -9181,7 +9087,6 @@ const App: React.FC = () => {
       {/* Paneles desplegables */}
       {renderNotificationsPanel()}
       {renderMenuPanel()}
-      {renderWeatherModal()}
       {renderTimeModal()}
       {renderActiveCall()}
 
