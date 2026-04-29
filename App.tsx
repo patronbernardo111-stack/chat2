@@ -2214,7 +2214,24 @@ const App: React.FC = () => {
 
   // Renderizar header - OPTIMIZADO PARA Móvil CON COLORES DEL LOGO
   const renderHeader = () => (
-    <div style={{
+    <div
+      id="app-main-header"
+      ref={(el) => {
+        if (el) {
+          // Medir altura real del header y guardarla como CSS variable
+          const update = () => {
+            const h = el.getBoundingClientRect().height;
+            document.documentElement.style.setProperty('--header-height', h + 'px');
+          };
+          update();
+          // Observar cambios de tamaño (rotación, etc.)
+          if (typeof ResizeObserver !== 'undefined') {
+            const ro = new ResizeObserver(update);
+            ro.observe(el);
+          }
+        }
+      }}
+      style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -6010,7 +6027,7 @@ const App: React.FC = () => {
         return (
           <div style={{
             padding: '0 8px 0px',
-            paddingTop: 'max(66px, calc(env(safe-area-inset-top, 0px) + 66px))',
+            paddingTop: 'var(--header-height, 94px)',
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',

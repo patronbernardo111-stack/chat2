@@ -2,9 +2,13 @@ package com.egchat.app;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -21,8 +25,18 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Hacer que la barra de estado sea transparente y el contenido se extienda debajo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.parseColor("#00c8a0")); // mismo color que el header
+            // Iconos de la barra de estado en oscuro (para fondo claro) o claro (para fondo oscuro)
+            window.getDecorView().setSystemUiVisibility(0); // iconos blancos
+        }
+
         requestAllPermissions();
-        // Esperar a que el bridge esté listo antes de configurar el WebChromeClient
         new Handler().postDelayed(this::setupWebViewCameraPermissions, 500);
     }
 
@@ -67,7 +81,6 @@ public class MainActivity extends BridgeActivity {
                 }
             });
         } catch (Exception e) {
-            // Reintentar si el bridge aún no está listo
             new Handler().postDelayed(this::setupWebViewCameraPermissions, 500);
         }
     }
