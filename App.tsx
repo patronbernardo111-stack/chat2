@@ -4359,13 +4359,15 @@ const App: React.FC = () => {
 
     return (
       <>
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'env(safe-area-inset-bottom, 0px)', background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)', zIndex: 999 }} />
         <div style={{
-          position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', left: 0, right: 0,
+          position: 'fixed', bottom: 0, left: 0, right: 0,
           background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-around',
           zIndex: 1000, borderTop: '0.5px solid rgba(255,255,255,0.25)',
-          boxShadow: '0 -1px 0 rgba(0,0,0,0.1)', paddingTop: '6px', paddingBottom: '8px', minHeight: '49px',
+          boxShadow: '0 -1px 0 rgba(0,0,0,0.1)',
+          paddingTop: '6px',
+          paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+          minHeight: '49px',
         }}>
           {navItems.map((item) => (
             <button key={item.id} onClick={() => {
@@ -4383,7 +4385,6 @@ const App: React.FC = () => {
             </button>
           ))}
         </div>
-        {/* Safe area incluida en la barra principal */}
       </>
     );
   };
