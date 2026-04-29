@@ -4794,14 +4794,22 @@ const App: React.FC = () => {
               setCurrentChatInput('');
               setEditingMsgId(null);
               showToast('Mensaje editado', 'success');
+              // Cerrar teclado en Android
+              (document.activeElement as HTMLElement)?.blur();
               return;
             }
+
+            // Cerrar teclado en Android inmediatamente al enviar
+            (document.activeElement as HTMLElement)?.blur();
 
             playMessageSent(); vibrate(30);
             const newMsg = { id: Date.now().toString(), from: 'me' as const, text: messageText, time: makeTime(), status: 'pending' as const };
             addMsg(newMsg);
             setCurrentChatInput('');
             setShowChatEmojis(false);
+
+            // Scroll al último mensaje
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
             
             if (chatId && chatId.includes('-') && chatId.length > 20) {
               try {
