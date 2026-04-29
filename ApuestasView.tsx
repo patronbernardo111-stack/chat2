@@ -368,7 +368,7 @@ const Logo: React.FC<{ id: string; size?: number }> = ({ id, size = 48 }) => {
 
 // ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
 const OfficialBtn: React.FC<{ company: Company }> = ({ company }) => (
-  <div style={{ position:'fixed', bottom:'16px', left:'16px', right:'16px', zIndex:50 }}>
+  <div style={{ position:'fixed', bottom:'16px', left:'16px', right:'16px', zIndex:100 }}>
     <button
       onClick={() => {
         const url = company.url;
@@ -483,19 +483,40 @@ export const ApuestasView: React.FC<Props> = ({ onBack, userBalance, onDebit }) 
       </div>
       <div style={{ flex:1, overflowY:'auto', padding:'8px 16px 80px' }}>
         {COMPANIES.map(co => (
-          <button key={co.id} onClick={() => { setSel(co); setSportId(co.sports?.[0]?.id || 'futbol'); setLeagueFilter('Todos'); }}
-            style={{ width:'100%', background:'#1a1a24', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px', padding:'14px', marginBottom:'10px', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:'12px' }}>
-            <Logo id={co.id} size={52}/>
-            <div style={{ flex:1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px' }}>
-                <span style={{ fontSize:'15px', fontWeight:'800', color:'#fff' }}>{co.name}</span>
-                <span style={{ background:'rgba(0,200,160,0.15)', color:'#00c8a0', fontSize:'9px', fontWeight:'700', padding:'2px 6px', borderRadius:'6px' }}>✓ LICENCIADO</span>
+          <div key={co.id} style={{ marginBottom:'10px' }}>
+            <button onClick={() => { setSel(co); setSportId(co.sports?.[0]?.id || 'futbol'); setLeagueFilter('Todos'); }}
+              style={{ width:'100%', background:'#1a1a24', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'16px 16px 0 0', padding:'14px', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:'12px' }}>
+              <Logo id={co.id} size={52}/>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'3px' }}>
+                  <span style={{ fontSize:'15px', fontWeight:'800', color:'#fff' }}>{co.name}</span>
+                  <span style={{ background:'rgba(0,200,160,0.15)', color:'#00c8a0', fontSize:'9px', fontWeight:'700', padding:'2px 6px', borderRadius:'6px' }}>✓ LICENCIADO</span>
+                </div>
+                <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'6px' }}>{co.tagline}</div>
+                <span style={{ background:(co.color+'20'), color:co.color, fontSize:'10px', fontWeight:'700', padding:'2px 8px', borderRadius:'6px' }}>🎁 {co.bonus}</span>
               </div>
-              <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'6px' }}>{co.tagline}</div>
-              <span style={{ background:(co.color+'20'), color:co.color, fontSize:'10px', fontWeight:'700', padding:'2px 8px', borderRadius:'6px' }}>🎁 {co.bonus}</span>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            {co.url && (
+              <button
+                onClick={() => {
+                  try {
+                    if ((window as any).require) {
+                      const { shell } = (window as any).require('electron');
+                      shell.openExternal(co.url!);
+                    } else {
+                      window.open(co.url, '_blank', 'noopener,noreferrer');
+                    }
+                  } catch {
+                    window.open(co.url, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                style={{ width:'100%', background:`linear-gradient(135deg, ${co.color}22, ${co.color}11)`, border:`1px solid ${co.color}40`, borderTop:'none', borderRadius:'0 0 16px 16px', padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', color:co.color, fontSize:'12px', fontWeight:'700' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Abrir sitio oficial · {co.url?.replace('https://', '')}
+              </button>
+            )}
+          </div>
         ))}
       </div>
     </div>
