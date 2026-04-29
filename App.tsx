@@ -78,8 +78,14 @@ const App: React.FC = () => {
     try {
       const d = await chatAPI.getChats();
       if (Array.isArray(d)) {
-        setRealChats(d);
-        realChatsRef.current = d;
+        // Merge: preservar chats locales recién creados que aún no están en el backend
+        setRealChats(prev => {
+          const backendIds = new Set(d.map((c: any) => c.id?.toString()));
+          const localOnly = prev.filter((c: any) => !backendIds.has(c.id?.toString()));
+          const merged = [...localOnly, ...d];
+          realChatsRef.current = merged;
+          return merged;
+        });
         // Sincronizar allGroups con los grupos del backend (reemplazar completamente)
         const backendGroups = d.filter((c: any) => c.type === 'group');
         const mappedGroups = backendGroups.map((c: any) => ({
