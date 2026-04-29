@@ -2289,10 +2289,23 @@ const App: React.FC = () => {
 
         {/* Clima */}
         <div style={{ position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(10,20,40,0.75)', padding: '2px 5px', borderRadius: '50px' }}>
-            <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain', 10)}</div>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}°</span>
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)' }}>{weather.city}</span>
+          <div
+            onClick={() => setShowWeatherModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '4px',
+              background: 'rgba(10,20,40,0.72)',
+              padding: '5px 10px',
+              borderRadius: '50px',
+              border: '1px solid rgba(255,255,255,0.13)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(10px)',
+              cursor: 'pointer',
+              transition: 'background 0.2s, box-shadow 0.2s',
+            }}
+          >
+            <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain', 12)}</div>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}°</span>
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{weather.city}</span>
           </div>
         </div>
 
@@ -2300,16 +2313,30 @@ const App: React.FC = () => {
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => { setShowNotifications(!showNotifications); setAppNotifications(prev => prev.map(n => ({ ...n, read: true }))); }}
-            style={{ background: showNotifications ? 'rgba(0,200,160,0.25)' : 'rgba(10,20,40,0.75)', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', outline: 'none' }}
+            style={{
+              background: showNotifications ? 'rgba(0,200,160,0.30)' : 'rgba(10,20,40,0.72)',
+              border: `1px solid ${showNotifications ? 'rgba(0,200,160,0.45)' : 'rgba(255,255,255,0.13)'}`,
+              boxShadow: showNotifications
+                ? '0 2px 12px rgba(0,200,160,0.25), inset 0 1px 0 rgba(255,255,255,0.08)'
+                : '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(10px)',
+              cursor: 'pointer',
+              padding: '5px 10px',
+              borderRadius: '50px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative', outline: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s, border-color 0.2s',
+            }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             {appNotifications.filter(n => !n.read).length > 0 && (
               <div style={{
-                position: 'absolute', top: '1px', right: '1px',
-                minWidth: '14px', height: '14px',
-                background: '#ef4444', borderRadius: '7px',
+                position: 'absolute', top: '-2px', right: '-2px',
+                minWidth: '15px', height: '15px',
+                background: '#ef4444', borderRadius: '8px',
                 border: '1.5px solid rgba(10,20,40,0.9)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '8px', fontWeight: '800', color: '#fff', padding: '0 2px',
@@ -2320,13 +2347,27 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Men */}
+        {/* Menú */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            style={{ background: showMenu ? 'rgba(0,180,230,0.25)' : 'rgba(10,20,40,0.75)', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}
+            style={{
+              background: showMenu ? 'rgba(0,180,230,0.30)' : 'rgba(10,20,40,0.72)',
+              border: `1px solid ${showMenu ? 'rgba(0,180,230,0.45)' : 'rgba(255,255,255,0.13)'}`,
+              boxShadow: showMenu
+                ? '0 2px 12px rgba(0,180,230,0.25), inset 0 1px 0 rgba(255,255,255,0.08)'
+                : '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(10px)',
+              cursor: 'pointer',
+              padding: '5px 10px',
+              borderRadius: '50px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              outline: 'none',
+              transition: 'background 0.2s, box-shadow 0.2s, border-color 0.2s',
+            }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
               <line x1="3" y1="12" x2="21" y2="12"/>
               <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
