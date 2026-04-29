@@ -95,15 +95,20 @@ const App: React.FC = () => {
           is_favorite: false,
         }));
         setAllGroups(prev => {
-          // Preservar is_favorite de grupos locales
-          const favMap = new Map(prev.map((g: any) => [g.id?.toString(), g.is_favorite]));
+          // Preservar is_favorite y avatarUrl de grupos locales
+          const prevMap = new Map(prev.map((g: any) => [g.id?.toString(), g]));
+          const backendIds = new Set(mappedGroups.map((g: any) => g.id?.toString()));
           const merged = mappedGroups.map((g: any) => ({
             ...g,
-            is_favorite: favMap.get(g.id?.toString()) ?? false,
+            is_favorite: prevMap.get(g.id?.toString())?.is_favorite ?? false,
+            avatarUrl: prevMap.get(g.id?.toString())?.avatarUrl || g.avatarUrl || '',
           }));
+          // Preservar grupos locales que aún no están en el backend (recién creados)
+          const localOnly = prev.filter((g: any) => !backendIds.has(g.id?.toString()));
+          const final = [...localOnly, ...merged];
           // Guardar en localStorage como respaldo
-          try { localStorage.setItem('egchat_groups', JSON.stringify(merged)); } catch {}
-          return merged;
+          try { localStorage.setItem('egchat_groups', JSON.stringify(final)); } catch {}
+          return final;
         });
         // Abrir chat pendiente de notificación si existe
         const pendingId = (window as any).__pendingOpenChatId;
