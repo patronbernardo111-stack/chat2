@@ -2210,8 +2210,8 @@ const App: React.FC = () => {
       zIndex: 1000,
       boxShadow: '0 2px 8px rgba(0,200,160,0.3)',
       overflow: 'hidden',
-      // Safe area para iPhone notch/Dynamic Island
-      paddingTop: 'env(safe-area-inset-top, 0px)',
+      // Safe area para iPhone notch/Dynamic Island y Android status bar
+      paddingTop: 'max(env(safe-area-inset-top, 0px), var(--status-bar-height, 0px))',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '44px', padding: '0 10px', boxSizing: 'border-box' }}>
       

@@ -19,6 +19,24 @@ function fixAndroidViewportHeight() {
 }
 fixAndroidViewportHeight();
 
+// ── Fix status bar Android edge-to-edge ──────────────────────────────────
+// En Android con Capacitor, env(safe-area-inset-top) puede ser 0 aunque
+// haya barra de estado. Detectamos la altura real y la exponemos como
+// variable CSS --status-bar-height para que el header la use.
+function fixAndroidStatusBar() {
+  const isAndroid = /android/i.test(navigator.userAgent);
+  if (!isAndroid) return;
+  // Intentar leer el safe area real; si es 0, usar 24px (altura estándar Android)
+  const testEl = document.createElement('div');
+  testEl.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);left:0;width:1px;height:1px;pointer-events:none;';
+  document.body.appendChild(testEl);
+  const safeTop = testEl.getBoundingClientRect().top;
+  document.body.removeChild(testEl);
+  const statusBarHeight = safeTop > 0 ? safeTop : 24;
+  document.documentElement.style.setProperty('--status-bar-height', `${statusBarHeight}px`);
+}
+fixAndroidStatusBar();
+
 // ── Service Worker + Web Push ─────────────────────────────────────────────
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'https://egchat-api.onrender.com';
