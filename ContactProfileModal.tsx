@@ -510,7 +510,16 @@ export const ContactProfileModal: React.FC<Props> = ({
                   <div style={{textAlign:'center',padding:'40px 0',color:'#9CA3AF',background:'#fff'}}>
                     <div style={{fontSize:'13px'}}>Sin integrantes cargados</div>
                   </div>
-                ) : groupMembers.map((member, idx) => {
+                ) : [...groupMembers]
+                  .sort((a, b) => {
+                    const aAdmin = a.role === 'admin' ? 0 : 1;
+                    const bAdmin = b.role === 'admin' ? 0 : 1;
+                    if (aAdmin !== bAdmin) return aAdmin - bAdmin;
+                    const aName = (a.full_name || a.phone || '').toLowerCase();
+                    const bName = (b.full_name || b.phone || '').toLowerCase();
+                    return aName.localeCompare(bName);
+                  })
+                  .map((member, idx) => {
                   const name = member.full_name || member.phone || 'Miembro';
                   const initials = name.slice(0,2).toUpperCase();
                   const isMe = member.user_id?.toString() === currentUserId?.toString();

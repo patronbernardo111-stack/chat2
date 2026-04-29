@@ -6383,10 +6383,15 @@ const App: React.FC = () => {
               {/* Chats reales del backend */}
               {realChats.length > 0 && realChats
                 .filter(chat => {
-                  if (messageFilter === 'group') return chat.type === 'group';
-                  if (messageFilter === 'individual') return chat.type !== 'group';
+                  // Determinar si es grupo de forma robusta:
+                  // - type === 'group' (backend lo marca explícitamente)
+                  // - O tiene más de 2 participantes (grupos siempre tienen 3+)
+                  const isGrp = chat.type === 'group' ||
+                    (Array.isArray(chat.participants) && chat.participants.length > 2);
+
+                  if (messageFilter === 'group') return isGrp;
+                  if (messageFilter === 'individual') return !isGrp;
                   if (messageFilter === 'money') {
-                    // Mostrar chats que tienen mensajes de transferencia/dinero
                     const chatId = chat.id?.toString() || '';
                     const msgs = chatMessages[chatId] || [];
                     const hasMoneyMsg = msgs.some((m: any) =>
@@ -6396,7 +6401,6 @@ const App: React.FC = () => {
                       m.text?.includes('📌') ||
                       m.type === 'transfer' || m.type === 'payment'
                     );
-                    // También incluir si el último mensaje del backend es de dinero
                     const lastText = chat.last_message?.text || '';
                     const lastHasMoney = lastText.includes('XAF') || lastText.includes('Transferencia') || lastText.includes('💸');
                     return hasMoneyMsg || lastHasMoney;
@@ -6411,7 +6415,8 @@ const App: React.FC = () => {
                 })
                 .map((chat: any) => {
                   // Para chats privados, usar el nombre del otro participante
-                  const isGroup = chat.type === 'group';
+                  const isGroup = chat.type === 'group' ||
+                    (Array.isArray(chat.participants) && chat.participants.length > 2);
                   let name = chat.name || chat.title || '';
                   let avatarUrl = chat.avatar_url || '';
                   if (!isGroup && chat.participants) {
@@ -6495,14 +6500,42 @@ const App: React.FC = () => {
                 })
               }
 
-              {/* Estado vac?o */}
+              {/* Estado vacío */}
               {realChats.length === 0 && (
                 <div style={{ textAlign:'center', padding:'60px 20px', color:'#9ca3af' }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" style={{margin:'0 auto 16px',display:'block'}}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <div style={{ fontSize:'15px', fontWeight:'600', color:'#374151', marginBottom:'6px' }}>Sin conversacines</div>
+                  <div style={{ fontSize:'15px', fontWeight:'600', color:'#374151', marginBottom:'6px' }}>Sin conversaciones</div>
                   <div style={{ fontSize:'13px' }}>Toca <strong>+</strong> para iniciar un chat</div>
                 </div>
               )}
+              {/* Estado vacío cuando el filtro no devuelve resultados */}
+              {realChats.length > 0 && messageFilter !== 'all' && (() => {
+                const filtered = realChats.filter(chat => {
+                  const isGrp = chat.type === 'group' || (Array.isArray(chat.participants) && chat.participants.length > 2);
+                  if (messageFilter === 'group') return isGrp;
+                  if (messageFilter === 'individual') return !isGrp;
+                  if (messageFilter === 'money') {
+                    const chatId = chat.id?.toString() || '';
+                    const msgs = (chatMessages as any)[chatId] || [];
+                    const hasMoneyMsg = msgs.some((m: any) => m.text?.includes('XAF') || m.text?.includes('💸') || m.text?.includes('Transferencia'));
+                    const lastHasMoney = (chat.last_message?.text || '').includes('XAF');
+                    return hasMoneyMsg || lastHasMoney;
+                  }
+                  return true;
+                });
+                if (filtered.length > 0) return null;
+                const labels: Record<string,string> = { individual:'chats individuales', group:'grupos', money:'conversaciones de dinero' };
+                return (
+                  <div style={{ textAlign:'center', padding:'60px 20px', color:'#9ca3af' }}>
+                    <div style={{ fontSize:'32px', marginBottom:'12px' }}>
+                      {messageFilter === 'group' ? '👥' : messageFilter === 'money' ? '💸' : '💬'}
+                    </div>
+                    <div style={{ fontSize:'15px', fontWeight:'600', color:'#374151', marginBottom:'6px' }}>
+                      No hay {labels[messageFilter] || 'resultados'}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
@@ -11748,7 +11781,17 @@ const App: React.FC = () => {
               </div>
             ) : (
               <div style={{ background: '#fff', marginTop: '8px' }}>
-                {groupMembersList.map((member, idx) => {
+                {[...groupMembersList]
+                  .sort((a, b) => {
+                    // Admins primero, luego alfabético
+                    const aAdmin = a.role === 'admin' ? 0 : 1;
+                    const bAdmin = b.role === 'admin' ? 0 : 1;
+                    if (aAdmin !== bAdmin) return aAdmin - bAdmin;
+                    const aName = (a.full_name || a.phone || '').toLowerCase();
+                    const bName = (b.full_name || b.phone || '').toLowerCase();
+                    return aName.localeCompare(bName);
+                  })
+                  .map((member, idx) => {
                   const name = member.full_name || member.phone || 'Miembro';
                   const initials = name.slice(0, 2).toUpperCase();
                   const isMe = member.user_id === (window as any).__currentUserId;
