@@ -584,6 +584,8 @@ const App: React.FC = () => {
 
   // Gestion de Contactos - Ahora usa datos reales del backend
   const [allContacts, setAllContacts] = useState<Array<{ id: string; name: string; phone: string; avatar: string; avatarUrl?: string; status: 'online' | 'offline' | 'away'; addedDate: string }>>([]);
+  const allContactsRef = React.useRef<any[]>([]);
+  React.useEffect(() => { allContactsRef.current = allContacts; }, [allContacts]);
   const [showAddContactModal, setShowAddContactModal] = useState<boolean>(false);
   const [newContactData, setNewContactData] = useState<{ name: string; phone: string }>({ name: '', phone: '' });
   const [showQRScannerModal, setShowQRScannerModal] = useState<boolean>(false);
@@ -8878,22 +8880,28 @@ const App: React.FC = () => {
         return;
       }
     } catch {}
-    // Fallback: usar participantes de realChats
+    // Fallback: usar participantes de realChats + resolver nombres desde allContacts
     const chat = realChatsRef.current?.find((c: any) => c.id?.toString() === chatId);
     if (chat?.participants && chat.participants.length > 0) {
-      const fallback = chat.participants.map((p: any) => ({
-        id: p.user_id || p.id,
-        user_id: p.user_id || p.id,
-        phone: p.phone || p.users?.phone || '',
-        full_name: p.full_name || p.users?.full_name || p.name || '',
-        avatar_url: p.avatar_url || p.users?.avatar_url || '',
-        online_status: false,
-        role: 'member',
-      }));
+      const contacts = allContactsRef.current || [];
+      const fallback = chat.participants.map((p: any) => {
+        const uid = p.user_id?.toString() || p.id?.toString() || '';
+        const contact = contacts.find((c: any) => c.id?.toString() === uid);
+        return {
+          id: uid,
+          user_id: uid,
+          phone: p.phone || p.users?.phone || contact?.phone || '',
+          full_name: p.full_name || p.users?.full_name || contact?.name || p.name || uid.slice(0, 8),
+          avatar_url: p.avatar_url || p.users?.avatar_url || contact?.avatarUrl || '',
+          online_status: false,
+          role: 'member',
+        };
+      });
       setGroupMembersList(fallback);
     } else {
       setGroupMembersList([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
