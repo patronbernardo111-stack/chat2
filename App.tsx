@@ -80,28 +80,31 @@ const App: React.FC = () => {
       if (Array.isArray(d)) {
         setRealChats(d);
         realChatsRef.current = d;
-        // Sincronizar allGroups con los grupos del backend
+        // Sincronizar allGroups con los grupos del backend (reemplazar completamente)
         const backendGroups = d.filter((c: any) => c.type === 'group');
-        if (backendGroups.length > 0) {
-          setAllGroups(prev => {
-            const prevIds = new Set(prev.map((g: any) => g.id?.toString()));
-            const newGroups = backendGroups
-              .filter((c: any) => !prevIds.has(c.id?.toString()))
-              .map((c: any) => ({
-                id: c.id?.toString(),
-                name: c.name || 'Grupo',
-                description: '',
-                members: c.participants?.length || 0,
-                avatar: (c.name || 'G').slice(0, 2).toUpperCase(),
-                avatarUrl: c.avatar_url || '',
-                createdDate: c.created_at || new Date().toISOString(),
-                lastMessage: c.last_message?.text || '',
-                unread: c.unread_count || 0,
-                is_favorite: false,
-              }));
-            return newGroups.length > 0 ? [...newGroups, ...prev] : prev;
-          });
-        }
+        const mappedGroups = backendGroups.map((c: any) => ({
+          id: c.id?.toString(),
+          name: c.name || 'Grupo',
+          description: c.description || '',
+          members: c.participants?.length || 0,
+          avatar: (c.name || 'G').slice(0, 2).toUpperCase(),
+          avatarUrl: c.avatar_url || '',
+          createdDate: c.created_at || new Date().toISOString(),
+          lastMessage: c.last_message?.text || '',
+          unread: c.unread_count || 0,
+          is_favorite: false,
+        }));
+        setAllGroups(prev => {
+          // Preservar is_favorite de grupos locales
+          const favMap = new Map(prev.map((g: any) => [g.id?.toString(), g.is_favorite]));
+          const merged = mappedGroups.map((g: any) => ({
+            ...g,
+            is_favorite: favMap.get(g.id?.toString()) ?? false,
+          }));
+          // Guardar en localStorage como respaldo
+          try { localStorage.setItem('egchat_groups', JSON.stringify(merged)); } catch {}
+          return merged;
+        });
         // Abrir chat pendiente de notificación si existe
         const pendingId = (window as any).__pendingOpenChatId;
         if (pendingId) {
@@ -577,7 +580,12 @@ const App: React.FC = () => {
   const [showContactImportModal, setShowContactImportModal] = useState<boolean>(false);
 
   // Gestion de Grupos - Ahora usa datos reales del backend
-  const [allGroups, setAllGroups] = useState<Array<{ id: string; name: string; description: string; members: number; avatar: string; avatarUrl?: string; createdDate: string; lastMessage: string; unread: number; is_favorite?: boolean }>>([]);
+  const [allGroups, setAllGroups] = useState<Array<{ id: string; name: string; description: string; members: number; avatar: string; avatarUrl?: string; createdDate: string; lastMessage: string; unread: number; is_favorite?: boolean }>>(() => {
+    try {
+      const saved = localStorage.getItem('egchat_groups');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [favoriteGroupIds, setFavoriteGroupIds] = useState<string[]>([]);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState<boolean>(false);
   const [newGroupData, setNewGroupData] = useState<{ name: string; description: string; selectedMembers: string[] }>({ name: '', description: '', selectedMembers: [] });
@@ -3505,9 +3513,10 @@ const App: React.FC = () => {
       if (!canCreate) return;
       const memberIds = groupMembers.map(m => m.id);
       let groupId = Date.now().toString();
+      let backendSuccess = false;
       try {
         const chat = await chatAPI.createGroup(groupName.trim(), memberIds);
-        if (chat?.id) groupId = chat.id;
+        if (chat?.id) { groupId = chat.id; backendSuccess = true; }
       } catch { /* usar ID local */ }
 
       const newGroup = {
@@ -3523,7 +3532,11 @@ const App: React.FC = () => {
         is_favorite: false,
       };
       // Añadir a allGroups Y a realChats para que aparezca en la lista de mensajes
-      setAllGroups(prev => [newGroup, ...prev]);
+      setAllGroups(prev => {
+        const updated = [newGroup, ...prev];
+        try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
+        return updated;
+      });
       setRealChats((prev: any[]) => [{
         id: groupId, type: 'group', name: groupName.trim(),
         avatar_url: '', participants: groupMembers.map(m => ({ user_id: m.id, full_name: m.name })),
@@ -3542,6 +3555,8 @@ const App: React.FC = () => {
       setGroupName('');
       setGroupMembers([]);
       showToast(`Grupo "${groupName.trim()}" creado`, 'success');
+      // Si se guardó en backend, recargar para sincronizar IDs correctos
+      if (backendSuccess) setTimeout(() => loadChats(), 1500);
     };
 
     return (
