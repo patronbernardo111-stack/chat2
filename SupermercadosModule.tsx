@@ -28,17 +28,17 @@ const SUPERMARKETS = [
   { id:'sm3', nombre:'Guinaco',           ciudad_id:'c1', logo:'GN', color:'#065F46', color2:'#00c8a0',
     descripcion:'Productos locales y de importación. Especialidad en frescos.',
     direccion:'Ela Nguema, Malabo',              telefono:'+240 222 20 01 03',
-    horario:'L-S 8:00-20:00', cobertura:'Ela Nguema · Malabo II',
+    horario:'L-S 8:00-20:00', cobertura:'Ela Nguema  -  Malabo II',
     delivery:true, recogida:true, minOrder:4000, deliveryFee:500, estado:true },
   { id:'sm4', nombre:'Pegasos Express',   ciudad_id:'c1', logo:'PE', color:'#92400E', color2:'#F59E0B',
     descripcion:'Tienda express con los productos esenciales del día a día.',
     direccion:'Malabo II, Malabo',               telefono:'+240 222 20 01 04',
-    horario:'L-D 7:00-23:00', cobertura:'Malabo II · Aeropuerto',
+    horario:'L-D 7:00-23:00', cobertura:'Malabo II  -  Aeropuerto',
     delivery:false, recogida:true, minOrder:0, deliveryFee:0, estado:true },
   { id:'sm5', nombre:'Caba Market',       ciudad_id:'c1', logo:'CM', color:'#4C1D95', color2:'#6B5BD6',
     descripcion:'Supermercado moderno con sección de electrónica y hogar.',
     direccion:'Puerto, Malabo',                  telefono:'+240 222 20 01 05',
-    horario:'L-S 9:00-21:00', cobertura:'Puerto · Centro',
+    horario:'L-S 9:00-21:00', cobertura:'Puerto  -  Centro',
     delivery:true, recogida:true, minOrder:6000, deliveryFee:300, estado:true },
   { id:'sm6', nombre:'Getco',             ciudad_id:'c2', logo:'GT', color:'#0A4A8A', color2:'#00b4e6',
     descripcion:'Principal supermercado de Bata con amplio surtido.',
@@ -48,7 +48,7 @@ const SUPERMARKETS = [
   { id:'sm7', nombre:'Comercial Santy',   ciudad_id:'c2', logo:'CS', color:'#831843', color2:'#EC4899',
     descripcion:'Tienda familiar con productos frescos y de importación.',
     direccion:'Paseo Marítimo, Bata',            telefono:'+240 222 20 02 02',
-    horario:'L-S 8:00-21:00', cobertura:'Litoral · Bata',
+    horario:'L-S 8:00-21:00', cobertura:'Litoral  -  Bata',
     delivery:true, recogida:true, minOrder:5000, deliveryFee:300, estado:true },
   { id:'sm8', nombre:'EGTC Bata',         ciudad_id:'c2', logo:'EG', color:'#1B3A6B', color2:'#2A5298',
     descripcion:'Sucursal EGTC en Bata con todos los productos de la cadena.',
@@ -279,9 +279,9 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
           <button onClick={goBack} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#6B7280',fontSize:'16px'}}>←</button>
           <div style={{flex:1}}>
             <div style={{fontSize:'16px',fontWeight:'700',color:'#111827'}}>{headerTitle[screen]}</div>
-            {screen==='home'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{SUPERMARKETS.length} tiendas · {CITIES.length} ciudades · GQ</div>}
+            {screen==='home'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{SUPERMARKETS.length} tiendas  -  {CITIES.length} ciudades  -  GQ</div>}
             {screen==='stores'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{SUPERMARKETS.filter(s=>s.ciudad_id===cityId).length} supermercados</div>}
-            {screen==='categories'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{smCats.length} categorías · {smProds.length} productos</div>}
+            {screen==='categories'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{smCats.length} categorías  -  {smProds.length} productos</div>}
             {screen==='products'&&<div style={{fontSize:'11px',color:'#9CA3AF'}}>{catProds.length} productos</div>}
           </div>
           {cartCount>0&&screen!=='cart'&&screen!=='checkout'&&(
@@ -302,7 +302,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                 <div style={{fontSize:'40px'}}>🛒</div>
                 <div>
                   <div style={{fontSize:'16px',fontWeight:'800',color:'#fff'}}>Compra Online</div>
-                  <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>Supermercados nacionales · Entrega a domicilio</div>
+                  <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>Supermercados nacionales  -  Entrega a domicilio</div>
                 </div>
               </div>
               {/* Búsqueda global */}
@@ -314,7 +314,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
               {/* Resultados búsqueda global */}
               {globalSearch.length>=2&&(
                 <div style={{marginBottom:'16px'}}>
-                  <div style={{fontSize:'11px',fontWeight:'700',color:'#6B7280',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.5px'}}>Resultados · {PRODUCTS.filter(p=>p.nombre.toLowerCase().includes(globalSearch.toLowerCase())||p.marca.toLowerCase().includes(globalSearch.toLowerCase())).length} productos</div>
+                  <div style={{fontSize:'11px',fontWeight:'700',color:'#6B7280',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.5px'}}>Resultados  -  {PRODUCTS.filter(p=>p.nombre.toLowerCase().includes(globalSearch.toLowerCase())||p.marca.toLowerCase().includes(globalSearch.toLowerCase())).length} productos</div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'7px'}}>
                     {PRODUCTS.filter(p=>p.nombre.toLowerCase().includes(globalSearch.toLowerCase())||p.marca.toLowerCase().includes(globalSearch.toLowerCase())).slice(0,12).map(p=>{
                       const inCart=cart.find(i=>i.id===p.id);
@@ -466,7 +466,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                       <button onClick={()=>{setProdId(p.id);setScreen('detail');}} style={{background:'none',border:'none',cursor:'pointer',padding:0,width:'100%'}}>
                         <div style={{fontSize:'26px',marginBottom:'4px'}}>{p.img}</div>
                         <div style={{fontSize:'10px',fontWeight:'700',color:'#111827',marginBottom:'2px',lineHeight:'1.2'}}>{p.nombre}</div>
-                        <div style={{fontSize:'8px',color:'#9CA3AF',marginBottom:'4px'}}>{p.marca} · {p.unidad}</div>
+                        <div style={{fontSize:'8px',color:'#9CA3AF',marginBottom:'4px'}}>{p.marca}  -  {p.unidad}</div>
                         <div style={{fontSize:'11px',fontWeight:'800',color:'#00c8a0',marginBottom:'6px'}}>{p.precio.toLocaleString()} XAF</div>
                       </button>
                       {!inCart
@@ -489,7 +489,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
               <div style={{background:'#fff',borderRadius:'16px',padding:'24px',marginBottom:'14px',textAlign:'center',border:'1px solid #F0F2F5',boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
                 <div style={{fontSize:'72px',marginBottom:'12px'}}>{prod.img}</div>
                 <div style={{fontSize:'18px',fontWeight:'800',color:'#111827',marginBottom:'4px'}}>{prod.nombre}</div>
-                <div style={{fontSize:'12px',color:'#9CA3AF',marginBottom:'8px'}}>{prod.marca} · {prod.unidad}</div>
+                <div style={{fontSize:'12px',color:'#9CA3AF',marginBottom:'8px'}}>{prod.marca}  -  {prod.unidad}</div>
                 <div style={{fontSize:'24px',fontWeight:'900',color:'#00c8a0',marginBottom:'12px'}}>{prod.precio.toLocaleString()} XAF</div>
                 <div style={{display:'flex',gap:'8px',justifyContent:'center',flexWrap:'wrap',marginBottom:'12px'}}>
                   {cat&&<span style={{background:cat.color+'18',color:cat.color,borderRadius:'8px',padding:'3px 10px',fontSize:'11px',fontWeight:'700'}}>{cat.icono} {cat.nombre}</span>}
@@ -514,7 +514,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                       <button onClick={()=>addToCart(prod)} style={{width:'36px',height:'36px',borderRadius:'50%',background:'#00c8a0',border:'none',cursor:'pointer',fontSize:'18px',fontWeight:'700',color:'#fff'}}>+</button>
                     </div>;
               })()}
-              {cartCount>0&&<button onClick={()=>setScreen('cart')} style={{width:'100%',background:'#065F46',border:'none',borderRadius:'12px',padding:'13px',color:'#fff',fontSize:'13px',fontWeight:'700',cursor:'pointer',marginTop:'8px'}}>Ver carrito · {cartCount} productos · {cartTotal.toLocaleString()} XAF</button>}
+              {cartCount>0&&<button onClick={()=>setScreen('cart')} style={{width:'100%',background:'#065F46',border:'none',borderRadius:'12px',padding:'13px',color:'#fff',fontSize:'13px',fontWeight:'700',cursor:'pointer',marginTop:'8px'}}>Ver carrito  -  {cartCount} productos  -  {cartTotal.toLocaleString()} XAF</button>}
             </div>
           )}
 
@@ -535,7 +535,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                       <div style={{fontSize:'28px',flexShrink:0}}>{item.img}</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:'12px',fontWeight:'700',color:'#111827'}}>{item.nombre}</div>
-                        <div style={{fontSize:'10px',color:'#9CA3AF'}}>{item.marca} · {item.precio.toLocaleString()} XAF/ud</div>
+                        <div style={{fontSize:'10px',color:'#9CA3AF'}}>{item.marca}  -  {item.precio.toLocaleString()} XAF/ud</div>
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                         <button onClick={()=>removeFromCart(item.id)} style={{width:'26px',height:'26px',borderRadius:'50%',background:'#F3F4F6',border:'none',cursor:'pointer',fontSize:'14px',fontWeight:'700',color:'#374151'}}>−</button>
@@ -627,7 +627,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                 onClick={confirmOrder}
                 disabled={!metodoPago||(metodoEntrega==='delivery'&&(!direccion.nombre||!direccion.telefono||!direccion.direccion))}
                 style={{width:'100%',background:metodoPago&&(metodoEntrega==='recogida'||(direccion.nombre&&direccion.telefono&&direccion.direccion))?'linear-gradient(135deg,#00c8a0,#00b4e6)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:metodoPago&&(metodoEntrega==='recogida'||(direccion.nombre&&direccion.telefono&&direccion.direccion))?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>
-                Confirmar pedido · {grandTotal.toLocaleString()} XAF
+                Confirmar pedido  -  {grandTotal.toLocaleString()} XAF
               </button>
             </div>
           )}
@@ -652,7 +652,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'10px'}}>
                           <div>
                             <div style={{fontSize:'13px',fontWeight:'700',color:'#111827'}}>{o.sm_nombre}</div>
-                            <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'2px'}}>📅 {o.fecha} · Ref: {o.ref}</div>
+                            <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'2px'}}>📅 {o.fecha}  -  Ref: {o.ref}</div>
                           </div>
                           <span style={{background:statusColor[o.estado]+'18',color:statusColor[o.estado],borderRadius:'8px',padding:'3px 10px',fontSize:'10px',fontWeight:'700'}}>{statusLabel[o.estado]}</span>
                         </div>
@@ -662,7 +662,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                         </div>
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:'8px',borderTop:'1px solid #F3F4F6'}}>
                           <div>
-                            <div style={{fontSize:'10px',color:'#9CA3AF'}}>{o.metodo_entrega==='delivery'?'🚚 Delivery':'🏪 Recogida'} · {o.metodo_pago==='wallet'?'💳 EGCHAT':o.metodo_pago==='bank'?'🏦 Banco':'💵 Efectivo'}</div>
+                            <div style={{fontSize:'10px',color:'#9CA3AF'}}>{o.metodo_entrega==='delivery'?'🚚 Delivery':'🏪 Recogida'}  -  {o.metodo_pago==='wallet'?'💳 EGCHAT':o.metodo_pago==='bank'?'🏦 Banco':'💵 Efectivo'}</div>
                             <div style={{fontSize:'10px',color:'#6B7280',marginTop:'2px'}}>📍 {o.direccion}</div>
                           </div>
                           <div style={{fontSize:'16px',fontWeight:'900',color:'#00c8a0'}}>{o.total.toLocaleString()} XAF</div>
@@ -708,7 +708,7 @@ export const SupermercadosModal: React.FC<{onClose:()=>void; userBalance:number;
                       <div style={{fontSize:'28px'}}>{o.items[0]?.img||'🛒'}</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:'12px',fontWeight:'700',color:'#111827'}}>{o.sm_nombre}</div>
-                        <div style={{fontSize:'10px',color:'#9CA3AF'}}>{o.fecha} · {o.items.length} producto{o.items.length!==1?'s':''}</div>
+                        <div style={{fontSize:'10px',color:'#9CA3AF'}}>{o.fecha}  -  {o.items.length} producto{o.items.length!==1?'s':''}</div>
                         <div style={{fontSize:'10px',color:'#9CA3AF'}}>Ref: {o.ref}</div>
                       </div>
                       <div style={{fontSize:'14px',fontWeight:'800',color:'#00c8a0'}}>{o.total.toLocaleString()} XAF</div>

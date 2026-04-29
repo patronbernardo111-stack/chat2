@@ -118,7 +118,7 @@ export const RecargaMonederoModal: React.FC<{onClose:()=>void;userBalance:number
               <span>La recarga se acredita en 1-24h tras confirmar la transferencia.</span>
             </div>
             <button onClick={()=>{if(isValid&&data.banco)setStep('confirm');}} style={{width:'100%',background:isValid&&data.banco?'linear-gradient(135deg,#1B3A6B,#0E5F8A)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:isValid&&data.banco?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:isValid&&data.banco?'pointer':'default'}}>
-              Confirmar {isValid?`· ${amountNum.toLocaleString()} XAF`:''}
+              Confirmar {isValid?` -  ${amountNum.toLocaleString()} XAF`:''}
             </button>
           </div>}
 
@@ -164,7 +164,7 @@ export const RecargaMonederoModal: React.FC<{onClose:()=>void;userBalance:number
             ].map(a=>(
               <div key={a.nombre} style={{background:'#fff',borderRadius:'12px',padding:'13px 14px',marginBottom:'8px',border:'1px solid #F0F2F5',display:'flex',alignItems:'center',gap:'10px'}}>
                 <div style={{width:'40px',height:'40px',borderRadius:'10px',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:'#4C1D95'}}><IcoAgente c="#4C1D95"/></div>
-                <div style={{flex:1}}><div style={{fontSize:'12px',fontWeight:'700',color:'#111827'}}>{a.nombre}</div><div style={{fontSize:'10px',color:'#9CA3AF'}}>📍 {a.dir} · 🕐 {a.horario}</div></div>
+                <div style={{flex:1}}><div style={{fontSize:'12px',fontWeight:'700',color:'#111827'}}>{a.nombre}</div><div style={{fontSize:'10px',color:'#9CA3AF'}}>📍 {a.dir}  -  🕐 {a.horario}</div></div>
                 <a href={`tel:${a.tel}`} style={{background:'#F5F3FF',border:'none',borderRadius:'8px',padding:'7px 10px',fontSize:'11px',fontWeight:'700',color:'#4C1D95',textDecoration:'none',display:'flex',alignItems:'center',gap:'4px'}}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                   Llamar
@@ -230,8 +230,8 @@ export const RetiroMonederoModal: React.FC<{onClose:()=>void;userBalance:number;
   const isValid = amountNum>=1000 && amountNum<=userBalance;
 
   const METODOS = [
-    {id:'tarjeta',label:'Retirar a tarjeta',    sub:'Tarjeta bancaria vinculada · 1-3 días', color:'#1B3A6B', icon:<IcoTarjeta/>},
-    {id:'banco',  label:'Transferencia bancaria',sub:'A tu cuenta bancaria en GQ · 1-2 días', color:'#065F46', icon:<IcoBanco c="#065F46"/>},
+    {id:'tarjeta',label:'Retirar a tarjeta',    sub:'Tarjeta bancaria vinculada  -  1-3 días', color:'#1B3A6B', icon:<IcoTarjeta/>},
+    {id:'banco',  label:'Transferencia bancaria',sub:'A tu cuenta bancaria en GQ  -  1-2 días', color:'#065F46', icon:<IcoBanco c="#065F46"/>},
     {id:'agente', label:'Retirar en agente',     sub:'Efectivo inmediato en agentes EGCHAT',  color:'#4C1D95', icon:<IcoAgente/>},
   ];
   const TITLES:Record<WStep,string> = {menu:'Retirar dinero',tarjeta:'Retirar a tarjeta',banco:'Transferencia bancaria',agente:'Retirar en agente',confirm:'Confirmar retiro',success:'¡Retiro procesado!'};
@@ -274,7 +274,7 @@ export const RetiroMonederoModal: React.FC<{onClose:()=>void;userBalance:number;
             <Field k="pin" l="PIN de confirmación" t="password" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.7" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}/>
             {amountNum>userBalance&&amountNum>0&&<div style={{background:'#FEF2F2',borderRadius:'10px',padding:'10px 14px',marginBottom:'8px',fontSize:'11px',color:'#C0392B',fontWeight:'600',display:'flex',gap:'6px'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Saldo insuficiente</div>}
             <button onClick={()=>{if(isValid&&data.cardNumber&&data.pin)setStep('confirm');}} style={{width:'100%',background:isValid&&data.cardNumber&&data.pin?'linear-gradient(135deg,#1B3A6B,#0E5F8A)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:isValid&&data.cardNumber&&data.pin?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:isValid&&data.cardNumber&&data.pin?'pointer':'default',marginTop:'6px'}}>
-              Continuar {isValid?`· ${amountNum.toLocaleString()} XAF`:''}
+              Continuar {isValid?` -  ${amountNum.toLocaleString()} XAF`:''}
             </button>
           </div>}
 
@@ -286,7 +286,7 @@ export const RetiroMonederoModal: React.FC<{onClose:()=>void;userBalance:number;
             <Field k="titular" l="Titular de la cuenta" t="text" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.7" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}/>
             {amountNum>userBalance&&amountNum>0&&<div style={{background:'#FEF2F2',borderRadius:'10px',padding:'10px 14px',marginBottom:'8px',fontSize:'11px',color:'#C0392B',fontWeight:'600',display:'flex',gap:'6px'}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Saldo insuficiente</div>}
             <button onClick={()=>{if(isValid&&data.banco&&data.cuenta&&data.titular)setStep('confirm');}} style={{width:'100%',background:isValid&&data.banco&&data.cuenta&&data.titular?'linear-gradient(135deg,#065F46,#00c8a0)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:isValid&&data.banco&&data.cuenta&&data.titular?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:isValid&&data.banco&&data.cuenta&&data.titular?'pointer':'default',marginTop:'6px'}}>
-              Continuar {isValid?`· ${amountNum.toLocaleString()} XAF`:''}
+              Continuar {isValid?` -  ${amountNum.toLocaleString()} XAF`:''}
             </button>
           </div>}
 
@@ -309,7 +309,7 @@ export const RetiroMonederoModal: React.FC<{onClose:()=>void;userBalance:number;
               </div>
             ))}
             <button onClick={()=>{if(isValid)setStep('confirm');}} style={{width:'100%',background:isValid?'linear-gradient(135deg,#4C1D95,#6B5BD6)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:isValid?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:isValid?'pointer':'default',marginTop:'8px'}}>
-              Generar código de retiro {isValid?`· ${amountNum.toLocaleString()} XAF`:''}
+              Generar código de retiro {isValid?` -  ${amountNum.toLocaleString()} XAF`:''}
             </button>
           </div>}
 
@@ -331,7 +331,7 @@ export const RetiroMonederoModal: React.FC<{onClose:()=>void;userBalance:number;
               <span>Esta operación debitará {amountNum.toLocaleString()} XAF de tu monedero. No se puede deshacer.</span>
             </div>
             <button onClick={()=>{onDebit(amountNum);setStep('success');}} style={{width:'100%',background:'linear-gradient(135deg,#C0392B,#E74C3C)',border:'none',borderRadius:'12px',padding:'14px',color:'#fff',fontSize:'14px',fontWeight:'700',cursor:'pointer',marginBottom:'8px'}}>
-              Confirmar retiro · {amountNum.toLocaleString()} XAF
+              Confirmar retiro  -  {amountNum.toLocaleString()} XAF
             </button>
             <button onClick={()=>setStep('menu')} style={{width:'100%',background:'none',border:'none',padding:'10px',color:'#9CA3AF',fontSize:'12px',cursor:'pointer'}}>Cancelar</button>
           </div>}

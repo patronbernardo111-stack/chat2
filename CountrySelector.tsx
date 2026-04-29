@@ -101,7 +101,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
             {selectedCountry.name}
           </div>
           <div style={{ fontSize: '12px', color: '#6b7280' }}>
-            {selectedCountry.dialCode} · {selectedCountry.language.toUpperCase()}
+            {selectedCountry.dialCode}  -  {selectedCountry.language.toUpperCase()}
           </div>
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -195,7 +195,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
                     {country.name}
                   </div>
                   <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                    {country.dialCode} · {country.language.toUpperCase()}
+                    {country.dialCode}  -  {country.language.toUpperCase()}
                   </div>
                 </div>
               </button>

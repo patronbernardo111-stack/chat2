@@ -498,11 +498,11 @@ const GL:LG[]=[
 ];
 const COMPANIES:Co[]=[
   // URLs con respaldos para evitar pantallas en blanco cuando un dominio falla.
-  {id:'africagames',name:'Africa Games',tagline:'Apuestas deportivas · GQ',color:'#16a34a',type:'sports',bonus:'50% primer depósito hasta 25,000 XAF',minBet:200,minDeposit:500,url:'https://africasports.eu/',officialUrls:['https://africasports.eu/','https://www.africabet.com/en/'],sports:AG},
-  {id:'betomax',name:'Bettomax',tagline:'Leisure World Holdings · 5 países África',color:'#dc2626',type:'sports',bonus:'Apuesta 5,000 XAF → 1,000 gratis',minBet:500,minDeposit:1000,url:'https://www.bettomax.com',officialUrls:['https://www.bettomax.com','https://www.bettomax.gq','https://bettomax.com','https://bettomax.gq'],sports:BT},
-  {id:'1xbet',name:'1XBET',tagline:'Líder mundial · +60 deportes',color:'#1d4ed8',type:'sports',bonus:'100% primer depósito hasta 50,000 XAF',minBet:200,minDeposit:1000,url:'https://1xbet.com',officialUrls:['https://1xbet.com','https://1xbet.co.uk','https://1xbet.mobi','https://1xbet.app'],sports:XB},
-  {id:'forza',name:'Forza Bet',tagline:'Casino online · GQ · Slots & Live',color:'#7c3aed',type:'casino',bonus:'100 giros gratis al registrarte',minBet:200,minDeposit:500,url:'https://forza.bet',officialUrls:['https://forza.bet','https://forza.bet/en','https://forza.bet/en/sports'],casino:FC},
-  {id:'betano',name:'Betano',tagline:'Apuestas deportivas · Live · Casino',color:'#d97706',type:'sports',bonus:'100% primer depósito hasta 30,000 XAF',minBet:100,minDeposit:500,url:'https://www.betano.com/',officialUrls:['https://www.betano.com/','https://betano.com/','https://www.betano.co.uk/','https://betano.co.uk/'],sports:AG},
+  {id:'africagames',name:'Africa Games',tagline:'Apuestas deportivas  -  GQ',color:'#16a34a',type:'sports',bonus:'50% primer depósito hasta 25,000 XAF',minBet:200,minDeposit:500,url:'https://africasports.eu/',officialUrls:['https://africasports.eu/','https://www.africabet.com/en/'],sports:AG},
+  {id:'betomax',name:'Bettomax',tagline:'Leisure World Holdings  -  5 países África',color:'#dc2626',type:'sports',bonus:'Apuesta 5,000 XAF → 1,000 gratis',minBet:500,minDeposit:1000,url:'https://www.bettomax.com',officialUrls:['https://www.bettomax.com','https://www.bettomax.gq','https://bettomax.com','https://bettomax.gq'],sports:BT},
+  {id:'1xbet',name:'1XBET',tagline:'Líder mundial  -  +60 deportes',color:'#1d4ed8',type:'sports',bonus:'100% primer depósito hasta 50,000 XAF',minBet:200,minDeposit:1000,url:'https://1xbet.com',officialUrls:['https://1xbet.com','https://1xbet.co.uk','https://1xbet.mobi','https://1xbet.app'],sports:XB},
+  {id:'forza',name:'Forza Bet',tagline:'Casino online  -  GQ  -  Slots & Live',color:'#7c3aed',type:'casino',bonus:'100 giros gratis al registrarte',minBet:200,minDeposit:500,url:'https://forza.bet',officialUrls:['https://forza.bet','https://forza.bet/en','https://forza.bet/en/sports'],casino:FC},
+  {id:'betano',name:'Betano',tagline:'Apuestas deportivas  -  Live  -  Casino',color:'#d97706',type:'sports',bonus:'100% primer depósito hasta 30,000 XAF',minBet:100,minDeposit:500,url:'https://www.betano.com/',officialUrls:['https://www.betano.com/','https://betano.com/','https://www.betano.co.uk/','https://betano.co.uk/'],sports:AG},
 ];
 // ── Logo SVG ──────────────────────────────────────────────────────────────────
 const Logo:React.FC<{id:string;size?:number}>=({id,size=44})=>{
@@ -653,7 +653,7 @@ const WebModal:React.FC<{co:Co;onClose:()=>void;userBalance:number;onDebit:(amou
                 setShowRecharge(false);
               }
             }} style={{width:'100%',padding:'14px',background:co.color,border:'none',borderRadius:'10px',color:'#fff',fontSize:'15px',fontWeight:'700',cursor:'pointer'}}>
-              Confirmar Recarga · {parseInt(rechargeAmt).toLocaleString()} XAF
+              Confirmar Recarga  -  {parseInt(rechargeAmt).toLocaleString()} XAF
             </button>
           </div>
         </div>
@@ -753,7 +753,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
           </button>
           <div style={{flex:1}}>
             <div style={{fontSize:'18px',fontWeight:'700',color:'#fff'}}>Juegos & Apuestas</div>
-            <div style={{fontSize:'12px',color:'rgba(255,255,255,0.7)'}}>5 plataformas · Licenciadas</div>
+            <div style={{fontSize:'12px',color:'rgba(255,255,255,0.7)'}}>5 plataformas  -  Licenciadas</div>
           </div>
           <div style={{background:'rgba(255,255,255,0.15)',borderRadius:'20px',padding:'4px 10px'}}>
             <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)',fontWeight:600}}>{userBalance.toLocaleString()} XAF</div>
@@ -917,7 +917,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
       {slip.length>0&&!showSlip&&(
         <button onClick={()=>setShowSlip(true)} style={{position:'fixed',bottom:'76px',left:'16px',background:ac,border:'none',borderRadius:'28px',padding:'12px 20px',color:'#fff',fontSize:'13px',fontWeight:'800',cursor:'pointer',display:'flex',alignItems:'center',gap:'8px',boxShadow:`0 4px 16px ${ac}50`,zIndex:100,transition:'all 0.2s cubic-bezier(0.4,0,0.2,1)',letterSpacing:'0.3px'}} onMouseEnter={(e)=>{e.currentTarget.style.transform='scale(1.05) translateY(-2px)';e.currentTarget.style.boxShadow=`0 6px 24px ${ac}70`}} onMouseLeave={(e)=>{e.currentTarget.style.transform='scale(1) translateY(0)';e.currentTarget.style.boxShadow=`0 4px 16px ${ac}50`}}>
           <span style={{background:'rgba(255,255,255,0.3)',borderRadius:'50%',width:'22px',height:'22px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:'900'}}>{slip.length}</span>
-          Boleto · {tp.toLocaleString()} XAF
+          Boleto  -  {tp.toLocaleString()} XAF
         </button>
       )}
       {showSlip&&(
@@ -932,7 +932,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'8px'}}>
                   <div style={{flex:1}}>
                     <div style={{fontSize:'11px',color:'#999',fontWeight:600}}>{b.matchLabel}</div>
-                    <div style={{fontSize:'13px',fontWeight:'700',color:'#111'}}>{b.pick} · <span style={{color:ac,fontWeight:900}}>{b.odds.toFixed(2)}</span></div>
+                    <div style={{fontSize:'13px',fontWeight:'700',color:'#111'}}>{b.pick}  -  <span style={{color:ac,fontWeight:900}}>{b.odds.toFixed(2)}</span></div>
                   </div>
                   <button onClick={()=>setSlip(p=>p.filter((_,j)=>j!==i))} style={{background:'rgba(255,0,0,0.08)',border:'none',color:'#ef4444',cursor:'pointer',fontSize:'18px',fontWeight:700,borderRadius:'50%',width:'28px',height:'28px',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.2s'}} onMouseEnter={(e)=>{e.currentTarget.style.background='rgba(255,0,0,0.15)'}} onMouseLeave={(e)=>{e.currentTarget.style.background='rgba(255,0,0,0.08)'}}>✕</button>
                 </div>
@@ -947,7 +947,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
             </div>
             <button onClick={placeBets} disabled={ts<=0||ts>userBalance}
               style={{width:'100%',padding:'14px',background:ts>0&&ts<=userBalance?ac:'#ccc',border:'none',borderRadius:'11px',color:'#fff',fontSize:'15px',fontWeight:'800',cursor:ts>0?'pointer':'not-allowed',transition:'all 0.2s',boxShadow:ts>0?`0 4px 15px ${ac}40`:'0 2px 4px rgba(0,0,0,0.1)',letterSpacing:'0.3px'}} onMouseEnter={(e)=>{if(ts>0){e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 6px 20px ${ac}60`}}} onMouseLeave={(e)=>{if(ts>0){e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow=`0 4px 15px ${ac}40`}}}>
-              {ts>userBalance?'Saldo insuficiente':`Confirmar · ${ts.toLocaleString()} XAF`}
+              {ts>userBalance?'Saldo insuficiente':`Confirmar  -  ${ts.toLocaleString()} XAF`}
             </button>
           </div>
         </div>
@@ -1056,7 +1056,7 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
         <div style={{background:'linear-gradient(135deg,#78350f,#d97706)',margin:'8px 0 0',padding:'14px 16px',textAlign:'center'}}>
           <div style={{fontSize:'10px',fontWeight:'700',color:'rgba(255,255,255,0.7)',textTransform:'uppercase',letterSpacing:'1px'}}>Bote acumulado</div>
           <div style={{fontSize:'24px',fontWeight:'800',color:'#fff',margin:'2px 0'}}>100,000,000 XAF</div>
-          <div style={{fontSize:'11px',color:'rgba(255,255,255,0.7)'}}>Super Millones · Viernes 20:00</div>
+          <div style={{fontSize:'11px',color:'rgba(255,255,255,0.7)'}}>Super Millones  -  Viernes 20:00</div>
         </div>
         {sel.lottery!.map(g=>(
           <button key={g.id} onClick={()=>{setLsel(g);setLnums([]);setLres(null);}}
@@ -1086,10 +1086,10 @@ export const ApuestasView:React.FC<Props>=({onBack,userBalance,onDebit})=>{
                   style={{aspectRatio:'1',borderRadius:'50%',border:`2px solid ${picked?ac:'#e0e0e0'}`,background:picked?ac:'#fafafa',color:picked?'#fff':'#555',fontSize:'11px',fontWeight:'700',cursor:'pointer'}}>{n}</button>;
               })}
             </div>
-            <div style={{fontSize:'11px',color:'#999',marginBottom:'10px'}}>Seleccionados ({lnums.length}/{lsel.pc}): {[...lnums].sort((a,b)=>a-b).join(' · ')||'—'}</div>
+            <div style={{fontSize:'11px',color:'#999',marginBottom:'10px'}}>Seleccionados ({lnums.length}/{lsel.pc}): {[...lnums].sort((a,b)=>a-b).join('  -  ')||'—'}</div>
             <button onClick={playLottery} disabled={lnums.length<lsel.pc}
               style={{width:'100%',padding:'13px',background:lnums.length>=lsel.pc?ac:'#ccc',border:'none',borderRadius:'10px',color:'#fff',fontSize:'14px',fontWeight:'700',cursor:lnums.length>=lsel.pc?'pointer':'not-allowed'}}>
-              🎟️ Comprar boleto · {lsel.price.toLocaleString()} XAF
+              🎟️ Comprar boleto  -  {lsel.price.toLocaleString()} XAF
             </button>
             {lres&&(<div style={{marginTop:'10px',background:lres.win?'#e8f5e9':'#fce4ec',border:`1px solid ${lres.win?'#a5d6a7':'#f48fb1'}`,borderRadius:'10px',padding:'14px',textAlign:'center'}}>
               <div style={{fontSize:'28px',marginBottom:'6px'}}>{lres.win?'🎉':'😔'}</div>

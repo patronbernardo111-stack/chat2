@@ -91,62 +91,62 @@ const INTERNET_PROVIDERS_GQ = [
     id:'ip1', name:'GETESA', fullName:'Guinea Ecuatorial de Telecomunicaciones S.A.',
     logo:'📡', color:'#003082', type:'Fibra + ADSL + Móvil',
     plans:[
-      { name:'Básico',    speed:'10 Mbps',  price:'15,000 XAF/mes',  desc:'Hogar · ADSL' },
-      { name:'Estándar',  speed:'30 Mbps',  price:'25,000 XAF/mes',  desc:'Hogar · Fibra' },
-      { name:'Premium',   speed:'100 Mbps', price:'45,000 XAF/mes',  desc:'Hogar · Fibra' },
-      { name:'Empresas',  speed:'500 Mbps', price:'120,000 XAF/mes', desc:'Empresas · Fibra dedicada' },
+      { name:'Básico',    speed:'10 Mbps',  price:'15,000 XAF/mes',  desc:'Hogar  -  ADSL' },
+      { name:'Estándar',  speed:'30 Mbps',  price:'25,000 XAF/mes',  desc:'Hogar  -  Fibra' },
+      { name:'Premium',   speed:'100 Mbps', price:'45,000 XAF/mes',  desc:'Hogar  -  Fibra' },
+      { name:'Empresas',  speed:'500 Mbps', price:'120,000 XAF/mes', desc:'Empresas  -  Fibra dedicada' },
     ],
     coverage:'Malabo, Bata, Ebebiyín, Mongomo', website:'getesa.gq', phone:'+240 333 09 00 00',
   },
   {
     id:'ip2', name:'HITS GQ', fullName:'HITS Telecom Guinea Ecuatorial',
-    logo:'📶', color:'#E32118', type:'4G LTE · Datos móviles',
+    logo:'📶', color:'#E32118', type:'4G LTE  -  Datos móviles',
     plans:[
-      { name:'Diario',    speed:'4G', price:'500 XAF/día',    desc:'1 GB · 24h' },
-      { name:'Semanal',   speed:'4G', price:'2,500 XAF/sem',  desc:'5 GB · 7 días' },
-      { name:'Mensual S', speed:'4G', price:'8,000 XAF/mes',  desc:'10 GB · 30 días' },
-      { name:'Mensual M', speed:'4G', price:'15,000 XAF/mes', desc:'25 GB · 30 días' },
-      { name:'Mensual L', speed:'4G', price:'25,000 XAF/mes', desc:'Ilimitado · 30 días' },
+      { name:'Diario',    speed:'4G', price:'500 XAF/día',    desc:'1 GB  -  24h' },
+      { name:'Semanal',   speed:'4G', price:'2,500 XAF/sem',  desc:'5 GB  -  7 días' },
+      { name:'Mensual S', speed:'4G', price:'8,000 XAF/mes',  desc:'10 GB  -  30 días' },
+      { name:'Mensual M', speed:'4G', price:'15,000 XAF/mes', desc:'25 GB  -  30 días' },
+      { name:'Mensual L', speed:'4G', price:'25,000 XAF/mes', desc:'Ilimitado  -  30 días' },
     ],
     coverage:'Malabo, Bata, Ebebiyín, Mongomo, Evinayong', website:'hits.gq', phone:'+240 222 00 00 00',
   },
   {
     id:'ip3', name:'Orange GQ', fullName:'Orange Guinea Ecuatorial',
-    logo:'🟠', color:'#FF6600', type:'4G/5G · Fibra · ADSL',
+    logo:'🟠', color:'#FF6600', type:'4G/5G  -  Fibra  -  ADSL',
     plans:[
-      { name:'Fly 1G',      speed:'4G',     price:'1,000 XAF',       desc:'1 GB · 3 días' },
-      { name:'Fly 5G',      speed:'4G',     price:'4,000 XAF',       desc:'5 GB · 7 días' },
-      { name:'Max 20G',     speed:'4G/5G',  price:'12,000 XAF/mes',  desc:'20 GB · 30 días' },
-      { name:'Fibra Hogar', speed:'50 Mbps',price:'30,000 XAF/mes',  desc:'Hogar · Fibra óptica' },
-      { name:'Fibra Pro',   speed:'200 Mbps',price:'60,000 XAF/mes', desc:'Empresas · Fibra' },
+      { name:'Fly 1G',      speed:'4G',     price:'1,000 XAF',       desc:'1 GB  -  3 días' },
+      { name:'Fly 5G',      speed:'4G',     price:'4,000 XAF',       desc:'5 GB  -  7 días' },
+      { name:'Max 20G',     speed:'4G/5G',  price:'12,000 XAF/mes',  desc:'20 GB  -  30 días' },
+      { name:'Fibra Hogar', speed:'50 Mbps',price:'30,000 XAF/mes',  desc:'Hogar  -  Fibra óptica' },
+      { name:'Fibra Pro',   speed:'200 Mbps',price:'60,000 XAF/mes', desc:'Empresas  -  Fibra' },
     ],
     coverage:'Malabo, Bata, Luba, Riaba, Moka', website:'orange.gq', phone:'+240 222 11 11 11',
   },
   {
     id:'ip4', name:'Muni Internet', fullName:'Muni Internet Services GQ',
-    logo:'🌐', color:'#0096C7', type:'Satélite · Zonas rurales',
+    logo:'🌐', color:'#0096C7', type:'Satélite  -  Zonas rurales',
     plans:[
-      { name:'Rural Básico', speed:'5 Mbps',  price:'10,000 XAF/mes', desc:'Satélite · Zonas rurales' },
-      { name:'Rural Plus',   speed:'15 Mbps', price:'20,000 XAF/mes', desc:'Satélite · Zonas rurales' },
+      { name:'Rural Básico', speed:'5 Mbps',  price:'10,000 XAF/mes', desc:'Satélite  -  Zonas rurales' },
+      { name:'Rural Plus',   speed:'15 Mbps', price:'20,000 XAF/mes', desc:'Satélite  -  Zonas rurales' },
     ],
     coverage:'Todo el territorio nacional (satélite)', website:'muni.gq', phone:'+240 222 22 22 22',
   },
   {
     id:'ip5', name:'GEBroadband', fullName:'Guinea Ecuatorial Broadband',
-    logo:'🔗', color:'#8B5CF6', type:'Fibra empresarial · VSAT',
+    logo:'🔗', color:'#8B5CF6', type:'Fibra empresarial  -  VSAT',
     plans:[
-      { name:'VSAT Básico', speed:'10 Mbps', price:'80,000 XAF/mes',  desc:'Empresas · VSAT dedicado' },
-      { name:'VSAT Pro',    speed:'50 Mbps', price:'200,000 XAF/mes', desc:'Empresas · VSAT premium' },
-      { name:'Fibra Corp.', speed:'1 Gbps',  price:'500,000 XAF/mes', desc:'Corporativo · Fibra oscura' },
+      { name:'VSAT Básico', speed:'10 Mbps', price:'80,000 XAF/mes',  desc:'Empresas  -  VSAT dedicado' },
+      { name:'VSAT Pro',    speed:'50 Mbps', price:'200,000 XAF/mes', desc:'Empresas  -  VSAT premium' },
+      { name:'Fibra Corp.', speed:'1 Gbps',  price:'500,000 XAF/mes', desc:'Corporativo  -  Fibra oscura' },
     ],
     coverage:'Malabo, Bata, Sipopo (empresas)', website:'gebroadband.gq', phone:'+240 333 33 33 33',
   },
   {
     id:'ip6', name:'Starlink GQ', fullName:'Starlink — SpaceX (disponible en GQ)',
-    logo:'🛰️', color:'#1A1A2E', type:'Satélite LEO · Alta velocidad',
+    logo:'🛰️', color:'#1A1A2E', type:'Satélite LEO  -  Alta velocidad',
     plans:[
       { name:'Residencial', speed:'100-200 Mbps', price:'45,000 XAF/mes',  desc:'+ kit 180,000 XAF (único pago)' },
-      { name:'Roaming',     speed:'50-100 Mbps',  price:'60,000 XAF/mes',  desc:'Portátil · Sin dirección fija' },
+      { name:'Roaming',     speed:'50-100 Mbps',  price:'60,000 XAF/mes',  desc:'Portátil  -  Sin dirección fija' },
       { name:'Empresas',    speed:'200-500 Mbps', price:'150,000 XAF/mes', desc:'Prioridad de red garantizada' },
     ],
     coverage:'Todo el territorio nacional', website:'starlink.com', phone:'—',
@@ -505,7 +505,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
         <div style={{ background:grad, borderRadius:22, padding:'20px 18px', marginBottom:16, color:'#fff' }}>
           <div style={{ fontSize:13, opacity:0.85, marginBottom:6 }}>{t.balance}</div>
           <div style={{ fontSize:34, fontWeight:800, letterSpacing:-1, marginBottom:4 }}>245,000 <span style={{ fontSize:16, fontWeight:500 }}>XAF</span></div>
-          <div style={{ fontSize:12, opacity:0.75, marginBottom:18 }}>{t.bank}: BANGE · CCEI Bank</div>
+          <div style={{ fontSize:12, opacity:0.75, marginBottom:18 }}>{t.bank}: BANGE  -  CCEI Bank</div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={() => { setModal('deposit'); setMOk(false); }} style={{ flex:1, background:'rgba(255,255,255,0.2)', border:'1.5px solid rgba(255,255,255,0.35)', borderRadius:12, padding:'10px 4px', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer' }}>{t.deposit}</button>
             <button onClick={() => { setModal('withdraw'); setMOk(false); }} style={{ flex:1, background:'rgba(255,255,255,0.2)', border:'1.5px solid rgba(255,255,255,0.35)', borderRadius:12, padding:'10px 4px', color:'#fff', fontWeight:600, fontSize:12, cursor:'pointer' }}>{t.withdraw}</button>
@@ -535,7 +535,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
           <div key={n.id} style={{ background:'#fff', borderRadius:18, padding:16, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', cursor:'pointer' }} onClick={() => setOpenNews(openNews===n.id?null:n.id)}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
               <Chip label={(t as any)[n.cat]||n.cat} bg={(NEWS_COLOR[n.cat]||'#888')+'18'} color={NEWS_COLOR[n.cat]||'#888'} />
-              <span style={{ fontSize:11, color:'#aaa', marginLeft:'auto' }}>{n.time} · {n.date}</span>
+              <span style={{ fontSize:11, color:'#aaa', marginLeft:'auto' }}>{n.time}  -  {n.date}</span>
             </div>
             <div style={{ fontWeight:700, fontSize:14, color:'#111', lineHeight:1.45, marginBottom:6 }}>{n.title}</div>
             <div style={{ fontSize:12, color:'#888' }}>{t.source}: {n.source}</div>
@@ -595,7 +595,7 @@ export const CemacView: React.FC<{ onBack?: ()=>void }> = ({ onBack }) => {
           <button onClick={() => setCountry(null)} style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:10, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:18 }}>←</button>
           <div style={{ flex:1 }}>
             <div style={{ color:'#fff', fontWeight:800, fontSize:16 }}>CEMAC</div>
-            <div style={{ color:'rgba(255,255,255,0.8)', fontSize:11, marginTop:1 }}>{cn(ctry!, lang)} · {ctry!.capital}</div>
+            <div style={{ color:'rgba(255,255,255,0.8)', fontSize:11, marginTop:1 }}>{cn(ctry!, lang)}  -  {ctry!.capital}</div>
           </div>
           <div style={{ background:'rgba(255,255,255,0.22)', borderRadius:8, padding:'4px 10px', color:'#fff', fontSize:11, fontWeight:700 }}>{lang||'ES'}</div>
         </div>

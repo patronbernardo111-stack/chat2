@@ -1160,7 +1160,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', padding: '8px 12px', background: '#f0fdf9', borderRadius: '10px', border: '1px solid #d1fae5' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                 <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00c8a0', boxShadow: '0 0 0 2px rgba(0,200,160,0.25)', animation: 'pulse 2s infinite' }} />
-                <span style={{ fontSize: '12px', color: '#059669', fontWeight: '600' }}>En vivo · {sinceUpdate()}</span>
+                <span style={{ fontSize: '12px', color: '#059669', fontWeight: '600' }}>En vivo  -  {sinceUpdate()}</span>
               </div>
               <button onClick={manualRefresh} disabled={isRefreshing} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: isRefreshing ? 'default' : 'pointer', color: isRefreshing ? '#aaa' : '#00c8a0', fontSize: '12px', fontWeight: '700', padding: '2px 6px' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: isRefreshing ? 'spin 0.6s linear infinite' : 'none' }}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -1263,7 +1263,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '15px', fontWeight: '600', color: '#111' }}>Mi estado</div>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '1px' }}>{me.media.length ? `${me.media.length} publicacion${me.media.length > 1 ? 'es' : ''} · ${timeLeft(me.publishedAt)}` : 'Toca para anadir estado'}</div>
+                    <div style={{ fontSize: '12px', color: '#888', marginTop: '1px' }}>{me.media.length ? `${me.media.length} publicacion${me.media.length > 1 ? 'es' : ''}  -  ${timeLeft(me.publishedAt)}` : 'Toca para anadir estado'}</div>
                   </div>
                   {/* Botones acción */}
                   <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
@@ -1325,7 +1325,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                       <span style={{ fontSize: '12px', color: '#aaa' }}>hace {timeAgo(s.publishedAt)}</span>
-                      <span style={{ color: '#ccc' }}>·</span>
+                      <span style={{ color: '#ccc' }}> - </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', color: '#aaa' }}>{Icon.eye} {s.views}</span>
                       {s.media[0]?.music && <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#aaa' }}>{Icon.music}</span>}
                     </div>
@@ -1492,7 +1492,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                 <div style={{ fontSize: '16px', fontWeight: '800', color: '#fff', letterSpacing: '-0.2px' }}>{activeEspacio.name}</div>
                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#4ade80' }} />
-                  {activeEspacio.type === 'publico' ? 'Canal' : 'Comunidad'} · {formatFollowers(activeEspacio.followers)} {activeEspacio.type === 'publico' ? 'seguidores' : 'miembros'}
+                  {activeEspacio.type === 'publico' ? 'Canal' : 'Comunidad'}  -  {formatFollowers(activeEspacio.followers)} {activeEspacio.type === 'publico' ? 'seguidores' : 'miembros'}
                 </div>
               </div>
               <button onClick={() => toggleFollow(activeEspacio.id)}
@@ -1577,7 +1577,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                   {post.sourceUrl && post.sourceName && (
                     <button onClick={() => setGovNewsModal({ title: post.text, url: post.sourceUrl!, source: post.sourceName! })} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#0369a1', background: '#eff6ff', padding: '4px 10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #bfdbfe', cursor: 'pointer', textDecoration: 'none' }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                      Leer noticia · {post.sourceName}
+                      Leer noticia  -  {post.sourceName}
                     </button>
                   )}
                   {post.imageUrl && <img src={post.imageUrl} alt="" style={{ width: '100%', borderRadius: '8px', marginBottom: '10px', objectFit: 'cover', maxHeight: '200px' }} />}
@@ -1779,7 +1779,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
                   style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box', color: '#111' }}
                 />
                 <p style={{ fontSize: '11px', color: '#bbb', textAlign: 'center', margin: 0 }}>
-                  {galleryFiles.length}/10 · Cada archivo se publica como un slide separado
+                  {galleryFiles.length}/10  -  Cada archivo se publica como un slide separado
                 </p>
               </>
             )}
@@ -1824,7 +1824,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
           {/* Header */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingTop: 'max(48px, env(safe-area-inset-top))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)' }}>
             <button onClick={closeCreate} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '34px', height: '34px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{Icon.back}</button>
-            <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', flex: 1 }}>{createMode === 'clip' ? 'Clip · máx 15s' : 'Video · máx 60s'}</span>
+            <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', flex: 1 }}>{createMode === 'clip' ? 'Clip  -  máx 15s' : 'Video  -  máx 60s'}</span>
             {chunks.current.length > 0 && !isRecording && (
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: '10px' }}>
                 {recordSeconds}s grabados

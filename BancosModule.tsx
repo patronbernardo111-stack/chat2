@@ -34,7 +34,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
           <button onClick={back} style={{background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',fontSize:'16px'}}>←</button>
           <div style={{flex:1}}>
             <div style={{fontSize:'15px',fontWeight:'800',color:'#fff'}}>{title[screen]}</div>
-            {screen==='home' && <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>Guinea Ecuatorial · {BANKS.length} bancos</div>}
+            {screen==='home' && <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>Guinea Ecuatorial  -  {BANKS.length} bancos</div>}
             {screen==='detail' && bank && <div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>{bank.full}</div>}
           </div>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',fontSize:'16px'}}>✕</button>
@@ -48,12 +48,12 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
             <div style={{background:'linear-gradient(135deg,#1485EE,#0052CC)',borderRadius:'16px',padding:'18px',marginBottom:'14px',color:'#fff'}}>
               <div style={{fontSize:'11px',opacity:0.8,marginBottom:'4px'}}>Saldo total en todos los bancos</div>
               <div style={{fontSize:'30px',fontWeight:'900',letterSpacing:'-1px'}}>{totalBalance.toLocaleString()} <span style={{fontSize:'14px',fontWeight:'500',opacity:0.8}}>XAF</span></div>
-              <div style={{fontSize:'11px',opacity:0.7,marginTop:'4px'}}>{BANKS.filter(b=>b.accounts.length>0).length} cuentas activas · {BANKS.length} bancos</div>
+              <div style={{fontSize:'11px',opacity:0.7,marginTop:'4px'}}>{BANKS.filter(b=>b.accounts.length>0).length} cuentas activas  -  {BANKS.length} bancos</div>
             </div>
             {BANKS.filter(b=>b.accounts.length>0).flatMap(b=>b.accounts.map(a=>({...a,bank:b}))).map((a,i)=>(
               <div key={i} onClick={()=>{setBank(a.bank);setScreen('detail');}} style={{background:'#fff',borderRadius:'14px',padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px',boxShadow:'0 1px 4px rgba(0,0,0,0.06)',marginBottom:'8px'}}>
                 <div style={{width:'44px',height:'44px',borderRadius:'12px',background:`linear-gradient(135deg,${a.bank.color},${a.bank.color2})`,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'13px',fontWeight:'900',flexShrink:0}}>{a.bank.initials}</div>
-                <div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{a.bank.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{a.type} · {a.number}</div></div>
+                <div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{a.bank.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{a.type}  -  {a.number}</div></div>
                 <div style={{textAlign:'right'}}><div style={{fontSize:'16px',fontWeight:'800',color:'#1A2B4A'}}>{a.balance.toLocaleString()}</div><div style={{fontSize:'10px',color:'#8A9BB5'}}>XAF</div></div>
               </div>
             ))}
@@ -82,7 +82,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
                 <div style={{width:'60px',height:'60px',borderRadius:'16px',background:grad,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'20px',fontWeight:'900',flexShrink:0}}>{bank.initials}</div>
                 <div>
                   <div style={{fontSize:'18px',fontWeight:'900',color:'#1A2B4A'}}>{bank.name}</div>
-                  <div style={{fontSize:'11px',color:'#8A9BB5'}}>Fundado en {bank.founded} · SWIFT: {bank.swift}</div>
+                  <div style={{fontSize:'11px',color:'#8A9BB5'}}>Fundado en {bank.founded}  -  SWIFT: {bank.swift}</div>
                 </div>
               </div>
               <div style={{fontSize:'12px',color:'#5A7090',lineHeight:'1.5',marginBottom:'12px'}}>{bank.desc}</div>
@@ -96,7 +96,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
               <div style={{fontSize:'12px',fontWeight:'700',color:'#8A9BB5',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'8px'}}>Mis cuentas</div>
               {bank.accounts.map((a,i)=>(
                 <div key={i} style={{background:grad,borderRadius:'14px',padding:'16px',marginBottom:'8px',color:'#fff'}}>
-                  <div style={{fontSize:'11px',opacity:0.8,marginBottom:'4px'}}>{a.type} · {a.number}</div>
+                  <div style={{fontSize:'11px',opacity:0.8,marginBottom:'4px'}}>{a.type}  -  {a.number}</div>
                   <div style={{fontSize:'26px',fontWeight:'900'}}>{a.balance.toLocaleString()} <span style={{fontSize:'13px',fontWeight:'500',opacity:0.8}}>XAF</span></div>
                 </div>
               ))}
@@ -149,7 +149,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
                 <div style={{width:'44px',height:'44px',borderRadius:'12px',background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg>
                 </div>
-                <div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{label}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{sub} · <span style={{color,fontWeight:'600'}}>{rate}</span></div></div>
+                <div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{label}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{sub}  -  <span style={{color,fontWeight:'600'}}>{rate}</span></div></div>
               </div>
             ))}
             {form.lt && <div style={{background:'#fff',borderRadius:'14px',padding:'14px',marginTop:'4px'}}>
@@ -209,7 +209,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
           {/* CARDS */}
           {screen==='cards' && bank && <div>
             <div style={{background:grad,borderRadius:'16px',padding:'20px',marginBottom:'12px',color:'#fff'}}>
-              <div style={{fontSize:'11px',opacity:0.8,marginBottom:'8px'}}>Tarjeta de Débito · {bank.name}</div>
+              <div style={{fontSize:'11px',opacity:0.8,marginBottom:'8px'}}>Tarjeta de Débito  -  {bank.name}</div>
               <div style={{fontSize:'20px',fontWeight:'800',letterSpacing:'2px',marginBottom:'12px'}}>**** **** **** 4521</div>
               <div style={{display:'flex',justifyContent:'space-between'}}>
                 <div><div style={{fontSize:'10px',opacity:0.7}}>TITULAR</div><div style={{fontSize:'13px',fontWeight:'700'}}>USUARIO EGCHAT</div></div>

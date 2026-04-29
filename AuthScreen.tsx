@@ -461,7 +461,7 @@ export default function AuthScreen({onAuth}:Props) {
               </div>
             )}
             <p style={{fontSize:'11px',color:'#9CA3AF',marginTop:'6px',textAlign:'center'}}>
-              JPG, PNG o GIF · La imagen se ajusta automáticamente
+              JPG, PNG o GIF  -  La imagen se ajusta automáticamente
             </p>
           </div>
 

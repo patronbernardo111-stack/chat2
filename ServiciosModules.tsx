@@ -281,7 +281,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
   const provServices = provider ? (INTERNET_SERVICES[provider] || []) : [];
   const color = selProv?.color || '#1485EE';
 
-  const screenTitle = {home:'Internet',providers:'Proveedores',services:`${selProv?.name||''} · Servicios`,detail:service?.name||'Detalle',form:'Solicitar Instalación',orders:'Mis Pedidos',myServices:'Mis Servicios',support:'Soporte',payBill:'Pagar Factura'}[screen];
+  const screenTitle = {home:'Internet',providers:'Proveedores',services:`${selProv?.name||''}  -  Servicios`,detail:service?.name||'Detalle',form:'Solicitar Instalación',orders:'Mis Pedidos',myServices:'Mis Servicios',support:'Soporte',payBill:'Pagar Factura'}[screen];
 
   const goBack = () => {
     if(screen==='home') onClose();
@@ -295,7 +295,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:3000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
       onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
       <div style={{ background:'#f5f5f5', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:'420px', maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-        <ModHeader title={screenTitle} sub={screen==='home'?'Conectividad · Guinea Ecuatorial':undefined} color={color} onBack={goBack} onClose={onClose}/>
+        <ModHeader title={screenTitle} sub={screen==='home'?'Conectividad  -  Guinea Ecuatorial':undefined} color={color} onBack={goBack} onClose={onClose}/>
         <div style={{ flex:1, overflowY:'auto', padding:'12px 14px 24px' }}>
 
           {/* HOME */}
@@ -323,7 +323,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
               <div style={{ background:'linear-gradient(135deg,#1485EE,#0066CC)', borderRadius:'14px', padding:'14px 16px', color:'#fff' }}>
                 <div style={{ fontSize:'12px', opacity:0.85, marginBottom:'4px' }}>Proveedores en Guinea Ecuatorial</div>
                 <div style={{ fontSize:'24px', fontWeight:'800' }}>{INTERNET_PROVIDERS.length} operadores</div>
-                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>Hogar · Empresa · Fibra · Móvil · Satélite</div>
+                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>Hogar  -  Empresa  -  Fibra  -  Móvil  -  Satélite</div>
               </div>
             </div>
           )}
@@ -381,7 +381,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
               <div style={{ background:'#fff', borderRadius:'16px', padding:'18px', marginBottom:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
                   <LogoThumb logo={selProv?.logo||''} name={selProv?.name||''} color={selProv?.color||'#1485EE'} size={52}/>
-                  <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#111' }}>{service.name}</div><div style={{ fontSize:'12px', color:'#888' }}>{selProv?.name} · {service.type}</div></div>
+                  <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#111' }}>{service.name}</div><div style={{ fontSize:'12px', color:'#888' }}>{selProv?.name}  -  {service.type}</div></div>
                 </div>
                 <div style={{ fontSize:'26px', fontWeight:'900', color:selProv?.color||'#1485EE', marginBottom:'8px' }}>{service.price}</div>
                 <div style={{ fontSize:'13px', color:'#555', marginBottom:'12px' }}>{service.desc}</div>
@@ -398,7 +398,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
             <div>
               {service && <div style={{ background:'#fff', borderRadius:'12px', padding:'12px 14px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'10px' }}>
                 <LogoThumb logo={selProv?.logo||''} name={selProv?.name||''} color={selProv?.color||'#1485EE'} size={36}/>
-                <div><div style={{ fontSize:'13px', fontWeight:'700', color:'#111' }}>{service.name}</div><div style={{ fontSize:'11px', color:'#888' }}>{selProv?.name} · {service.price}</div></div>
+                <div><div style={{ fontSize:'13px', fontWeight:'700', color:'#111' }}>{service.name}</div><div style={{ fontSize:'11px', color:'#888' }}>{selProv?.name}  -  {service.price}</div></div>
               </div>}
               {[{k:'name',l:'Nombre completo',t:'text'},{k:'phone',l:'Teléfono',t:'tel'},{k:'address',l:'Dirección',t:'text'},{k:'city',l:'Ciudad / Barrio / Zona',t:'text'},{k:'type',l:'Tipo de instalación',t:'text'},{k:'notes',l:'Observaciones (opcional)',t:'text'}].map(f => (
                 <div key={f.k} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', height:'48px', display:'flex', alignItems:'center' }}>
@@ -439,7 +439,7 @@ export const InternetModal: React.FC<{ onClose:()=>void; userBalance:number; onD
                 <div style={{ textAlign:'center', padding:'40px 0' }}>
                   <div style={{ fontSize:'52px', marginBottom:'12px' }}>✅</div>
                   <div style={{ fontSize:'16px', fontWeight:'700', color:'#111', marginBottom:'6px' }}>Pago realizado</div>
-                  <div style={{ fontSize:'13px', color:'#888', marginBottom:'20px' }}>Ref: {billRef} · {parseInt(billAmt).toLocaleString()} XAF</div>
+                  <div style={{ fontSize:'13px', color:'#888', marginBottom:'20px' }}>Ref: {billRef}  -  {parseInt(billAmt).toLocaleString()} XAF</div>
                   <button onClick={() => { setBillOk(false); setBillRef(''); setBillAmt(''); setScreen('home'); }} style={{ background:'#1485EE', border:'none', borderRadius:'12px', padding:'12px 28px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer' }}>Listo</button>
                 </div>
               )}
@@ -501,7 +501,7 @@ export const RecargaModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
   const opPackages = operator ? (MOBILE_PACKAGES[operator] || []) : [];
   const color = selOp?.color || '#07C160';
 
-  const screenTitle = {home:'Recarga Tel.',operators:'Operadores',packages:`${selOp?.name||''} · Paquetes`,confirm:'Confirmar',success:'Completado',history:'Historial',myLines:'Mis Líneas',support:'Soporte'}[screen];
+  const screenTitle = {home:'Recarga Tel.',operators:'Operadores',packages:`${selOp?.name||''}  -  Paquetes`,confirm:'Confirmar',success:'Completado',history:'Historial',myLines:'Mis Líneas',support:'Soporte'}[screen];
 
   const goBack = () => {
     if(screen==='home') onClose();
@@ -514,7 +514,7 @@ export const RecargaModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:3000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
       onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
       <div style={{ background:'#f5f5f5', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:'420px', maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-        <ModHeader title={screenTitle} sub={screen==='home'?'Saldo · Datos · Minutos':undefined} color={color} onBack={goBack} onClose={onClose}/>
+        <ModHeader title={screenTitle} sub={screen==='home'?'Saldo  -  Datos  -  Minutos':undefined} color={color} onBack={goBack} onClose={onClose}/>
         <div style={{ flex:1, overflowY:'auto', padding:'12px 14px 24px' }}>
 
           {/* HOME */}
@@ -542,7 +542,7 @@ export const RecargaModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
               <div style={{ background:'linear-gradient(135deg,#2E9E6B,#1B7A52)', borderRadius:'14px', padding:'14px 16px', color:'#fff' }}>
                 <div style={{ fontSize:'12px', opacity:0.85, marginBottom:'4px' }}>Operadores disponibles</div>
                 <div style={{ fontSize:'24px', fontWeight:'800' }}>{MOBILE_OPERATORS.length} operadores</div>
-                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>GETESA · GECOMSA · Orange GE · Otros</div>
+                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>GETESA  -  GECOMSA  -  Orange GE  -  Otros</div>
               </div>
             </div>
           )}
@@ -619,7 +619,7 @@ export const RecargaModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
               <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'#F0FAF5', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px', fontSize:'32px' }}>✅</div>
               <div style={{ fontSize:'18px', fontWeight:'800', color:'#111', marginBottom:'6px' }}>¡Recarga exitosa!</div>
               <div style={{ fontSize:'13px', color:'#888', marginBottom:'4px' }}>{pkg?.name} → {phone}</div>
-              <div style={{ fontSize:'13px', color:'#888', marginBottom:'20px' }}>{selOp?.name} · {pkg?.price.toLocaleString()} XAF</div>
+              <div style={{ fontSize:'13px', color:'#888', marginBottom:'20px' }}>{selOp?.name}  -  {pkg?.price.toLocaleString()} XAF</div>
               <button onClick={() => { setScreen('home'); setPkg(null); setPhone(''); }} style={{ background:selOp?.color||'#07C160', border:'none', borderRadius:'12px', padding:'12px 28px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer' }}>Listo</button>
             </div>
           )}
@@ -636,7 +636,7 @@ export const RecargaModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
               ) : history.map(h => (
                 <div key={h.id} style={{ background:'#fff', borderRadius:'14px', padding:'14px', marginBottom:'10px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
-                    <div><div style={{ fontSize:'14px', fontWeight:'700', color:'#111' }}>{h.op}</div><div style={{ fontSize:'11px', color:'#888' }}>{h.phone} · {h.type}</div></div>
+                    <div><div style={{ fontSize:'14px', fontWeight:'700', color:'#111' }}>{h.op}</div><div style={{ fontSize:'11px', color:'#888' }}>{h.phone}  -  {h.type}</div></div>
                     <StatusBadge status={h.status}/>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:'12px', color:'#888' }}>
@@ -687,7 +687,7 @@ export const CanalesModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
   const coPkgs = company ? (CHANNEL_PACKAGES[company] || []) : [];
   const color = selCo?.color || '#8B5CF6';
 
-  const screenTitle = {home:'Canales',companies:'Compañías',packages:`${selCo?.name||''} · Paquetes`,detail:pkg?.name||'Detalle',subscribe:'Suscribirme',paySubscription:'Pagar Suscripción',orders:'Mis Pedidos',myChannels:'Mis Canales',support:'Soporte'}[screen];
+  const screenTitle = {home:'Canales',companies:'Compañías',packages:`${selCo?.name||''}  -  Paquetes`,detail:pkg?.name||'Detalle',subscribe:'Suscribirme',paySubscription:'Pagar Suscripción',orders:'Mis Pedidos',myChannels:'Mis Canales',support:'Soporte'}[screen];
 
   const goBack = () => {
     if(screen==='home') onClose();
@@ -701,7 +701,7 @@ export const CanalesModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:3000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
       onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
       <div style={{ background:'#f5f5f5', borderRadius:'16px 16px 0 0', width:'100%', maxWidth:'420px', maxHeight:'92vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
-        <ModHeader title={screenTitle} sub={screen==='home'?'TV · Streaming · Entretenimiento':undefined} color={color} onBack={goBack} onClose={onClose}/>
+        <ModHeader title={screenTitle} sub={screen==='home'?'TV  -  Streaming  -  Entretenimiento':undefined} color={color} onBack={goBack} onClose={onClose}/>
         <div style={{ flex:1, overflowY:'auto', padding:'12px 14px 24px' }}>
 
           {/* HOME */}
@@ -730,7 +730,7 @@ export const CanalesModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
               <div style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)', borderRadius:'14px', padding:'14px 16px', color:'#fff' }}>
                 <div style={{ fontSize:'12px', opacity:0.85, marginBottom:'4px' }}>Compañías disponibles</div>
                 <div style={{ fontSize:'24px', fontWeight:'800' }}>{CHANNEL_COMPANIES.length} operadores</div>
-                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>TV · Streaming · Deportes · Local · Satélite</div>
+                <div style={{ fontSize:'11px', opacity:0.75, marginTop:'4px' }}>TV  -  Streaming  -  Deportes  -  Local  -  Satélite</div>
               </div>
             </div>
           )}
@@ -792,7 +792,7 @@ export const CanalesModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
               <div style={{ background:'#fff', borderRadius:'16px', padding:'18px', marginBottom:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
                   <LogoThumb logo={selCo?.logo||''} name={selCo?.name||''} color={selCo?.color||'#8B5CF6'} size={52}/>
-                  <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#111' }}>{pkg.name}</div><div style={{ fontSize:'12px', color:'#888' }}>{selCo?.name} · {pkg.type} · {pkg.duration}</div></div>
+                  <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#111' }}>{pkg.name}</div><div style={{ fontSize:'12px', color:'#888' }}>{selCo?.name}  -  {pkg.type}  -  {pkg.duration}</div></div>
                 </div>
                 <div style={{ fontSize:'26px', fontWeight:'900', color:selCo?.color||'#8B5CF6', marginBottom:'8px' }}>{pkg.price}</div>
                 <div style={{ fontSize:'13px', color:'#555', marginBottom:'12px' }}>{pkg.desc}</div>
@@ -812,7 +812,7 @@ export const CanalesModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
             <div>
               {pkg && <div style={{ background:'#fff', borderRadius:'12px', padding:'12px 14px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'10px' }}>
                 <LogoThumb logo={selCo?.logo||''} name={selCo?.name||''} color={selCo?.color||'#8B5CF6'} size={36}/>
-                <div><div style={{ fontSize:'13px', fontWeight:'700', color:'#111' }}>{pkg.name}</div><div style={{ fontSize:'11px', color:'#888' }}>{selCo?.name} · {pkg.price}</div></div>
+                <div><div style={{ fontSize:'13px', fontWeight:'700', color:'#111' }}>{pkg.name}</div><div style={{ fontSize:'11px', color:'#888' }}>{selCo?.name}  -  {pkg.price}</div></div>
               </div>}
               {[{k:'name',l:'Nombre completo',t:'text'},{k:'phone',l:'Teléfono',t:'tel'},{k:'address',l:'Dirección',t:'text'},{k:'city',l:'Ciudad / Barrio / Zona',t:'text'},{k:'notes',l:'Observaciones (opcional)',t:'text'}].map(f => (
                 <div key={f.k} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', height:'48px', display:'flex', alignItems:'center' }}>
@@ -1151,7 +1151,7 @@ const CardsScreen: React.FC<{bank: GQBank; grad: string; onClose:()=>void}> = ({
           </div>
           {/* Preview en tiempo real */}
           <div style={{background:`linear-gradient(135deg,${bank.color},${bank.color}bb)`,borderRadius:'12px',padding:'16px',color:'#fff',marginBottom:'14px'}}>
-            <div style={{fontSize:'11px',opacity:0.8,marginBottom:'8px'}}>{form.bankName||bank.name} · {form.type}</div>
+            <div style={{fontSize:'11px',opacity:0.8,marginBottom:'8px'}}>{form.bankName||bank.name}  -  {form.type}</div>
             <div style={{fontSize:'16px',fontWeight:'800',letterSpacing:'2px',marginBottom:'10px',fontFamily:'monospace'}}>
               {form.number ? `•••• •••• •••• ${form.number.slice(-4).padStart(4,'•')}` : '•••• •••• •••• ••••'}
             </div>
@@ -1237,7 +1237,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
   const titles:Record<BkScreen,string> = {
     home:'Bancos', detail:bank?.name||'', transfer:'Transferencia',
     loan:'Préstamos', bills:'Pagar Factura', invest:'Inversiones',
-    cards: bank ? `Tarjetas · ${bank.name}` : 'Mis Tarjetas', history:'Historial', success:'Completado',
+    cards: bank ? `Tarjetas  -  ${bank.name}` : 'Mis Tarjetas', history:'Historial', success:'Completado',
   };
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:3000,display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -1253,7 +1253,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
           <button onClick={back} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#5A7090',fontSize:'16px'}}>←</button>
           <div style={{flex:1}}>
             <div style={{fontSize:'17px',fontWeight:'700',color:'#111827'}}>{titles[screen]}</div>
-            {screen==='home'&&<div style={{fontSize:'12px',color:'#9CA3AF'}}>Guinea Ecuatorial · {GQ_BANKS.length} bancos</div>}
+            {screen==='home'&&<div style={{fontSize:'12px',color:'#9CA3AF'}}>Guinea Ecuatorial  -  {GQ_BANKS.length} bancos</div>}
             {screen==='detail'&&bank&&<div style={{fontSize:'12px',color:'#9CA3AF'}}>{bank.full}</div>}
           </div>
           <button onClick={onClose} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#5A7090',fontSize:'16px'}}>✕</button>
@@ -1289,7 +1289,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
                   <BankLogo bank={b} size={38}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:'14px',fontWeight:'700',color:'#111827'}}>{b.name}</div>
-                    <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'1px'}}>{b.branches} sucursales · {b.atms} ATMs</div>
+                    <div style={{fontSize:'11px',color:'#9CA3AF',marginTop:'1px'}}>{b.branches} sucursales  -  {b.atms} ATMs</div>
                   </div>
                   <button onClick={()=>{setBank(b);setScreen('detail');}} style={{background:`${b.color}15`,border:'none',borderRadius:'8px',padding:'5px 10px',color:b.color,fontSize:'11px',fontWeight:'700',cursor:'pointer'}}>Ver</button>
                 </div>
@@ -1324,7 +1324,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
                         </div>
                         <div>
                           <div style={{fontSize:'12px',fontWeight:'600',color:'#374151'}}>Tarjeta de Débito</div>
-                          <div style={{fontSize:'10px',color:'#9CA3AF'}}>**** 4521 · Vence 12/28</div>
+                          <div style={{fontSize:'10px',color:'#9CA3AF'}}>**** 4521  -  Vence 12/28</div>
                         </div>
                       </div>
                       <span style={{background:`${b.color}12`,color:b.color,borderRadius:'6px',padding:'2px 8px',fontSize:'10px',fontWeight:'600'}}>Activa</span>
@@ -1349,7 +1349,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
             <div style={{background:'#fff',borderRadius:'16px',padding:'18px',marginBottom:'12px',boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
               <div style={{display:'flex',alignItems:'center',gap:'14px',marginBottom:'14px'}}>
                 <BankLogo bank={bank} size={60}/>
-                <div><div style={{fontSize:'18px',fontWeight:'900',color:'#1A2B4A'}}>{bank.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>Fundado en {bank.founded} · SWIFT: {bank.swift}</div></div>
+                <div><div style={{fontSize:'18px',fontWeight:'900',color:'#1A2B4A'}}>{bank.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>Fundado en {bank.founded}  -  SWIFT: {bank.swift}</div></div>
               </div>
               <div style={{fontSize:'12px',color:'#5A7090',lineHeight:'1.5',marginBottom:'12px'}}>{bank.desc}</div>
               <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
@@ -1358,7 +1358,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
                 <span style={{background:'#F0F4F8',color:'#5A7090',borderRadius:'8px',padding:'4px 10px',fontSize:'11px',fontWeight:'600'}}>🌍 {bank.web}</span>
               </div>
             </div>
-            {bank.accounts.length>0&&<div style={{marginBottom:'12px'}}><div style={{fontSize:'12px',fontWeight:'700',color:'#8A9BB5',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'8px'}}>Mis cuentas</div>{bank.accounts.map((a,i)=>(<div key={i} style={{background:grad,borderRadius:'14px',padding:'16px',marginBottom:'8px',color:'#fff'}}><div style={{fontSize:'11px',opacity:0.8,marginBottom:'4px'}}>{a.type} · {a.number}</div><div style={{fontSize:'26px',fontWeight:'900'}}>{a.balance.toLocaleString()} <span style={{fontSize:'13px',opacity:0.8}}>XAF</span></div></div>))}</div>}
+            {bank.accounts.length>0&&<div style={{marginBottom:'12px'}}><div style={{fontSize:'12px',fontWeight:'700',color:'#8A9BB5',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'8px'}}>Mis cuentas</div>{bank.accounts.map((a,i)=>(<div key={i} style={{background:grad,borderRadius:'14px',padding:'16px',marginBottom:'8px',color:'#fff'}}><div style={{fontSize:'11px',opacity:0.8,marginBottom:'4px'}}>{a.type}  -  {a.number}</div><div style={{fontSize:'26px',fontWeight:'900'}}>{a.balance.toLocaleString()} <span style={{fontSize:'13px',opacity:0.8}}>XAF</span></div></div>))}</div>}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'}}>
               {([
                 ['transfer', <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1485EE" strokeWidth="1.8" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, 'Transferir',   '#1485EE'],
@@ -1390,7 +1390,7 @@ export const BancosModal: React.FC<{ onClose:()=>void; userBalance:number; onDeb
             </div>}
           </div>}
           {screen==='loan'&&bank&&<div>
-            {([['personal','Préstamo Personal','Hasta 5,000,000 XAF','12% anual','#FA9D3B'],['negocio','Préstamo Negocio','Hasta 50,000,000 XAF','9% anual','#1485EE'],['hipoteca','Hipoteca','Hasta 200,000,000 XAF','7% anual','#576B95'],['micro','Microcrédito','Hasta 500,000 XAF','15% anual','#07C160']] as [string,string,string,string,string][]).map(([id,label,sub,rate,color])=>(<div key={id} onClick={()=>setF('lt',id)} style={{background:'#fff',borderRadius:'12px',padding:'13px 14px',marginBottom:'8px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px',border:`1.5px solid ${form.lt===id?color:'transparent'}`,boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}><div style={{width:'44px',height:'44px',borderRadius:'12px',background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg></div><div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{label}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{sub} · <span style={{color,fontWeight:'600'}}>{rate}</span></div></div></div>))}
+            {([['personal','Préstamo Personal','Hasta 5,000,000 XAF','12% anual','#FA9D3B'],['negocio','Préstamo Negocio','Hasta 50,000,000 XAF','9% anual','#1485EE'],['hipoteca','Hipoteca','Hasta 200,000,000 XAF','7% anual','#576B95'],['micro','Microcrédito','Hasta 500,000 XAF','15% anual','#07C160']] as [string,string,string,string,string][]).map(([id,label,sub,rate,color])=>(<div key={id} onClick={()=>setF('lt',id)} style={{background:'#fff',borderRadius:'12px',padding:'13px 14px',marginBottom:'8px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px',border:`1.5px solid ${form.lt===id?color:'transparent'}`,boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}><div style={{width:'44px',height:'44px',borderRadius:'12px',background:`${color}15`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg></div><div style={{flex:1}}><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{label}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{sub}  -  <span style={{color,fontWeight:'600'}}>{rate}</span></div></div></div>))}
             {form.lt&&<div style={{background:'#fff',borderRadius:'14px',padding:'14px',marginTop:'4px'}}>{([['amount','Monto solicitado (XAF)','number'],['months','Plazo en meses (6-60)','number'],['income','Ingreso mensual (XAF)','number']] as [string,string,string][]).map(([k,l,t])=>(<div key={k} style={{background:'#F8FAFC',borderRadius:'10px',padding:'0 14px',marginBottom:'8px',height:'48px',display:'flex',alignItems:'center'}}><input type={t} placeholder={l} value={form[k]||''} onChange={e=>setF(k,e.target.value)} style={{flex:1,background:'none',border:'none',outline:'none',fontSize:'14px',color:'#1A2B4A',fontFamily:'inherit'}}/></div>))}{form.amount&&form.months&&<div style={{background:'#F0FAF5',borderRadius:'10px',padding:'12px 14px',marginBottom:'10px'}}><div style={{fontSize:'11px',color:'#8A9BB5',marginBottom:'4px'}}>Cuota mensual estimada</div><div style={{fontSize:'22px',fontWeight:'800',color:'#07C160'}}>{Math.round(parseInt(form.amount)*1.12/parseInt(form.months)).toLocaleString()} XAF</div></div>}<button onClick={()=>{if(form.amount&&form.months)ok(`Solicitud de préstamo por ${parseInt(form.amount).toLocaleString()} XAF enviada a ${bank.name}.`);}} style={{width:'100%',background:form.amount&&form.months?grad:'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:form.amount&&form.months?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:form.amount&&form.months?'pointer':'default'}}>Solicitar préstamo</button></div>}
           </div>}
           {screen==='bills'&&bank&&<div>
@@ -1495,7 +1495,7 @@ export const SegurosModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
       <div style={{background:'rgba(247,248,250,0.55)',backdropFilter:'blur(28px) saturate(180%)',WebkitBackdropFilter:'blur(28px) saturate(180%)',borderRadius:'20px 20px 0 0',border:'1.5px solid rgba(255,255,255,0.6)',borderBottom:'none',width:'100%',maxWidth:'420px',maxHeight:'92vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{background:grad,padding:'14px 16px 12px',display:'flex',alignItems:'center',gap:'10px',flexShrink:0}}>
           <button onClick={back} style={{background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',fontSize:'16px'}}>←</button>
-          <div style={{flex:1}}><div style={{fontSize:'15px',fontWeight:'800',color:'#fff'}}>{titles[screen]}</div>{screen==='home'&&<div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>{INS_COS.length} aseguradoras · Guinea Ecuatorial</div>}</div>
+          <div style={{flex:1}}><div style={{fontSize:'15px',fontWeight:'800',color:'#fff'}}>{titles[screen]}</div>{screen==='home'&&<div style={{fontSize:'11px',color:'rgba(255,255,255,0.8)'}}>{INS_COS.length} aseguradoras  -  Guinea Ecuatorial</div>}</div>
           <button onClick={onClose} style={{background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',fontSize:'16px'}}>✕</button>
         </div>
         <div style={{flex:1,overflowY:'auto',padding:'12px 14px 24px'}}>
@@ -1519,7 +1519,7 @@ export const SegurosModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
             {INS_COS.map(c=>(
               <div key={c.id} onClick={()=>{setCo(c);setScreen('company');}} style={{background:'#fff',borderRadius:'14px',padding:'14px',marginBottom:'8px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px',boxShadow:'0 1px 4px rgba(0,0,0,0.06)',transition:'transform 0.15s'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateX(4px)';}} onMouseLeave={e=>{e.currentTarget.style.transform='translateX(0)';}}>
                 <div style={{width:'46px',height:'46px',borderRadius:'12px',background:`linear-gradient(135deg,${c.color},${c.color2})`,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'14px',fontWeight:'900',flexShrink:0}}>{c.initials}</div>
-                <div style={{flex:1}}><div style={{fontSize:'14px',fontWeight:'800',color:'#1A2B4A'}}>{c.name}</div><div style={{fontSize:'11px',color:'#8A9BB5',marginTop:'2px'}}>{c.products.length} productos · {c.phone}</div></div>
+                <div style={{flex:1}}><div style={{fontSize:'14px',fontWeight:'800',color:'#1A2B4A'}}>{c.name}</div><div style={{fontSize:'11px',color:'#8A9BB5',marginTop:'2px'}}>{c.products.length} productos  -  {c.phone}</div></div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
               </div>
             ))}
@@ -1565,7 +1565,7 @@ export const SegurosModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
           {screen==='apply'&&prod&&<div>
             <div style={{background:'#fff',borderRadius:'12px',padding:'12px 14px',marginBottom:'14px',display:'flex',alignItems:'center',gap:'10px'}}>
               <div style={{width:'38px',height:'38px',borderRadius:'10px',background:INS_BG[prod.type],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{INS_ICONS[prod.type]}</div>
-              <div><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{prod.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{co?.name} · {prod.price}</div></div>
+              <div><div style={{fontSize:'13px',fontWeight:'700',color:'#1A2B4A'}}>{prod.name}</div><div style={{fontSize:'11px',color:'#8A9BB5'}}>{co?.name}  -  {prod.price}</div></div>
             </div>
             {([['name','Nombre completo','text'],['dni','DNI / Pasaporte','text'],['phone','Teléfono','tel'],['email','Correo electrónico','email'],['address','Dirección','text'],['city','Ciudad / Barrio','text']] as [string,string,string][]).map(([k,l,t])=>(
               <div key={k} style={{background:'#fff',borderRadius:'10px',padding:'0 14px',marginBottom:'8px',height:'48px',display:'flex',alignItems:'center'}}>
@@ -1634,7 +1634,7 @@ export const SegurosModal: React.FC<{ onClose:()=>void; userBalance:number; onDe
           {screen==='success'&&<div style={{textAlign:'center',padding:'40px 0'}}>
             <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#F0FAF5',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:'40px'}}>✅</div>
             <div style={{fontSize:'20px',fontWeight:'900',color:'#1A2B4A',marginBottom:'8px'}}>¡Solicitud enviada!</div>
-            <div style={{fontSize:'13px',color:'#8A9BB5',marginBottom:'6px'}}>{prod?.name} · {co?.name}</div>
+            <div style={{fontSize:'13px',color:'#8A9BB5',marginBottom:'6px'}}>{prod?.name}  -  {co?.name}</div>
             <div style={{background:'#F0FAF5',borderRadius:'14px',padding:'16px',marginBottom:'20px',textAlign:'left'}}>
               <div style={{fontSize:'12px',fontWeight:'700',color:'#16A34A',marginBottom:'8px'}}>¿Qué pasa ahora?</div>
               {['La aseguradora revisará tu solicitud en 2-5 días hábiles','Recibirás una llamada de confirmación','Si es aprobada, recibirás tu póliza por email','El primer pago se realizará al activar la póliza'].map((s,i)=>(
@@ -1722,7 +1722,7 @@ export const FacturasModal: React.FC<{ onClose:()=>void; userBalance:number; onD
           <button onClick={()=>{if(screen==='home')onClose();else setScreen('home');}} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#6B7280',fontSize:'16px'}}>←</button>
           <div style={{flex:1}}>
             <div style={{fontSize:'17px',fontWeight:'700',color:'#111827'}}>{screen==='home'?'Mis Facturas':screen==='add'?'Nueva Factura':screen==='detail'?selected?.service||'Factura':screen==='pay'?'Pagar Factura':'Pago completado'}</div>
-            {screen==='home'&&<div style={{fontSize:'12px',color:'#9CA3AF'}}>{pending.length} pendientes · {overdue.length} vencidas</div>}
+            {screen==='home'&&<div style={{fontSize:'12px',color:'#9CA3AF'}}>{pending.length} pendientes  -  {overdue.length} vencidas</div>}
           </div>
           {screen==='home'&&<button onClick={()=>setScreen('add')} style={{background:'#C47D2A',border:'none',borderRadius:'10px',padding:'7px 14px',color:'#fff',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>+ Añadir</button>}
           <button onClick={onClose} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'30px',height:'30px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#6B7280',fontSize:'14px'}}>✕</button>
@@ -1769,7 +1769,7 @@ export const FacturasModal: React.FC<{ onClose:()=>void; userBalance:number; onD
                     <div style={{fontSize:'14px',fontWeight:'800',color:b.status==='pagada'?'#16A34A':b.status==='vencida'?'#DC2626':'#111827'}}>{b.amount.toLocaleString()} XAF</div>
                   </div>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div style={{fontSize:'11px',color:'#9CA3AF'}}>{b.provider} · Vence {b.dueDate}</div>
+                    <div style={{fontSize:'11px',color:'#9CA3AF'}}>{b.provider}  -  Vence {b.dueDate}</div>
                     <span style={{background:statusStyle(b.status).bg,color:statusStyle(b.status).color,borderRadius:'6px',padding:'2px 8px',fontSize:'10px',fontWeight:'700'}}>{statusStyle(b.status).label}</span>
                   </div>
                 </div>
@@ -1841,7 +1841,7 @@ export const FacturasModal: React.FC<{ onClose:()=>void; userBalance:number; onD
           {screen==='pay'&&selected&&<div>
             <div style={{background:'#fff',borderRadius:'12px',padding:'12px 14px',marginBottom:'14px',display:'flex',alignItems:'center',gap:'10px'}}>
               <div style={{fontSize:'22px'}}>{selected.icon}</div>
-              <div><div style={{fontSize:'13px',fontWeight:'700',color:'#111827'}}>{selected.service}</div><div style={{fontSize:'11px',color:'#9CA3AF'}}>{selected.provider} · {selected.amount.toLocaleString()} XAF</div></div>
+              <div><div style={{fontSize:'13px',fontWeight:'700',color:'#111827'}}>{selected.service}</div><div style={{fontSize:'11px',color:'#9CA3AF'}}>{selected.provider}  -  {selected.amount.toLocaleString()} XAF</div></div>
             </div>
             <div style={{fontSize:'12px',fontWeight:'600',color:'#9CA3AF',marginBottom:'8px'}}>Método de pago</div>
             {[{id:'wallet',icon:'💳',label:'EGCHAT Wallet',sub:`Saldo: ${userBalance.toLocaleString()} XAF`},{id:'bank',icon:'🏦',label:'Transferencia bancaria',sub:'BANGE, CCEI, BGFIBank...'},{id:'cash',icon:'💵',label:'Efectivo en ventanilla',sub:'Oficinas del proveedor'}].map(m=>(
@@ -1852,7 +1852,7 @@ export const FacturasModal: React.FC<{ onClose:()=>void; userBalance:number; onD
               </div>
             ))}
             <button onClick={payBill} style={{width:'100%',background:payMethod?`linear-gradient(135deg,${selected.color},${selected.color}bb)`:'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:payMethod?'#fff':'#9CA3AF',fontSize:'15px',fontWeight:'700',cursor:payMethod?'pointer':'default',marginTop:'8px'}}>
-              Confirmar pago · {selected.amount.toLocaleString()} XAF
+              Confirmar pago  -  {selected.amount.toLocaleString()} XAF
             </button>
           </div>}
 
@@ -1860,7 +1860,7 @@ export const FacturasModal: React.FC<{ onClose:()=>void; userBalance:number; onD
           {screen==='success'&&selected&&<div style={{textAlign:'center',padding:'40px 0'}}>
             <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#F0FAF5',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:'40px'}}>✅</div>
             <div style={{fontSize:'20px',fontWeight:'900',color:'#111827',marginBottom:'6px'}}>¡Pago realizado!</div>
-            <div style={{fontSize:'13px',color:'#9CA3AF',marginBottom:'6px'}}>{selected.service} · {selected.provider}</div>
+            <div style={{fontSize:'13px',color:'#9CA3AF',marginBottom:'6px'}}>{selected.service}  -  {selected.provider}</div>
             <div style={{fontSize:'22px',fontWeight:'900',color:'#16A34A',marginBottom:'24px'}}>{selected.amount.toLocaleString()} XAF</div>
             <div style={{background:'#F0FAF5',borderRadius:'14px',padding:'14px',marginBottom:'20px',textAlign:'left'}}>
               {[['Referencia',selected.ref],['Fecha',new Date().toLocaleDateString('es')],['Método',payMethod==='wallet'?'EGCHAT Wallet':payMethod==='bank'?'Transferencia bancaria':'Efectivo']].map(([l,v])=>(
@@ -1909,12 +1909,12 @@ export const ActividadModal: React.FC<{
   const systemActivities: ActivityItem[] = [
     { id:'a1', type:'pago', category:'pagos', title:'Pago Electricidad SEGESA', subtitle:'Ref: 0012345678', amount:18500, amountType:'out', date:'01/04/2026', time:'09:14', status:'completado', icon:'⚡', color:'#C47D2A' },
     { id:'a2', type:'recarga', category:'recargas', title:'Recarga GETESA', subtitle:'Número: +240 222 123456', amount:5000, amountType:'out', date:'31/03/2026', time:'18:32', status:'completado', icon:'📶', color:'#2E9E6B' },
-    { id:'a3', type:'seguro', category:'seguros', title:'Solicitud Seguro de Vida', subtitle:'GEPetrol Seguros · Pendiente revisión', date:'30/03/2026', time:'11:05', status:'pendiente', icon:'🛡️', color:'#6B5BD6' },
-    { id:'a4', type:'internet', category:'internet', title:'Plan Internet 10GB', subtitle:'GETESA · 30 días', amount:25000, amountType:'out', date:'29/03/2026', time:'14:20', status:'activo', icon:'📡', color:'#0E7FA8' },
-    { id:'a5', type:'canal', category:'canales', title:'Suscripción Canal Sol', subtitle:'Sol Básico · 1 mes', amount:3000, amountType:'out', date:'28/03/2026', time:'10:00', status:'activo', icon:'📺', color:'#0A2463' },
+    { id:'a3', type:'seguro', category:'seguros', title:'Solicitud Seguro de Vida', subtitle:'GEPetrol Seguros  -  Pendiente revisión', date:'30/03/2026', time:'11:05', status:'pendiente', icon:'🛡️', color:'#6B5BD6' },
+    { id:'a4', type:'internet', category:'internet', title:'Plan Internet 10GB', subtitle:'GETESA  -  30 días', amount:25000, amountType:'out', date:'29/03/2026', time:'14:20', status:'activo', icon:'📡', color:'#0E7FA8' },
+    { id:'a5', type:'canal', category:'canales', title:'Suscripción Canal Sol', subtitle:'Sol Básico  -  1 mes', amount:3000, amountType:'out', date:'28/03/2026', time:'10:00', status:'activo', icon:'📺', color:'#0A2463' },
     { id:'a6', type:'pago', category:'pagos', title:'Pago Agua SNGE', subtitle:'Ref: SNGE-00456', amount:8200, amountType:'out', date:'27/03/2026', time:'08:45', status:'completado', icon:'💧', color:'#1485EE' },
-    { id:'a7', type:'transferencia', category:'transferencias', title:'Transferencia a María García', subtitle:'BANGE · Concepto: Alquiler', amount:150000, amountType:'out', date:'25/03/2026', time:'16:30', status:'completado', icon:'↗', color:'#1485EE' },
-    { id:'a8', type:'transferencia', category:'transferencias', title:'Transferencia recibida', subtitle:'De: Juan Pérez · CCEI Bank', amount:50000, amountType:'in', date:'24/03/2026', time:'12:15', status:'completado', icon:'↙', color:'#2E9E6B' },
+    { id:'a7', type:'transferencia', category:'transferencias', title:'Transferencia a María García', subtitle:'BANGE  -  Concepto: Alquiler', amount:150000, amountType:'out', date:'25/03/2026', time:'16:30', status:'completado', icon:'↗', color:'#1485EE' },
+    { id:'a8', type:'transferencia', category:'transferencias', title:'Transferencia recibida', subtitle:'De: Juan Pérez  -  CCEI Bank', amount:50000, amountType:'in', date:'24/03/2026', time:'12:15', status:'completado', icon:'↙', color:'#2E9E6B' },
     ...transactionHistory.slice(0,5).map((t,i)=>({
       id:`th${i}`, type:t.type, category:t.type==='received'?'transferencias':'pagos',
       title:t.description, subtitle:`Ref: ${t.id}`,
@@ -2014,7 +2014,7 @@ export const ActividadModal: React.FC<{
                     {a.amount&&<div style={{fontSize:'13px',fontWeight:'800',color:a.amountType==='in'?'#16A34A':'#DC2626',flexShrink:0}}>{a.amountType==='in'?'+':'-'}{a.amount.toLocaleString()} XAF</div>}
                   </div>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div style={{fontSize:'11px',color:'#9CA3AF'}}>{a.subtitle} · {a.time}</div>
+                    <div style={{fontSize:'11px',color:'#9CA3AF'}}>{a.subtitle}  -  {a.time}</div>
                     <span style={{background:statusStyle(a.status).bg,color:statusStyle(a.status).color,borderRadius:'6px',padding:'1px 7px',fontSize:'9px',fontWeight:'700'}}>{a.status}</span>
                   </div>
                 </div>
@@ -2054,32 +2054,32 @@ const HOSPITALS = [
 ];
 
 const PHARMACIES = [
-  // ── MALABO · Centro ──
+  // ── MALABO  -  Centro ──
   { id:'f1',  name:'Farmacia Central',       barrio:'Centro',      city:'Malabo', address:'Av. de la Independencia', phone:'+240 222 10 00 01', lat:3.7520, lng:8.7735, schedule:'L-S 8:00-22:00 / D 9:00-14:00', emergency:true,  services:['Medicamentos','Inyectables','Análisis rápidos','Tensión arterial'] },
   { id:'f2',  name:'Farmacia San Carlos',    barrio:'Centro',      city:'Malabo', address:'Centro Comercial',        phone:'+240 222 10 00 02', lat:3.7505, lng:8.7715, schedule:'L-V 8:00-20:00 / S 9:00-18:00', emergency:false, services:['Medicamentos','Parafarmacia','Cosméticos','Vitaminas'] },
   { id:'f3',  name:'Farmacia La Salud',      barrio:'Centro',      city:'Malabo', address:'Calle del Rey Boncoro',   phone:'+240 222 10 00 07', lat:3.7512, lng:8.7742, schedule:'L-S 8:00-21:00',                 emergency:false, services:['Medicamentos','Parafarmacia','Ortopedia'] },
-  // ── MALABO · Caracolas ──
+  // ── MALABO  -  Caracolas ──
   { id:'f4',  name:'Farmacia Bioko',         barrio:'Caracolas',   city:'Malabo', address:'Barrio Caracolas',        phone:'+240 222 10 00 03', lat:3.7598, lng:8.7779, schedule:'L-D 7:00-23:00',                 emergency:true,  services:['Medicamentos','Urgencias','Inyectables','Análisis'] },
   { id:'f5',  name:'Farmacia Caracolas',     barrio:'Caracolas',   city:'Malabo', address:'Av. Caracolas s/n',       phone:'+240 222 10 00 08', lat:3.7590, lng:8.7770, schedule:'L-S 8:00-20:00',                 emergency:false, services:['Medicamentos','Vitaminas','Cosméticos'] },
-  // ── MALABO · Ela Nguema ──
+  // ── MALABO  -  Ela Nguema ──
   { id:'f6',  name:'Farmacia Ela Nguema',    barrio:'Ela Nguema',  city:'Malabo', address:'Barrio Ela Nguema',       phone:'+240 222 10 00 04', lat:3.7412, lng:8.7765, schedule:'L-S 8:00-21:00',                 emergency:false, services:['Medicamentos','Parafarmacia','Ortopedia'] },
   { id:'f7',  name:'Farmacia Nueva Vida',    barrio:'Ela Nguema',  city:'Malabo', address:'Calle Principal Ela Nguema', phone:'+240 222 10 00 09', lat:3.7400, lng:8.7758, schedule:'L-V 8:00-20:00',              emergency:false, services:['Medicamentos','Inyectables','Análisis'] },
-  // ── MALABO · Puerto ──
+  // ── MALABO  -  Puerto ──
   { id:'f8',  name:'Farmacia Puerto',        barrio:'Puerto',      city:'Malabo', address:'Puerto de Malabo',        phone:'+240 222 10 00 06', lat:3.7442, lng:8.7705, schedule:'L-V 8:00-20:00',                 emergency:false, services:['Medicamentos','Parafarmacia'] },
   { id:'f9',  name:'Farmacia Marina',        barrio:'Puerto',      city:'Malabo', address:'Av. del Puerto',          phone:'+240 222 10 00 10', lat:3.7450, lng:8.7698, schedule:'L-S 8:00-21:00',                 emergency:false, services:['Medicamentos','Vitaminas','Tensión arterial'] },
-  // ── MALABO · Luba Road ──
+  // ── MALABO  -  Luba Road ──
   { id:'f10', name:'Farmacia Luba Road',     barrio:'Luba Road',   city:'Malabo', address:'Carretera Luba km 3',     phone:'+240 222 10 00 11', lat:3.7350, lng:8.7820, schedule:'L-S 8:00-20:00',                 emergency:false, services:['Medicamentos','Parafarmacia','Inyectables'] },
-  // ── MALABO · Aeropuerto ──
+  // ── MALABO  -  Aeropuerto ──
   { id:'f11', name:'Farmacia Aeropuerto',    barrio:'Aeropuerto',  city:'Malabo', address:'Zona Aeropuerto',         phone:'+240 222 10 00 12', lat:3.7550, lng:8.7080, schedule:'L-D 6:00-22:00',                 emergency:true,  services:['Medicamentos','Urgencias','Análisis rápidos'] },
-  // ── MALABO · Malabo II ──
+  // ── MALABO  -  Malabo II ──
   { id:'f12', name:'Farmacia Malabo II',     barrio:'Malabo II',   city:'Malabo', address:'Barrio Malabo II',        phone:'+240 222 10 00 13', lat:3.7480, lng:8.7900, schedule:'L-S 8:00-21:00',                 emergency:false, services:['Medicamentos','Cosméticos','Vitaminas'] },
   { id:'f13', name:'Farmacia Bienestar',     barrio:'Malabo II',   city:'Malabo', address:'Av. Malabo II',           phone:'+240 222 10 00 14', lat:3.7470, lng:8.7910, schedule:'L-V 8:00-20:00',                 emergency:false, services:['Medicamentos','Parafarmacia','Ortopedia'] },
-  // ── BATA · Centro ──
+  // ── BATA  -  Centro ──
   { id:'f14', name:'Farmacia Bata Centro',   barrio:'Centro',      city:'Bata',   address:'Centro de Bata',          phone:'+240 222 10 00 05', lat:1.8575, lng:9.7686, schedule:'L-D 7:00-22:00',                 emergency:true,  services:['Medicamentos','Urgencias','Inyectables'] },
   { id:'f15', name:'Farmacia Continental',   barrio:'Centro',      city:'Bata',   address:'Av. de la Libertad, Bata',phone:'+240 222 10 00 15', lat:1.8560, lng:9.7670, schedule:'L-S 8:00-21:00',                 emergency:false, services:['Medicamentos','Parafarmacia','Vitaminas'] },
-  // ── BATA · Nkolombong ──
+  // ── BATA  -  Nkolombong ──
   { id:'f16', name:'Farmacia Nkolombong',    barrio:'Nkolombong',  city:'Bata',   address:'Barrio Nkolombong, Bata', phone:'+240 222 10 00 16', lat:1.8620, lng:9.7720, schedule:'L-S 8:00-20:00',                 emergency:false, services:['Medicamentos','Inyectables','Análisis'] },
-  // ── BATA · Litoral ──
+  // ── BATA  -  Litoral ──
   { id:'f17', name:'Farmacia Litoral',       barrio:'Litoral',     city:'Bata',   address:'Paseo Marítimo, Bata',    phone:'+240 222 10 00 17', lat:1.8540, lng:9.7650, schedule:'L-D 7:00-23:00',                 emergency:true,  services:['Medicamentos','Urgencias','Cosméticos'] },
   // ── EBEBIYÍN ──
   { id:'f18', name:'Farmacia Ebebiyín',      barrio:'Centro',      city:'Ebebiyín',address:'Centro Ebebiyín',        phone:'+240 222 10 00 18', lat:2.1500, lng:11.3333, schedule:'L-S 8:00-20:00',                emergency:false, services:['Medicamentos','Parafarmacia'] },
@@ -2217,7 +2217,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
         {/* Header */}
         <div style={{padding:'4px 16px 10px',display:'flex',alignItems:'center',gap:'10px',flexShrink:0}}>
           <button onClick={onClose} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#6B7280',fontSize:'16px'}}>←</button>
-          <div style={{flex:1}}><div style={{fontSize:'17px',fontWeight:'700',color:'#111827'}}>Salud</div><div style={{fontSize:'12px',color:'#9CA3AF'}}>Guinea Ecuatorial · {HOSPITALS.length} centros · {PHARMACIES.length} farmacias</div></div>
+          <div style={{flex:1}}><div style={{fontSize:'17px',fontWeight:'700',color:'#111827'}}>Salud</div><div style={{fontSize:'12px',color:'#9CA3AF'}}>Guinea Ecuatorial  -  {HOSPITALS.length} centros  -  {PHARMACIES.length} farmacias</div></div>
           <button onClick={onClose} style={{background:'#EAECEF',border:'none',borderRadius:'50%',width:'30px',height:'30px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#6B7280',fontSize:'14px'}}>✕</button>
         </div>
 
@@ -2270,7 +2270,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
                         <span style={{fontSize:'11px',fontWeight:'700',color:'#374151'}}>{h.rating}</span>
                       </div>
                     </div>
-                    <div style={{fontSize:'11px',color:'#9CA3AF',marginBottom:'6px'}}>📍 {h.address} · {h.city}</div>
+                    <div style={{fontSize:'11px',color:'#9CA3AF',marginBottom:'6px'}}>📍 {h.address}  -  {h.city}</div>
                     <div style={{display:'flex',gap:'4px',flexWrap:'wrap',marginBottom:'6px'}}>
                       {h.emergency&&<span style={{background:'#FEF2F2',color:'#C0392B',borderRadius:'6px',padding:'2px 7px',fontSize:'9px',fontWeight:'700',display:'flex',alignItems:'center',gap:'3px'}}><svg width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg>Urgencias 24h</span>}
                       <span style={{background:'#F3F4F6',color:'#6B7280',borderRadius:'6px',padding:'2px 7px',fontSize:'9px',fontWeight:'600'}}>{h.beds} camas</span>
@@ -2299,7 +2299,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
               </div>
               <div style={{flex:1,textAlign:'left'}}>
                 <div style={{fontSize:'14px',fontWeight:'700'}}>Buscar medicamentos</div>
-                <div style={{fontSize:'11px',opacity:0.85}}>Busca, pide y recibe en casa · {MEDICAMENTOS.length} medicamentos</div>
+                <div style={{fontSize:'11px',opacity:0.85}}>Busca, pide y recibe en casa  -  {MEDICAMENTOS.length} medicamentos</div>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </button>
@@ -2390,7 +2390,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
                     {medScreen==='delivery'&&<div>
                       <div style={{background:'#F0FAF5',borderRadius:'12px',padding:'12px 14px',marginBottom:'14px',display:'flex',alignItems:'center',gap:'10px'}}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E9E6B" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                        <div><div style={{fontSize:'13px',fontWeight:'700',color:'#2E9E6B'}}>Entrega a domicilio</div><div style={{fontSize:'11px',color:'#9CA3AF'}}>Entrega en 2-4 horas · Malabo y Bata</div></div>
+                        <div><div style={{fontSize:'13px',fontWeight:'700',color:'#2E9E6B'}}>Entrega a domicilio</div><div style={{fontSize:'11px',color:'#9CA3AF'}}>Entrega en 2-4 horas  -  Malabo y Bata</div></div>
                       </div>
                       {[{k:'name',l:'Nombre completo',t:'text'},{k:'phone',l:'Teléfono de contacto',t:'tel'},{k:'address',l:'Dirección de entrega',t:'text'},{k:'notes',l:'Instrucciones adicionales (opcional)',t:'text'}].map(f=>(
                         <div key={f.k} style={{background:'#fff',borderRadius:'10px',padding:'0 14px',marginBottom:'8px',height:'48px',display:'flex',alignItems:'center',border:'1px solid #F0F2F5'}}>
@@ -2403,7 +2403,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
                         <div style={{display:'flex',justifyContent:'space-between',paddingTop:'8px'}}><span style={{fontSize:'13px',fontWeight:'700',color:'#374151'}}>Total</span><span style={{fontSize:'16px',fontWeight:'900',color:'#2E9E6B'}}>{cartTotal.toLocaleString()} XAF</span></div>
                       </div>
                       <button onClick={()=>{if(deliveryForm.name&&deliveryForm.phone&&deliveryForm.address){onDebit(cartTotal);setMedScreen('ok');}}} style={{width:'100%',background:deliveryForm.name&&deliveryForm.phone&&deliveryForm.address?'linear-gradient(135deg,#2E9E6B,#1B7A52)':'#E5E7EB',border:'none',borderRadius:'12px',padding:'14px',color:deliveryForm.name&&deliveryForm.phone&&deliveryForm.address?'#fff':'#9CA3AF',fontSize:'14px',fontWeight:'700',cursor:deliveryForm.name&&deliveryForm.phone&&deliveryForm.address?'pointer':'default'}}>
-                        Confirmar pedido · {cartTotal.toLocaleString()} XAF
+                        Confirmar pedido  -  {cartTotal.toLocaleString()} XAF
                       </button>
                     </div>}
 
@@ -2447,7 +2447,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
             {Object.entries(pharmByBarrio).map(([barrio,farmacias])=>(
               <div key={barrio} style={{marginBottom:'16px'}}>
                 <div style={{fontSize:'11px',fontWeight:'800',color:'#6B7280',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:'8px',paddingLeft:'2px'}}>
-                  📍 {barrio} · {(farmacias as any[]).length} farmacia{(farmacias as any[]).length>1?'s':''}
+                  📍 {barrio}  -  {(farmacias as any[]).length} farmacia{(farmacias as any[]).length>1?'s':''}
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
                   {(farmacias as any[]).map((f:any)=>(
@@ -2519,7 +2519,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
               <div style={{textAlign:'center',padding:'40px 0'}}>
                 <div style={{width:'80px',height:'80px',borderRadius:'50%',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:'40px'}}>✅</div>
                 <div style={{fontSize:'20px',fontWeight:'900',color:'#111827',marginBottom:'8px'}}>¡Cita solicitada!</div>
-                <div style={{fontSize:'13px',color:'#9CA3AF',marginBottom:'16px'}}>{citaForm.hospital} · {citaForm.specialty}</div>
+                <div style={{fontSize:'13px',color:'#9CA3AF',marginBottom:'16px'}}>{citaForm.hospital}  -  {citaForm.specialty}</div>
                 <div style={{background:'#FEF2F2',borderRadius:'14px',padding:'16px',marginBottom:'20px',textAlign:'left'}}>
                   {[['Paciente',citaForm.name],['Teléfono',citaForm.phone],['Fecha preferida',citaForm.date||'A confirmar'],['Especialidad',citaForm.specialty]].map(([l,v])=>(
                     <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid #FECACA'}}>
@@ -2547,7 +2547,7 @@ export const SaludModal: React.FC<{ onClose:()=>void; userBalance:number; onDebi
                 <div style={{width:'40px',height:'40px',borderRadius:'10px',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:'#C0392B'}}><svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round' strokeLinejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:'13px',fontWeight:'700',color:'#111827'}}>{h.name}</div>
-                  <div style={{fontSize:'11px',color:'#9CA3AF'}}>{h.city} · {h.schedule}</div>
+                  <div style={{fontSize:'11px',color:'#9CA3AF'}}>{h.city}  -  {h.schedule}</div>
                 </div>
                 <div style={{display:'flex',gap:'6px'}}>
                   <button onClick={()=>openMap(h)} style={{background:'#FEF2F2',border:'none',borderRadius:'8px',padding:'6px 10px',fontSize:'11px',fontWeight:'700',color:'#C0392B',cursor:'pointer'}}>🗺️</button>

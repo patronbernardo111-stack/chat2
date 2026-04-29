@@ -2227,7 +2227,7 @@ const App: React.FC = () => {
       boxShadow: '0 2px 8px rgba(0,200,160,0.3)',
       overflow: 'hidden',
       // Safe area para iPhone notch/Dynamic Island y Android status bar
-      paddingTop: 'max(env(safe-area-inset-top, 0px), var(--status-bar-height, 0px))',
+      paddingTop: 'max(env(safe-area-inset-top, 0px), var(--status-bar-height, 28px))',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '44px', padding: '0 10px', boxSizing: 'border-box' }}>
       
@@ -2581,7 +2581,7 @@ const App: React.FC = () => {
     const key = chatId;
     const t = new Date();
     const time = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-    const durationStr = duration > 0 ? ` · ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
+    const durationStr = duration > 0 ? `  -  ${String(Math.floor(duration/60)).padStart(2,'0')}:${String(duration%60).padStart(2,'0')}` : '';
     const prefix = type === 'video' ? 'Video' : '';
     const statusText = status === 'missed' ? `${prefix}Llamada perdida` : status === 'outgoing' ? `${prefix}Llamada saliente${durationStr}` : `${prefix}Llamada recibida${durationStr}`;
     const msgId = `call_${Date.now()}`;
@@ -3616,7 +3616,7 @@ const App: React.FC = () => {
               onClick={doCreate}
               style={{ width:'100%', background: canCreate ? 'linear-gradient(135deg,#a855f7,#6366f1)' : '#E5E7EB', border:'none', borderRadius:'14px', padding:'15px', color: canCreate ? '#fff' : '#9CA3AF', fontSize:'15px', fontWeight:'700', cursor: canCreate ? 'pointer' : 'default', outline:'none', transition:'all 0.2s', boxShadow: canCreate ? '0 4px 16px rgba(168,85,247,0.35)' : 'none' }}>
               {canCreate
-                ? `Crear grupo · ${groupMembers.length + 1} miembros`
+                ? `Crear grupo  -  ${groupMembers.length + 1} miembros`
                 : groupName.trim().length < 2
                   ? 'Escribe el nombre del grupo'
                   : 'Selecciona al menos 1 contacto'}
@@ -3825,7 +3825,7 @@ const App: React.FC = () => {
           </div>
           {/* Subtítulo: indica que es solo para este chat */}
           <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', marginBottom: '14px' }}>
-            Solo para este chat · {selectedChat?.title || 'Chat actual'}
+            Solo para este chat  -  {selectedChat?.title || 'Chat actual'}
           </div>
 
           {/* Mis fondos personalizados */}
@@ -4349,7 +4349,7 @@ const App: React.FC = () => {
   // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
-      paddingTop: 'calc(44px + max(env(safe-area-inset-top, 0px), var(--status-bar-height, 0px)))',
+      paddingTop: 'calc(44px + max(env(safe-area-inset-top, 0px), var(--status-bar-height, 28px)))',
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
@@ -4878,7 +4878,7 @@ const App: React.FC = () => {
                       setLoadingGroupMembers(false);
                     } : undefined}
                   >
-                    {sc.isGroup ? `👥 ${sc.members || ''} miembros · Ver` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
+                    {sc.isGroup ? `👥 ${sc.members || ''} miembros  -  Ver` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0px', alignItems: 'center', flexShrink: 0 }}>
@@ -5079,7 +5079,7 @@ const App: React.FC = () => {
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                               )}
                               {isVideo ? 'Videollamada' : 'Llamada de voz'}
-                              {(msg as any).callDuration > 0 && ` · ${String(Math.floor((msg as any).callDuration/60)).padStart(2,'0')}:${String((msg as any).callDuration%60).padStart(2,'0')}`}
+                              {(msg as any).callDuration > 0 && `  -  ${String(Math.floor((msg as any).callDuration/60)).padStart(2,'0')}:${String((msg as any).callDuration%60).padStart(2,'0')}`}
                             </div>
                           </div>
                           <button onClick={() => { if (selectedChat) startCall((msg as any).callType || 'audio', selectedChat); }}
@@ -9364,7 +9364,7 @@ const App: React.FC = () => {
                 {
                   color:'#EC4899', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
                   label:'Info del mensaje', sub:'Ver estado de entrega y lectura',
-                  action:() => { showToast(`Enviado · ${msgContextMenu.msg.time || ''}`, 'info'); setMsgContextMenu(null); }
+                  action:() => { showToast(`Enviado  -  ${msgContextMenu.msg.time || ''}`, 'info'); setMsgContextMenu(null); }
                 },
                 {
                   color:'#2E9E6B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
@@ -10581,7 +10581,7 @@ const App: React.FC = () => {
                     <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                     </div>
-                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Educación</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Pagos educativos · Guinea Ecuatorial</div></div>
+                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Educación</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Pagos educativos  -  Guinea Ecuatorial</div></div>
                   </div>
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
@@ -10636,7 +10636,7 @@ const App: React.FC = () => {
                     <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                     </div>
-                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Transporte</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Billetes y abonos · Guinea Ecuatorial</div></div>
+                    <div><div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>Transporte</div><div style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>Billetes y abonos  -  Guinea Ecuatorial</div></div>
                   </div>
                 </div>
                 <div style={{ padding:'14px 16px 0' }}>
@@ -10775,7 +10775,7 @@ const App: React.FC = () => {
               <div style={{ padding:'14px 16px 24px' }}>
                 <div style={{ background:'linear-gradient(135deg,#1B3A6B,#2A5298)', borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
                   <div style={{ fontSize:'14px', fontWeight:'700', color:'#fff' }}>{svcData.typeLabel}</div>
-                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>Dirección General de Impuestos · GQ</div>
+                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', marginTop:'3px' }}>Dirección General de Impuestos  -  GQ</div>
                 </div>
                 {[{key:'nif',placeholder:'NIF / DNI del contribuyente',type:'text',icon:'👤'},{key:'ref',placeholder:'Referencia de pago / expediente',type:'text',icon:'📋'},{key:'period',placeholder:'Per?odo fiscal (ej: 2025)',type:'text',icon:'📋'},{key:'amount',placeholder:'Importe a pagar (XAF)',type:'number',icon:'📋'}].map((f) => (
                   <div key={f.key} style={{ background:'#fff', borderRadius:'10px', padding:'0 14px', marginBottom:'8px', display:'flex', alignItems:'center', height:'50px', border:'1px solid #F0F2F5', gap:'10px' }}>
@@ -10816,7 +10816,7 @@ const App: React.FC = () => {
                     tienda: { title:'Tiendas Online', sub:'Ropa, electronica, hogar - Envio a domicilio', grad:'linear-gradient(135deg,#1B3A6B,#1485EE)',
                       items:[{id:'a',label:'Ropa y Moda',sub:'Envío a domicilio - 48h',price:'1,000 XAF',color:'#6B5BD6'},{id:'b',label:'Electrónica',sub:'Garantía incluida - 72h',price:'1,500 XAF',color:'#1485EE'},{id:'c',label:'Hogar y Decoración',sub:'Entrega en 48h',price:'1,000 XAF',color:'#F59E0B'},{id:'d',label:'Deportes',sub:'Equipamiento deportivo',price:'800 XAF',color:'#00c8a0'}]},
                     lavanderia: { title:'Lavandería', sub:'Recogida y entrega a domicilio', grad:'linear-gradient(135deg,#0A4A8A,#00b4e6)',
-                      items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h · Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorería',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
+                      items:[{id:'a',label:'Lavado Normal',sub:'Listo en 24h  -  Recogida gratis',price:'3,000 XAF/kg',color:'#00b4e6'},{id:'b',label:'Lavado Express',sub:'Listo en 4h - Urgente',price:'5,000 XAF/kg',color:'#E74C3C'},{id:'c',label:'Tintorería',sub:'Prendas delicadas - 48h',price:'6,000 XAF/kg',color:'#6B5BD6'},{id:'d',label:'Planchado',sub:'Servicio de planchado',price:'1,500 XAF/prenda',color:'#F59E0B'}]},
                     belleza: { title:'Belleza y Bienestar', sub:'Peluquerías, estética y spa', grad:'linear-gradient(135deg,#831843,#EC4899)',
                       items:[{id:'a',label:'Peluquería',sub:'Corte, peinado, color',price:'5,000 XAF',color:'#EC4899'},{id:'b',label:'Estética',sub:'Manicura, pedicura, depilación',price:'8,000 XAF',color:'#F59E0B'},{id:'c',label:'Spa & Masajes',sub:'Relajación y bienestar',price:'15,000 XAF',color:'#6B5BD6'},{id:'d',label:'Barbería',sub:'Corte y arreglo de barba',price:'3,000 XAF',color:'#00b4e6'}]},
                   };

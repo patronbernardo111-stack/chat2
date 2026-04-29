@@ -120,7 +120,7 @@ const LiveMap: React.FC<{
     if (!destPos) inst.current.flyTo({ center: [userPos.lng, userPos.lat], zoom: 14, duration: 800 });
   }, [userPos]);
 
-  // Veh�culos cercanos
+  // Vehiculos cercanos
   useEffect(() => {
     if (!inst.current || !sdkRef.current || !userPos || !showNearby) return;
     const sdk = sdkRef.current; const map = inst.current;
@@ -175,7 +175,7 @@ const LiveMap: React.FC<{
 
   if (err) return (
     <div style={{ height: h, width: '100%', background: 'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-      <span style={{ fontSize: 32 }}>???</span>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
       <span style={{ fontSize: 13, color: '#6B7280' }}>Malabo, Guinea Ecuatorial</span>
     </div>
   );
@@ -183,7 +183,7 @@ const LiveMap: React.FC<{
     <div style={{ position: 'relative', height: h, width: '100%' }}>
       {loading && (
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, zIndex: 1 }}>
-          <span style={{ fontSize: 32 }}>???</span>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'gpsp 1.5s ease-in-out infinite' }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
           <span style={{ fontSize: 13, color: '#6B7280' }}>Cargando mapa...</span>
         </div>
       )}
@@ -226,7 +226,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   const timer = useRef<any>(null);
   const watchId = useRef<number | null>(null);
 
-  // Tema activo - definido aqu� para que est� disponible en todo el componente
+  // Tema activo - definido aqui para que este disponible en todo el componente
   const BG = customBg ? 'transparent' : theme.bg;
   const CARD = theme.card;
   const ACCENT = theme.accent;
@@ -481,7 +481,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
                 <div style={{ fontSize: 17, fontWeight: 800, color: TEXT }}>{driver.name}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
                   {[1, 2, 3, 4, 5].map(s => <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill={s <= Math.floor(driver.rating) ? '#F59E0B' : '#E2E8F0'}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>)}
-                  <span style={{ fontSize: 13, color: SUB }}>{driver.rating} � {driver.trips.toLocaleString()} viajes</span>
+                  <span style={{ fontSize: 13, color: SUB }}>{driver.rating}  -  {driver.trips.toLocaleString()} viajes</span>
                 </div>
               </div>
               <div style={{ textAlign: 'center', background: ACCENT_LIGHT, borderRadius: 14, padding: '10px 16px' }}>
@@ -516,7 +516,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={ACCENT} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
         <button onClick={() => { if (userBalance >= ride.price) { onDebit(ride.price); setScreen('riding'); } else alert('Saldo insuficiente'); }} style={{ flex: 2, padding: '14px', background: ACCENT, color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-          Confirmar · {ride.price.toLocaleString()} XAF
+          Confirmar   -  {ride.price.toLocaleString()} XAF
         </button>
       </div>
 
@@ -533,7 +533,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div>
               <div style={{ fontSize: 11, color: GREEN, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: GREEN }} />
-                En camino · {driver.plate}
+                En camino   -  {driver.plate}
               </div>
             </div>
           </div>
@@ -611,7 +611,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: CARD, borderRadius: '24px 24px 0 0', padding: '22px 22px 36px', boxShadow: '0 -8px 32px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: driver.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff' }}>{driver.ini}</div>
-            <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div><div style={{ fontSize: 12, color: SUB }}>{driver.plate} � {driver.car}</div></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div><div style={{ fontSize: 12, color: SUB }}>{driver.plate}  -  {driver.car}</div></div>
             <div style={{ fontSize: 15, fontWeight: 800, color: ACCENT }}>{ride.price.toLocaleString()} XAF</div>
           </div>
           <div style={{ marginBottom: 18 }}>
@@ -645,7 +645,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{driver.name}</div>
               <div style={{ fontSize: 11, color: ACCENT, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT }} />
-                Viaje en curso · {Math.round(progress)}%
+                Viaje en curso   -  {Math.round(progress)}%
               </div>
             </div>
           </div>
@@ -746,7 +746,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           <div style={{ fontSize: 17, fontWeight: 800, color: TEXT }}>MiTaxi</div>
           <div style={{ fontSize: 11, color: SUB, display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: gpsOk ? GREEN : '#F59E0B', flexShrink: 0 }} />
-            <span>{gpsOk ? 'GPS activo � Malabo' : 'Obteniendo ubicacion...'}</span>
+            <span>{gpsOk ? 'GPS activo  -  Malabo' : 'Obteniendo ubicacion...'}</span>
           </div>
         </div>
         <button onClick={() => setShowThemes(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 11px', background: ACCENT_LIGHT, border: 'none', borderRadius: 50, cursor: 'pointer' }}>
@@ -822,7 +822,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
           {/* Info servicio seleccionado */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, padding: '10px 14px', background: ride.color + '12', borderRadius: 12, border: '1px solid ' + ride.color + '30' }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: ride.color }}>{ride.name} � {ride.sub}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: ride.color }}>{ride.name}  -  {ride.sub}</div>
               <div style={{ fontSize: 11, color: SUB }}>{ride.desc}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -845,7 +845,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
               boxShadow: canGo ? '0 4px 20px ' + ride.color + '50' : 'none',
             }}
           >
-            {canGo ? 'Pedir ' + ride.name + ' � ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
+            {canGo ? 'Pedir ' + ride.name + '  -  ' + ride.price.toLocaleString() + ' XAF' : 'Ingresa origen y destino'}
           </button>
           <div style={{ height: 6 }} />
         </div>

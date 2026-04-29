@@ -299,7 +299,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                 {(mediaImgs.length > 0 || mediaVids.length > 0) && (
                   <div>
                     <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff'}}>
-                      Fotos y videos · {mediaImgs.length + mediaVids.length}
+                      Fotos y videos  -  {mediaImgs.length + mediaVids.length}
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'2px',marginBottom:'8px'}}>
                       {[...mediaImgs, ...mediaVids].map((m:any,i) => (
@@ -348,7 +348,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                 {mediaFiles.length > 0 && (
                   <div>
                     <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff'}}>
-                      Archivos · {mediaFiles.length}
+                      Archivos  -  {mediaFiles.length}
                     </div>
                     {mediaFiles.map((m:any,i) => {
                       const raw = (m.text||'').replace(/^📎 |^📄 /,'');
@@ -367,7 +367,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                           </div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:'13px',fontWeight:'600',color:'#111827',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{fileName}</div>
-                            <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'2px'}}>{fileSize}{fileSize?' · ':''}{ext.toUpperCase()} · {m.time}</div>
+                            <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'2px'}}>{fileSize}{fileSize?'  -  ':''}{ext.toUpperCase()}  -  {m.time}</div>
                           </div>
                           {(m as any).fileUrl && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
                         </div>
@@ -380,7 +380,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                 {mediaAudio.length > 0 && (
                   <div>
                     <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff'}}>
-                      Mensajes de voz · {mediaAudio.length}
+                      Mensajes de voz  -  {mediaAudio.length}
                     </div>
                     {mediaAudio.map((m:any,i) => (
                       <div key={m.id||i} style={{background:'#fff',borderBottom:'1px solid #F3F4F6',padding:'12px 16px',display:'flex',alignItems:'center',gap:'12px'}}>
@@ -394,7 +394,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                               <div key={j} style={{width:'3px',height:`${h*2}px`,background:'rgba(0,200,160,0.5)',borderRadius:'2px'}}/>
                             ))}
                           </div>
-                          <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'2px'}}>Mensaje de voz · {m.time}</div>
+                          <div style={{fontSize:'11px',color:'#9ca3af',marginTop:'2px'}}>Mensaje de voz  -  {m.time}</div>
                         </div>
                       </div>
                     ))}
@@ -426,7 +426,7 @@ export const ContactProfileModal: React.FC<Props> = ({
                         <div style={{fontSize:'14px',fontWeight:'600',color:'#111827',marginBottom:'2px'}}>{g.name}</div>
                         <div style={{fontSize:'12px',color:'#9CA3AF',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                           {typeof g.members === 'number' ? `${g.members} miembros` : g.description || 'Grupo'}
-                          {g.lastMessage ? ` · ${g.lastMessage}` : ''}
+                          {g.lastMessage ? `  -  ${g.lastMessage}` : ''}
                         </div>
                       </div>
                       {g.unread>0&&<span style={{background:'#00c8a0',color:'#fff',borderRadius:'50%',minWidth:'20px',height:'20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:'700',padding:'0 4px'}}>{g.unread}</span>}

@@ -108,7 +108,7 @@ export const AvatarCropModal: React.FC<Props> = ({ imageUrl, onSave, onClose }) 
       </div>
 
       {/* Instrucción */}
-      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '16px' }}>Arrastra para posicionar · Desliza para zoom</p>
+      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '16px' }}>Arrastra para posicionar  -  Desliza para zoom</p>
 
       {/* Canvas circular */}
       <canvas

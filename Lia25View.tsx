@@ -247,7 +247,7 @@ export const Lia25View: React.FC<Props> = ({ messages, inputValue, onInputChange
               <LiaWave speaking={isSpeaking}/>
             </div>
             <div style={{ fontSize:'18px', fontWeight:'800', color:'#111827', marginBottom:'4px' }}>Hola, soy Lia-25</div>
-            <div style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>Tu asistente inteligente · Habla o escribe</div>
+            <div style={{ fontSize:'13px', color:'#6B7280', marginBottom:'20px' }}>Tu asistente inteligente  -  Habla o escribe</div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', textAlign:'left' }}>
               {SUGGESTIONS.map((s,i)=>(
                 <button key={i} onClick={()=>{ onSend(s.text); setShowSuggestions(false); }}
