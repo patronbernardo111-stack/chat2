@@ -2226,8 +2226,8 @@ const App: React.FC = () => {
       zIndex: 1000,
       boxShadow: '0 2px 8px rgba(0,200,160,0.3)',
       overflow: 'hidden',
-      // Safe area para iPhone notch/Dynamic Island y Android status bar
-      paddingTop: 'max(env(safe-area-inset-top, 0px), var(--status-bar-height, 28px))',
+      // Safe area: 28px fijo para Android status bar + env() para iOS notch
+      paddingTop: 'max(28px, env(safe-area-inset-top, 28px))',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '44px', padding: '0 10px', boxSizing: 'border-box' }}>
       
@@ -4349,7 +4349,7 @@ const App: React.FC = () => {
   // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
-      paddingTop: 'calc(44px + max(env(safe-area-inset-top, 0px), var(--status-bar-height, 28px)))',
+      paddingTop: 'calc(44px + max(28px, env(safe-area-inset-top, 28px)))',
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',

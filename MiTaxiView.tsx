@@ -108,7 +108,6 @@ const LiveMap: React.FC<{
         center,
         zoom: 14,
         navigationControl: false,
-        attributionControl: false,
       });
       inst.current = m;
       m.on('load', () => {
@@ -372,6 +371,13 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         return p + 3;
       }), 80);
     }
+    if (screen === 'matched') {
+      setPct(0);
+      timer.current = setInterval(() => setPct(p => {
+        if (p >= 100) { clearInterval(timer.current); setDriver(DRIVERS[Math.floor(Math.random() * DRIVERS.length)]); setScreen('matched'); return 100; }
+        return p + 3;
+      }), 80);
+    }
     if (screen === 'riding') {
       setProgress(0);
       timer.current = setInterval(() => setProgress(p => {
@@ -379,7 +385,31 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         return p + 0.3;
       }), 150);
     }
-    return () => clearInterval(timer.current);
+    // Animar conductor moviéndose hacia el usuario en matched y riding
+    if (screen === 'matched' || screen === 'riding') {
+      if (driverAnimRef.current) clearInterval(driverAnimRef.current);
+      // Posición inicial del conductor: ~500m al norte-este del usuario
+      const startLat = (userPos?.lat ?? 3.7523) + 0.005;
+      const startLng = (userPos?.lng ?? 8.7741) + 0.004;
+      const endLat = userPos?.lat ?? 3.7523;
+      const endLng = userPos?.lng ?? 8.7741;
+      let step = 0; const steps = 80;
+      setDriverPos({ lat: startLat, lng: startLng });
+      driverAnimRef.current = setInterval(() => {
+        step++;
+        const t = step / steps;
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+        setDriverPos({
+          lat: startLat + (endLat - startLat) * ease,
+          lng: startLng + (endLng - startLng) * ease,
+        });
+        if (step >= steps) clearInterval(driverAnimRef.current);
+      }, 200);
+    } else {
+      if (driverAnimRef.current) clearInterval(driverAnimRef.current);
+      setDriverPos(null);
+    }
+    return () => { clearInterval(timer.current); clearInterval(driverAnimRef.current); };
   }, [screen]);
 
   const onSugg = (val: string, field: 'o' | 'd') => {
@@ -564,7 +594,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         <div style={{ marginLeft: 'auto', background: '#F0FDF4', color: GREEN, fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 50 }}>En camino</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <LiveMap h={200} userPos={userPos} destPos={destPos} showRoute={true} />
+        <LiveMap h={200} userPos={userPos} destPos={destPos} showRoute={true} driverPos={driverPos} rideColor={ride.color} />
         <div style={{ padding: '20px 20px 120px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
@@ -699,7 +729,7 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
         <div style={{ fontSize: 13, fontWeight: 700, color: progress >= 100 ? GREEN : ACCENT }}>{progress >= 100 ? 'Llegaste!' : Math.round(progress) + '%'}</div>
       </div>
       <div style={{ flex: 1, position: 'relative' }}>
-        <LiveMap h="100%" userPos={userPos} destPos={destPos} showRoute={true} />
+        <LiveMap h="100%" userPos={userPos} destPos={destPos} showRoute={true} driverPos={driverPos} rideColor={ride.color} />
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: CARD, borderRadius: '24px 24px 0 0', padding: '22px 22px 36px', boxShadow: '0 -8px 32px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: driver.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#fff' }}>{driver.ini}</div>
