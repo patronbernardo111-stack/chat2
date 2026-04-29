@@ -33,6 +33,7 @@ interface Props {
   onPromoteToAdmin?: (userId:string) => void;
   onLeaveGroup?: () => void;
   onDeleteGroup?: () => void;
+  onGroupAvatarChange?: (url: string) => void;
 }
 
 // Toggle switch component
@@ -83,7 +84,7 @@ export const ContactProfileModal: React.FC<Props> = ({
   onDeleteContact, onOpenWallpaper, onSendMoney, onStartCall, onFavoriteToggle,
   isInContacts = true, onAddContact, onAddGroupMembers,
   groupMembers = [], currentUserId, onAddMemberToContacts,
-  onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup
+  onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup, onGroupAvatarChange
 }) => {
   const isGroup = !!cp.isGroup;
   const [tab, setTab] = React.useState<'info'|'media'|'grupos'>('info');
@@ -145,8 +146,34 @@ export const ContactProfileModal: React.FC<Props> = ({
 
         {/* Avatar + nombre — estilo EGCHAT */}
         <div style={{background:'#fff',padding:'28px 16px 20px',textAlign:'center',marginBottom:'8px'}}>
-          <div style={{display:'inline-block',marginBottom:'14px'}}>
-            <Avatar name={cp.title||cp.name||'?'} size={90} status={cp.status} showStatus={true} photo={cp.avatarUrl || cp.avatar_url || cp.photo} />
+          <div style={{display:'inline-block',marginBottom:'14px',position:'relative'}}>
+            <Avatar name={cp.title||cp.name||'?'} size={90} status={cp.status} showStatus={!isGroup} photo={cp.avatarUrl || cp.avatar_url || cp.photo} />
+            {/* Botón editar foto — solo para grupos admin */}
+            {isGroup && isAdmin && (
+              <button
+                onClick={() => {
+                  const inp = document.createElement('input');
+                  inp.type = 'file'; inp.accept = 'image/*';
+                  inp.onchange = () => {
+                    const f = inp.files?.[0];
+                    if (f && f.size < 5 * 1024 * 1024) {
+                      const r = new FileReader();
+                      r.onload = (ev) => {
+                        const url = ev.target?.result as string;
+                        // Actualizar avatar en el objeto cp
+                        cp.avatarUrl = url;
+                        if (onGroupAvatarChange) onGroupAvatarChange(url);
+                      };
+                      r.readAsDataURL(f);
+                    }
+                  };
+                  inp.click();
+                }}
+                style={{position:'absolute',bottom:0,right:0,width:'28px',height:'28px',borderRadius:'50%',background:'linear-gradient(135deg,#a855f7,#6366f1)',border:'2px solid #fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',outline:'none',padding:0}}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+            )}
           </div>
           <div style={{fontSize:'22px',fontWeight:'700',color:'#111827',marginBottom:'3px'}}>{cp.title||cp.name}</div>
           <div style={{fontSize:'13px',color:cp.status==='online'?'#22c55e':cp.status==='away'?'#f59e0b':'#9CA3AF',marginBottom:'4px'}}>

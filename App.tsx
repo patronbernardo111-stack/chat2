@@ -11916,6 +11916,12 @@ const App: React.FC = () => {
               showToast('Grupo eliminado', 'success');
             } catch { showToast('No se pudo eliminar el grupo', 'error'); }
           }}
+          onGroupAvatarChange={(url: string) => {
+            if (!showContactProfile?.id) return;
+            const gid = showContactProfile.id?.toString();
+            setAllGroups(prev => prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g));
+            setShowContactProfile((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
+          }}
         />
       )}
 
