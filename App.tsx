@@ -2305,14 +2305,12 @@ const App: React.FC = () => {
             onClick={() => setShowWeatherModal(true)}
             style={{
               display: 'flex', alignItems: 'center', gap: '4px',
-              background: 'rgba(10,20,40,0.72)',
+              background: 'rgba(8,18,36,0.88)',
               padding: '5px 10px',
               borderRadius: '50px',
               border: '1px solid rgba(255,255,255,0.13)',
               boxShadow: '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(10px)',
               cursor: 'pointer',
-              transition: 'background 0.2s, box-shadow 0.2s',
             }}
           >
             <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain', 12)}</div>
@@ -2326,18 +2324,16 @@ const App: React.FC = () => {
           <button
             onClick={() => { setShowNotifications(!showNotifications); setAppNotifications(prev => prev.map(n => ({ ...n, read: true }))); }}
             style={{
-              background: showNotifications ? 'rgba(0,200,160,0.30)' : 'rgba(10,20,40,0.72)',
+              background: showNotifications ? 'rgba(0,200,160,0.30)' : 'rgba(8,18,36,0.88)',
               border: `1px solid ${showNotifications ? 'rgba(0,200,160,0.45)' : 'rgba(255,255,255,0.13)'}`,
               boxShadow: showNotifications
                 ? '0 2px 12px rgba(0,200,160,0.25), inset 0 1px 0 rgba(255,255,255,0.08)'
                 : '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(10px)',
               cursor: 'pointer',
               padding: '5px 10px',
               borderRadius: '50px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative', outline: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s, border-color 0.2s',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2364,18 +2360,16 @@ const App: React.FC = () => {
           <button
             onClick={() => setShowMenu(!showMenu)}
             style={{
-              background: showMenu ? 'rgba(0,180,230,0.30)' : 'rgba(10,20,40,0.72)',
+              background: showMenu ? 'rgba(0,180,230,0.30)' : 'rgba(8,18,36,0.88)',
               border: `1px solid ${showMenu ? 'rgba(0,180,230,0.45)' : 'rgba(255,255,255,0.13)'}`,
               boxShadow: showMenu
                 ? '0 2px 12px rgba(0,180,230,0.25), inset 0 1px 0 rgba(255,255,255,0.08)'
                 : '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(10px)',
               cursor: 'pointer',
               padding: '5px 10px',
               borderRadius: '50px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               outline: 'none',
-              transition: 'background 0.2s, box-shadow 0.2s, border-color 0.2s',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
