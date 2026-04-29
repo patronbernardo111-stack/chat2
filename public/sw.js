@@ -14,8 +14,8 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  // NO llamar skipWaiting() aquí — evita el flash en iOS Safari
-  // El SW nuevo esperará a que todas las pestañas se cierren antes de activarse
+  // skipWaiting inmediato para que el nuevo SW tome control sin esperar
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
   );
@@ -38,8 +38,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      // NO llamar clients.claim() — evita tomar control de páginas ya abiertas en iOS
-      // Las páginas existentes seguirán usando el SW anterior hasta que se recarguen
+      .then(() => self.clients.claim()) // Tomar control inmediato de todas las pestañas
   );
 });
 
