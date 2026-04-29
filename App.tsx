@@ -2218,13 +2218,19 @@ const App: React.FC = () => {
       id="app-main-header"
       ref={(el) => {
         if (el) {
-          // Medir altura real del header y guardarla como CSS variable
           const update = () => {
-            const h = el.getBoundingClientRect().height;
-            document.documentElement.style.setProperty('--header-height', h + 'px');
+            // Pequeño delay para que el CSS del safe area se aplique completamente
+            requestAnimationFrame(() => {
+              const h = el.getBoundingClientRect().height;
+              if (h > 0) {
+                document.documentElement.style.setProperty('--header-height', h + 'px');
+              }
+            });
           };
           update();
-          // Observar cambios de tamaño (rotación, etc.)
+          // Re-medir después de 100ms (para modo PWA standalone)
+          setTimeout(update, 100);
+          setTimeout(update, 500);
           if (typeof ResizeObserver !== 'undefined') {
             const ro = new ResizeObserver(update);
             ro.observe(el);
@@ -6027,7 +6033,7 @@ const App: React.FC = () => {
         return (
           <div style={{
             padding: '0 8px 0px',
-            paddingTop: 'var(--header-height, 94px)',
+            paddingTop: 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)',
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',
