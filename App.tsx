@@ -6385,6 +6385,22 @@ const App: React.FC = () => {
                 .filter(chat => {
                   if (messageFilter === 'group') return chat.type === 'group';
                   if (messageFilter === 'individual') return chat.type !== 'group';
+                  if (messageFilter === 'money') {
+                    // Mostrar chats que tienen mensajes de transferencia/dinero
+                    const chatId = chat.id?.toString() || '';
+                    const msgs = chatMessages[chatId] || [];
+                    const hasMoneyMsg = msgs.some((m: any) =>
+                      m.text?.includes('Transferencia') ||
+                      m.text?.includes('XAF') ||
+                      m.text?.includes('💸') ||
+                      m.text?.includes('📌') ||
+                      m.type === 'transfer' || m.type === 'payment'
+                    );
+                    // También incluir si el último mensaje del backend es de dinero
+                    const lastText = chat.last_message?.text || '';
+                    const lastHasMoney = lastText.includes('XAF') || lastText.includes('Transferencia') || lastText.includes('💸');
+                    return hasMoneyMsg || lastHasMoney;
+                  }
                   return true;
                 })
                 .filter(chat => {
