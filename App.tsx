@@ -537,6 +537,18 @@ const App: React.FC = () => {
     document.documentElement.style.fontSize = `${appFontSize * 16}px`;
     document.documentElement.style.fontFamily = fonts[appFontFamily] || fonts.default;
   }, [appFontSize, appFontFamily]);
+
+  // Detectar Android y establecer altura de status bar
+  React.useEffect(() => {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isCapacitor = !!(window as any).Capacitor;
+    if (isAndroid || isCapacitor) {
+      // Android status bar típica: 24dp en densidades normales, hasta 48px en alta densidad
+      // Usamos 28px como valor seguro para la mayoría de dispositivos Android
+      const statusBarH = isCapacitor ? '28px' : '24px';
+      document.documentElement.style.setProperty('--status-bar-height', statusBarH);
+    }
+  }, []);
   const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings);
   const updateSoundSetting = (key: keyof SoundSettings, value: any) => {
     const updated = { ...soundSettings, [key]: value };
@@ -4339,7 +4351,7 @@ const App: React.FC = () => {
   // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
-      paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))',
+      paddingTop: 'calc(44px + max(env(safe-area-inset-top, 0px), var(--status-bar-height, 0px)))',
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
