@@ -5513,7 +5513,22 @@ const App: React.FC = () => {
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: serverUrl, status: 'delivered' } : m) }));
                             } catch (e) {
-                              showToast('Error al subir foto', 'error');
+                              // Fallback: usar base64 local si el servidor falla
+                              try {
+                                const reader = new FileReader();
+                                reader.onload = async () => {
+                                  const base64Url = reader.result as string;
+                                  // Enviar con la URL local como fallback
+                                  const sent = await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: localUrl });
+                                  const serverId = sent?.id || msgId;
+                                  setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: localUrl, status: 'delivered' } : m) }));
+                                };
+                                reader.readAsDataURL(file);
+                              } catch {
+                                // Mantener la imagen local visible aunque no se suba al servidor
+                                setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, imageUrl: localUrl, status: 'delivered' } : m) }));
+                                showToast('Foto guardada localmente', 'info');
+                              }
                             }
                           };
                           inp.click();

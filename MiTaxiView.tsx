@@ -217,6 +217,12 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
   const [docs, setDocs]         = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [settings, setSettings]   = useState({ voice: 'es-GQ', navMode: 'standard', savedPlaces: ['Aeropuerto de Malabo', 'Hospital La Paz'] });
+  const [showDriverChat, setShowDriverChat] = useState(false);
+  const [driverChatMsgs, setDriverChatMsgs] = useState<Array<{id:string; from:'me'|'driver'; text:string; time:string}>>([
+    { id:'1', from:'driver', text:'Hola, estoy en camino. Llegaré en unos minutos.', time:'13:00' },
+  ]);
+  const [driverChatInput, setDriverChatInput] = useState('');
+  const driverChatEndRef = useRef<HTMLDivElement>(null);
   const timer = useRef<any>(null);
   const watchId = useRef<number | null>(null);
 
