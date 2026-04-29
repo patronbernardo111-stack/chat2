@@ -4900,23 +4900,13 @@ const App: React.FC = () => {
                 </button>
                 <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={async () => {
                   setShowContactProfile(sc);
-                  if (sc.isGroup) {
-                    try {
-                      const members = await chatAPI.getGroupParticipants(sc.id?.toString() || '');
-                      setGroupMembersList(members || []);
-                    } catch { setGroupMembersList([]); }
-                  }
+                  if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || '');
                 }}>
                   <Avatar name={sc.title} size={50} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
                 <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={async () => {
                   setShowContactProfile(sc);
-                  if (sc.isGroup) {
-                    try {
-                      const members = await chatAPI.getGroupParticipants(sc.id?.toString() || '');
-                      setGroupMembersList(members || []);
-                    } catch { setGroupMembersList([]); }
-                  }
+                  if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || '');
                 }}>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
                   <div
@@ -4987,7 +4977,7 @@ const App: React.FC = () => {
                     onClick={e=>e.stopPropagation()}>
                     {/* Seccin principal */}
                     {[
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(sc);if(sc.isGroup){try{const members=await chatAPI.getGroupParticipants(sc.id?.toString()||'');setGroupMembersList(members||[]);}catch{setGroupMembersList([]);}}}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(sc);if(sc.isGroup){await loadGroupMembers(sc.id?.toString()||'');}}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,label:'Buscar en el chat',color:'#374151',action:()=>{setShowChatMenu(false);setShowChatSearch(true);setChatSearchQuery('');}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,label:'Mensajes destacados',color:'#374151',action:()=>{setShowChatMenu(false);setStarredChatId(sc.id?.toString()||'');setShowStarredModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="12" r="10"/></svg>,label:pinnedChats.includes(sc.id?.toString()||'')?'Desfijar chat':'Fijar chat',color:'#374151',action:()=>{const id=sc.id?.toString()||'';setPinnedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
@@ -8889,6 +8879,33 @@ const App: React.FC = () => {
       delete (window as any).__egchat_processCallMessage;
     };
   }, [isAuthenticated, realChats]);
+
+  // -- Cargar miembros de un grupo con fallback desde realChats --
+  const loadGroupMembers = React.useCallback(async (chatId: string) => {
+    try {
+      const members = await chatAPI.getGroupParticipants(chatId);
+      if (Array.isArray(members) && members.length > 0) {
+        setGroupMembersList(members);
+        return;
+      }
+    } catch {}
+    // Fallback: usar participantes de realChats
+    const chat = realChatsRef.current?.find((c: any) => c.id?.toString() === chatId);
+    if (chat?.participants && chat.participants.length > 0) {
+      const fallback = chat.participants.map((p: any) => ({
+        id: p.user_id || p.id,
+        user_id: p.user_id || p.id,
+        phone: p.phone || p.users?.phone || '',
+        full_name: p.full_name || p.users?.full_name || p.name || '',
+        avatar_url: p.avatar_url || p.users?.avatar_url || '',
+        online_status: false,
+        role: 'member',
+      }));
+      setGroupMembersList(fallback);
+    } else {
+      setGroupMembersList([]);
+    }
+  }, []);
 
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
   const loadContacts = React.useCallback(async () => {
