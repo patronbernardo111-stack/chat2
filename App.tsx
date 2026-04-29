@@ -9292,6 +9292,38 @@ const App: React.FC = () => {
                     }
                   }
                 }] : []),
+                {
+                  color:'#EF4444', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+                  label:'Para mí', sub:'Eliminar para mí',
+                  action: async () => {
+                    const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
+                    const msgId = msgContextMenu.msg.id;
+                    setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
+                    deletedForMeIds.current.add(msgId);
+                    localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
+                    setMsgContextMenu(null);
+                    if (msgId && msgId.length > 10) {
+                      try { await chatAPI.deleteMessageForMe(msgId); } catch {}
+                    }
+                    showToast('Mensaje eliminado para ti', 'info');
+                  }
+                },
+                ...(msgContextMenu.msg.from === 'me' ? [{
+                  color:'#DC2626', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
+                  label:'Para todos', sub:'Eliminar para todos',
+                  action: async () => {
+                    const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
+                    const msgId = msgContextMenu.msg.id;
+                    setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
+                    deletedForMeIds.current.add(msgId);
+                    localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
+                    setMsgContextMenu(null);
+                    if (msgId && msgId.length > 10) {
+                      try { await chatAPI.deleteMessage(msgId); } catch {}
+                    }
+                    showToast('Mensaje eliminado para todos', 'info');
+                  }
+                }] : []),
               ].map((item, i, arr) => (
                 <button key={item.label} onClick={item.action} style={{
                   background:'none', border:'none',
@@ -9312,52 +9344,6 @@ const App: React.FC = () => {
             </div>
 
             {/* ── Eliminar ── */}
-            {/* ── Eliminar ── */}
-            <div style={{ background:'rgba(255,255,255,0.92)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid rgba(254,226,226,0.8)', marginTop:'8px', padding:'8px 4px', display:'grid', gridTemplateColumns: msgContextMenu.msg.from === 'me' ? 'repeat(2, 1fr)' : '1fr', gap:'2px' }}>
-              {/* Eliminar para mí */}
-              <button onClick={async () => {
-                const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
-                const msgId = msgContextMenu.msg.id;
-                setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
-                deletedForMeIds.current.add(msgId);
-                localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
-                setMsgContextMenu(null);
-                if (msgId && msgId.length > 10) {
-                  try { await chatAPI.deleteMessageForMe(msgId); } catch {}
-                }
-                showToast('Mensaje eliminado para ti', 'info');
-              }} style={{ background:'none', border:'none', padding:'12px 6px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', cursor:'pointer', fontFamily:'inherit', borderRadius:'12px', transition:'background 0.12s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.07)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                <div style={{ width:38, height:38, borderRadius:10, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', color:'#EF4444' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                </div>
-                <div style={{ fontSize:'11px', fontWeight:'600', color:'#EF4444', textAlign:'center', lineHeight:'1.2' }}>Para mí</div>
-              </button>
-              {/* Eliminar para todos — solo el remitente */}
-              {msgContextMenu.msg.from === 'me' && (
-                <button onClick={async () => {
-                  const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
-                  const msgId = msgContextMenu.msg.id;
-                  setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
-                  deletedForMeIds.current.add(msgId);
-                  localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
-                  setMsgContextMenu(null);
-                  if (msgId && msgId.length > 10) {
-                    try { await chatAPI.deleteMessage(msgId); } catch {}
-                  }
-                  showToast('Mensaje eliminado para todos', 'info');
-                }} style={{ background:'none', border:'none', padding:'12px 6px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', cursor:'pointer', fontFamily:'inherit', borderRadius:'12px', transition:'background 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.07)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                  <div style={{ width:38, height:38, borderRadius:10, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', color:'#EF4444' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                  </div>
-                  <div style={{ fontSize:'11px', fontWeight:'600', color:'#EF4444', textAlign:'center', lineHeight:'1.2' }}>Para todos</div>
-                </button>
-              )}
-            </div>
-
             {/* ── Cancelar ── */}
             <button onClick={() => setMsgContextMenu(null)} style={{
               width:'100%', marginTop:'8px',
