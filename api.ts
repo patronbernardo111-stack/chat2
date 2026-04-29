@@ -42,13 +42,11 @@ const getHeaders = (): Record<string, string> => {
   };
 };
 
-// ── Helper base ───────────────────────────────────────────────────
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// ── Helper base con timeout y reintento para redes lentas (2G/3G) ────────────
+async function request<T>(path: string, options: RequestInit = {}, retries = 2): Promise<T> {
   const token = getToken();
   const method = (options.method || 'GET').toUpperCase();
   
-  // Para GET: añadir token como query param (evita que Cloudflare elimine Authorization)
-  // Para POST/PUT/DELETE: también añadir token como query param por seguridad
   let url = `${BASE}${path}`;
   if (token) {
     const sep = path.includes('?') ? '&' : '?';
@@ -56,26 +54,42 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   
   const headers = { ...getHeaders(), ...(options.headers as Record<string,string> || {}) };
-  console.log(`[API] ${method} ${path} | token: ${token ? token.substring(0,20)+'...' : 'EMPTY'}`);
-  const res = await fetch(url, {
-    headers,
-    ...options,
-  });
-  if (res.status === 401) {
-    const err = await res.json().catch(() => ({ message: '' }));
-    const message = err.message || 'No autorizado';
-    // Disparar logout solo si el token realmente no existe en localStorage
-    // No cerrar sesión por 401 transitorios (Render durmiendo, etc.)
-    if (!getToken()) {
-      window.dispatchEvent(new CustomEvent('auth:expired'));
+
+  // Timeout adaptativo: GET = 15s, POST = 20s (redes 2G pueden ser muy lentas)
+  const timeoutMs = method === 'GET' ? 15000 : 20000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      headers,
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.status === 401) {
+      const err = await res.json().catch(() => ({ message: '' }));
+      const message = err.message || 'No autorizado';
+      if (!getToken()) window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new Error(message);
     }
-    throw new Error(message);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message || `Error ${res.status}`);
+    }
+    return res.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    // Reintentar en caso de timeout o error de red (no en errores 4xx)
+    const isNetworkError = err.name === 'AbortError' || err.name === 'TypeError' || err.message?.includes('fetch');
+    if (isNetworkError && retries > 0) {
+      // Esperar un poco antes de reintentar (backoff exponencial)
+      await new Promise(r => setTimeout(r, (3 - retries) * 1500));
+      return request<T>(path, options, retries - 1);
+    }
+    throw err;
   }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || `Error ${res.status}`);
-  }
-  return res.json();
 }
 
 const get  = <T>(path: string, headers?: Record<string,string>) => request<T>(path, { method:'GET', headers });

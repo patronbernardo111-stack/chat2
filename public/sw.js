@@ -1,9 +1,25 @@
-// Service Worker v20260428a — Web Push + llamadas + mensajes + auto-renovación
+// Service Worker v20260428a — Web Push + llamadas + mensajes + auto-renovación + caché offline
 const CACHE = 'egchat-v20260428a';
 const API_BASE = 'https://egchat-api.onrender.com';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
-self.addEventListener('install', () => self.skipWaiting());
+// Assets que se cachean en la instalación (app shell — críticos para arranque)
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/favicon.svg',
+  '/logo-transparent.png',
+  '/img.jpg',
+  '/manifest.json',
+];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  // Pre-cachear el app shell para arranque instantáneo sin red
+  e.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
+  );
+});
 
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
@@ -23,8 +39,6 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
       .then(() => {
-        // Notificar a los clientes que el SW está activo — SIN disparar reload
-        // (NO enviar SW_UPDATED — causa reload/flash en iOS y móviles)
         return self.clients.matchAll({ type: 'window' }).then(clients => {
           clients.forEach(client => client.postMessage({ type: 'SW_READY' }));
         });
@@ -32,8 +46,76 @@ self.addEventListener('activate', e => {
   );
 });
 
+// ── ESTRATEGIA DE CACHÉ PARA REDES LENTAS (2G/3G Guinea Ecuatorial) ─────────
 self.addEventListener('fetch', e => {
-  // No interceptar nada — solo dejar pasar
+  const url = new URL(e.request.url);
+
+  // No interceptar: API calls, push, supabase, websockets
+  if (
+    url.hostname.includes('egchat-api') ||
+    url.hostname.includes('supabase') ||
+    url.hostname.includes('onrender.com') ||
+    e.request.method !== 'GET'
+  ) return;
+
+  // Estrategia para assets JS/CSS/imágenes: Cache First (instantáneo en 2G)
+  // Si está en caché → devolver inmediatamente, actualizar en background
+  if (
+    url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot)$/) ||
+    url.pathname.startsWith('/assets/')
+  ) {
+    e.respondWith(
+      caches.open(CACHE).then(async cache => {
+        const cached = await cache.match(e.request);
+        // Actualizar en background sin bloquear
+        const fetchPromise = fetch(e.request).then(response => {
+          if (response.ok) cache.put(e.request, response.clone());
+          return response;
+        }).catch(() => null);
+        // Si hay caché, devolver inmediatamente (stale-while-revalidate)
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // Estrategia para imágenes: Cache First con fallback
+  if (url.pathname.match(/\.(png|jpg|jpeg|gif|svg|webp|ico|avif)$/)) {
+    e.respondWith(
+      caches.open(CACHE).then(async cache => {
+        const cached = await cache.match(e.request);
+        if (cached) return cached;
+        try {
+          const response = await fetch(e.request);
+          if (response.ok) cache.put(e.request, response.clone());
+          return response;
+        } catch {
+          // Sin red y sin caché — devolver imagen vacía
+          return new Response('', { status: 408 });
+        }
+      })
+    );
+    return;
+  }
+
+  // Estrategia para HTML (navegación): Network First con fallback a caché
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          if (response.ok) {
+            caches.open(CACHE).then(cache => cache.put(e.request, response.clone()));
+          }
+          return response;
+        })
+        .catch(async () => {
+          // Sin red → servir desde caché (modo offline)
+          const cached = await caches.match('/index.html') || await caches.match('/');
+          return cached || new Response('Sin conexión', { status: 503 });
+        })
+    );
+    return;
+  }
 });
 
 // ── AUTO-RENOVACIÓN DE SUSCRIPCIÓN PUSH ─────────────────────────────────────

@@ -27,4 +27,46 @@ export default defineConfig({
     middlewareMode: false,
     hmr: { host: 'localhost' },
   },
+  build: {
+    // Minificación agresiva con terser
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.warn', 'console.info', 'console.debug'],
+        passes: 2,
+        ecma: 2020,
+      },
+      mangle: { safari10: true },
+      format: { comments: false },
+    },
+    // Separar chunks para carga lazy — librerías pesadas se cargan solo cuando se necesitan
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('@maptiler')) return 'maptiler';
+          if (id.includes('tesseract')) return 'tesseract';
+          if (id.includes('framer-motion') || (id.includes('/motion/') && !id.includes('react'))) return 'motion';
+          if (id.includes('leaflet')) return 'leaflet';
+          if (id.includes('qrcode') || id.includes('jsqr')) return 'qr';
+          if (id.includes('@google/genai')) return 'genai';
+          if (id.includes('@supabase')) return 'supabase';
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'react-core';
+          if (id.includes('lucide-react')) return 'icons';
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+    },
+    chunkSizeWarningLimit: 1600,
+    sourcemap: false,
+    target: 'es2020',
+    cssCodeSplit: true,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+    exclude: ['@maptiler/sdk', 'tesseract.js'],
+  },
 });
