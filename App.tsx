@@ -4917,18 +4917,7 @@ const App: React.FC = () => {
                       setLoadingGroupMembers(true);
                       try {
                         const chatId = sc.id?.toString() || '';
-                        if (chatId && chatId.includes('-') && chatId.length >= 20) {
-                          const members = await chatAPI.getGroupParticipants(chatId);
-                          setGroupMembersList(members || []);
-                        } else {
-                          const chat = (realChats as any[]).find((c: any) => c.id?.toString() === chatId);
-                          const parts = chat?.participants || [];
-                          setGroupMembersList(parts.map((p: any) => ({
-                            id: p.user_id || p.id, user_id: p.user_id || p.id,
-                            full_name: p.full_name || p.name || 'Miembro',
-                            avatar_url: p.avatar_url, phone: p.phone, role: p.role || 'member'
-                          })));
-                        }
+                        await loadGroupMembers(chatId);
                       } catch { setGroupMembersList([]); }
                       setLoadingGroupMembers(false);
                     } : undefined}
