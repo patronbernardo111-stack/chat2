@@ -9228,7 +9228,7 @@ const App: React.FC = () => {
             </div>
 
             {/* ── Acciones principales ── */}
-            <div style={{ background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.13)', border:'1px solid rgba(255,255,255,0.7)' }}>
+            <div style={{ background:'rgba(255,255,255,0.92)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.13)', border:'1px solid rgba(255,255,255,0.7)', padding:'8px 4px', display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'2px' }}>
               {[
                 {
                   color:'#00c8a0', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
