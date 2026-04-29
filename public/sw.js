@@ -58,22 +58,23 @@ self.addEventListener('fetch', e => {
     e.request.method !== 'GET'
   ) return;
 
-  // Estrategia para assets JS/CSS/imágenes: Cache First (instantáneo en 2G)
-  // Si está en caché → devolver inmediatamente, actualizar en background
+  // Estrategia para assets JS/CSS/imágenes: Network First con fallback a caché
+  // Garantiza que siempre se cargue la versión más reciente si hay conexión
   if (
     url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot)$/) ||
     url.pathname.startsWith('/assets/')
   ) {
     e.respondWith(
       caches.open(CACHE).then(async cache => {
-        const cached = await cache.match(e.request);
-        // Actualizar en background sin bloquear
-        const fetchPromise = fetch(e.request).then(response => {
+        try {
+          const response = await fetch(e.request);
           if (response.ok) cache.put(e.request, response.clone());
           return response;
-        }).catch(() => null);
-        // Si hay caché, devolver inmediatamente (stale-while-revalidate)
-        return cached || fetchPromise;
+        } catch {
+          // Sin red → usar caché
+          const cached = await cache.match(e.request);
+          return cached || new Response('', { status: 408 });
+        }
       })
     );
     return;
