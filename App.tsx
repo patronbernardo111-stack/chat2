@@ -80,6 +80,28 @@ const App: React.FC = () => {
       if (Array.isArray(d)) {
         setRealChats(d);
         realChatsRef.current = d;
+        // Sincronizar allGroups con los grupos del backend
+        const backendGroups = d.filter((c: any) => c.type === 'group');
+        if (backendGroups.length > 0) {
+          setAllGroups(prev => {
+            const prevIds = new Set(prev.map((g: any) => g.id?.toString()));
+            const newGroups = backendGroups
+              .filter((c: any) => !prevIds.has(c.id?.toString()))
+              .map((c: any) => ({
+                id: c.id?.toString(),
+                name: c.name || 'Grupo',
+                description: '',
+                members: c.participants?.length || 0,
+                avatar: (c.name || 'G').slice(0, 2).toUpperCase(),
+                avatarUrl: c.avatar_url || '',
+                createdDate: c.created_at || new Date().toISOString(),
+                lastMessage: c.last_message?.text || '',
+                unread: c.unread_count || 0,
+                is_favorite: false,
+              }));
+            return newGroups.length > 0 ? [...newGroups, ...prev] : prev;
+          });
+        }
         // Abrir chat pendiente de notificación si existe
         const pendingId = (window as any).__pendingOpenChatId;
         if (pendingId) {
@@ -5855,6 +5877,8 @@ const App: React.FC = () => {
                     onChange={e => { setCurrentChatInput(e.target.value); if (!e.target.value && editingMsgId) setEditingMsgId(null); }}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } }}
                     placeholder="Escribe un mensaje..."
+                    autoFocus
+                    ref={el => { if (el && document.activeElement !== el) el.focus(); }}
                     style={{ flex: 1, background: 'none', border: 'none', color: '#111827', fontSize: '15px', outline: 'none', fontFamily: 'inherit', lineHeight: '1.4' }}
                   />
                   {currentChatInput.trim() && (
@@ -9246,25 +9270,38 @@ const App: React.FC = () => {
                   label:'Fijar mensaje', sub:'Mostrar en la parte superior del chat',
                   action:() => { showToast('Mensaje fijado', 'success'); setMsgContextMenu(null); }
                 },
+                ...(msgContextMenu.msg.text && !msgContextMenu.msg.text.startsWith('📌') && !msgContextMenu.msg.text.startsWith('🎤') ? [{
+                  color:'#0369a1', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                  label:'Traducir', sub:'Traducir al español',
+                  action: async () => {
+                    const txt = msgContextMenu.msg.text || '';
+                    setMsgContextMenu(null);
+                    showToast('Traduciendo...', 'info');
+                    try {
+                      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=auto|es`);
+                      const data = await res.json();
+                      const translated = data?.responseData?.translatedText || txt;
+                      showToast(`🌐 ${translated}`, 'success');
+                    } catch {
+                      showToast('No se pudo traducir', 'error');
+                    }
+                  }
+                }] : []),
               ].map((item, i, arr) => (
                 <button key={item.label} onClick={item.action} style={{
-                  width:'100%', background:'none', border:'none',
-                  padding:'11px 16px',
-                  display:'flex', alignItems:'center', gap:'13px',
-                  cursor:'pointer', textAlign:'left', fontFamily:'inherit',
-                  borderBottom: i < arr.length-1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  background:'none', border:'none',
+                  padding:'12px 6px 10px',
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:'6px',
+                  cursor:'pointer', fontFamily:'inherit',
+                  borderRadius:'12px',
                   transition:'background 0.12s',
                 }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(0,0,0,0.04)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(0,0,0,0.05)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                  <div style={{ width:36, height:36, borderRadius:10, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color: item.color }}>
+                  <div style={{ width:38, height:38, borderRadius:10, background:'#f3f4f6', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color: item.color }}>
                     {item.icon}
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:'14px', fontWeight:'600', color:'#111827' }}>{item.label}</div>
-                    <div style={{ fontSize:'11px', color:'#9CA3AF', marginTop:'1px' }}>{item.sub}</div>
-                  </div>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  <div style={{ fontSize:'11px', fontWeight:'600', color:'#374151', textAlign:'center', lineHeight:'1.2' }}>{item.label}</div>
                 </button>
               ))}
             </div>

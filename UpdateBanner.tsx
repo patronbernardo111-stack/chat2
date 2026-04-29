@@ -65,6 +65,9 @@ export const UpdateBanner: React.FC<Props> = ({ onUpdate }) => {
   if (!showBanner || !pendingWorker) return null;
 
   const doReloadNow = () => {
+    // Ocultar el banner inmediatamente para no molestar al usuario
+    setShowBanner(false);
+    // Activar el nuevo service worker en segundo plano
     pendingWorker.postMessage({ type: 'SKIP_WAITING' });
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       onUpdate?.();
