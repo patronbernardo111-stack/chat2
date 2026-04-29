@@ -8,32 +8,14 @@ import { WalletProvider } from './WalletSystem';
 initSelectionErrorHandler();
 
 // ── Fix viewport height para Android WebView / Capacitor ─────────────────
-// En Android el teclado virtual redimensiona el viewport y rompe los layouts
-// con position:fixed. Fijamos la altura real y la actualizamos solo cuando
-// el teclado se cierra (no cuando se abre, para evitar el salto visual).
+// Con adjustPan el teclado no redimensiona el viewport, solo hace pan.
+// Solo necesitamos fijar --real-vh al inicio para referencias CSS.
 function fixAndroidViewportHeight() {
   const setVh = () => {
-    const vh = window.innerHeight;
-    document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+    document.documentElement.style.setProperty('--real-vh', `${window.innerHeight}px`);
   };
   setVh();
-  // Actualizar cuando cambia el tamaño (teclado abre/cierra)
-  window.addEventListener('resize', () => {
-    // Solo actualizar si el tamaño AUMENTA (teclado cerrándose)
-    // para evitar que el layout salte cuando el teclado aparece
-    const newVh = window.innerHeight;
-    const currentVh = parseInt(document.documentElement.style.getPropertyValue('--real-vh') || '0');
-    if (newVh >= currentVh) {
-      document.documentElement.style.setProperty('--real-vh', `${newVh}px`);
-    }
-  });
-  // En Capacitor/Android, usar visualViewport para mayor precisión
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-      const vh = window.visualViewport!.height + (window.visualViewport!.offsetTop || 0);
-      document.documentElement.style.setProperty('--real-vh', `${Math.max(vh, window.screen.height * 0.5)}px`);
-    });
-  }
+  window.addEventListener('resize', setVh);
 }
 fixAndroidViewportHeight();
 

@@ -198,7 +198,7 @@ export default function AuthScreen({onAuth}:Props) {
   );
 
   if(sc==='welcome') return (
-    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:'36px 20px 28px',maxWidth:'420px',margin:'0 auto'}}>
+    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'space-between',padding:'36px 20px 28px',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
         <div style={{width:'160px',height:'160px',borderRadius:'20px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.1)',border:'2px solid rgba(255,255,255,0.8)'}}>
@@ -241,7 +241,7 @@ export default function AuthScreen({onAuth}:Props) {
   );
 
   if(sc==='login') return (
-    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
+    <div style={{height:'100vh',height:'100dvh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
       <div style={{padding:'36px 20px 14px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
         <div style={{width:'80px',height:'80px',borderRadius:'16px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.1)',border:'2px solid rgba(255,255,255,0.8)'}}>
           <img src="/logo-transparent.png" alt="EgChat" style={{width:60,height:60,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
@@ -278,7 +278,7 @@ export default function AuthScreen({onAuth}:Props) {
   );
 
   if(sc==='recover') return (
-    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
+    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
       <div style={{padding:'36px 20px 14px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
         <div style={{width:'80px',height:'80px',borderRadius:'16px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.1)'}}>
           <img src="/logo-transparent.png" alt="EgChat" style={{width:60,height:60,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
@@ -375,7 +375,7 @@ export default function AuthScreen({onAuth}:Props) {
 
   return (
     <React.Fragment>
-    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto'}}>
+    <div style={{minHeight:'100vh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
       <div style={{padding:'32px 20px 12px'}}>
         <button onClick={()=>{step===1?setSc('welcome'):setStep(s=>s-1);setErr('');}} style={{background:'none',border:'none',color:'#374151',cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontSize:'14px',fontWeight:'600',marginBottom:'8px',padding:'8px',borderRadius:'8px',transition:'all 0.2s ease'}}>
           ← Atrás

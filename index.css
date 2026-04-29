@@ -17,25 +17,17 @@ body {
   overflow-y: hidden;
   scroll-behavior: smooth;
   touch-action: manipulation;
-  /* Android WebView: fijar el body para que el teclado no redimensione el layout */
-  position: fixed;
-  width: 100%;
-  top: 0;
-  left: 0;
   height: 100dvh;
-  height: var(--real-vh, 100vh);
+  height: 100vh;
 }
 
 #root {
   width: 100%;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   height: 100dvh;
-  height: var(--real-vh, 100vh);
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
 }
 
 /* Evitar selección de texto en elementos interactivos */
