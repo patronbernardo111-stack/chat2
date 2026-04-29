@@ -2287,14 +2287,13 @@ const App: React.FC = () => {
       {/* Hora, clima y controles */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
 
-        {/* Hora */}
+        {/* Clima */}
         <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => { setEditTime(currentTime); setShowTimeModal(true); }}
-            style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff', letterSpacing: '0.5px', borderRadius: '50px', padding: '2px 6px', background: 'rgba(10,20,40,0.75)', display: 'flex', alignItems: 'center', cursor: 'pointer', outline: 'none', border: 'none' }}
-          >
-            {isManualTime ? manualTime : currentTime}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(10,20,40,0.75)', padding: '2px 5px', borderRadius: '50px' }}>
+            <div style={{ color: '#fbbf24' }}>{renderIcon(weather.condition === 'sunny' ? 'sun' : weather.condition === 'cloudy' ? 'cloud' : 'rain', 10)}</div>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>{weather.temp}°</span>
+            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)' }}>{weather.city}</span>
+          </div>
         </div>
 
         {/* Notificaciones */}
