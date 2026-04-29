@@ -9170,10 +9170,11 @@ const App: React.FC = () => {
                 50%  { transform: scale(1.4); }
                 100% { transform: scale(1); }
               }
+              .emoji-scroll::-webkit-scrollbar { display: none; }
             `}</style>
 
-            {/* Preview del mensaje */}
-            {msgContextMenu.msg.text && (
+            {/* Preview del mensaje — ocultar si es audio/voz */}
+            {msgContextMenu.msg.text && msgContextMenu.msg.type !== 'audio' && !msgContextMenu.msg.text.startsWith('🎤') && (
               <div style={{
                 background: 'rgba(255,255,255,0.12)',
                 backdropFilter: 'blur(20px)',
@@ -9194,21 +9195,24 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* Reacciones rapidas */}
-            <div style={{
+            {/* Reacciones rapidas — scroll horizontal */}
+            <div className="emoji-scroll" style={{
               background: 'rgba(255,255,255,0.85)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
               borderRadius: '20px',
-              padding: '10px 14px',
+              padding: '10px 12px',
               marginBottom: '8px',
               display: 'flex',
-              justifyContent: 'space-around',
               alignItems: 'center',
+              overflowX: 'auto',
+              gap: '2px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
               border: '1px solid rgba(255,255,255,0.7)',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none' as any,
             }}>
-              {['👍','❤️','😂','😮','😢','🙏','🔥'].map((emoji, i) => (
+              {['👍','❤️','😂','😮','😢','🙏','🔥','😍','🥳','😎','🤩','😅','🤣','😭','😡','🤯','💯','✅','🎉','💪','👏','🫶','😘','🥺','😤','🤔','😴','🤗','😇','🥰','😜','🤪','😏','😬','🤑','😈','💀','👻','🤖','🎭','🌟','💥','❄️','🌈','🍀','🎯','🚀','💎','🏆'].map((emoji, i) => (
                 <button key={emoji} onClick={() => {
                   const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                   const t = new Date(); const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -9216,8 +9220,9 @@ const App: React.FC = () => {
                   setMsgContextMenu(null);
                 }} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: '26px', padding: '4px', borderRadius: '50%',
+                  fontSize: '26px', padding: '4px 6px', borderRadius: '50%',
                   transition: 'transform 0.15s',
+                  flexShrink: 0,
                   animationDelay: `${i * 0.03}s`,
                 }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.35)'; e.currentTarget.style.animation = 'emojiPop 0.3s ease'; }}
