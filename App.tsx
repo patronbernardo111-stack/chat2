@@ -9173,8 +9173,12 @@ const App: React.FC = () => {
               .emoji-scroll::-webkit-scrollbar { display: none; }
             `}</style>
 
-            {/* Preview del mensaje — ocultar si es audio/voz */}
-            {msgContextMenu.msg.text && msgContextMenu.msg.type !== 'audio' && !msgContextMenu.msg.text.startsWith('🎤') && (
+            {/* Preview del mensaje — ocultar mensajes especiales (audio, llamadas, fotos, videos, etc.) */}
+            {msgContextMenu.msg.text && msgContextMenu.msg.type !== 'audio' && (() => {
+              const t = msgContextMenu.msg.text;
+              const skip = t.startsWith('🎤') || t.startsWith('📌') || t.includes('Llamada') || t.includes('Videollamada') || t.includes('Foto') || t.includes('Video') || t.includes('📷') || t.includes('🎥') || t.includes('📎') || t.includes('📍') || t.includes('Ubicación') || t.includes('Contacto') || t.includes('GIF');
+              return !skip;
+            })() && (
               <div style={{
                 background: 'rgba(255,255,255,0.12)',
                 backdropFilter: 'blur(20px)',
