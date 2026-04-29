@@ -4372,7 +4372,7 @@ const App: React.FC = () => {
   // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
-      paddingTop: 'calc(44px + max(28px, env(safe-area-inset-top, 28px)))',
+      paddingTop: 'calc(44px + max(36px, env(safe-area-inset-top, 36px)) + 8px)',
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
@@ -4490,7 +4490,7 @@ const App: React.FC = () => {
     // Layout por defecto y 'cards'
     return (
     <div style={{
-      paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
+      paddingTop: 'calc(44px + max(36px, env(safe-area-inset-top, 36px)) + 8px)', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
       height: '100vh',
       overflow: 'hidden',
       background: 'transparent'
