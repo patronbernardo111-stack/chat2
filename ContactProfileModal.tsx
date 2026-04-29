@@ -449,41 +449,120 @@ export const ContactProfileModal: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB GRUPOS */}
+        {/* TAB GRUPOS / INTEGRANTES */}
         {tab==='grupos'&&(
           <div style={{padding:'0 0 24px'}}>
-            {sharedGroups.length>0?(
+            {isGroup ? (
+              /* ── INTEGRANTES DEL GRUPO ── */
               <div>
-                <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff'}}>
-                  {sharedGroups.length} grupo{sharedGroups.length!==1?'s':''} en común
+                {/* Header con botón + para añadir (solo admin) */}
+                <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span>{groupMembers.length} integrante{groupMembers.length!==1?'s':''}</span>
+                  {isAdmin && onAddGroupMembers && (
+                    <button onClick={onAddGroupMembers} style={{background:'linear-gradient(135deg,#a855f7,#6366f1)',border:'none',borderRadius:'20px',padding:'4px 12px',color:'#fff',fontSize:'12px',fontWeight:'700',cursor:'pointer',display:'flex',alignItems:'center',gap:'5px'}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Añadir
+                    </button>
+                  )}
                 </div>
-                {sharedGroups.map((g:any)=>(
-                  <div key={g.id} style={{background:'#fff',borderBottom:'1px solid #F3F4F6'}}>
-                    <div style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:'12px'}}>
-                      <div style={{width:'46px',height:'46px',borderRadius:'50%',background:'linear-gradient(135deg,#a855f7,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
-                        {g.avatarUrl
-                          ? <img src={g.avatarUrl} alt={g.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                          : <GroupIcon avatar={g.avatar||'friends'} size={22}/>
-                        }
+                {groupMembers.length === 0 ? (
+                  <div style={{textAlign:'center',padding:'40px 0',color:'#9CA3AF',background:'#fff'}}>
+                    <div style={{fontSize:'13px'}}>Sin integrantes cargados</div>
+                  </div>
+                ) : groupMembers.map((member, idx) => {
+                  const name = member.full_name || member.phone || 'Miembro';
+                  const initials = name.slice(0,2).toUpperCase();
+                  const isMe = member.user_id?.toString() === currentUserId?.toString();
+                  const memberIsAdmin = member.role === 'admin';
+                  return (
+                    <div key={member.id||idx} style={{background:'#fff',borderBottom:'1px solid #F3F4F6',padding:'12px 16px',display:'flex',alignItems:'center',gap:'12px'}}>
+                      {/* Avatar */}
+                      <div style={{position:'relative',flexShrink:0}}>
+                        <div style={{width:'44px',height:'44px',borderRadius:'50%',background:'linear-gradient(135deg,#a855f7,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                          {member.avatar_url
+                            ? <img src={member.avatar_url} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            : <span style={{fontSize:'15px',fontWeight:'700',color:'#fff'}}>{initials}</span>
+                          }
+                        </div>
+                        {member.online_status && <div style={{position:'absolute',bottom:'1px',right:'1px',width:'10px',height:'10px',borderRadius:'50%',background:'#22c55e',border:'2px solid #fff'}}/>}
                       </div>
+                      {/* Info */}
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:'14px',fontWeight:'600',color:'#111827',marginBottom:'2px'}}>{g.name}</div>
-                        <div style={{fontSize:'12px',color:'#9CA3AF',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                          {typeof g.members === 'number' ? `${g.members} miembros` : g.description || 'Grupo'}
-                          {g.lastMessage ? `  -  ${g.lastMessage}` : ''}
+                        <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                          <span style={{fontSize:'14px',fontWeight:'600',color:'#111827',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            {isMe ? 'Tú' : name}
+                          </span>
+                          {memberIsAdmin && <span style={{fontSize:'9px',fontWeight:'700',color:'#a855f7',background:'#F3E8FF',borderRadius:'4px',padding:'1px 5px',flexShrink:0}}>ADMIN</span>}
+                        </div>
+                        <div style={{fontSize:'12px',color:member.online_status?'#22c55e':'#9ca3af',marginTop:'1px'}}>
+                          {member.online_status ? '● En línea' : member.phone || '○ Desconectado'}
                         </div>
                       </div>
-                      {g.unread>0&&<span style={{background:'#00c8a0',color:'#fff',borderRadius:'50%',minWidth:'20px',height:'20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:'700',padding:'0 4px'}}>{g.unread}</span>}
+                      {/* Acciones */}
+                      {!isMe && (
+                        <div style={{display:'flex',gap:'6px',flexShrink:0}}>
+                          {/* Añadir a contactos */}
+                          {onAddMemberToContacts && (
+                            <button title="Añadir a contactos" onClick={()=>onAddMemberToContacts(member)}
+                              style={{width:'32px',height:'32px',borderRadius:'50%',background:'#F0FDF4',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                            </button>
+                          )}
+                          {/* Hacer admin (solo admin actual) */}
+                          {isAdmin && !memberIsAdmin && onPromoteToAdmin && (
+                            <button title="Hacer administrador" onClick={()=>{if(window.confirm(`¿Hacer administrador a ${name}?`))onPromoteToAdmin(member.user_id);}}
+                              style={{width:'32px',height:'32px',borderRadius:'50%',background:'#FFF7ED',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </button>
+                          )}
+                          {/* Eliminar del grupo (solo admin) */}
+                          {isAdmin && onRemoveGroupMember && (
+                            <button title="Eliminar del grupo" onClick={()=>{if(window.confirm(`¿Eliminar a ${name} del grupo?`))onRemoveGroupMember(member.user_id);}}
+                              style={{width:'32px',height:'32px',borderRadius:'50%',background:'#FEF2F2',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" y1="18" x2="16" y2="18"/></svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* ── GRUPOS EN COMÚN (contacto individual) ── */
+              sharedGroups.length>0?(
+                <div>
+                  <div style={{padding:'12px 16px 8px',fontSize:'12px',color:'#9CA3AF',fontWeight:'600',textTransform:'uppercase',letterSpacing:'0.5px',background:'#fff'}}>
+                    {sharedGroups.length} grupo{sharedGroups.length!==1?'s':''} en común
                   </div>
-                ))}
-              </div>
-            ):(
-              <div style={{textAlign:'center',padding:'60px 0',color:'#9CA3AF',background:'#fff'}}>
-                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.4" strokeLinecap="round" style={{margin:'0 auto 14px',display:'block'}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <div style={{fontSize:'14px',fontWeight:'600',color:'#374151',marginBottom:'4px'}}>Sin grupos en común</div>
-                <div style={{fontSize:'12px'}}>Los grupos compartidos con {cp.title||cp.name} aparecerán aquí</div>
-              </div>
+                  {sharedGroups.map((g:any)=>(
+                    <div key={g.id} style={{background:'#fff',borderBottom:'1px solid #F3F4F6'}}>
+                      <div style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:'12px'}}>
+                        <div style={{width:'46px',height:'46px',borderRadius:'50%',background:'linear-gradient(135deg,#a855f7,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
+                          {g.avatarUrl
+                            ? <img src={g.avatarUrl} alt={g.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            : <GroupIcon avatar={g.avatar||'friends'} size={22}/>
+                          }
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:'14px',fontWeight:'600',color:'#111827',marginBottom:'2px'}}>{g.name}</div>
+                          <div style={{fontSize:'12px',color:'#9CA3AF',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            {typeof g.members === 'number' ? `${g.members} miembros` : g.description || 'Grupo'}
+                            {g.lastMessage ? `  ·  ${g.lastMessage}` : ''}
+                          </div>
+                        </div>
+                        {g.unread>0&&<span style={{background:'#00c8a0',color:'#fff',borderRadius:'50%',minWidth:'20px',height:'20px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:'700',padding:'0 4px'}}>{g.unread}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ):(
+                <div style={{textAlign:'center',padding:'60px 0',color:'#9CA3AF',background:'#fff'}}>
+                  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.4" strokeLinecap="round" style={{margin:'0 auto 14px',display:'block'}}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <div style={{fontSize:'14px',fontWeight:'600',color:'#374151',marginBottom:'4px'}}>Sin grupos en común</div>
+                  <div style={{fontSize:'12px'}}>Los grupos compartidos con {cp.title||cp.name} aparecerán aquí</div>
+                </div>
+              )
             )}
           </div>
         )}

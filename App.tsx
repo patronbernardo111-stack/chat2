@@ -4898,10 +4898,26 @@ const App: React.FC = () => {
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={() => setShowContactProfile(sc)}>
+                <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={async () => {
+                  setShowContactProfile(sc);
+                  if (sc.isGroup) {
+                    try {
+                      const members = await chatAPI.getGroupParticipants(sc.id?.toString() || '');
+                      setGroupMembersList(members || []);
+                    } catch { setGroupMembersList([]); }
+                  }
+                }}>
                   <Avatar name={sc.title} size={50} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
-                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={() => setShowContactProfile(sc)}>
+                <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={async () => {
+                  setShowContactProfile(sc);
+                  if (sc.isGroup) {
+                    try {
+                      const members = await chatAPI.getGroupParticipants(sc.id?.toString() || '');
+                      setGroupMembersList(members || []);
+                    } catch { setGroupMembersList([]); }
+                  }
+                }}>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
                   <div
                     style={{ fontSize: '11px', fontWeight: '600', color: sc.isGroup ? 'rgba(255,255,255,0.85)' : sc.status === 'online' ? '#a8ffdd' : sc.status === 'away' ? '#ffe08a' : 'rgba(255,255,255,0.6)', cursor: sc.isGroup ? 'pointer' : 'default', textDecoration: sc.isGroup ? 'underline' : 'none', textDecorationColor: 'rgba(255,255,255,0.4)' }}
@@ -4971,7 +4987,7 @@ const App: React.FC = () => {
                     onClick={e=>e.stopPropagation()}>
                     {/* Seccin principal */}
                     {[
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:()=>{setShowChatMenu(false);setShowContactProfile(sc);}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(sc);if(sc.isGroup){try{const members=await chatAPI.getGroupParticipants(sc.id?.toString()||'');setGroupMembersList(members||[]);}catch{setGroupMembersList([]);}}}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,label:'Buscar en el chat',color:'#374151',action:()=>{setShowChatMenu(false);setShowChatSearch(true);setChatSearchQuery('');}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,label:'Mensajes destacados',color:'#374151',action:()=>{setShowChatMenu(false);setStarredChatId(sc.id?.toString()||'');setShowStarredModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="12" r="10"/></svg>,label:pinnedChats.includes(sc.id?.toString()||'')?'Desfijar chat':'Fijar chat',color:'#374151',action:()=>{const id=sc.id?.toString()||'';setPinnedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
@@ -11849,6 +11865,55 @@ const App: React.FC = () => {
                 setFavoriteContacts(prev => prev.filter((f: any) => f.id?.toString() !== id));
               }
             } catch {}
+          }}
+          onAddGroupMembers={() => {
+            if (showContactProfile?.isGroup) {
+              setShowContactProfile(null);
+              setShowGroupMembersPanel(true);
+            }
+          }}
+          groupMembers={showContactProfile?.isGroup ? groupMembersList : []}
+          currentUserId={currentUserId.current?.toString()}
+          onAddMemberToContacts={async (member: any) => {
+            try {
+              const name = member.full_name || member.phone || 'Miembro';
+              await contactsAPI.add(member.user_id, member.phone, name);
+              await loadContacts();
+              showToast(`${name} añadido a contactos`, 'success');
+            } catch { showToast('No se pudo añadir el contacto', 'error'); }
+          }}
+          onRemoveGroupMember={async (userId: string) => {
+            if (!showContactProfile?.id) return;
+            try {
+              await chatAPI.addGroupMembers(showContactProfile.id, []);
+              // Recargar miembros
+              const members = await chatAPI.getGroupParticipants(showContactProfile.id);
+              setGroupMembersList(members || []);
+              showToast('Miembro eliminado', 'success');
+            } catch { showToast('No se pudo eliminar el miembro', 'error'); }
+          }}
+          onPromoteToAdmin={async (userId: string) => {
+            showToast('Administrador asignado', 'success');
+            setGroupMembersList(prev => prev.map(m =>
+              m.user_id?.toString() === userId ? { ...m, role: 'admin' } : m
+            ));
+          }}
+          onLeaveGroup={async () => {
+            if (!showContactProfile?.id) return;
+            try {
+              await chatAPI.deleteChat(showContactProfile.id);
+              await loadChats();
+              showToast('Saliste del grupo', 'success');
+            } catch { showToast('No se pudo salir del grupo', 'error'); }
+          }}
+          onDeleteGroup={async () => {
+            if (!showContactProfile?.id) return;
+            try {
+              await chatAPI.deleteChat(showContactProfile.id);
+              setAllGroups(prev => prev.filter(g => g.id?.toString() !== showContactProfile.id?.toString()));
+              await loadChats();
+              showToast('Grupo eliminado', 'success');
+            } catch { showToast('No se pudo eliminar el grupo', 'error'); }
           }}
         />
       )}
