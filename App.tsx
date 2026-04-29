@@ -754,22 +754,24 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Neon glow via rAF (bypasses --disable-gpu CSS animation issue)
+  // Neon glow via CSS animation (better performance on iOS)
   useEffect(() => {
-    let raf: number;
-    const animate = () => {
-      const t = Date.now() / 800;
-      const glow1 = 6 + Math.sin(t) * 6;
-      const glow2 = 18 + Math.sin(t) * 12;
-      const glow3 = 35 + Math.sin(t) * 20;
-      const eg = document.getElementById('neon-eg');
-      const chat = document.getElementById('neon-chat');
-      if (eg) eg.style.textShadow = `0 0 ${glow1}px #fff, 0 0 ${glow2}px #fff, 0 0 ${glow3}px rgba(255,255,255,0.7)`;
-      if (chat) chat.style.textShadow = `0 0 ${glow1}px #fff, 0 0 ${glow2}px #fff, 0 0 ${glow3}px rgba(255,255,255,0.7)`;
-      raf = requestAnimationFrame(animate);
-    };
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
+    const eg = document.getElementById('neon-eg');
+    const chat = document.getElementById('neon-chat');
+    const glowStyle = 'neon-glow-anim';
+    if (!document.getElementById(glowStyle)) {
+      const style = document.createElement('style');
+      style.id = glowStyle;
+      style.textContent = `
+        @keyframes neonPulse {
+          0%, 100% { text-shadow: 0 0 6px #fff, 0 0 18px #fff, 0 0 35px rgba(255,255,255,0.7); }
+          50% { text-shadow: 0 0 12px #fff, 0 0 30px #fff, 0 0 55px rgba(255,255,255,0.7); }
+        }
+        #neon-eg, #neon-chat { animation: neonPulse 1.6s ease-in-out infinite; }
+      `;
+      document.head.appendChild(style);
+    }
+    return () => {};
   }, []);
 
   // Manejar drag del botón home
