@@ -4865,7 +4865,7 @@ const App: React.FC = () => {
                 );
               })()}
               {/* Header conversacin */}
-              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(44px, env(safe-area-inset-top))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
+              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(28px, env(safe-area-inset-top, 28px))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); setSelectionMode(false); setSelectedMsgIds([]); }}
                   style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -4873,7 +4873,7 @@ const App: React.FC = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
                 <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={() => setShowContactProfile(sc)}>
-                  <Avatar name={sc.title} size={42} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
+                  <Avatar name={sc.title} size={50} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
                 </div>
                 <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={() => setShowContactProfile(sc)}>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
