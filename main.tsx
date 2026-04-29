@@ -144,23 +144,12 @@ if ('serviceWorker' in navigator) {
       // Registrar nuestro SW
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
 
-      // NO forzar activación inmediata — evita el flash en iOS Safari
-      // El SW nuevo se activará cuando el usuario cierre y reabra la app
-
-      // Cuando el SW nuevo toma control, NO recargar automáticamente en iOS
-      // ya que causa un flash de pantalla completa. El usuario verá los cambios
-      // en la próxima visita o al navegar manualmente.
+      // Cuando el SW nuevo toma control, recargar la página para aplicar cambios
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
         refreshing = true;
-        // Solo recargar si la página lleva menos de 5 segundos cargada
-        // (indica que es la primera activación, no una actualización en uso)
-        const pageAge = Date.now() - (window as any).__pageLoadTime;
-        if (pageAge < 5000) {
-          window.location.reload();
-        }
-        // Si la página ya lleva tiempo abierta, no recargar — evita el flash en iOS
+        window.location.reload();
       });
 
       // Escuchar mensajes del SW (click en notificación)
