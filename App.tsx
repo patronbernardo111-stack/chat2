@@ -9173,31 +9173,90 @@ const App: React.FC = () => {
               .emoji-scroll::-webkit-scrollbar { display: none; }
             `}</style>
 
-            {/* Preview del mensaje — ocultar mensajes especiales (audio, llamadas, fotos, videos, etc.) */}
-            {msgContextMenu.msg.text && msgContextMenu.msg.type !== 'audio' && (() => {
-              const t = msgContextMenu.msg.text;
-              const skip = t.startsWith('🎤') || t.startsWith('📌') || t.includes('Llamada') || t.includes('Videollamada') || t.includes('Foto') || t.includes('Video') || t.includes('📷') || t.includes('🎥') || t.includes('📎') || t.includes('📍') || t.includes('Ubicación') || t.includes('Contacto') || t.includes('GIF');
-              return !skip;
-            })() && (
-              <div style={{
-                background: 'rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                borderRadius: '16px',
-                padding: '10px 14px',
-                marginBottom: '8px',
-                border: '1px solid rgba(255,255,255,0.2)',
-              }}>
-                <p style={{
-                  margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.9)',
-                  overflow: 'hidden', textOverflow: 'ellipsis',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
-                  lineHeight: '1.4',
+            {/* Preview del mensaje — diseño profesional según tipo */}
+            {msgContextMenu.msg.text && (() => {
+              const txt = msgContextMenu.msg.text;
+              const type = msgContextMenu.msg.type;
+              // Determinar tipo visual
+              const isAudio = type === 'audio' || txt.startsWith('🎤');
+              const isCall = txt.includes('Llamada') && !txt.includes('Video');
+              const isVideoCall = txt.includes('Videollamada');
+              const isPhoto = type === 'image' || txt.includes('Foto') || txt.includes('📷');
+              const isVideo = type === 'video' || (txt.includes('Video') && !txt.includes('Videollamada')) || txt.includes('🎥');
+              const isFile = type === 'file' || txt.includes('📎');
+              const isLocation = type === 'location' || txt.includes('📍') || txt.includes('Ubicación');
+              const isContact = type === 'contact' || txt.includes('Contacto');
+              const isSpecial = isAudio || isCall || isVideoCall || isPhoto || isVideo || isFile || isLocation || isContact;
+
+              // Icono SVG según tipo
+              const icon = isAudio ? (
+                <svg width="18" height="18" viewBox="0 0 40 20" fill="none"><rect x="0" y="7" width="3" height="6" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="5" y="4" width="3" height="12" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="10" y="1" width="3" height="18" rx="1.5" fill="rgba(255,255,255,0.9)"/><rect x="15" y="5" width="3" height="10" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="20" y="8" width="3" height="4" rx="1.5" fill="rgba(255,255,255,0.5)"/><rect x="25" y="3" width="3" height="14" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="30" y="6" width="3" height="8" rx="1.5" fill="rgba(255,255,255,0.6)"/></svg>
+              ) : isVideoCall ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              ) : isCall ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.13 12 19.79 19.79 0 0 1 1.06 3.38 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              ) : isPhoto ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              ) : isVideo ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              ) : isFile ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              ) : isLocation ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              ) : isContact ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              ) : null;
+
+              const label = isAudio ? 'Mensaje de voz' : isVideoCall ? 'Videollamada' : isCall ? (txt.includes('perdida') ? 'Llamada perdida' : 'Llamada') : isPhoto ? 'Foto' : isVideo ? 'Video' : isFile ? 'Archivo' : isLocation ? 'Ubicación' : isContact ? 'Contacto' : null;
+
+              return (
+                <div style={{
+                  background: 'rgba(255,255,255,0.12)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  borderRadius: '16px',
+                  padding: '12px 14px',
+                  marginBottom: '8px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
                 }}>
-                  {msgContextMenu.msg.text}
-                </p>
-              </div>
-            )}
+                  {isSpecial && icon && (
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      {icon}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {isSpecial && label && (
+                      <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '500', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {label}
+                      </p>
+                    )}
+                    {!isSpecial && (
+                      <p style={{
+                        margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.9)',
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
+                        lineHeight: '1.4',
+                      }}>
+                        {txt}
+                      </p>
+                    )}
+                    {isSpecial && (
+                      <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.75)', fontWeight: '600' }}>
+                        {isAudio ? 'Toca para escuchar' : isCall || isVideoCall ? (txt.includes('perdida') ? 'Sin respuesta' : 'Finalizada') : isPhoto ? 'Ver foto' : isVideo ? 'Ver video' : isFile ? 'Abrir archivo' : isLocation ? 'Ver ubicación' : 'Ver contacto'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Reacciones rapidas — scroll horizontal */}
             <div className="emoji-scroll" style={{
