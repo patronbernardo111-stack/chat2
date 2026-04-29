@@ -467,6 +467,14 @@ input:focus {
 /* Fondo global */
 body { background: var(--bg-primary) !important; }
 
+/* El body tiene el color del header para que no haya gap visible en Android */
+body {
+  background-color: #00c8a0 !important;
+}
+#root {
+  background-color: #f0f2f5;
+}
+
 /* Cards / secciones */
 .eg-card {
   background: var(--bg-secondary);
