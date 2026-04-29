@@ -170,6 +170,21 @@ export const chatAPI = {
     return results;
   },
   
+  // Obtener lista de participantes de un grupo
+  getGroupParticipants: (chatId: string) =>
+    get<any[]>(`/chats/${chatId}/participants`),
+  
+  // Guardar fondo de chat personalizado (individual por usuario)
+  saveWallpaper: (chatId: string, wallpaperData: {
+    wallpaper_type: 'default' | 'color' | 'gradient' | 'image' | 'pattern';
+    wallpaper_value?: string;
+    wallpaper_settings?: any;
+  }) => post<any>(`/chats/${chatId}/wallpaper`, wallpaperData),
+  
+  // Obtener fondo de chat del usuario actual
+  getWallpaper: (chatId: string) =>
+    get<any>(`/chats/${chatId}/wallpaper`),
+  
   // Marcar mensajes como leídos
   markAsRead: (chatId:string, message_id: string) => 
     post<any>(`/chats/${chatId}/read`, { message_id }),

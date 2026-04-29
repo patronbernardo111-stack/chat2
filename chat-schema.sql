@@ -69,6 +69,10 @@ CREATE TABLE IF NOT EXISTS chat_participants (
   is_muted BOOLEAN DEFAULT FALSE,
   is_pinned BOOLEAN DEFAULT FALSE,
   is_favorite BOOLEAN DEFAULT FALSE,
+  -- Configuración de fondo de chat INDIVIDUAL por usuario
+  wallpaper_type VARCHAR(20) DEFAULT 'default' CHECK (wallpaper_type IN ('default', 'color', 'gradient', 'image', 'pattern')),
+  wallpaper_value TEXT, -- URL de imagen, código de color, o ID de patrón
+  wallpaper_settings JSONB, -- {opacity, blur, brightness, etc}
   UNIQUE(chat_id, user_id)
 );
 
@@ -444,3 +448,18 @@ BEGIN
   RAISE NOTICE '🚀 Sistema listo para producción con EGCHAT!';
   RAISE NOTICE '═════════════════════════════════════════════════════════════════';
 END $$;
+
+-- ══════════════════════════════════════════════════════════════════
+-- MIGRACIÓN: Fondos de chat individuales por usuario
+-- Ejecutar si ya tienes la tabla chat_participants creada
+-- ══════════════════════════════════════════════════════════════════
+ALTER TABLE chat_participants
+  ADD COLUMN IF NOT EXISTS wallpaper_type VARCHAR(20) DEFAULT 'default'
+    CHECK (wallpaper_type IN ('default', 'color', 'gradient', 'image', 'pattern')),
+  ADD COLUMN IF NOT EXISTS wallpaper_value TEXT,
+  ADD COLUMN IF NOT EXISTS wallpaper_settings JSONB;
+
+-- Índice para búsquedas de wallpaper por usuario
+CREATE INDEX IF NOT EXISTS idx_chat_participants_wallpaper
+  ON chat_participants (chat_id, user_id)
+  WHERE wallpaper_type != 'default';

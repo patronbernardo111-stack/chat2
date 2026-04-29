@@ -386,7 +386,9 @@ const App: React.FC = () => {
   const [finStep, setFinStep] = useState<string>('main');
   const [finData, setFinData] = useState<Record<string,string>>({});
 
-  const [selectedWallpaper, setSelectedWallpaper] = useState<string>(() => localStorage.getItem('egchat_wallpaper') || 'none');
+  const [chatWallpapers, setChatWallpapers] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('egchat_chat_wallpapers') || '{}'); } catch { return {}; }
+  });
   const [showWallpaperCatalog, setShowWallpaperCatalog] = useState<boolean>(false);
   const [showLayoutPanel, setShowLayoutPanel] = useState<boolean>(false);
   const [homeLayout, setHomeLayout] = useState<string>('default');
@@ -569,6 +571,14 @@ const App: React.FC = () => {
   const [favoriteGroupIds, setFavoriteGroupIds] = useState<string[]>([]);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState<boolean>(false);
   const [newGroupData, setNewGroupData] = useState<{ name: string; description: string; selectedMembers: string[] }>({ name: '', description: '', selectedMembers: [] });
+
+  // Panel de integrantes del grupo
+  const [showGroupMembersPanel, setShowGroupMembersPanel] = useState<boolean>(false);
+  const [groupMembersList, setGroupMembersList] = useState<Array<{
+    id: string; user_id: string; phone?: string; full_name?: string;
+    avatar_url?: string; online_status?: boolean; role?: string;
+  }>>([]);
+  const [loadingGroupMembers, setLoadingGroupMembers] = useState<boolean>(false);
 
   // Persistir mensajes en localStorage  incluye imágenes comprimidas
   useEffect(() => {
@@ -3789,8 +3799,7 @@ const App: React.FC = () => {
           const id = `custom-${Date.now()}`;
           const label = result.path.split(/[\\/]/).pop().replace(/\.[^.]+$/, '').slice(0, 20);
           setCustomWallpapers(prev => [...prev, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]);
-          setSelectedWallpaper(id);
-          localStorage.setItem('egchat_wallpaper', id);
+          setActiveChatWallpaper(id);
           localStorage.setItem('egchat_custom_wallpapers', JSON.stringify([...customWallpapers, { id, label, url: result.url, type: result.isVideo ? 'video' : 'image' }]));
           setShowWallpaperCatalog(false);
           return;
@@ -3808,29 +3817,29 @@ const App: React.FC = () => {
         const label = file.name.replace(/\.[^.]+$/, '').slice(0, 20);
         const type = file.type.startsWith('video') ? 'video' : 'image';
         setCustomWallpapers(prev => [...prev, { id, label, url, type }]);
-        setSelectedWallpaper(id);
-        localStorage.setItem('egchat_wallpaper', id);
+        setActiveChatWallpaper(id);
         setShowWallpaperCatalog(false);
       };
       input.click();
     };
 
+    const activeWallpaper = getActiveChatWallpaper();
     const WpThumb = ({ w }: { w: typeof wallpapers[0] }) => (
-      <button key={w.id} onClick={() => { setSelectedWallpaper(w.id); localStorage.setItem('egchat_wallpaper', w.id); setShowWallpaperCatalog(false); }}
+      <button key={w.id} onClick={() => { setActiveChatWallpaper(w.id); setShowWallpaperCatalog(false); }}
         title={w.label}
-        style={{ border: selectedWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
+        style={{ border: activeWallpaper === w.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none', position: 'relative' }}>
         <div style={{ height: '90px', background: w.type === 'none'
           ? 'repeating-conic-gradient(#e5e7eb 0% 25%, #f9fafb 0% 50%) 0 0 / 16px 16px'
           : (w as any).bg || '#1a1a2e', position: 'relative' }}>
           {(w as any).overlay && <div style={{ position: 'absolute', inset: 0, background: (w as any).overlay }} />}
           {w.category === 'dynamic' && <div style={{ position: 'absolute', top: '3px', left: '3px', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '3px', padding: '1px 4px', fontSize: '7px', fontWeight: '700', color: 'white', zIndex: 2 }}>VIVO</div>}
-          {selectedWallpaper === w.id && (
+          {activeWallpaper === w.id && (
             <div style={{ position: 'absolute', top: '4px', right: '4px', width: '18px', height: '18px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
               <svg width="9" height="9" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
           )}
         </div>
-        <div style={{ padding: '4px 4px 5px', background: selectedWallpaper === w.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ padding: '4px 4px 5px', background: activeWallpaper === w.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {w.label}
         </div>
       </button>
@@ -3854,9 +3863,13 @@ const App: React.FC = () => {
             <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e5e7eb' }} />
           </div>
           {/* Título */}
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', marginBottom: '14px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: '#0d0d0d', marginBottom: '4px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             Fondo de pantalla
+          </div>
+          {/* Subtítulo: indica que es solo para este chat */}
+          <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'center', marginBottom: '14px' }}>
+            Solo para este chat · {selectedChat?.title || 'Chat actual'}
           </div>
 
           {/* Mis fondos personalizados */}
@@ -3882,9 +3895,9 @@ const App: React.FC = () => {
               {/* Fondos personalizados subidos */}
               {customWallpapers.map(cw => (
                 <div key={cw.id} style={{ position: 'relative' }}>
-                  <button onClick={() => { setSelectedWallpaper(cw.id); localStorage.setItem('egchat_wallpaper', cw.id); setShowWallpaperCatalog(false); }}
+                  <button onClick={() => { setActiveChatWallpaper(cw.id); setShowWallpaperCatalog(false); }}
                     title={cw.label}
-                    style={{ width: '100%', border: selectedWallpaper === cw.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none' }}>
+                    style={{ width: '100%', border: activeWallpaper === cw.id ? '2px solid #00c8a0' : '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', outline: 'none', padding: 0, background: 'none' }}>
                     <div style={{ height: '90px', position: 'relative', overflow: 'hidden', background: '#111' }}>
                       {cw.type === 'video'
                         ? <video src={cw.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline />
@@ -3893,18 +3906,18 @@ const App: React.FC = () => {
                       {cw.type === 'video' && (
                         <div style={{ position: 'absolute', top: '3px', left: '3px', background: 'rgba(0,0,0,0.55)', borderRadius: '3px', padding: '1px 4px', fontSize: '7px', fontWeight: '700', color: 'white' }}>VID</div>
                       )}
-                      {selectedWallpaper === cw.id && (
+                      {activeWallpaper === cw.id && (
                         <div style={{ position: 'absolute', top: '4px', right: '4px', width: '18px', height: '18px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3 }}>
                           <svg width="9" height="9" viewBox="0 0 24 24" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                       )}
                     </div>
-                    <div style={{ padding: '4px 4px 5px', background: selectedWallpaper === cw.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ padding: '4px 4px 5px', background: activeWallpaper === cw.id ? 'rgba(0,200,160,0.08)' : '#fff', fontSize: '9px', fontWeight: '600', color: '#374151', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {cw.label}
                     </div>
                   </button>
                   {/* Botón eliminar */}
-                  <button onClick={() => { setCustomWallpapers(prev => prev.filter(w => w.id !== cw.id)); if (selectedWallpaper === cw.id) { setSelectedWallpaper('none'); localStorage.setItem('egchat_wallpaper', 'none'); } }}
+                  <button onClick={() => { setCustomWallpapers(prev => prev.filter(w => w.id !== cw.id)); if (activeWallpaper === cw.id) { setActiveChatWallpaper('none'); } }}
                     style={{ position: 'absolute', top: '4px', left: '4px', width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(239,68,68,0.9)', border: 'none', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>
                     <svg width="7" height="7" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
@@ -3989,8 +4002,24 @@ const App: React.FC = () => {
     );
   };
 
-  // Devuelve el estilo de fondo para el rea de mensajes del chat
+  // Devuelve el wallpaper activo para el chat actual (individual por chat)
+  const getActiveChatWallpaper = (): string => {
+    const chatId = selectedChat?.id?.toString() || '';
+    return chatWallpapers[chatId] || 'none';
+  };
+
+  // Guarda el wallpaper para el chat actual (solo afecta a este chat)
+  const setActiveChatWallpaper = (wallpaperId: string) => {
+    const chatId = selectedChat?.id?.toString() || '';
+    if (!chatId) return;
+    const updated = { ...chatWallpapers, [chatId]: wallpaperId };
+    setChatWallpapers(updated);
+    localStorage.setItem('egchat_chat_wallpapers', JSON.stringify(updated));
+  };
+
+  // Devuelve el estilo de fondo para el área de mensajes del chat
   const getChatAreaBg = (): React.CSSProperties => {
+    const selectedWallpaper = getActiveChatWallpaper();
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
       return { position: 'relative', overflow: 'hidden', background: 'transparent' };
@@ -4001,8 +4030,9 @@ const App: React.FC = () => {
     return { background: 'transparent', position: 'relative', overflow: 'hidden' };
   };
 
-  // Renderiza elementos animados del wallpaper dentro del rea de mensajes
+  // Renderiza elementos animados del wallpaper dentro del área de mensajes
   const renderChatWallpaperContent = () => {
+    const selectedWallpaper = getActiveChatWallpaper();
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
       return (
@@ -4025,6 +4055,7 @@ const App: React.FC = () => {
   };
 
   const renderWallpaperBg = () => {
+    const selectedWallpaper = getActiveChatWallpaper();
     const custom = customWallpapers.find(w => w.id === selectedWallpaper);
     if (custom) {
       return (
@@ -4065,7 +4096,7 @@ const App: React.FC = () => {
         )}
         {wp.floating && Array.from({ length: 12 }).map((_, i) => (
           <div key={i} style={{ position: 'absolute', left: `${(i * 8.5) % 90}%`, top: `${20 + (i * 6.3) % 60}%`, fontSize: `${10 + (i % 3) * 4}px`, animation: `pulse ${2 + (i % 3)}s ease-in-out ${(i * 0.3) % 2}s infinite`, opacity: 0.6 }}>
-            {['?', '', '?', '?', '?'][i % 5]}
+            {['🌸', '✨', '🌿', '💫', '🌺'][i % 5]}
           </div>
         ))}
         {wp.logo && (
@@ -4786,25 +4817,24 @@ const App: React.FC = () => {
 
           return (
             <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
-              {/* Wallpaper del chat */}
-              {selectedWallpaper !== 'none' && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-                  {(() => {
-                    const custom = customWallpapers.find(w => w.id === selectedWallpaper);
-                    if (custom) {
-                      return (
-                        <>
-                          {custom.type === 'video'
-                            ? <video src={custom.url} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <img src={custom.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          }
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)' }} />
-                        </>
-                      );
-                    }
-                    const wp = wallpapers.find(w => w.id === selectedWallpaper) as any;
-                    if (!wp || wp.type === 'none') return null;
-                    return (
+              {/* Wallpaper del chat — individual por chat, no afecta a otros */}
+              {(() => {
+                const activeChatWp = getActiveChatWallpaper();
+                if (activeChatWp === 'none') return null;
+                const custom = customWallpapers.find(w => w.id === activeChatWp);
+                const wp = !custom ? wallpapers.find(w => w.id === activeChatWp) as any : null;
+                if (!custom && (!wp || wp.type === 'none')) return null;
+                return (
+                  <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                    {custom ? (
+                      <>
+                        {custom.type === 'video'
+                          ? <video src={custom.url} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <img src={custom.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        }
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)' }} />
+                      </>
+                    ) : (
                       <div style={{ position: 'absolute', inset: 0, background: wp.bg, overflow: 'hidden' }}>
                         {wp.overlay && <div style={{ position: 'absolute', inset: 0, background: wp.overlay }} />}
                         {wp.rain && (
@@ -4830,7 +4860,7 @@ const App: React.FC = () => {
                         )}
                         {wp.floating && Array.from({ length: 12 }).map((_, i) => (
                           <div key={i} style={{ position: 'absolute', left: `${(i * 8.5) % 90}%`, top: `${20 + (i * 6.3) % 60}%`, fontSize: `${10 + (i % 3) * 4}px`, animation: `pulse ${2 + (i % 3)}s ease-in-out ${(i * 0.3) % 2}s infinite`, opacity: 0.6 }}>
-                            {['📚', '✏️', '🎒', '📐', '🌿'][i % 5]}
+                            {['🌸', '✨', '🌿', '💫', '🌺'][i % 5]}
                           </div>
                         ))}
                         {wp.logo && (
@@ -4841,10 +4871,10 @@ const App: React.FC = () => {
                         )}
                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }} />
                       </div>
-                    );
-                  })()}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })()}
               {/* Header conversacin */}
               <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(44px, env(safe-area-inset-top))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
                 <button
@@ -4858,8 +4888,31 @@ const App: React.FC = () => {
                 </div>
                 <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={() => setShowContactProfile(sc)}>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
-                  <div style={{ fontSize: '11px', fontWeight: '600', color: sc.isGroup ? 'rgba(255,255,255,0.85)' : sc.status === 'online' ? '#a8ffdd' : sc.status === 'away' ? '#ffe08a' : 'rgba(255,255,255,0.6)' }}>
-                    {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
+                  <div
+                    style={{ fontSize: '11px', fontWeight: '600', color: sc.isGroup ? 'rgba(255,255,255,0.85)' : sc.status === 'online' ? '#a8ffdd' : sc.status === 'away' ? '#ffe08a' : 'rgba(255,255,255,0.6)', cursor: sc.isGroup ? 'pointer' : 'default', textDecoration: sc.isGroup ? 'underline' : 'none', textDecorationColor: 'rgba(255,255,255,0.4)' }}
+                    onClick={sc.isGroup ? async (e) => {
+                      e.stopPropagation();
+                      setShowGroupMembersPanel(true);
+                      setLoadingGroupMembers(true);
+                      try {
+                        const chatId = sc.id?.toString() || '';
+                        if (chatId && chatId.includes('-') && chatId.length >= 20) {
+                          const members = await chatAPI.getGroupParticipants(chatId);
+                          setGroupMembersList(members || []);
+                        } else {
+                          const chat = (realChats as any[]).find((c: any) => c.id?.toString() === chatId);
+                          const parts = chat?.participants || [];
+                          setGroupMembersList(parts.map((p: any) => ({
+                            id: p.user_id || p.id, user_id: p.user_id || p.id,
+                            full_name: p.full_name || p.name || 'Miembro',
+                            avatar_url: p.avatar_url, phone: p.phone, role: p.role || 'member'
+                          })));
+                        }
+                      } catch { setGroupMembersList([]); }
+                      setLoadingGroupMembers(false);
+                    } : undefined}
+                  >
+                    {sc.isGroup ? `👥 ${sc.members || ''} miembros · Ver` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0px', alignItems: 'center', flexShrink: 0 }}>
@@ -4970,7 +5023,7 @@ const App: React.FC = () => {
               <div
                 className="scroll-container chat-messages-scroll"
                 ref={(el) => { if (el) { el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80; isAtBottomRef.current = atBottom; }; } }}
-                style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: selectedWallpaper === 'none' ? '#efeae2' : 'transparent' }}
+                style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: getActiveChatWallpaper() === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} onClick={() => { if (selectionMode) { setSelectedMsgIds(prev => prev.includes(msg.id) ? prev.filter(x => x !== msg.id) : [...prev, msg.id]); } }} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px', alignItems: 'center', gap: '8px', padding: selectionMode ? '2px 8px' : '0', background: selectionMode && selectedMsgIds.includes(msg.id) ? 'rgba(0,180,230,0.10)' : 'transparent', borderRadius: '8px', transition: 'background 0.15s', cursor: selectionMode ? 'pointer' : 'default' }}>
@@ -5743,7 +5796,7 @@ const App: React.FC = () => {
                             setChatMessages((prev: any) => ({ ...prev, [cid]: [...(prev[cid]||[]), newMsg] }));
                             setShowChatEmojis(false);
                             if (cid && cid.includes('-') && cid.length > 20) {
-                              chatAPI.sendMessage(cid, sticker).catch(() => {});
+                              chatAPI.sendMessage(cid, { text: sticker, type: 'text' }).catch(() => {});
                             }
                           }}
                             style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', cursor: 'pointer', padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', minWidth: '58px', outline: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'transform 0.1s' }}
@@ -11586,6 +11639,124 @@ const App: React.FC = () => {
 
       {/* -- MODAL CANALES --------------------------------------------------- */}
       {showCanalesModal && <CanalesModal onClose={() => setShowCanalesModal(false)} userBalance={userBalance} onDebit={(n) => setUserBalance((p: number) => p - n)} />}
+
+      {/* -- PANEL INTEGRANTES DEL GRUPO ------------------------------------- */}
+      {showGroupMembersPanel && selectedChat?.isGroup && (
+        <div style={{ position: 'fixed', inset: 0, background: '#F0F2F5', zIndex: 4500, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header */}
+          <div style={{ background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', padding: '10px 16px', paddingTop: 'calc(10px + env(safe-area-inset-top, 44px))', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, boxShadow: '0 2px 12px rgba(168,85,247,0.3)' }}>
+            <button onClick={() => setShowGroupMembersPanel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '4px', display: 'flex' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#fff' }}>Integrantes</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)' }}>{selectedChat.title}</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '20px', padding: '4px 10px', fontSize: '12px', fontWeight: '700', color: '#fff' }}>
+              {groupMembersList.length} miembros
+            </div>
+          </div>
+
+          {/* Lista de integrantes */}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {loadingGroupMembers ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 0', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid #e5e7eb', borderTopColor: '#a855f7', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <div style={{ fontSize: '13px', color: '#9ca3af' }}>Cargando integrantes...</div>
+              </div>
+            ) : groupMembersList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 16px', color: '#9ca3af' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.4" strokeLinecap="round" style={{ margin: '0 auto 12px', display: 'block' }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Sin integrantes</div>
+              </div>
+            ) : (
+              <div style={{ background: '#fff', marginTop: '8px' }}>
+                {groupMembersList.map((member, idx) => {
+                  const name = member.full_name || member.phone || 'Miembro';
+                  const initials = name.slice(0, 2).toUpperCase();
+                  const isMe = member.user_id === (window as any).__currentUserId;
+                  const isInMyContacts = allContacts.some(c => c.id === member.user_id || c.phone === member.phone);
+                  return (
+                    <div key={member.id || idx} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Avatar */}
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: '46px', height: '46px', borderRadius: '50%', background: 'linear-gradient(135deg, #a855f7, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            {member.avatar_url
+                              ? <img src={member.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff' }}>{initials}</span>
+                            }
+                          </div>
+                          {member.online_status && (
+                            <div style={{ position: 'absolute', bottom: '1px', right: '1px', width: '11px', height: '11px', borderRadius: '50%', background: '#22c55e', border: '2px solid #fff' }} />
+                          )}
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {isMe ? 'Tú' : name}
+                            </span>
+                            {member.role === 'admin' && (
+                              <span style={{ fontSize: '9px', fontWeight: '700', color: '#a855f7', background: '#F3E8FF', borderRadius: '4px', padding: '1px 5px', flexShrink: 0 }}>ADMIN</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '12px', color: member.online_status ? '#22c55e' : '#9ca3af', marginTop: '1px' }}>
+                            {member.online_status ? '● En línea' : member.phone || '○ Desconectado'}
+                          </div>
+                        </div>
+                        {/* Acciones — solo para otros miembros */}
+                        {!isMe && (
+                          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                            {/* Mensaje privado */}
+                            <button
+                              title="Mensaje privado"
+                              onClick={async () => {
+                                setShowGroupMembersPanel(false);
+                                try {
+                                  const chat = await chatAPI.createPrivate(member.user_id);
+                                  if (chat?.id) {
+                                    setSelectedChat({
+                                      id: chat.id, type: 'individual', title: name,
+                                      subtitle: 'Chat privado', time: '', status: member.online_status ? 'online' : 'offline',
+                                      initials, color: '#00c8a0', avatarUrl: member.avatar_url, user_id: member.user_id
+                                    });
+                                    setCurrentView('Mensajería');
+                                    loadChats();
+                                  }
+                                } catch { showToast('No se pudo abrir el chat', 'error'); }
+                              }}
+                              style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#EFF6FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </button>
+                            {/* Añadir a contactos */}
+                            {!isInMyContacts && (
+                              <button
+                                title="Añadir a contactos"
+                                onClick={async () => {
+                                  try {
+                                    await contactsAPI.add(member.user_id, member.phone, name);
+                                    await loadContacts();
+                                    showToast(`${name} añadido a contactos`, 'success');
+                                  } catch { showToast('No se pudo añadir el contacto', 'error'); }
+                                }}
+                                style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#F0FDF4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* -- MODAL BANCOS ---------------------------------------------------- */}
       {showBancosModal && <BancosModal onClose={() => { setShowBancosModal(false); setBancosInitScreen('home'); }} userBalance={userBalance} onDebit={(n: number) => setUserBalance((p: number) => p - n)} initScreen={bancosInitScreen} />}
