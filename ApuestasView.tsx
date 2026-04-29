@@ -345,11 +345,11 @@ const GELOTO_LOTTERY: LotteryGame[] = [
 
 // ── COMPANIES ─────────────────────────────────────────────────────────────────
 const COMPANIES: Company[] = [
-  { id:'africagames', name:'Africa Games', tagline:'Apuestas deportivas · GQ', color:'#16a34a', type:'sports', bonus:'50% primer depósito hasta 25,000 XAF', minBet:200, minDeposit:500, sports:AG_SPORTS },
-  { id:'betomax', name:'Bettomax', tagline:'Leisure World Holdings · 5 países África', color:'#dc2626', type:'sports', bonus:'Apuesta 5,000 XAF → 1,000 gratis', minBet:500, minDeposit:1000, sports:BT_SPORTS },
-  { id:'1xbet', name:'1XBET', tagline:'Líder mundial · +60 deportes · +1000 mercados', color:'#1d4ed8', type:'sports', bonus:'100% primer depósito hasta 50,000 XAF', minBet:200, minDeposit:1000, sports:XB_SPORTS },
-  { id:'forza', name:'Forza Bet', tagline:'Casino online · GQ · Slots & Live', color:'#7c3aed', type:'casino', bonus:'100 giros gratis al registrarte', minBet:200, minDeposit:500, casino:FORZA_CASINO },
-  { id:'geloto', name:'Geloto GQ', tagline:'Lotería Oficial Guinea Ecuatorial', color:'#d97706', type:'lottery', bonus:'Rasca gratis al registrarte', minBet:100, minDeposit:500, lottery:GELOTO_LOTTERY },
+  { id:'africagames', name:'Africa Games', tagline:'Apuestas deportivas · GQ', color:'#16a34a', type:'sports', bonus:'50% primer depósito hasta 25,000 XAF', minBet:200, minDeposit:500, url:'https://africagames.gq', sports:AG_SPORTS },
+  { id:'betomax', name:'Bettomax', tagline:'Leisure World Holdings · 5 países África', color:'#dc2626', type:'sports', bonus:'Apuesta 5,000 XAF → 1,000 gratis', minBet:500, minDeposit:1000, url:'https://www.bettomax.com', sports:BT_SPORTS },
+  { id:'1xbet', name:'1XBET', tagline:'Líder mundial · +60 deportes · +1000 mercados', color:'#1d4ed8', type:'sports', bonus:'100% primer depósito hasta 50,000 XAF', minBet:200, minDeposit:1000, url:'https://1xbet.com/es', sports:XB_SPORTS },
+  { id:'forza', name:'Forza Bet', tagline:'Casino online · GQ · Slots & Live', color:'#7c3aed', type:'casino', bonus:'100 giros gratis al registrarte', minBet:200, minDeposit:500, url:'https://forzabet.gq', casino:FORZA_CASINO },
+  { id:'geloto', name:'Geloto GQ', tagline:'Lotería Oficial Guinea Ecuatorial', color:'#d97706', type:'lottery', bonus:'Rasca gratis al registrarte', minBet:100, minDeposit:500, url:'https://geloto.gq', lottery:GELOTO_LOTTERY },
 ];
 
 // ── LOGO ──────────────────────────────────────────────────────────────────────
@@ -370,7 +370,20 @@ const Logo: React.FC<{ id: string; size?: number }> = ({ id, size = 48 }) => {
 const OfficialBtn: React.FC<{ company: Company }> = ({ company }) => (
   <div style={{ position:'fixed', bottom:'16px', left:'16px', right:'16px', zIndex:50 }}>
     <button
-      onClick={() => { if ((window as any).require) { const { shell } = (window as any).require('electron'); shell.openExternal(company.url); } else { window.open(company.url, '_blank'); } }}
+      onClick={() => {
+        const url = company.url;
+        if (!url) return;
+        try {
+          if ((window as any).require) {
+            const { shell } = (window as any).require('electron');
+            shell.openExternal(url);
+          } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        } catch {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      }}
       style={{ width:'100%', padding:'14px', background:'rgba(20,20,30,0.95)', border:`1px solid ${company.color}50`, borderRadius:'14px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', backdropFilter:'blur(10px)' }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={company.color} strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       <span style={{ color: company.color }}>Abrir {company.name} oficial</span>

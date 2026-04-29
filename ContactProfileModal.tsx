@@ -25,6 +25,14 @@ interface Props {
   isInContacts?: boolean;
   onAddContact?: () => void;
   onAddGroupMembers?: () => void;
+  // Grupo: miembros actuales
+  groupMembers?: Array<{id:string; user_id:string; phone?:string; full_name?:string; avatar_url?:string; online_status?:boolean; role?:string}>;
+  currentUserId?: string;
+  onAddMemberToContacts?: (member:any) => void;
+  onRemoveGroupMember?: (userId:string) => void;
+  onPromoteToAdmin?: (userId:string) => void;
+  onLeaveGroup?: () => void;
+  onDeleteGroup?: () => void;
 }
 
 // Toggle switch component
@@ -73,13 +81,20 @@ export const ContactProfileModal: React.FC<Props> = ({
   chatMessages, allGroups, userBalance, isFavorite,
   onMuteToggle, onBlockToggle, onPinToggle, onClearChat,
   onDeleteContact, onOpenWallpaper, onSendMoney, onStartCall, onFavoriteToggle,
-  isInContacts = true, onAddContact, onAddGroupMembers
+  isInContacts = true, onAddContact, onAddGroupMembers,
+  groupMembers = [], currentUserId, onAddMemberToContacts,
+  onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup
 }) => {
+  const isGroup = !!cp.isGroup;
   const [tab, setTab] = React.useState<'info'|'media'|'grupos'>('info');
   const [note, setNote] = React.useState('');
   const [editNote, setEditNote] = React.useState('');
   const [showNoteEdit, setShowNoteEdit] = React.useState(false);
   const [starred, setStarred] = React.useState(!!isFavorite);
+
+  // Determinar si el usuario actual es admin del grupo
+  const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
+  const isAdmin = myMember?.role === 'admin' || (groupMembers.length > 0 && groupMembers[0]?.user_id?.toString() === currentUserId?.toString());
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);
@@ -120,7 +135,7 @@ export const ContactProfileModal: React.FC<Props> = ({
         <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#374151',padding:'4px',display:'flex'}}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <div style={{flex:1,fontSize:'16px',fontWeight:'600',color:'#111827'}}>Información del contacto</div>
+        <div style={{flex:1,fontSize:'16px',fontWeight:'600',color:'#111827'}}>{isGroup ? 'Información del grupo' : 'Información del contacto'}</div>
         <button onClick={handleStarToggle} style={{background:'none',border:'none',cursor:'pointer',color:starred?'#F59E0B':'#9CA3AF',padding:'4px',display:'flex'}}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill={starred?'#F59E0B':'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </button>
@@ -169,8 +184,8 @@ export const ContactProfileModal: React.FC<Props> = ({
             ))}
           </div>
 
-          {/* Botón añadir a contactos — solo si no está en la lista */}
-          {!isInContacts && onAddContact && (
+          {/* Botón añadir a contactos — solo si no está en la lista y NO es grupo */}
+          {!isGroup && !isInContacts && onAddContact && (
             <button onClick={onAddContact} style={{
               marginTop:'14px', width:'100%',
               background:'linear-gradient(135deg,#00c8a0,#00b4e6)',
@@ -184,8 +199,8 @@ export const ContactProfileModal: React.FC<Props> = ({
             </button>
           )}
 
-          {/* Botón añadir integrantes — solo para grupos */}
-          {cp.isGroup && onAddGroupMembers && (
+          {/* Botón añadir miembros — solo para grupos (admin) */}
+          {isGroup && isAdmin && onAddGroupMembers && (
             <button onClick={onAddGroupMembers} style={{
               marginTop:'14px', width:'100%',
               background:'linear-gradient(135deg,#a855f7,#6366f1)',
@@ -195,14 +210,17 @@ export const ContactProfileModal: React.FC<Props> = ({
               display:'flex', alignItems:'center', justifyContent:'center', gap:'8px'
             }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-              Añadir integrantes
+              Añadir miembros
             </button>
           )}
         </div>
 
         {/* Tabs */}
         <div style={{display:'flex',background:'#fff',borderBottom:'1px solid #F0F2F5',marginBottom:'8px'}}>
-          {([['info','Información'],['media','Multimedia'],['grupos','Grupos']] as ['info'|'media'|'grupos',string][]).map(([id,label])=>(
+          {(isGroup
+            ? [['info','Información'],['media','Multimedia'],['grupos','Integrantes']] as ['info'|'media'|'grupos',string][]
+            : [['info','Información'],['media','Multimedia'],['grupos','Grupos']] as ['info'|'media'|'grupos',string][]
+          ).map(([id,label])=>(
             <button key={id} onClick={()=>setTab(id)} style={{flex:1,background:'none',border:'none',borderBottom:`2px solid ${tab===id?'#00b4e6':'transparent'}`,padding:'12px 4px',fontSize:'13px',fontWeight:tab===id?'700':'500',color:tab===id?'#00b4e6':'#9CA3AF',cursor:'pointer',transition:'all 0.15s'}}>{label}</button>
           ))}
         </div>
@@ -265,20 +283,46 @@ export const ContactProfileModal: React.FC<Props> = ({
               <SectionLabel label="Acciones"/>
               <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>} label="Vaciar chat" sub="Eliminar todos los mensajes" onPress={()=>{if(window.confirm('¿Vaciar todos los mensajes?'))onClearChat(cpId);}}/>
               <Divider/>
-              <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>} label="Compartir contacto" sub="Enviar a otro chat" onPress={()=>{
-                const text = `👤 ${cp.title||cp.name}\n📞 ${cp.phone||'+240 222 *** ***'}\n🆔 @${(cp.title||'usuario').toLowerCase().replace(/\s/g,'')}`;
-                if(navigator.clipboard){ navigator.clipboard.writeText(text); }
-                alert(`Datos de ${cp.title||cp.name} copiados al portapapeles`);
-              }}/>
+              {isGroup ? (
+                /* Compartir enlace del grupo */
+                <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>} label="Compartir enlace del grupo" sub="Invitar a cualquiera a unirse" onPress={()=>{
+                  const link = `https://egchat.app/join/${cpId}`;
+                  if(navigator.clipboard){ navigator.clipboard.writeText(link); }
+                  alert(`Enlace copiado:\n${link}`);
+                }}/>
+              ) : (
+                /* Compartir contacto */
+                <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>} label="Compartir contacto" sub="Enviar a otro chat" onPress={()=>{
+                  const text = `👤 ${cp.title||cp.name}\n📞 ${cp.phone||'+240 222 *** ***'}\n🆔 @${(cp.title||'usuario').toLowerCase().replace(/\s/g,'')}`;
+                  if(navigator.clipboard){ navigator.clipboard.writeText(text); }
+                  alert(`Datos de ${cp.title||cp.name} copiados al portapapeles`);
+                }}/>
+              )}
             </Section>
 
             {/* Zona peligrosa */}
             <Section>
-              <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>} label={isBlocked?'Desbloquear contacto':'Bloquear contacto'} sub={isBlocked?'Permitir mensajes de nuevo':'No recibirás más mensajes'} danger onPress={()=>onBlockToggle(cpId)}/>
-              <Divider/>
-              <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} label="Reportar contacto" sub="Reportar comportamiento inapropiado" danger onPress={()=>alert(`"${cp.title||cp.name}" reportado.`)}/>
-              <Divider/>
-              <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>} label="Eliminar contacto" sub="Eliminar de tu lista de contactos" danger onPress={()=>{if(window.confirm(`¿Eliminar a ${cp.title||cp.name}?`)){onDeleteContact(cpId);onClose();}}}/>
+              {!isGroup && (
+                <>
+                  <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>} label={isBlocked?'Desbloquear contacto':'Bloquear contacto'} sub={isBlocked?'Permitir mensajes de nuevo':'No recibirás más mensajes'} danger onPress={()=>onBlockToggle(cpId)}/>
+                  <Divider/>
+                  <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} label="Reportar contacto" sub="Reportar comportamiento inapropiado" danger onPress={()=>alert(`"${cp.title||cp.name}" reportado.`)}/>
+                  <Divider/>
+                  <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>} label="Eliminar contacto" sub="Eliminar de tu lista de contactos" danger onPress={()=>{if(window.confirm(`¿Eliminar a ${cp.title||cp.name}?`)){onDeleteContact(cpId);onClose();}}}/>
+                </>
+              )}
+              {isGroup && (
+                <>
+                  <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} label="Reportar grupo" sub="Reportar comportamiento inapropiado" danger onPress={()=>alert(`Grupo "${cp.title||cp.name}" reportado.`)}/>
+                  <Divider/>
+                  {!isAdmin && (
+                    <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>} label="Salir del grupo" sub="Dejarás de recibir mensajes" danger onPress={()=>{if(window.confirm(`¿Salir del grupo "${cp.title||cp.name}"?`)){onLeaveGroup?.();onClose();}}}/>
+                  )}
+                  {isAdmin && (
+                    <Row icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.7" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>} label="Eliminar grupo" sub="Se eliminará para todos los miembros" danger onPress={()=>{if(window.confirm(`¿Eliminar el grupo "${cp.title||cp.name}"? Esta acción no se puede deshacer.`)){onDeleteGroup?.();onClose();}}}/>
+                  )}
+                </>
+              )}
             </Section>
             <div style={{height:'24px'}}/>
           </div>
