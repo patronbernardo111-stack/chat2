@@ -7,6 +7,9 @@ import { WalletProvider } from './WalletSystem';
 
 initSelectionErrorHandler();
 
+// Registrar tiempo de carga para evitar reload del SW en páginas ya abiertas
+(window as any).__pageLoadTime = Date.now();
+
 // ── Fix viewport height para Android WebView / Capacitor ─────────────────
 // Con adjustPan el teclado no redimensiona el viewport, solo hace pan.
 // Solo necesitamos fijar --real-vh al inicio para referencias CSS.
@@ -156,12 +159,20 @@ if ('serviceWorker' in navigator) {
         }
       });
 
-      // Cuando el SW nuevo toma control, recargar la página para aplicar cambios
+      // Cuando el SW nuevo toma control, NO recargar automáticamente en iOS
+      // ya que causa un flash de pantalla completa. El usuario verá los cambios
+      // en la próxima visita o al navegar manualmente.
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
         refreshing = true;
-        window.location.reload();
+        // Solo recargar si la página lleva menos de 5 segundos cargada
+        // (indica que es la primera activación, no una actualización en uso)
+        const pageAge = Date.now() - (window as any).__pageLoadTime;
+        if (pageAge < 5000) {
+          window.location.reload();
+        }
+        // Si la página ya lleva tiempo abierta, no recargar — evita el flash en iOS
       });
 
       // Escuchar mensajes del SW (click en notificación)

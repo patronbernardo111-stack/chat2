@@ -2291,7 +2291,7 @@ const App: React.FC = () => {
               <img 
                 src="/logo-transparent.png" 
                 alt="EGCHAT Logo" 
-                style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', animation: 'spin 6s linear infinite' }}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', animation: 'spin 6s linear infinite', willChange: 'transform', transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '1px', marginLeft: '4px' }}>

@@ -54,8 +54,18 @@ input, textarea, select {
 
 /* LOGO ANIMATION */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: rotate(0deg) translateZ(0); }
+  to { transform: rotate(360deg) translateZ(0); }
+}
+
+/* Promote animated elements to their own GPU layer to prevent iOS repaint flicker */
+img[style*="spin"],
+[style*="animation: spin"] {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes pulse {
@@ -394,10 +404,16 @@ input:focus {
 .neon-eg {
   animation: neonPulseEG 1.5s ease-in-out infinite !important;
   color: #00e5ff !important;
+  will-change: text-shadow;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .neon-chat {
   animation: neonPulseCHAT 1.5s ease-in-out infinite 0.3s !important;
   color: #1e90ff !important;
+  will-change: text-shadow;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════
