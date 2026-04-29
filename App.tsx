@@ -279,7 +279,7 @@ const App: React.FC = () => {
     city: 'Malabo',
     condition: 'sunny'
   });
-  const [homeButtonPos, setHomeButtonPos] = useState<{ x: number; y: number }>({ x: window.innerWidth - 70, y: window.innerHeight - 160 });
+  const [homeButtonPos, setHomeButtonPos] = useState<{ x: number; y: number }>({ x: window.innerWidth - 70, y: window.innerHeight - 200 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [messageFilter, setMessageFilter] = useState<string>('all');
@@ -309,7 +309,7 @@ const App: React.FC = () => {
   ]);
   const [showEmojiEditor, setShowEmojiEditor] = useState<boolean>(false);
   const [editingEmoji, setEditingEmoji] = useState<{id?:string; label:string; title:string} | null>(null);
-  const [aiButtonPos, setAiButtonPos] = useState<{ x: number; y: number }>({ x: window.innerWidth - 60, y: window.innerHeight - 220 });
+  const [aiButtonPos, setAiButtonPos] = useState<{ x: number; y: number }>({ x: window.innerWidth - 60, y: window.innerHeight - 260 });
   const [isDraggingAI, setIsDraggingAI] = useState<boolean>(false);
   const [dragOffsetAI, setDragOffsetAI] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -4148,7 +4148,7 @@ const App: React.FC = () => {
       <>
       <div style={{
         position: 'fixed',
-        bottom: '48px',
+        bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 16px)',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1002,
@@ -4241,7 +4241,8 @@ const App: React.FC = () => {
 
   // Renderizar botan de home flotante - DRAGGABLE
   const renderHomeButton = () => {
-    if (currentView === 'home') {
+    // No mostrar en home ni en Mensajería
+    if (currentView === 'home' || currentView === 'Mensajería') {
       return null;
     }
 
@@ -4313,7 +4314,7 @@ const App: React.FC = () => {
         }}
         style={{
           position: 'fixed',
-          bottom: '168px',
+          bottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 16px)',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '65px',
