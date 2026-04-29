@@ -634,19 +634,23 @@ const App: React.FC = () => {
     } catch {}
   }, [chatMessages]);
 
-  // Actualizar hora cada segundo
+  // Actualizar hora cada 30s (los minutos cambian cada 60s, 30s es suficiente)
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('es-ES', { 
+      const t = now.toLocaleTimeString('es-ES', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: false 
-      }));
+      });
+      setCurrentTime(t);
+      // También actualizar DOM directo para evitar re-render en el header
+      const el = document.getElementById('header-clock');
+      if (el) el.textContent = t;
     };
     
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(updateTime, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -8982,7 +8986,7 @@ const App: React.FC = () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
       pollingRef.current = setInterval(() => {
         if (document.visibilityState === 'visible') loadMessages(chatId);
-      }, 1500);
+      }, 3000);
     };
 
     startInterval();
