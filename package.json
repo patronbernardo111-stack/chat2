@@ -1,6 +1,6 @@
 {
     "name": "egchat-frontend",
-    "version": "2.5.2",
+    "version": "2.5.3",
     "description": "EGCHAT Frontend - Complete Enterprise Platform - v2.5 Production Release",
     "type": "module",
     "scripts": {

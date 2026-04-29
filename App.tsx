@@ -8544,7 +8544,7 @@ const App: React.FC = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div>
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>Versión</div>
-                        <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>1.0.0</div>
+                        <div style={{ fontSize: '14px', color: '#0d0d0d', fontWeight: '500' }}>2.5.3</div>
                       </div>
                       <div>
                         <div style={{ fontSize: '12px', color: '#6b7280' }}>Desarrollador</div>
