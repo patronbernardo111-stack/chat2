@@ -74,53 +74,101 @@ const NEARBY = [
 ];
 
 // -- MAPA ----------------------------------------------------------------------
+const MALABO: [number, number] = [8.7741, 3.7523]; // [lng, lat]
+
 const LiveMap: React.FC<{
   h?: number | string;
   userPos?: LatLng | null;
   destPos?: LatLng | null;
   showRoute?: boolean;
   showNearby?: boolean;
-}> = ({ h = 260, userPos, destPos, showRoute, showNearby }) => {
+  driverPos?: LatLng | null;
+  rideColor?: string;
+}> = ({ h = 260, userPos, destPos, showRoute, showNearby, driverPos, rideColor = '#6366F1' }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inst = useRef<any>(null);
   const sdkRef = useRef<any>(null);
   const userMk = useRef<any>(null);
   const destMk = useRef<any>(null);
+  const driverMk = useRef<any>(null);
   const nearbyMks = useRef<any[]>([]);
   const [err, setErr] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Inicializar mapa centrado en Malabo
   useEffect(() => {
     if (!ref.current || inst.current) return;
     import('@maptiler/sdk').then(sdk => {
       sdkRef.current = sdk;
       sdk.config.apiKey = MAPTILER_KEY;
-      const center: [number, number] = userPos ? [userPos.lng, userPos.lat] : [8.7741, 3.7523];
-      const m = new sdk.Map({ container: ref.current!, style: sdk.MapStyle.STREETS, center, zoom: 14, navigationControl: false });
+      const center: [number, number] = userPos ? [userPos.lng, userPos.lat] : MALABO;
+      const m = new sdk.Map({
+        container: ref.current!,
+        style: sdk.MapStyle.STREETS,
+        center,
+        zoom: 14,
+        navigationControl: false,
+        attributionControl: false,
+      });
       inst.current = m;
       m.on('load', () => {
         setLoading(false);
-        // Pin GPS usuario - punto azul pulsante
+        // Pin GPS usuario — punto azul pulsante
         const el = document.createElement('div');
-        el.style.cssText = 'position:relative;width:22px;height:22px;';
-        el.innerHTML = '<div style="width:22px;height:22px;border-radius:50%;background:#6366F1;border:3px solid #fff;box-shadow:0 2px 8px rgba(99,102,241,0.5);"></div><div style="position:absolute;inset:-6px;border-radius:50%;background:rgba(99,102,241,0.2);animation:gpsp 2s ease-in-out infinite;"></div>';
+        el.style.cssText = 'position:relative;width:24px;height:24px;';
+        el.innerHTML = `
+          <div style="width:24px;height:24px;border-radius:50%;background:${rideColor};border:3px solid #fff;box-shadow:0 2px 10px ${rideColor}80;"></div>
+          <div style="position:absolute;inset:-8px;border-radius:50%;background:${rideColor}30;animation:gpsp 2s ease-in-out infinite;"></div>
+        `;
         const st = document.createElement('style');
-        st.textContent = '@keyframes gpsp{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.6);opacity:0}}';
+        st.textContent = '@keyframes gpsp{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.7);opacity:0}}';
         document.head.appendChild(st);
-        userMk.current = new sdk.Marker({ element: el, anchor: 'center' }).setLngLat(center).addTo(m);
+        userMk.current = new sdk.Marker({ element: el, anchor: 'center' })
+          .setLngLat(center).addTo(m);
       });
+      m.on('error', () => setErr(true));
     }).catch(() => setErr(true));
     return () => { inst.current?.remove(); inst.current = null; };
   }, []);
 
-  // Seguir GPS
+  // Actualizar posición GPS usuario
   useEffect(() => {
     if (!userMk.current || !userPos || !inst.current) return;
     userMk.current.setLngLat([userPos.lng, userPos.lat]);
-    if (!destPos) inst.current.flyTo({ center: [userPos.lng, userPos.lat], zoom: 14, duration: 800 });
+    if (!destPos && !driverPos) {
+      inst.current.flyTo({ center: [userPos.lng, userPos.lat], zoom: 14, duration: 800 });
+    }
   }, [userPos]);
 
-  // Vehiculos cercanos
+  // Marcador conductor animado
+  useEffect(() => {
+    if (!inst.current || !sdkRef.current || !driverPos) return;
+    const sdk = sdkRef.current; const map = inst.current;
+    const addDriver = () => {
+      if (driverMk.current) {
+        driverMk.current.setLngLat([driverPos.lng, driverPos.lat]);
+        return;
+      }
+      const el = document.createElement('div');
+      el.style.cssText = 'position:relative;width:40px;height:40px;';
+      el.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;background:#fff;border:2.5px solid ${rideColor};box-shadow:0 3px 12px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 64 36" fill="none">
+            <rect x="4" y="14" width="56" height="16" rx="3" stroke="${rideColor}" stroke-width="2.5"/>
+            <path d="M12 14 L17 4 L47 4 L52 14" stroke="${rideColor}" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="16" cy="30" r="5" stroke="${rideColor}" stroke-width="2.5"/>
+            <circle cx="48" cy="30" r="5" stroke="${rideColor}" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <div style="position:absolute;inset:-4px;border-radius:50%;background:${rideColor}20;animation:gpsp 1.5s ease-in-out infinite;"></div>
+      `;
+      driverMk.current = new sdk.Marker({ element: el, anchor: 'center' })
+        .setLngLat([driverPos.lng, driverPos.lat]).addTo(map);
+    };
+    if (map.isStyleLoaded()) addDriver(); else map.on('load', addDriver);
+  }, [driverPos]);
+
+  // Vehículos cercanos
   useEffect(() => {
     if (!inst.current || !sdkRef.current || !userPos || !showNearby) return;
     const sdk = sdkRef.current; const map = inst.current;
@@ -129,62 +177,104 @@ const LiveMap: React.FC<{
       NEARBY.forEach(d => {
         const ride = RIDES.find(r => r.id === d.rideId) || RIDES[1];
         const el = document.createElement('div');
-        el.innerHTML = '<div style="background:' + ride.color + ';color:#fff;border-radius:8px;padding:3px 7px;font-size:10px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.2);border:1.5px solid #fff;">' + d.label + '</div>';
-        nearbyMks.current.push(new sdk.Marker({ element: el, anchor: 'bottom' }).setLngLat([userPos.lng + d.dx, userPos.lat + d.dy]).addTo(map));
+        el.innerHTML = `<div style="background:${ride.color};color:#fff;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.25);border:1.5px solid #fff;">${d.label}</div>`;
+        nearbyMks.current.push(
+          new sdk.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([userPos.lng + d.dx, userPos.lat + d.dy]).addTo(map)
+        );
       });
     };
     if (map.isStyleLoaded()) add(); else map.on('load', add);
   }, [userPos, showNearby]);
 
-  // Ruta
+  // Ruta real con API MapTiler Directions
   useEffect(() => {
     if (!inst.current || !sdkRef.current || !userPos || !destPos || !showRoute) return;
     const map = inst.current; const sdk = sdkRef.current;
+
+    // Marcador destino (pin rojo)
     if (destMk.current) destMk.current.remove();
     const de = document.createElement('div');
-    de.innerHTML = '<div style="width:18px;height:18px;border-radius:50%;background:#EF4444;border:3px solid #fff;box-shadow:0 2px 8px rgba(239,68,68,0.5);"></div>';
-    destMk.current = new sdk.Marker({ element: de, anchor: 'center' }).setLngLat([destPos.lng, destPos.lat]).addTo(map);
-    const draw = async () => {
+    de.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:20px;height:20px;border-radius:50%;background:#EF4444;border:3px solid #fff;box-shadow:0 2px 10px rgba(239,68,68,0.5);"></div>
+        <div style="width:2px;height:10px;background:#EF4444;margin-top:-1px;"></div>
+      </div>
+    `;
+    destMk.current = new sdk.Marker({ element: de, anchor: 'bottom' })
+      .setLngLat([destPos.lng, destPos.lat]).addTo(map);
+
+    const drawRoute = async () => {
       try {
-        const url = 'https://api.maptiler.com/directions/v2/driving/' + userPos.lng + ',' + userPos.lat + ';' + destPos.lng + ',' + destPos.lat + '?key=' + MAPTILER_KEY + '&geometries=geojson';
+        // API de direcciones MapTiler
+        const url = `https://api.maptiler.com/directions/v2/driving/${userPos.lng},${userPos.lat};${destPos.lng},${destPos.lat}?key=${MAPTILER_KEY}&geometries=geojson&steps=false`;
         const data = await fetch(url).then(r => r.json());
         const coords = data?.routes?.[0]?.geometry?.coordinates;
-        if (!coords) throw new Error('no route');
-        const geo = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } };
-        if (map.getSource('route')) { (map.getSource('route') as any).setData(geo); }
-        else {
-          map.addSource('route', { type: 'geojson', data: geo });
-          map.addLayer({ id: 'route-bg', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#fff', 'line-width': 8 } });
-          map.addLayer({ id: 'route-ln', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#6366F1', 'line-width': 5 } });
-        }
-        const lngs = coords.map((c: number[]) => c[0]); const lats = coords.map((c: number[]) => c[1]);
-        map.fitBounds([[Math.min(...lngs) - 0.005, Math.min(...lats) - 0.005], [Math.max(...lngs) + 0.005, Math.max(...lats) + 0.005]], { padding: 80, duration: 1000 });
+        if (!coords || coords.length < 2) throw new Error('no route');
+
+        const geo: any = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } };
+
+        // Limpiar ruta anterior
+        if (map.getLayer('route-ln')) map.removeLayer('route-ln');
+        if (map.getLayer('route-bg')) map.removeLayer('route-bg');
+        if (map.getLayer('route-arrow')) map.removeLayer('route-arrow');
+        if (map.getSource('route')) map.removeSource('route');
+
+        map.addSource('route', { type: 'geojson', data: geo });
+        // Sombra blanca
+        map.addLayer({ id: 'route-bg', type: 'line', source: 'route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#ffffff', 'line-width': 9, 'line-opacity': 0.8 }
+        });
+        // Línea principal con color del vehículo
+        map.addLayer({ id: 'route-ln', type: 'line', source: 'route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': rideColor, 'line-width': 5, 'line-dasharray': [1, 0] }
+        });
+
+        // Ajustar vista para mostrar toda la ruta
+        const lngs = coords.map((c: number[]) => c[0]);
+        const lats = coords.map((c: number[]) => c[1]);
+        map.fitBounds([
+          [Math.min(...lngs) - 0.008, Math.min(...lats) - 0.008],
+          [Math.max(...lngs) + 0.008, Math.max(...lats) + 0.008]
+        ], { padding: { top: 80, bottom: 200, left: 40, right: 40 }, duration: 1200 });
+
       } catch {
-        const line = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[userPos.lng, userPos.lat], [destPos.lng, destPos.lat]] } };
-        if (map.getSource('route')) { (map.getSource('route') as any).setData(line); }
-        else {
-          map.addSource('route', { type: 'geojson', data: line });
-          map.addLayer({ id: 'route-bg', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#fff', 'line-width': 8 } });
-          map.addLayer({ id: 'route-ln', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#6366F1', 'line-width': 5 } });
-        }
-        map.fitBounds([[Math.min(userPos.lng, destPos.lng) - 0.01, Math.min(userPos.lat, destPos.lat) - 0.01], [Math.max(userPos.lng, destPos.lng) + 0.01, Math.max(userPos.lat, destPos.lat) + 0.01]], { padding: 80 });
+        // Fallback: línea recta si la API falla
+        const line: any = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[userPos.lng, userPos.lat], [destPos.lng, destPos.lat]] } };
+        if (map.getLayer('route-ln')) map.removeLayer('route-ln');
+        if (map.getLayer('route-bg')) map.removeLayer('route-bg');
+        if (map.getSource('route')) map.removeSource('route');
+        map.addSource('route', { type: 'geojson', data: line });
+        map.addLayer({ id: 'route-bg', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
+        map.addLayer({ id: 'route-ln', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': rideColor, 'line-width': 5 } });
+        map.fitBounds([
+          [Math.min(userPos.lng, destPos.lng) - 0.015, Math.min(userPos.lat, destPos.lat) - 0.015],
+          [Math.max(userPos.lng, destPos.lng) + 0.015, Math.max(userPos.lat, destPos.lat) + 0.015]
+        ], { padding: { top: 80, bottom: 200, left: 40, right: 40 } });
       }
     };
-    if (map.isStyleLoaded()) draw(); else map.on('load', draw);
-  }, [destPos, showRoute]);
+
+    if (map.isStyleLoaded()) drawRoute(); else map.on('load', drawRoute);
+  }, [destPos, showRoute, userPos]);
 
   if (err) return (
     <div style={{ height: h, width: '100%', background: 'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      <span style={{ fontSize: 13, color: '#6B7280' }}>Malabo, Guinea Ecuatorial</span>
+      <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 600 }}>Malabo, Guinea Ecuatorial</span>
     </div>
   );
+
   return (
     <div style={{ position: 'relative', height: h, width: '100%' }}>
       {loading && (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, zIndex: 1 }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'gpsp 1.5s ease-in-out infinite' }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          <span style={{ fontSize: 13, color: '#6B7280' }}>Cargando mapa...</span>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#e0e7ff,#f0fdf4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 1 }}>
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'gpsp 1.5s ease-in-out infinite' }}>
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+            <circle cx="12" cy="9" r="2.5"/>
+          </svg>
+          <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 600 }}>Cargando mapa de Malabo...</span>
         </div>
       )}
       <div ref={ref} style={{ height: '100%', width: '100%' }} />
@@ -222,7 +312,9 @@ export const MiTaxiView: React.FC<Props> = ({ onBack, userBalance = 0, onDebit }
     { id:'1', from:'driver', text:'Hola, estoy en camino. Llegaré en unos minutos.', time:'13:00' },
   ]);
   const [driverChatInput, setDriverChatInput] = useState('');
+  const [driverPos, setDriverPos] = useState<LatLng | null>(null);
   const driverChatEndRef = useRef<HTMLDivElement>(null);
+  const driverAnimRef = useRef<any>(null);
   const timer = useRef<any>(null);
   const watchId = useRef<number | null>(null);
 
