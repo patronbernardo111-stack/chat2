@@ -3135,6 +3135,24 @@ const App: React.FC = () => {
               ))}
             </div>
 
+            {/* Actualizar app / limpiar caché */}
+            <button onClick={async () => {
+              try {
+                if ('serviceWorker' in navigator) {
+                  const regs = await navigator.serviceWorker.getRegistrations();
+                  await Promise.all(regs.map(r => r.unregister()));
+                }
+                if ('caches' in window) {
+                  const keys = await caches.keys();
+                  await Promise.all(keys.map(k => caches.delete(k)));
+                }
+                window.location.reload();
+              } catch { window.location.reload(); }
+            }} style={{ width: '100%', background: 'rgba(0,200,160,0.08)', border: '1px solid rgba(0,200,160,0.25)', borderRadius: '10px', padding: '11px', color: '#00c8a0', fontSize: '12px', fontWeight: '600', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar app (limpiar caché)
+            </button>
+
             {/* Cerrar sesión */}
             <button onClick={() => {
               if(window.confirm('Cerrar sesión?')) {
@@ -11783,13 +11801,17 @@ const App: React.FC = () => {
               <div style={{ background: '#fff', marginTop: '8px' }}>
                 {[...groupMembersList]
                   .sort((a, b) => {
-                    // Admins primero, luego alfabético
+                    // Admins primero
                     const aAdmin = a.role === 'admin' ? 0 : 1;
                     const bAdmin = b.role === 'admin' ? 0 : 1;
                     if (aAdmin !== bAdmin) return aAdmin - bAdmin;
-                    const aName = (a.full_name || a.phone || '').toLowerCase();
-                    const bName = (b.full_name || b.phone || '').toLowerCase();
-                    return aName.localeCompare(bName);
+                    const aName = (a.full_name || '').trim();
+                    const bName = (b.full_name || '').trim();
+                    // Sin nombre real → al final
+                    const aHasName = /^[a-zA-ZÀ-ÿ]/.test(aName) ? 0 : 1;
+                    const bHasName = /^[a-zA-ZÀ-ÿ]/.test(bName) ? 0 : 1;
+                    if (aHasName !== bHasName) return aHasName - bHasName;
+                    return aName.localeCompare(bName, 'es', { sensitivity: 'base' });
                   })
                   .map((member, idx) => {
                   const name = member.full_name || member.phone || 'Miembro';

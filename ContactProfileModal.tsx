@@ -515,9 +515,13 @@ export const ContactProfileModal: React.FC<Props> = ({
                     const aAdmin = a.role === 'admin' ? 0 : 1;
                     const bAdmin = b.role === 'admin' ? 0 : 1;
                     if (aAdmin !== bAdmin) return aAdmin - bAdmin;
-                    const aName = (a.full_name || a.phone || '').toLowerCase();
-                    const bName = (b.full_name || b.phone || '').toLowerCase();
-                    return aName.localeCompare(bName);
+                    const aName = (a.full_name || '').trim();
+                    const bName = (b.full_name || '').trim();
+                    // Sin nombre real → al final
+                    const aHasName = /^[a-zA-ZÀ-ÿ]/.test(aName) ? 0 : 1;
+                    const bHasName = /^[a-zA-ZÀ-ÿ]/.test(bName) ? 0 : 1;
+                    if (aHasName !== bHasName) return aHasName - bHasName;
+                    return aName.localeCompare(bName, 'es', { sensitivity: 'base' });
                   })
                   .map((member, idx) => {
                   const name = member.full_name || member.phone || 'Miembro';
