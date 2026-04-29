@@ -128,7 +128,7 @@ const App: React.FC = () => {
               const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
               if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || avatarUrl; }
             }
-            setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
+            setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl, isGroup });
             setCurrentView('Mensajería');
             (window as any).__pendingOpenChatId = null;
           }
@@ -2509,7 +2509,7 @@ const App: React.FC = () => {
                         const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
                         if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || avatarUrl; }
                       }
-                      setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
+                      setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl, isGroup });
                     }
                     setCurrentView('Mensajería');
                   }
@@ -6445,6 +6445,7 @@ const App: React.FC = () => {
                           title: name, subtitle: lastMsg, time,
                           status: 'online', initials, color: isGroup ? '#a855f7' : '#00c8a0',
                           avatarUrl: avatarUrl,
+                          isGroup,
                           user_id: otherUserId, // para WebRTC
                         });
                         // Auto-registrar contacto si es chat individual y no est en la lista
@@ -8845,7 +8846,7 @@ const App: React.FC = () => {
             const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
             if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || avatarUrl; }
           }
-          setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl });
+          setSelectedChat({ id: chat.id, type: chat.type || 'individual', title: name, subtitle: '', time: '', status: 'online', initials: name.slice(0,2).toUpperCase(), color: isGroup ? '#a855f7' : '#00c8a0', avatarUrl, isGroup });
         } else {
           (window as any).__pendingOpenChatId = chatId;
         }
