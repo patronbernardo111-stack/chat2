@@ -6009,7 +6009,8 @@ const App: React.FC = () => {
         }
         return (
           <div style={{
-            padding: '66px 8px 0px',
+            padding: '0 8px 0px',
+            paddingTop: 'max(66px, calc(env(safe-area-inset-top, 0px) + 66px))',
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',
