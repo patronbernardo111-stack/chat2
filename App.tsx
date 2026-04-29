@@ -9307,59 +9307,48 @@ const App: React.FC = () => {
             </div>
 
             {/* ── Eliminar ── */}
-            <div style={{ background:'rgba(255,255,255,0.85)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', overflow:'hidden', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid rgba(254,226,226,0.8)', marginTop:'8px' }}>
-              {/* Eliminar para mí — disponible para todos */}
+            {/* ── Eliminar ── */}
+            <div style={{ background:'rgba(255,255,255,0.92)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', borderRadius:'18px', boxShadow:'0 4px 24px rgba(0,0,0,0.10)', border:'1px solid rgba(254,226,226,0.8)', marginTop:'8px', padding:'8px 4px', display:'grid', gridTemplateColumns: msgContextMenu.msg.from === 'me' ? 'repeat(2, 1fr)' : '1fr', gap:'2px' }}>
+              {/* Eliminar para mí */}
               <button onClick={async () => {
                 const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                 const msgId = msgContextMenu.msg.id;
-                // Quitar del estado local inmediatamente
                 setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
-                // Guardar en respaldo local para que el polling no lo traiga de vuelta
                 deletedForMeIds.current.add(msgId);
                 localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
                 setMsgContextMenu(null);
-                // Llamar al API si es un UUID real (tiene guiones y longitud de UUID)
                 if (msgId && msgId.length > 10) {
                   try { await chatAPI.deleteMessageForMe(msgId); } catch {}
                 }
                 showToast('Mensaje eliminado para ti', 'info');
-              }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s', borderBottom: msgContextMenu.msg.from === 'me' ? '1px solid rgba(239,68,68,0.12)' : 'none' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.06)'}
+              }} style={{ background:'none', border:'none', padding:'12px 6px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', cursor:'pointer', fontFamily:'inherit', borderRadius:'12px', transition:'background 0.12s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.07)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                <div style={{ width:36, height:36, borderRadius:10, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#EF4444' }}>
+                <div style={{ width:38, height:38, borderRadius:10, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', color:'#EF4444' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                 </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:'14px', fontWeight:'600', color:'#EF4444' }}>Eliminar para mí</div>
-                  <div style={{ fontSize:'11px', color:'#FCA5A5', marginTop:'1px' }}>Solo tú dejarás de ver este mensaje</div>
-                </div>
+                <div style={{ fontSize:'11px', fontWeight:'600', color:'#EF4444', textAlign:'center', lineHeight:'1.2' }}>Para mí</div>
               </button>
               {/* Eliminar para todos — solo el remitente */}
               {msgContextMenu.msg.from === 'me' && (
                 <button onClick={async () => {
                   const cid = selectedChat?.id?.toString() || selectedChat?.title || '';
                   const msgId = msgContextMenu.msg.id;
-                  // Quitar del estado local inmediatamente
                   setChatMessages(prev => ({ ...prev, [cid]: (prev[cid]||[]).filter(m => m.id !== msgId) }));
-                  // Guardar en respaldo local por si el API tarda
                   deletedForMeIds.current.add(msgId);
                   localStorage.setItem('deletedForMeIds', JSON.stringify([...deletedForMeIds.current]));
                   setMsgContextMenu(null);
-                  // Llamar al API si es un UUID real
                   if (msgId && msgId.length > 10) {
                     try { await chatAPI.deleteMessage(msgId); } catch {}
                   }
                   showToast('Mensaje eliminado para todos', 'info');
-                }} style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', display:'flex', alignItems:'center', gap:'13px', cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'background 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.06)'}
+                }} style={{ background:'none', border:'none', padding:'12px 6px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:'6px', cursor:'pointer', fontFamily:'inherit', borderRadius:'12px', transition:'background 0.12s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(239,68,68,0.07)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='none'}>
-                  <div style={{ width:36, height:36, borderRadius:10, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#EF4444' }}>
+                  <div style={{ width:38, height:38, borderRadius:10, background:'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', color:'#EF4444' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:'14px', fontWeight:'600', color:'#EF4444' }}>Eliminar para todos</div>
-                    <div style={{ fontSize:'11px', color:'#FCA5A5', marginTop:'1px' }}>Esta acción no se puede deshacer</div>
-                  </div>
+                  <div style={{ fontSize:'11px', fontWeight:'600', color:'#EF4444', textAlign:'center', lineHeight:'1.2' }}>Para todos</div>
                 </button>
               )}
             </div>
