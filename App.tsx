@@ -10012,22 +10012,58 @@ const App: React.FC = () => {
           background: '#fff', borderRight: '1px solid #e5e7eb',
           zIndex: 1002, overflow: 'hidden', display: 'flex', flexDirection: 'column',
         }}>
-          {/* Barra de búsqueda */}
-          <div style={{ padding: '8px', borderBottom: '1px solid #f0f2f5', flexShrink: 0 }}>
-            <div style={{ position: 'relative' }}>
-              <input type="text" placeholder="Buscar conversación..." value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '7px 12px 7px 32px', background: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-              <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          {/* Barra de búsqueda + botón nuevo chat */}
+          <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid #f0f2f5', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input type="text" placeholder="Buscar..." value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '7px 12px 7px 30px', background: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                <svg style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <button onClick={() => setShowNewChatModal(true)} title="Nuevo chat"
+                style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+            {/* Tabs filtro */}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {[
+                { id: 'individual', label: 'Individual' },
+                { id: 'group', label: 'Grupos' },
+                { id: 'money', label: 'Dinero' },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setMessageFilter(tab.id)}
+                  style={{ flex: 1, padding: '5px 4px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: messageFilter === tab.id ? '700' : '500', background: messageFilter === tab.id ? 'rgba(0,200,160,0.12)' : 'transparent', color: messageFilter === tab.id ? '#00c8a0' : '#9ca3af', outline: 'none' }}>
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
           {/* Lista */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '6px' }}>
             {realChats
               .filter(chat => {
+                const isGrp = chat.type === 'group' || (Array.isArray(chat.participants) && chat.participants.length > 2);
+                if (messageFilter === 'group') return isGrp;
+                if (messageFilter === 'individual') return !isGrp;
+                if (messageFilter === 'money') {
+                  const chatId = chat.id?.toString() || '';
+                  const msgs = (chatMessages as any)[chatId] || [];
+                  return msgs.some((m: any) => m.text?.includes('XAF') || m.text?.includes('💸')) || (chat.last_message?.text || '').includes('XAF');
+                }
+                return true;
+              })
+              .filter(chat => {
                 if (!searchQuery.trim()) return true;
                 const isGrp = chat.type === 'group';
                 let name = chat.name || '';
+                if (!isGrp && chat.participants) {
+                  const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+                  if (other) name = other.full_name || other.users?.full_name || name;
+                }
+                return name.toLowerCase().includes(searchQuery.toLowerCase());
+              })
                 if (!isGrp && chat.participants) {
                   const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
                   if (other) name = other.full_name || other.users?.full_name || name;
