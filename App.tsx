@@ -9383,33 +9383,26 @@ const App: React.FC = () => {
             <div style={{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #00b4e6 40%, #ffffff 60%, #00b4e6 80%, #00c8a0 100%)', boxShadow:'0 0 8px rgba(0,200,160,0.6)', pointerEvents:'none', zIndex:1 }} />
 
             {/* Header de la sidebar — alineado con el header principal (44px) */}
-            <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)', overflow: 'visible' }}>
-              {/* Avatar con bandera superpuesta */}
-              <div style={{ position: 'relative', flexShrink: 0, marginRight: isTablet ? '0' : '2px' }}>
-                <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
-                  {userProfile?.avatar_url
-                    ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
-                        <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
-                      </div>
-                  }
-                </div>
-                {/* Bandera del país — esquina inferior derecha del avatar */}
-                <span style={{
-                  position: 'absolute', bottom: '-4px', right: '-6px',
-                  fontSize: '14px', lineHeight: 1,
-                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.7))',
-                  zIndex: 2,
-                  pointerEvents: 'none',
-                }}>{countryFlag}</span>
+            <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              {/* Avatar */}
+              <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535', flexShrink: 0 }}>
+                {userProfile?.avatar_url
+                  ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
+                    </div>
+                }
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1 }}>
-                    EGCHAT
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    EGCHAT <span style={{ fontSize: '16px', lineHeight: 1 }}>{countryFlag}</span>
                   </div>
                   <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>Guinea Ecuatorial</div>
                 </div>
+              )}
+              {isTablet && (
+                <span style={{ fontSize: '16px', lineHeight: 1, marginTop: '2px' }}>{countryFlag}</span>
               )}
             </div>
 
