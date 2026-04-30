@@ -28,8 +28,10 @@ export default defineConfig({
     hmr: { host: 'localhost' },
   },
   build: {
-    // Minificación con esbuild (más rápido y compatible)
-    minify: true,
+    // Minificación selectiva — esbuild falla con minifyIdentifiers en este codebase
+    minify: false,
+    minifyWhitespace: true,
+    minifySyntax: false,
     // Separar chunks para carga lazy — librerías pesadas se cargan solo cuando se necesitan
     rollupOptions: {
       output: {
