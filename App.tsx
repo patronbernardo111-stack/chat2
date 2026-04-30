@@ -9396,9 +9396,9 @@ const App: React.FC = () => {
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    EGCHAT <span style={{ fontSize: '16px', lineHeight: 1 }}>{countryFlag}</span>
+                    EGCHAT <span style={{ fontSize: '18px', lineHeight: 1, display: 'inline-block' }}>{countryFlag}</span>
                   </div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>Guinea Ecuatorial</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>{countryFlag} Guinea Ecuatorial</div>
                 </div>
               )}
               {isTablet && (
