@@ -1,0 +1,63 @@
+headersOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "C:\\Users\\User\\Desktop\\EGCHAT_BACKUP_20260320\\dist"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "npm run build"
+
+[build.environment]
+NODE_VERSION = "20"
+VITE_API_URL = "https://egchat-api.onrender.com"
+VITE_APP_VERSION = "2.5.3"
+VITE_ENV = "production"
+VITE_APP_URL = "https://profound-bavarois-c558ef.netlify.app"
+NETLIFY_SITE_ID = "a41067d0-9467-4e6e-a1c1-e2bdc90af956"
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[[headers]]
+for = "/index.html"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+
+[[headers]]
+for = "/assets/*"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+
+[[headers]]
+for = "/sw.js"
+
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

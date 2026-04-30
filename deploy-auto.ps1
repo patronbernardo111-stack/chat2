@@ -44,5 +44,5 @@ if (-not $env:NETLIFY_AUTH_TOKEN -or -not $env:NETLIFY_SITE_ID) {
 }
 
 npm run build
-npx netlify deploy --prod --dir=dist --auth=$env:NETLIFY_AUTH_TOKEN --site=$env:NETLIFY_SITE_ID
+netlify deploy --prod --dir=dist --auth=$env:NETLIFY_AUTH_TOKEN --site=$env:NETLIFY_SITE_ID
 Write-Host "Deploy en Netlify completado"
