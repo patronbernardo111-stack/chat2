@@ -71,27 +71,6 @@ const App: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
-  // -- Bandera del país por prefijo telefónico ------------------
-  const PHONE_PREFIX_COUNTRY: Record<string, string> = {
-    '+240':'GQ','+237':'CM','+241':'GA','+234':'NG',
-    '+34':'ES','+33':'FR','+44':'GB','+1':'US',
-    '+49':'DE','+39':'IT','+351':'PT','+55':'BR',
-    '+52':'MX','+86':'CN','+91':'IN','+81':'JP',
-    '+7':'RU','+27':'ZA','+20':'EG','+212':'MA',
-    '+242':'CG','+243':'CD','+225':'CI','+221':'SN',
-  };
-  const getCountryCode = (phone: string): string => {
-    if (!phone) return 'GQ';
-    const sorted = Object.keys(PHONE_PREFIX_COUNTRY).sort((a,b) => b.length - a.length);
-    for (const prefix of sorted) {
-      if (phone.startsWith(prefix)) return PHONE_PREFIX_COUNTRY[prefix];
-    }
-    return 'GQ';
-  };
-  const userCountryCode = getCountryCode(userProfile?.phone || '');
-  // URL de bandera usando flagcdn.com (imágenes reales, funciona en todos los SO)
-  const countryFlagUrl = `https://flagcdn.com/24x18/${userCountryCode.toLowerCase()}.png`;
-  const countryFlag = userCountryCode; // código para alt text
   // -- Auth persistente -----------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
   // -- WebRTC real -----------------------------------------------
@@ -560,6 +539,27 @@ const App: React.FC = () => {
       verificationStatus: 'pending', twoFactorEnabled: false, notificationsEnabled: true,
     };
   });
+  // -- Bandera del país por prefijo telefónico ------------------
+  const PHONE_PREFIX_COUNTRY: Record<string, string> = {
+    '+240':'GQ','+237':'CM','+241':'GA','+234':'NG',
+    '+34':'ES','+33':'FR','+44':'GB','+1':'US',
+    '+49':'DE','+39':'IT','+351':'PT','+55':'BR',
+    '+52':'MX','+86':'CN','+91':'IN','+81':'JP',
+    '+7':'RU','+27':'ZA','+20':'EG','+212':'MA',
+    '+242':'CG','+243':'CD','+225':'CI','+221':'SN',
+  };
+  const getCountryCode = (phone: string): string => {
+    if (!phone) return 'GQ';
+    const sorted = Object.keys(PHONE_PREFIX_COUNTRY).sort((a,b) => b.length - a.length);
+    for (const prefix of sorted) {
+      if (phone.startsWith(prefix)) return PHONE_PREFIX_COUNTRY[prefix];
+    }
+    return 'GQ';
+  };
+  const userCountryCode = getCountryCode(userProfile?.phone || '');
+  // URL de bandera usando flagcdn.com (imágenes reales, funciona en todos los SO)
+  const countryFlagUrl = `https://flagcdn.com/24x18/${userCountryCode.toLowerCase()}.png`;
+  const countryFlag = userCountryCode; // código para alt text
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
   const [editedProfile, setEditedProfile] = useState<any>(null);
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
