@@ -4847,7 +4847,8 @@ const App: React.FC = () => {
           const chatId = sc.id?.toString() || sc.title;
           const msgs = chatMessages[chatId] || [];
 
-          // Helper estable ? captura chatId en closure fijo
+          // En desktop/tablet: mostrar lista de chats a la izquierda mientras el chat está abierto
+          // El chat-view-container ya tiene left: 352px/580px para dejar espacio
           const addMsg = (msg: any) => {
             const key = sc.id?.toString() || sc.title;
             setChatMessages(prev => ({ ...prev, [key]: [...(prev[key] || []), msg] }));
@@ -4896,7 +4897,52 @@ const App: React.FC = () => {
           };
 
           return (
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <>
+            {/* Panel lista de chats — visible en desktop/tablet incluso con chat abierto */}
+            {!device.isMobile && (
+              <div style={{
+                position: 'fixed', top: 0, bottom: 0,
+                left: device.isTablet ? '72px' : '240px',
+                width: device.isTablet ? '280px' : '340px',
+                background: '#f0f2f5', borderRight: '1px solid #e5e7eb',
+                zIndex: 999, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                paddingTop: '60px',
+              }}>
+                {/* Mini lista de chats — solo avatares y nombres */}
+                <div style={{ padding: '8px', overflowY: 'auto', flex: 1 }}>
+                  {realChats.slice(0, 30).map((chat: any) => {
+                    const isGrp = chat.type === 'group';
+                    let name = chat.name || '';
+                    let avatarUrl = '';
+                    if (!isGrp && chat.participants) {
+                      const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+                      if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || ''; }
+                    }
+                    if (!name) name = 'Chat';
+                    const initials2 = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
+                    const isActive = selectedChat?.id?.toString() === chat.id?.toString();
+                    const lastMsg = chat.last_message?.text || '';
+                    const time2 = chat.last_message?.created_at ? new Date(chat.last_message.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '';
+                    return (
+                      <div key={chat.id} onClick={() => {
+                        setSelectedChat({ id: chat.id, type: chat.type||'individual', title: name, subtitle: lastMsg, time: time2, status: 'online', initials: initials2, color: isGrp ? '#a855f7' : '#00c8a0', avatarUrl, isGroup: isGrp });
+                        setCurrentView('Mensajería');
+                      }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 8px', borderRadius: '10px', cursor: 'pointer', background: isActive ? 'rgba(0,200,160,0.1)' : 'transparent', marginBottom: '2px', border: isActive ? '1px solid rgba(0,200,160,0.2)' : '1px solid transparent' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: isGrp ? 'linear-gradient(135deg,#a855f7,#6366f1)' : 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                          {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span>{initials2}</span>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '14px', fontWeight: isActive ? '700' : '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                          <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lastMsg || 'Sin mensajes'}</div>
+                        </div>
+                        {time2 && <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>{time2}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '352px' : '580px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -6114,6 +6160,7 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
+          </>
           );
         }
         return (

@@ -103,8 +103,21 @@ export const ContactProfileModal: React.FC<Props> = ({
     }
   }, [cp.title, cp.name, editingGroupName]);
 
-  // Todos los miembros del grupo pueden editar nombre y foto
-  const isAdmin = true;
+  // Determinar si el usuario actual es admin del grupo
+  // Lógica robusta: comparar IDs normalizados, con fallback a true si no se puede determinar
+  const isAdmin = React.useMemo(() => {
+    if (!isGroup) return true; // contacto individual: siempre mostrar opciones
+    if (groupMembers.length === 0) return true; // sin datos: asumir admin (optimista)
+    const myId = currentUserId?.toString().trim();
+    if (!myId) return true; // sin ID propio: asumir admin
+    const myMember = groupMembers.find(m =>
+      m.user_id?.toString().trim() === myId
+    );
+    if (!myMember) return true; // no encontrado en lista: asumir admin (puede ser creador)
+    // Si está en la lista, verificar su rol
+    return myMember.role === 'admin' ||
+      groupMembers[0]?.user_id?.toString().trim() === myId;
+  }, [isGroup, groupMembers, currentUserId]);
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);
