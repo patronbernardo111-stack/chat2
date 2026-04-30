@@ -1,14 +1,14 @@
 {
   "enabled": true,
   "name": "Auto Deploy a Vercel",
-  "description": "Hace build y push a git — Vercel despliega automáticamente desde GitHub sin consumir el límite de la CLI",
+  "description": "Push a git solo si hay cambios — Vercel despliega automáticamente desde GitHub. No hace build para no quemar el límite de 100 deploys/día de Vercel.",
   "version": "1",
   "when": {
     "type": "agentStop"
   },
   "then": {
     "type": "runCommand",
-    "command": "npm run build && git add -A && git diff --cached --quiet || git commit -m \"deploy: auto build and push\" && git push && powershell -Command \"Start-Sleep 30; $url = (npx vercel ls --scope dulcendongs-projects 2>&1 | Select-String 'egchat-v2-[a-z0-9]+-dulcendongs-projects.vercel.app' | Select-Object -First 1).Matches.Value; if ($url) { npx vercel alias set $url egchat-v2.vercel.app --scope dulcendongs-projects; Write-Host 'Alias asignado:' $url } else { Write-Host 'No se encontro deployment para asignar alias' }\"",
+    "command": "git add -A && git diff --cached --quiet || (git commit -m \"deploy: auto build and push\" && git push && powershell -Command \"Start-Sleep 90; $url = (npx vercel ls --scope dulcendongs-projects 2>&1 | Select-String 'egchat-v2-[a-z0-9]+-dulcendongs-projects.vercel.app' | Select-Object -First 1).Matches.Value; if ($url) { npx vercel alias set $url egchat-v2.vercel.app --scope dulcendongs-projects; Write-Host 'Alias asignado:' $url } else { Write-Host 'Sin nuevo deployment aun' }\")",
     "timeout": 360
   }
 }
