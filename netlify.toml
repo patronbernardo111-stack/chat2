@@ -8,6 +8,7 @@
   VITE_APP_VERSION = "2.5.3"
   VITE_ENV = "production"
   VITE_APP_URL = "https://profound-bavarois-c558ef.netlify.app"
+  NETLIFY_SITE_ID = "a41067d0-9467-4e6e-a1c1-e2bdc90af956"
 
 # Redirigir todas las rutas al index.html (SPA)
 [[redirects]]
