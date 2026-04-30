@@ -87,7 +87,7 @@ export const ContactProfileModal: React.FC<Props> = ({
   groupMembers = [], currentUserId, onAddMemberToContacts,
   onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup, onGroupAvatarChange, onGroupNameChange
 }) => {
-  const isGroup = !!cp.isGroup;
+  const isGroup = !!cp.isGroup || cp.type === 'group';
   const [tab, setTab] = React.useState<'info'|'media'|'grupos'>('info');
   const [note, setNote] = React.useState('');
   const [editNote, setEditNote] = React.useState('');
@@ -103,19 +103,8 @@ export const ContactProfileModal: React.FC<Props> = ({
     }
   }, [cp.title, cp.name, editingGroupName]);
 
-  // Determinar si el usuario actual es admin del grupo
-  // Iniciar como true (optimista) para no ocultar controles mientras cargan los miembros
-  const [isAdminState, setIsAdminState] = React.useState<boolean>(true);
-  React.useEffect(() => {
-    if (groupMembers.length === 0) return; // esperar a que carguen
-    const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
-    // Si no se encuentra el usuario en la lista, asumir admin (puede ser el creador)
-    if (!myMember) return;
-    const admin = myMember.role === 'admin' || 
-      groupMembers[0]?.user_id?.toString() === currentUserId?.toString();
-    setIsAdminState(admin);
-  }, [groupMembers, currentUserId]);
-  const isAdmin = !isGroup || isAdminState;
+  // Todos los miembros del grupo pueden editar nombre y foto
+  const isAdmin = true;
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);
