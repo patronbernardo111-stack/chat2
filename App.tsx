@@ -9469,7 +9469,13 @@ const App: React.FC = () => {
       })()}
 
       {/* ── CONTENIDO PRINCIPAL ───────────────────────────────────────── */}
-      <div style={{ flex: device.isMobile ? undefined : 1, overflow: 'hidden', position: 'relative', height: '100vh' }}>
+      <div style={{ 
+        marginLeft: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'),
+        flex: device.isMobile ? undefined : 1, 
+        overflow: 'hidden', 
+        position: 'relative', 
+        height: '100vh' 
+      }}>
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
       {renderLayoutPanel()}
