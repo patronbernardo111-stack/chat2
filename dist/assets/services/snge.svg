@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="20" fill="#0A4A8A"/>
+  <path d="M100 30 C60 30 30 60 30 100 C30 140 60 170 100 170 C140 170 170 140 170 100 C170 60 140 30 100 30Z" fill="none" stroke="#4FC3F7" stroke-width="6" opacity="0.4"/>
+  <path d="M100 50 C75 65 55 80 50 100 C45 120 60 145 80 155 C100 165 125 160 140 145 C155 130 158 105 150 85 C142 65 120 50 100 50Z" fill="#1565C0" opacity="0.6"/>
+  <path d="M100 60 Q80 80 75 100 Q70 120 85 140 Q100 155 115 140 Q130 125 125 100 Q120 75 100 60Z" fill="#42A5F5" opacity="0.8"/>
+  <circle cx="100" cy="100" r="22" fill="#ffffff" opacity="0.9"/>
+  <path d="M100 78 Q88 88 88 100 Q88 112 100 118 Q112 112 112 100 Q112 88 100 78Z" fill="#0A4A8A"/>
+  <text x="100" y="192" font-family="Arial Black, sans-serif" font-size="16" font-weight="900" fill="#4FC3F7" text-anchor="middle" letter-spacing="2">SNGE</text>
+</svg>

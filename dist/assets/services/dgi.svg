@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="20" fill="#1B3A6B"/>
+  <path d="M100 25 L120 55 L155 55 L128 75 L138 108 L100 88 L62 108 L72 75 L45 55 L80 55 Z" fill="#FFD700" opacity="0.9"/>
+  <rect x="40" y="120" width="120" height="8" rx="4" fill="#FFD700" opacity="0.6"/>
+  <rect x="55" y="135" width="90" height="6" rx="3" fill="#FFD700" opacity="0.4"/>
+  <text x="100" y="168" font-family="Arial Black, sans-serif" font-size="18" font-weight="900" fill="#FFD700" text-anchor="middle" letter-spacing="2">DGI</text>
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="9" fill="rgba(255,215,0,0.7)" text-anchor="middle">DIRECCIÓN GENERAL IMPUESTOS</text>
+</svg>

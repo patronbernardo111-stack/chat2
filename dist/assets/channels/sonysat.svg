@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="32" fill="#1A1A1A"/>
+  <!-- S letter bold -->
+  <path d="M72 68 Q72 52 100 52 Q128 52 128 72 Q128 88 100 96 Q72 104 72 120 Q72 140 100 140 Q128 140 128 124" stroke="#ffffff" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <text x="100" y="168" font-family="Arial Black, sans-serif" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">SONY SAT</text>
+  <text x="100" y="184" font-family="Arial, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)" text-anchor="middle">GUINEA ECUATORIAL</text>
+</svg>

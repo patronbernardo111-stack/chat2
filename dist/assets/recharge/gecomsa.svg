@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="32" fill="#0066CC"/>
+  <circle cx="100" cy="85" r="38" fill="none" stroke="#ffffff" stroke-width="8"/>
+  <circle cx="100" cy="85" r="20" fill="#ffffff"/>
+  <circle cx="100" cy="85" r="8" fill="#0066CC"/>
+  <text x="100" y="148" font-family="Arial Black, sans-serif" font-size="18" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">GECOMSA</text>
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="11" fill="rgba(255,255,255,0.75)" text-anchor="middle">TELECOMUNICACIONES</text>
+</svg>

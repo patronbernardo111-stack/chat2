@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="20" fill="#C8102E"/>
+  <!-- C shape bold -->
+  <path d="M140 55 A58 58 0 1 0 140 145" stroke="#ffffff" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <!-- Inner accent -->
+  <path d="M130 72 A38 38 0 1 0 130 128" stroke="rgba(255,255,255,0.3)" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <text x="100" y="185" font-family="Arial Black, sans-serif" font-size="16" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">CCEI BANK</text>
+</svg>

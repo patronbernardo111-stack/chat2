@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="32" fill="#003082"/>
+  <!-- TV screen -->
+  <rect x="30" y="50" width="140" height="95" rx="10" fill="none" stroke="#ffffff" stroke-width="7"/>
+  <rect x="42" y="62" width="116" height="71" rx="5" fill="#00b4e6" opacity="0.3"/>
+  <!-- Antenna -->
+  <line x1="75" y1="50" x2="55" y2="25" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <line x1="125" y1="50" x2="145" y2="25" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <!-- Stand -->
+  <line x1="100" y1="145" x2="100" y2="165" stroke="#ffffff" stroke-width="6"/>
+  <line x1="70" y1="165" x2="130" y2="165" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+  <!-- TVGE text inside screen -->
+  <text x="100" y="105" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">TVGE</text>
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="10" fill="rgba(255,255,255,0.7)" text-anchor="middle">TELEVISIÓN GUINEA ECUATORIAL</text>
+</svg>
