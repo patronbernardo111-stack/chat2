@@ -296,7 +296,7 @@ const App: React.FC = () => {
   const [homeButtonPos, setHomeButtonPos] = useState<{ x: number; y: number }>({ x: window.innerWidth - 70, y: window.innerHeight - 200 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [messageFilter, setMessageFilter] = useState<string>('all');
+  const [messageFilter, setMessageFilter] = useState<string>('individual');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, Array<{id: string; from: 'me'|'them'; text: string; time: string; type?: 'text'|'audio'|'image'; status?: 'pending'|'delivered'|'read'; audioUrl?: string; imageUrl?: string; fileUrl?: string; fileName?: string; fileSize?: string; fileExt?: string}>>>(() => {
@@ -6368,7 +6368,6 @@ const App: React.FC = () => {
                 paddingBottom: '2px'
               }}>
                 {[
-                  { id: 'all', label: 'Todo', icon: 'world' },
                   { id: 'individual', label: 'Individual', icon: 'user-plus' },
                   { id: 'group', label: 'Grupos', icon: 'users-group' },
                   { id: 'money', label: 'Dinero', icon: 'money' }
