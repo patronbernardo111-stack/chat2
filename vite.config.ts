@@ -28,19 +28,8 @@ export default defineConfig({
     hmr: { host: 'localhost' },
   },
   build: {
-    // Minificación agresiva con terser
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.warn', 'console.info', 'console.debug'],
-        passes: 2,
-        ecma: 2020,
-      },
-      mangle: { safari10: true },
-      format: { comments: false },
-    },
+    // Minificación con esbuild (más rápido y compatible)
+    minify: true,
     // Separar chunks para carga lazy — librerías pesadas se cargan solo cuando se necesitan
     rollupOptions: {
       output: {
