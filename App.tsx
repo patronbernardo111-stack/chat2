@@ -72,24 +72,26 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
   // -- Bandera del país por prefijo telefónico ------------------
-  const PHONE_PREFIX_FLAGS: Record<string, string> = {
-    '+240':'🇬🇶','+237':'🇨🇲','+241':'🇬🇦','+234':'🇳🇬',
-    '+34':'🇪🇸','+33':'🇫🇷','+44':'🇬🇧','+1':'🇺🇸',
-    '+49':'🇩🇪','+39':'🇮🇹','+351':'🇵🇹','+55':'🇧🇷',
-    '+52':'🇲🇽','+86':'🇨🇳','+91':'🇮🇳','+81':'🇯🇵',
-    '+7':'🇷🇺','+27':'🇿🇦','+20':'🇪🇬','+212':'🇲🇦',
-    '+242':'🇨🇬','+243':'🇨🇩','+225':'🇨🇮','+221':'🇸🇳',
+  const PHONE_PREFIX_COUNTRY: Record<string, string> = {
+    '+240':'GQ','+237':'CM','+241':'GA','+234':'NG',
+    '+34':'ES','+33':'FR','+44':'GB','+1':'US',
+    '+49':'DE','+39':'IT','+351':'PT','+55':'BR',
+    '+52':'MX','+86':'CN','+91':'IN','+81':'JP',
+    '+7':'RU','+27':'ZA','+20':'EG','+212':'MA',
+    '+242':'CG','+243':'CD','+225':'CI','+221':'SN',
   };
-  const getFlagFromPhone = (phone: string): string => {
-    if (!phone) return '🇬🇶';
-    // Ordenar por longitud descendente para que +240 tenga prioridad sobre +2
-    const sorted = Object.keys(PHONE_PREFIX_FLAGS).sort((a,b) => b.length - a.length);
+  const getCountryCode = (phone: string): string => {
+    if (!phone) return 'GQ';
+    const sorted = Object.keys(PHONE_PREFIX_COUNTRY).sort((a,b) => b.length - a.length);
     for (const prefix of sorted) {
-      if (phone.startsWith(prefix)) return PHONE_PREFIX_FLAGS[prefix];
+      if (phone.startsWith(prefix)) return PHONE_PREFIX_COUNTRY[prefix];
     }
-    return '🌍';
+    return 'GQ';
   };
-  const countryFlag = getFlagFromPhone(userProfile?.phone || '');
+  const userCountryCode = getCountryCode(userProfile?.phone || '');
+  // URL de bandera usando flagcdn.com (imágenes reales, funciona en todos los SO)
+  const countryFlagUrl = `https://flagcdn.com/24x18/${userCountryCode.toLowerCase()}.png`;
+  const countryFlag = userCountryCode; // código para alt text
   // -- Auth persistente -----------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
   // -- WebRTC real -----------------------------------------------
@@ -9395,14 +9397,15 @@ const App: React.FC = () => {
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    EGCHAT <span style={{ fontSize: '18px', lineHeight: 1, display: 'inline-block' }}>{countryFlag}</span>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    EGCHAT
+                    <img src={countryFlagUrl} alt={countryFlag} style={{ width: '20px', height: '15px', borderRadius: '2px', objectFit: 'cover', flexShrink: 0 }} />
                   </div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>{countryFlag} Guinea Ecuatorial</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>Guinea Ecuatorial</div>
                 </div>
               )}
               {isTablet && (
-                <span style={{ fontSize: '16px', lineHeight: 1, marginTop: '2px' }}>{countryFlag}</span>
+                <img src={countryFlagUrl} alt={countryFlag} style={{ width: '20px', height: '15px', borderRadius: '2px', objectFit: 'cover', marginTop: '2px' }} />
               )}
             </div>
 
