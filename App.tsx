@@ -71,21 +71,25 @@ const App: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
-  // -- Bandera del país por IP ----------------------------------
-  const [countryFlag, setCountryFlag] = useState<string>('🇬🇶');
-  useEffect(() => {
-    fetch('https://ipapi.co/json/')
-      .then(r => r.json())
-      .then(d => {
-        if (d.country_code) {
-          const flag = d.country_code.toUpperCase().split('').map((c: string) =>
-            String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
-          ).join('');
-          setCountryFlag(flag);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // -- Bandera del país por prefijo telefónico ------------------
+  const PHONE_PREFIX_FLAGS: Record<string, string> = {
+    '+240':'🇬🇶','+237':'🇨🇲','+241':'🇬🇦','+234':'🇳🇬',
+    '+34':'🇪🇸','+33':'🇫🇷','+44':'🇬🇧','+1':'🇺🇸',
+    '+49':'🇩🇪','+39':'🇮🇹','+351':'🇵🇹','+55':'🇧🇷',
+    '+52':'🇲🇽','+86':'🇨🇳','+91':'🇮🇳','+81':'🇯🇵',
+    '+7':'🇷🇺','+27':'🇿🇦','+20':'🇪🇬','+212':'🇲🇦',
+    '+242':'🇨🇬','+243':'🇨🇩','+225':'🇨🇮','+221':'🇸🇳',
+  };
+  const getFlagFromPhone = (phone: string): string => {
+    if (!phone) return '🇬🇶';
+    // Ordenar por longitud descendente para que +240 tenga prioridad sobre +2
+    const sorted = Object.keys(PHONE_PREFIX_FLAGS).sort((a,b) => b.length - a.length);
+    for (const prefix of sorted) {
+      if (phone.startsWith(prefix)) return PHONE_PREFIX_FLAGS[prefix];
+    }
+    return '🌍';
+  };
+  const countryFlag = getFlagFromPhone(userProfile?.phone || '');
   // -- Auth persistente -----------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
   // -- WebRTC real -----------------------------------------------
