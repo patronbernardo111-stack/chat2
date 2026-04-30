@@ -9436,11 +9436,19 @@ const App: React.FC = () => {
             {/* Perfil usuario abajo */}
             <button onClick={() => setShowProfileView(true)}
               style={{ width: isTablet ? '44px' : '100%', padding: isTablet ? '0' : '10px 12px', borderRadius: '10px', border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start', gap: '10px', outline: 'none', flexShrink: 0, height: isTablet ? '44px' : 'auto' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.15)' }}>
-                {userProfile?.avatar_url
-                  ? <img src={userProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
-                }
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+                  {userProfile?.avatar_url
+                    ? <img src={userProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
+                  }
+                </div>
+                {/* Bandera del país */}
+                <span style={{
+                  position: 'absolute', bottom: '-2px', right: '-4px',
+                  fontSize: '13px', lineHeight: 1,
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+                }}>{countryFlag}</span>
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>

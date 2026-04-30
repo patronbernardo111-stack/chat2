@@ -205,7 +205,11 @@ export default function AuthScreen({onAuth}:Props) {
           <img src="/logo-transparent.png" alt="EgChat" style={{width:140,height:140,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
         </div>
         <div style={{textAlign:'center',marginTop:'4px'}}>
-          <img src="/img.jpg" alt="EGCHAT" style={{height:'40px',objectFit:'contain',mixBlendMode:'multiply',opacity:0.9}}/>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',flexWrap:'wrap',marginBottom:'4px'}}>
+            {['GQ','CM','GA','NG','ES','FR','GB','US'].map(code=>(
+              <span key={code} style={{fontSize:'22px',lineHeight:1}}>{String.fromCodePoint(...code.toUpperCase().split('').map(c=>127397+c.charCodeAt(0)))}</span>
+            ))}
+          </div>
           <p style={{fontSize:'13px',color:'#6B7280',margin:'4px 0 0',fontWeight:'500'}}>Tu plataforma de pagos y servicios</p>
         </div>
       </div>
@@ -247,7 +251,11 @@ export default function AuthScreen({onAuth}:Props) {
           <img src="/logo-transparent.png" alt="EgChat" style={{width:60,height:60,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
         </div>
         <div style={{textAlign:'center',marginTop:'4px'}}>
-          <img src="/img.jpg" alt="EGCHAT" style={{height:'32px',objectFit:'contain',mixBlendMode:'multiply',opacity:0.9}}/>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',flexWrap:'wrap'}}>
+            {['GQ','CM','GA','NG','ES','FR','GB','US'].map(code=>(
+              <span key={code} style={{fontSize:'18px',lineHeight:1}}>{String.fromCodePoint(...code.toUpperCase().split('').map(c=>127397+c.charCodeAt(0)))}</span>
+            ))}
+          </div>
         </div>
       </div>
       <div style={{flex:1,padding:'12px 20px 28px'}}>
