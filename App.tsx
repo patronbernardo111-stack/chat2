@@ -13,6 +13,7 @@ import { RecargaMonederoModal, RetiroMonederoModal } from './WalletSystem';
 import { useWallet } from './WalletSystem';
 import { ContactProfileModal } from './ContactProfileModal';
 import { CameraModal } from './CameraModal';
+import { useDevice } from './useDevice';
 import { UpdateBanner } from './UpdateBanner';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { Avatar } from './Avatar';
@@ -51,6 +52,7 @@ interface Transaction {
 }
 
 const App: React.FC = () => {
+  const device = useDevice();
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
   // -- Auth persistente -----------------------------------------
@@ -9272,9 +9274,91 @@ const App: React.FC = () => {
         height: '100vh',
         overflow: 'hidden',
         background: '#f0f2f5',
-        position: 'relative'
+        position: 'relative',
+        display: device.isMobile ? 'block' : 'flex',
       }}
     >
+      {/* ── SIDEBAR TABLET/DESKTOP ─────────────────────────────────────── */}
+      {!device.isMobile && (() => {
+        const isTablet = device.isTablet;
+        const sideW = isTablet ? 72 : 240;
+        const navItems = [
+          { id: 'Mensajería', label: 'Mensajería', icon: renderIcon('mensajes', isTablet ? 22 : 20) },
+          { id: 'monedero',   label: 'Cartera',    icon: renderIcon('wallet',   isTablet ? 22 : 20) },
+          { id: 'servicios',  label: 'Servicios',  icon: renderIcon('services', isTablet ? 22 : 20) },
+          { id: 'ajustes',    label: 'Ajustes',    icon: renderIcon('ajustes',  isTablet ? 22 : 20) },
+        ];
+        return (
+          <aside style={{
+            width: `${sideW}px`, flexShrink: 0,
+            background: 'linear-gradient(180deg, #00c8a0 0%, #00b4e6 100%)',
+            display: 'flex', flexDirection: 'column', alignItems: isTablet ? 'center' : 'stretch',
+            paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))',
+            paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+            paddingLeft: isTablet ? '0' : '12px',
+            paddingRight: isTablet ? '0' : '12px',
+            gap: '4px', zIndex: 100,
+            boxShadow: '2px 0 16px rgba(0,0,0,0.15)',
+            height: '100vh',
+          }}>
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', marginBottom: '20px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '4px' }}>
+              <div style={{ width: isTablet ? '40px' : '36px', height: isTablet ? '40px' : '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: isTablet ? '14px' : '13px', fontWeight: '900', color: '#fff' }}>EG</span>
+              </div>
+              {!isTablet && (
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', lineHeight: 1 }}>EGCHAT</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>Guinea Ecuatorial</div>
+                </div>
+              )}
+            </div>
+
+            {/* Nav items */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', alignItems: isTablet ? 'center' : 'stretch' }}>
+              {navItems.map(item => (
+                <button key={item.id} onClick={() => setCurrentView(item.id)} title={item.label}
+                  style={{
+                    width: isTablet ? '52px' : '100%',
+                    height: isTablet ? '52px' : 'auto',
+                    padding: isTablet ? '0' : '10px 12px',
+                    borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: currentView === item.id ? 'rgba(255,255,255,0.25)' : 'transparent',
+                    display: 'flex', flexDirection: isTablet ? 'column' : 'row',
+                    alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start',
+                    gap: isTablet ? '3px' : '12px', outline: 'none',
+                    boxShadow: currentView === item.id ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                  }}>
+                  <div style={{ color: '#fff', flexShrink: 0 }}>{item.icon}</div>
+                  <span style={{ fontSize: isTablet ? '8px' : '14px', fontWeight: currentView === item.id ? '700' : '500', color: isTablet ? 'rgba(255,255,255,0.85)' : '#fff', lineHeight: 1 }}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Avatar usuario */}
+            <button onClick={() => setShowProfileView(true)}
+              style={{ width: isTablet ? '40px' : '100%', height: isTablet ? '40px' : 'auto', padding: isTablet ? '0' : '10px 12px', borderRadius: isTablet ? '50%' : '12px', border: isTablet ? '2px solid rgba(255,255,255,0.5)' : 'none', background: 'rgba(255,255,255,0.15)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start', gap: '10px', outline: 'none', flexShrink: 0 }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                {userProfile?.avatar_url
+                  ? <img src={userProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
+                }
+              </div>
+              {!isTablet && (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'Mi perfil'}</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>Ver perfil</div>
+                </div>
+              )}
+            </button>
+          </aside>
+        );
+      })()}
+
+      {/* ── CONTENIDO PRINCIPAL ───────────────────────────────────────── */}
+      <div style={{ flex: device.isMobile ? undefined : 1, overflow: 'hidden', position: 'relative', height: '100vh' }}>
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
       {renderLayoutPanel()}
