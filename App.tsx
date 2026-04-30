@@ -2275,7 +2275,10 @@ const App: React.FC = () => {
   };
 
   // Renderizar header - OPTIMIZADO PARA Móvil CON COLORES DEL LOGO
-  const renderHeader = () => (
+  const renderHeader = () => {
+    // Nunca mostrar el header principal cuando hay un chat abierto
+    if (selectedChat) return null;
+    return (
     <div
       id="app-main-header"
       ref={(el) => {
@@ -2468,7 +2471,8 @@ const App: React.FC = () => {
       </div>
       </div>
     </div>
-  );
+    );
+  };
 
   // Panel de notificaciones
   const renderNotificationsPanel = () => {
