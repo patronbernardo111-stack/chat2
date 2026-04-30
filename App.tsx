@@ -71,6 +71,21 @@ const App: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
+  // -- Bandera del país por IP ----------------------------------
+  const [countryFlag, setCountryFlag] = useState<string>('🇬🇶');
+  useEffect(() => {
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(d => {
+        if (d.country_code) {
+          const flag = d.country_code.toUpperCase().split('').map((c: string) =>
+            String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
+          ).join('');
+          setCountryFlag(flag);
+        }
+      })
+      .catch(() => {});
+  }, []);
   // -- Auth persistente -----------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
   // -- WebRTC real -----------------------------------------------
@@ -9344,22 +9359,7 @@ const App: React.FC = () => {
           { id: 'ajustes',    label: 'Ajustes',    icon: renderIcon('ajustes',  isTablet ? 22 : 20) },
         ];
 
-        // Detectar país por IP para mostrar bandera
-        const [countryFlag, setCountryFlag] = React.useState('🇬🇶');
-        React.useEffect(() => {
-          fetch('https://ipapi.co/json/')
-            .then(r => r.json())
-            .then(d => {
-              if (d.country_code) {
-                // Convertir código de país a emoji de bandera
-                const flag = d.country_code.toUpperCase().split('').map((c: string) =>
-                  String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
-                ).join('');
-                setCountryFlag(flag);
-              }
-            })
-            .catch(() => {});
-        }, []);
+        // countryFlag viene del estado del componente principal
 
         return (
           <aside style={{
