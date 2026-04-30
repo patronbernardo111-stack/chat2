@@ -14,12 +14,12 @@ export interface DeviceInfo {
 
 // Breakpoints
 // mobile:  < 768px
-// tablet:  768px – 1199px
-// desktop: >= 1200px
+// tablet:  768px – 1023px
+// desktop: >= 1024px
 
 function getDeviceType(width: number): DeviceType {
   if (width < 768) return 'mobile';
-  if (width < 1200) return 'tablet';
+  if (width < 1024) return 'tablet';
   return 'desktop';
 }
 
