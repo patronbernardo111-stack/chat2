@@ -98,6 +98,8 @@ export const ContactProfileModal: React.FC<Props> = ({
   const [starred, setStarred] = React.useState(!!isFavorite);
   const [editingGroupName, setEditingGroupName] = React.useState(false);
   const [groupNameInput, setGroupNameInput] = React.useState(cp.title || cp.name || '');
+  // Estado local del avatar para reflejar cambios inmediatamente sin mutar la prop
+  const [localAvatarUrl, setLocalAvatarUrl] = React.useState<string>(cp.avatarUrl || cp.avatar_url || cp.photo || '');
 
   // Sincronizar groupNameInput si el nombre del grupo cambia desde fuera (ej. tras guardar)
   React.useEffect(() => {
@@ -105,6 +107,12 @@ export const ContactProfileModal: React.FC<Props> = ({
       setGroupNameInput(cp.title || cp.name || '');
     }
   }, [cp.title, cp.name, editingGroupName]);
+
+  // Sincronizar localAvatarUrl cuando el avatar cambia desde fuera
+  React.useEffect(() => {
+    const newUrl = cp.avatarUrl || cp.avatar_url || cp.photo || '';
+    setLocalAvatarUrl(newUrl);
+  }, [cp.avatarUrl, cp.avatar_url, cp.photo]);
 
   // Determinar si el usuario actual es admin del grupo
   // Lógica robusta: comparar IDs normalizados, con fallback a true si no se puede determinar
@@ -172,7 +180,7 @@ export const ContactProfileModal: React.FC<Props> = ({
         {/* Avatar + nombre — estilo EGCHAT */}
         <div style={{background:'#fff',padding:'28px 16px 20px',textAlign:'center',marginBottom:'8px'}}>
           <div style={{display:'inline-block',marginBottom:'14px',position:'relative'}}>
-            <Avatar name={cp.title||cp.name||'?'} size={90} status={cp.status} showStatus={!isGroup} photo={cp.avatarUrl || cp.avatar_url || cp.photo} />
+            <Avatar name={cp.title||cp.name||'?'} size={90} status={cp.status} showStatus={!isGroup} photo={localAvatarUrl || cp.avatarUrl || cp.avatar_url || cp.photo} />
             {/* Botón editar foto — solo para grupos admin */}
             {isGroup && isAdmin && (
               <button
@@ -181,16 +189,30 @@ export const ContactProfileModal: React.FC<Props> = ({
                   inp.type = 'file'; inp.accept = 'image/*';
                   inp.onchange = () => {
                     const f = inp.files?.[0];
-                    if (f && f.size < 5 * 1024 * 1024) {
-                      const r = new FileReader();
-                      r.onload = (ev) => {
-                        const url = ev.target?.result as string;
-                        // Actualizar avatar en el objeto cp
-                        cp.avatarUrl = url;
-                        if (onGroupAvatarChange) onGroupAvatarChange(url);
+                    if (!f) return;
+                    if (f.size > 10 * 1024 * 1024) { alert('La imagen es demasiado grande (máx 10MB)'); return; }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const original = ev.target?.result as string;
+                      // Comprimir la imagen a máx 400x400 y calidad 0.75
+                      const img = new Image();
+                      img.onload = () => {
+                        const MAX = 400;
+                        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+                        const w = Math.round(img.width * scale);
+                        const h = Math.round(img.height * scale);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        const compressed = ctx
+                          ? (ctx.drawImage(img, 0, 0, w, h), canvas.toDataURL('image/jpeg', 0.75))
+                          : original;
+                        setLocalAvatarUrl(compressed);
+                        if (onGroupAvatarChange) onGroupAvatarChange(compressed);
                       };
-                      r.readAsDataURL(f);
-                    }
+                      img.src = original;
+                    };
+                    reader.readAsDataURL(f);
                   };
                   inp.click();
                 }}
