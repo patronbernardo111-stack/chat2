@@ -9,7 +9,7 @@ initSelectionErrorHandler();
 
 // ── Forzar limpieza de SW y caches viejos ────────────────────────────────
 // Versión de la app — cambiar esto fuerza que todos los usuarios recarguen
-const APP_VERSION = 'v20260430-flag-fix';
+const APP_VERSION = 'v20260430-chat-header-fix';
 const storedVersion = localStorage.getItem('egchat_app_version');
 if (storedVersion !== APP_VERSION) {
   // Nueva versión detectada — limpiar todos los caches del SW
