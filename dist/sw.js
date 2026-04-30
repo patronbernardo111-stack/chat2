@@ -1,5 +1,5 @@
 // Service Worker v20260429c — Web Push + llamadas + mensajes + auto-renovación + caché offline + force-update
-const CACHE = 'egchat-v20260430-molgaili';
+const CACHE = 'egchat-v20260430-molgj2vy';
 const API_BASE = 'https://egchat-api.onrender.com';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
@@ -14,8 +14,8 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  // NO skipWaiting automático — evita parpadeo en iOS Safari
-  // El nuevo SW esperará hasta que todas las pestañas se cierren
+  // skipWaiting automático para que los cambios se apliquen de inmediato
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
   );

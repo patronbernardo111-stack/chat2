@@ -1,5 +1,8 @@
+// ContactProfileModal v2.1 — group edit + admin remove member
 import React from 'react';
 import { Avatar } from './Avatar';
+
+const _VERSION = '2.1.0'; // group-admin-fix
 
 type Msg = { id:string; from:'me'|'them'; text:string; time:string; status?:string };
 
