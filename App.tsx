@@ -12040,8 +12040,22 @@ const App: React.FC = () => {
           onGroupAvatarChange={(url: string) => {
             if (!showContactProfile?.id) return;
             const gid = showContactProfile.id?.toString();
-            setAllGroups(prev => prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g));
+            setAllGroups(prev => {
+              const updated = prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g);
+              try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
+              return updated;
+            });
+            setRealChats((prev: any[]) => prev.map(c => c.id?.toString() === gid ? { ...c, avatarUrl: url } : c));
             setShowContactProfile((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
+            if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
+            // Subir avatar al backend
+            try {
+              fetch(`https://egchat-api.onrender.com/api/chats/${gid}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({ avatar_url: url }),
+              }).catch(() => {});
+            } catch {}
           }}
           onGroupNameChange={async (name: string) => {
             if (!showContactProfile?.id) return;
@@ -12054,11 +12068,15 @@ const App: React.FC = () => {
                 body: JSON.stringify({ name }),
               });
             } catch {}
-            // Actualizar localmente
-            setAllGroups(prev => prev.map(g => g.id?.toString() === gid ? { ...g, name } : g));
+            // Actualizar localmente y persistir en localStorage
+            setAllGroups(prev => {
+              const updated = prev.map(g => g.id?.toString() === gid ? { ...g, name } : g);
+              try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
+              return updated;
+            });
             setRealChats((prev: any[]) => prev.map(c => c.id?.toString() === gid ? { ...c, name } : c));
-            setShowContactProfile((prev: any) => prev ? { ...prev, title: name } : prev);
-            if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, title: name } : prev);
+            setShowContactProfile((prev: any) => prev ? { ...prev, title: name, name } : prev);
+            if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, title: name, name } : prev);
             showToast(`Nombre actualizado: ${name}`, 'success');
           }}
         />
