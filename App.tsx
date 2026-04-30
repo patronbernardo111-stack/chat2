@@ -4958,7 +4958,7 @@ const App: React.FC = () => {
                 );
               })()}
               {/* Header conversacin */}
-              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: 'max(28px, env(safe-area-inset-top, 28px))', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
+              <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '8px', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); setSelectionMode(false); setSelectedMsgIds([]); }}
                   style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
