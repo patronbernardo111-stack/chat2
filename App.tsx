@@ -9461,19 +9461,15 @@ const App: React.FC = () => {
       {/* Bandas decorativas — en todos los dispositivos */}
       {device.isMobile ? <>
         {/* Móvil: bordes en los 4 lados */}
-        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
-        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
-        <div style={{ position:'fixed', left:0, right:0, top:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
-        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #00c8a0 40%, #ffffff 60%, #00c8a0 80%, #00c8a0 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #00b4e6 40%, #ffffff 60%, #00b4e6 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #00b4e6 35%, #ffffff 50%, #00c8a0 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #00b4e6 35%, #ffffff 50%, #00c8a0 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
       </> : <>
         {/* Tablet/Desktop: bordes top, right y bottom (left lo tiene la sidebar) */}
-        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
-        <div style={{ position:'fixed', left:0, right:0, top:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
-        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #00b4e6 40%, #ffffff 60%, #00b4e6 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #00b4e6 35%, #ffffff 50%, #00c8a0 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #00b4e6 35%, #ffffff 50%, #00c8a0 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
       </>}
       {/* Overlay oscuro cuando el mena esta abierto */}
       {isMenuOpen && (
