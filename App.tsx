@@ -4900,7 +4900,7 @@ const App: React.FC = () => {
 
           return (
             <>
-            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : '60px', left: device.isMobile ? 0 : (device.isTablet ? `${72+280}px` : `${240+300}px`), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : 0, left: device.isMobile ? 0 : (device.isTablet ? `${72+280}px` : `${240+300}px`), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -4960,7 +4960,7 @@ const App: React.FC = () => {
                 );
               })()}
               {/* Header conversacin */}
-              <div style={{ position: 'relative', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '8px', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '8px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
+              <div style={{ position: 'relative', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '10px', paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', borderBottom: 'none', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,180,230,0.3)' }}>
                 <button
                   onClick={() => { setSelectedChat(null); setShowChatEmojis(false); setCurrentChatInput(''); setShowChatMenu(false); setSelectionMode(false); setSelectedMsgIds([]); }}
                   style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}
@@ -6125,8 +6125,8 @@ const App: React.FC = () => {
           <div style={{
             padding: '0 8px 0px',
             paddingTop: device.isMobile ? 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)' : '8px',
-            height: device.isMobile ? '100vh' : 'calc(100vh - 60px)',
-            marginTop: device.isMobile ? '0' : '60px',
+            height: device.isMobile ? '100vh' : 'calc(100vh - 44px)',
+            marginTop: device.isMobile ? '0' : '44px',
             width: device.isMobile ? '100%' : (device.isTablet ? '280px' : '300px'),
             overflow: 'hidden',
             display: 'flex',
@@ -9483,8 +9483,8 @@ const App: React.FC = () => {
         />
       )}
       
-      {/* Header ? solo en home y vistas principales, no en chat abierto */}
-      {['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && !selectedChat && renderHeader()}
+      {/* Header — solo en home y vistas principales, no en chat abierto */}
+      {['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && (!selectedChat || device.isMobile) && renderHeader()}
       
       {/* Paneles desplegables */}
       {renderNotificationsPanel()}
@@ -10020,7 +10020,7 @@ const App: React.FC = () => {
       {/* Panel lista de chats SIEMPRE visible en desktop cuando estamos en Mensajería */}
       {!device.isMobile && currentView === 'Mensajería' && (
         <div style={{
-          position: 'fixed', top: '60px', bottom: 0,
+          position: 'fixed', top: '44px', bottom: 0,
           left: device.isTablet ? '72px' : '240px',
           width: device.isTablet ? '280px' : '300px',
           background: '#fff', borderRight: '1px solid #e5e7eb',
@@ -10181,7 +10181,7 @@ const App: React.FC = () => {
       {!device.isMobile && currentView === 'Mensajería' && !selectedChat && (
         <div style={{
           position: 'fixed',
-          top: '60px',
+          top: '44px',
           left: device.isTablet ? `${72 + 280}px` : `${240 + 300}px`,
           right: 0,
           bottom: 0,
