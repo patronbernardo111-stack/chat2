@@ -325,6 +325,8 @@ const App: React.FC = () => {
   const [showChatEmojis, setShowChatEmojis] = useState<boolean>(false);
   const [showChatAttach, setShowChatAttach] = useState<boolean>(false);
   const [showNewChatModal, setShowNewChatModal] = useState<boolean>(false);
+  const [showContactSearch, setShowContactSearch] = useState<boolean>(false);
+  const [contactSearchQuery, setContactSearchQuery] = useState<string>('');
   const [newChatPhone, setNewChatPhone] = useState<string>('');
   const [newChatLoading, setNewChatLoading] = useState<boolean>(false);
   const [chatEmojiTab, setChatEmojiTab] = useState<'system'|'custom'>('system');
@@ -5083,7 +5085,6 @@ const App: React.FC = () => {
               )}
 
               {/* Spacer eliminado - header ahora es sticky */}
-              <div ref={messagesEndRef} style={{ height: 1, flexShrink: 0 }} />
               {/* Barra búsqueda en el chat */}
               {showChatSearch && (
                 <div style={{background:'#fff',borderBottom:'1px solid #F0F2F5',padding:'8px 12px',display:'flex',alignItems:'center',gap:'8px',flexShrink:0}}>
@@ -6249,6 +6250,18 @@ const App: React.FC = () => {
                     ) : favoriteContacts.map((contact: any) => (
                       <button
                         key={contact.id}
+                        onClick={async () => {
+                          try {
+                            const chat = await chatAPI.createPrivate(contact.id);
+                            if (chat?.id) {
+                              const name = contact.name || contact.user?.name || 'Usuario';
+                              const initials = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
+                              setSelectedChat({ id: chat.id, type: 'individual', title: name, subtitle: '', time: '', status: 'online', initials, color: '#00c8a0', avatarUrl: contact.avatar_url || contact.user?.avatar_url || '', user_id: contact.id });
+                              setCurrentView('Mensajería');
+                              loadChats();
+                            }
+                          } catch { showToast('No se pudo abrir el chat', 'error'); }
+                        }}
                         style={{
                           background: 'transparent',
                           border: 'none',
@@ -10021,11 +10034,68 @@ const App: React.FC = () => {
                   style={{ width: '100%', padding: '7px 12px 7px 30px', background: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 <svg style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
-              <button onClick={() => setShowNewChatModal(true)} title="Nuevo chat"
-                style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button onClick={() => { setShowContactSearch(s => !s); setContactSearchQuery(''); }} title="Nuevo chat"
+                style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', background: showContactSearch ? '#e5e7eb' : 'linear-gradient(135deg,#00c8a0,#00b4e6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' }}>
+                {showContactSearch
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                }
               </button>
             </div>
+
+            {/* Panel búsqueda de contactos inline — se muestra al pulsar + */}
+            {showContactSearch && (
+              <div style={{ marginBottom: '6px' }}>
+                <div style={{ position: 'relative', marginBottom: '6px' }}>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="Buscar contacto..."
+                    value={contactSearchQuery}
+                    onChange={e => setContactSearchQuery(e.target.value)}
+                    style={{ width: '100%', padding: '7px 12px 7px 30px', background: '#f0fdf4', border: '1.5px solid #00c8a0', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', color: '#111827' }}
+                  />
+                  <svg style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#00c8a0' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  {allContacts
+                    .filter(c => !contactSearchQuery.trim() || c.name.toLowerCase().includes(contactSearchQuery.toLowerCase()) || c.phone.includes(contactSearchQuery))
+                    .slice(0, 20)
+                    .map(c => (
+                      <button key={c.id} onClick={async () => {
+                        try {
+                          const chat = await chatAPI.createPrivate(c.id);
+                          if (chat?.id) {
+                            const initials2 = c.name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
+                            setSelectedChat({ id: chat.id, type: 'individual', title: c.name, subtitle: '', time: '', status: c.status, initials: initials2, color: '#00c8a0', avatarUrl: c.avatarUrl || '', user_id: c.id });
+                            setCurrentView('Mensajería');
+                            setShowContactSearch(false);
+                            setContactSearchQuery('');
+                            loadChats();
+                          }
+                        } catch { showToast('No se pudo abrir el chat', 'error'); }
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', outline: 'none', textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                          {c.avatarUrl ? <img src={c.avatarUrl} alt={c.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>{c.phone}</div>
+                        </div>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    ))}
+                  {allContacts.filter(c => !contactSearchQuery.trim() || c.name.toLowerCase().includes(contactSearchQuery.toLowerCase()) || c.phone.includes(contactSearchQuery)).length === 0 && (
+                    <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>Sin resultados</div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Tabs filtro */}
             <div style={{ display: 'flex', gap: '4px' }}>
               {[
