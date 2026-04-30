@@ -856,13 +856,19 @@ span, p, div, label, li, td, th, button {
 .chat-view-container {
   position: fixed !important;
   top: 0 !important;
-  left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
   height: var(--real-vh, 100vh) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+}
+
+/* En móvil sí forzamos left: 0 */
+@media (max-width: 767px) {
+  .chat-view-container {
+    left: 0 !important;
+  }
 }
 
 /* Área de mensajes — debe ocupar todo el espacio entre header e input */
