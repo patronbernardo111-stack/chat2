@@ -4898,50 +4898,6 @@ const App: React.FC = () => {
 
           return (
             <>
-            {/* Panel lista de chats — visible en desktop/tablet incluso con chat abierto */}
-            {!device.isMobile && (
-              <div style={{
-                position: 'fixed', top: '44px', bottom: 0,
-                left: device.isTablet ? '72px' : '240px',
-                width: device.isTablet ? '280px' : '300px',
-                background: '#fff', borderRight: '1px solid #e5e7eb',
-                zIndex: 1002, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                paddingTop: '8px',
-              }}>
-                {/* Mini lista de chats — solo avatares y nombres */}
-                <div style={{ padding: '8px', overflowY: 'auto', flex: 1 }}>
-                  {realChats.slice(0, 30).map((chat: any) => {
-                    const isGrp = chat.type === 'group';
-                    let name = chat.name || '';
-                    let avatarUrl = '';
-                    if (!isGrp && chat.participants) {
-                      const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
-                      if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || ''; }
-                    }
-                    if (!name) name = 'Chat';
-                    const initials2 = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
-                    const isActive = selectedChat?.id?.toString() === chat.id?.toString();
-                    const lastMsg = chat.last_message?.text || '';
-                    const time2 = chat.last_message?.created_at ? new Date(chat.last_message.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '';
-                    return (
-                      <div key={chat.id} onClick={() => {
-                        setSelectedChat({ id: chat.id, type: chat.type||'individual', title: name, subtitle: lastMsg, time: time2, status: 'online', initials: initials2, color: isGrp ? '#a855f7' : '#00c8a0', avatarUrl, isGroup: isGrp });
-                        setCurrentView('Mensajería');
-                      }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 8px', borderRadius: '10px', cursor: 'pointer', background: isActive ? 'rgba(0,200,160,0.1)' : 'transparent', marginBottom: '2px', border: isActive ? '1px solid rgba(0,200,160,0.2)' : '1px solid transparent' }}>
-                        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: isGrp ? 'linear-gradient(135deg,#a855f7,#6366f1)' : 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
-                          {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span>{initials2}</span>}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '14px', fontWeight: isActive ? '700' : '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                          <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lastMsg || 'Sin mensajes'}</div>
-                        </div>
-                        {time2 && <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0 }}>{time2}</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
             <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : '44px', left: device.isMobile ? 0 : (device.isTablet ? `${72+280}px` : `${240+300}px`), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
@@ -10046,6 +10002,79 @@ const App: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, height: '100%' }}>
         {renderCurrentView()}
       </div>
+
+      {/* Panel lista de chats SIEMPRE visible en desktop cuando estamos en Mensajería */}
+      {!device.isMobile && currentView === 'Mensajería' && (
+        <div style={{
+          position: 'fixed', top: '44px', bottom: 0,
+          left: device.isTablet ? '72px' : '240px',
+          width: device.isTablet ? '280px' : '300px',
+          background: '#fff', borderRight: '1px solid #e5e7eb',
+          zIndex: 1002, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Barra de búsqueda */}
+          <div style={{ padding: '8px', borderBottom: '1px solid #f0f2f5', flexShrink: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <input type="text" placeholder="Buscar conversación..." value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '7px 12px 7px 32px', background: '#f3f4f6', border: 'none', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+              <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+          </div>
+          {/* Lista */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px' }}>
+            {realChats
+              .filter(chat => {
+                if (!searchQuery.trim()) return true;
+                const isGrp = chat.type === 'group';
+                let name = chat.name || '';
+                if (!isGrp && chat.participants) {
+                  const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+                  if (other) name = other.full_name || other.users?.full_name || name;
+                }
+                return name.toLowerCase().includes(searchQuery.toLowerCase());
+              })
+              .map((chat: any) => {
+                const isGrp = chat.type === 'group';
+                let name = chat.name || '';
+                let avatarUrl = '';
+                if (!isGrp && chat.participants) {
+                  const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
+                  if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || ''; }
+                }
+                if (!name) name = 'Chat';
+                const initials2 = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
+                const isActive = selectedChat?.id?.toString() === chat.id?.toString();
+                const lastMsg = chat.last_message?.text || '';
+                const time2 = chat.last_message?.created_at ? new Date(chat.last_message.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '';
+                return (
+                  <div key={chat.id} onClick={() => {
+                    setSelectedChat({ id: chat.id, type: chat.type||'individual', title: name, subtitle: lastMsg, time: time2, status: 'online', initials: initials2, color: isGrp ? '#a855f7' : '#00c8a0', avatarUrl, isGroup: isGrp });
+                    setCurrentView('Mensajería');
+                  }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 8px', borderRadius: '10px', cursor: 'pointer', background: isActive ? 'rgba(0,200,160,0.08)' : 'transparent', marginBottom: '2px', borderLeft: isActive ? '3px solid #00c8a0' : '3px solid transparent' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: isGrp ? 'linear-gradient(135deg,#a855f7,#6366f1)' : 'linear-gradient(135deg,#00c8a0,#00b4e6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                      {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span>{initials2}</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: isActive ? '700' : '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                      <div style={{ fontSize: '12px', color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lastMsg || 'Sin mensajes'}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0 }}>
+                      {time2 && <span style={{ fontSize: '11px', color: '#9ca3af' }}>{time2}</span>}
+                      {(chat.unread_count||0) > 0 && <div style={{ background: '#00c8a0', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700' }}>{chat.unread_count}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            {realChats.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 16px', color: '#9ca3af' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>💬</div>
+                <div style={{ fontSize: '13px' }}>Sin conversaciones</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Panel bienvenida desktop — visible en Mensajería sin chat seleccionado */}
       {!device.isMobile && currentView === 'Mensajería' && !selectedChat && (
