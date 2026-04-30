@@ -10064,12 +10064,6 @@ const App: React.FC = () => {
                 }
                 return name.toLowerCase().includes(searchQuery.toLowerCase());
               })
-                if (!isGrp && chat.participants) {
-                  const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
-                  if (other) name = other.full_name || other.users?.full_name || name;
-                }
-                return name.toLowerCase().includes(searchQuery.toLowerCase());
-              })
               .map((chat: any) => {
                 const isGrp = chat.type === 'group';
                 let name = chat.name || '';
