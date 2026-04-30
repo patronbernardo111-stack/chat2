@@ -1,5 +1,5 @@
-// Service Worker v20260430-FLAG — Web Push + llamadas + mensajes + auto-renovación + caché offline + force-update
-const CACHE = 'egchat-v20260430-molqd8a5';
+// Service Worker v20260430-v3 — Web Push + llamadas + mensajes + auto-renovación + caché offline + force-update
+const CACHE = 'egchat-v20260430-molqo3v5';
 const API_BASE = 'https://egchat-api.onrender.com';
 const VAPID_PUBLIC_KEY = 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
 
@@ -45,6 +45,9 @@ self.addEventListener('activate', e => {
 // ── ESTRATEGIA DE CACHÉ PARA REDES LENTAS (2G/3G Guinea Ecuatorial) ─────────
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // No interceptar: esquemas no soportados por Cache API (chrome-extension, etc.)
+  if (!url.protocol.startsWith('http')) return;
 
   // No interceptar: API calls, push, supabase, websockets
   if (
@@ -101,7 +104,9 @@ self.addEventListener('fetch', e => {
       fetch(e.request)
         .then(response => {
           if (response.ok) {
-            caches.open(CACHE).then(cache => cache.put(e.request, response.clone()));
+            // Clonar ANTES de devolver para evitar "body already used"
+            const cloned = response.clone();
+            caches.open(CACHE).then(cache => cache.put(e.request, cloned));
           }
           return response;
         })

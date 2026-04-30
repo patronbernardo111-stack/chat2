@@ -4984,7 +4984,7 @@ const App: React.FC = () => {
                 right: device.isMobile ? 'auto' : 0,
                 zIndex: 1002,
                 display: 'flex', alignItems: 'center', 
-                paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '10px', 
+                paddingTop: device.isMobile ? 'calc(env(safe-area-inset-top, 0px) + 10px)' : '10px', 
                 paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', 
                 background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', 
                 borderBottom: 'none', flexShrink: 0, 
@@ -5632,11 +5632,11 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.accept='image/*'; inp.style.display='none';
+                          inp.type='file'; inp.accept='image/*'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
                           document.body.appendChild(inp);
-                          inp.onchange = async () => {
+                          inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            document.body.removeChild(inp);
+                            if (document.body.contains(inp)) document.body.removeChild(inp);
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -5671,8 +5671,8 @@ const App: React.FC = () => {
                                 showToast('Foto guardada localmente', 'info');
                               }
                             }
-                          };
-                          inp.click();
+                          });
+                          setTimeout(() => inp.click(), 50);
                         }
                       },
                       {
@@ -5683,11 +5683,11 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.accept='video/*'; inp.style.display='none';
+                          inp.type='file'; inp.accept='video/*'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
                           document.body.appendChild(inp);
-                          inp.onchange = async () => {
+                          inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            document.body.removeChild(inp);
+                            if (document.body.contains(inp)) document.body.removeChild(inp);
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -5700,8 +5700,8 @@ const App: React.FC = () => {
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, fileName: file.name, fileSize: size + ' MB', fileExt: 'mp4', status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir video', 'error'); }
-                          };
-                          inp.click();
+                          });
+                          setTimeout(() => inp.click(), 50);
                         }
                       },
                       {
@@ -5712,11 +5712,11 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.style.display='none';
+                          inp.type='file'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
                           document.body.appendChild(inp);
-                          inp.onchange = async () => {
+                          inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            document.body.removeChild(inp);
+                            if (document.body.contains(inp)) document.body.removeChild(inp);
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -5731,8 +5731,8 @@ const App: React.FC = () => {
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir archivo', 'error'); }
-                          };
-                          inp.click();
+                          });
+                          setTimeout(() => inp.click(), 50);
                         }
                       },
                       {
