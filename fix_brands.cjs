@@ -4,8 +4,8 @@ const path = require('path');
 const files = [
   'App.tsx',
   'AuthScreen.tsx',
-  'WhatsAppAuth.tsx',
-  'WeChatAuth.tsx',
+  'EGChatAuth.tsx',
+  'EGChatSocialAuth.tsx',
   'EstadosView.tsx',
   'ServiciosModules.tsx',
   'index.css',

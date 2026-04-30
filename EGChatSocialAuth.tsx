@@ -4,12 +4,12 @@ import { useTranslation } from './translations';
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
-interface WeChatAuthProps {
+interface EGChatRegisterAuthProps {
   onAuthSuccess: (user: any) => void;
   onBack: () => void;
 }
 
-export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack }) => {
+export const EGChatRegisterAuth: React.FC<EGChatRegisterAuthProps> = ({ onAuthSuccess, onBack }) => {
   const [currentStep, setCurrentStep] = useState<'phone' | 'verification' | 'profile' | 'password' | 'security' | 'complete'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -225,9 +225,9 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
-      {/* Header WeChat */}
+      {/* Header EGChat */}
       <div style={{
         background: 'rgba(0, 0, 0, 0.1)',
         color: 'white',
@@ -283,7 +283,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
           <div style={{
             width: '80px',
             height: '80px',
-            background: '#07c160',
+            background: '#00c8a0',
             borderRadius: '16px',
             display: 'flex',
             alignItems: 'center',
@@ -364,7 +364,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
           disabled={loading || phoneNumber.length < 9}
           style={{
             background: phoneNumber.length >= 9 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-            color: phoneNumber.length >= 9 ? '#07c160' : 'rgba(255, 255, 255, 0.7)',
+            color: phoneNumber.length >= 9 ? '#00c8a0' : 'rgba(255, 255, 255, 0.7)',
             border: 'none',
             borderRadius: '25px',
             padding: '14px 40px',
@@ -385,7 +385,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
       {/* Header */}
       <div style={{
@@ -541,7 +541,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
           disabled={loading || verificationCode.length !== 6}
           style={{
             background: verificationCode.length === 6 ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-            color: verificationCode.length === 6 ? '#07c160' : 'rgba(255, 255, 255, 0.7)',
+            color: verificationCode.length === 6 ? '#00c8a0' : 'rgba(255, 255, 255, 0.7)',
             border: 'none',
             borderRadius: '25px',
             padding: '14px 40px',
@@ -562,7 +562,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
       {/* Header */}
       <div style={{
@@ -774,7 +774,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             style={{
               width: '100%',
               background: loading ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.9)',
-              color: loading ? 'rgba(255, 255, 255, 0.7)' : '#07c160',
+              color: loading ? 'rgba(255, 255, 255, 0.7)' : '#00c8a0',
               border: 'none',
               borderRadius: '25px',
               padding: '14px',
@@ -796,7 +796,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
       {/* Header */}
       <div style={{
@@ -949,7 +949,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             style={{
               width: '100%',
               background: (password.length >= 6 && password === confirmPassword) && !loading ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-              color: (password.length >= 6 && password === confirmPassword) && !loading ? '#07c160' : 'rgba(255, 255, 255, 0.7)',
+              color: (password.length >= 6 && password === confirmPassword) && !loading ? '#00c8a0' : 'rgba(255, 255, 255, 0.7)',
               border: 'none',
               borderRadius: '25px',
               padding: '14px',
@@ -971,7 +971,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
       {/* Header */}
       <div style={{
@@ -1150,7 +1150,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
             style={{
               width: '100%',
               background: (!loading && agreedToTerms && securityQuestion.trim() && securityAnswer.trim()) ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-              color: (!loading && agreedToTerms && securityQuestion.trim() && securityAnswer.trim()) ? '#07c160' : 'rgba(255, 255, 255, 0.7)',
+              color: (!loading && agreedToTerms && securityQuestion.trim() && securityAnswer.trim()) ? '#00c8a0' : 'rgba(255, 255, 255, 0.7)',
               border: 'none',
               borderRadius: '25px',
               padding: '14px',
@@ -1172,7 +1172,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      background: '#07c160'
+      background: '#00c8a0'
     }}>
       {/* Header */}
       <div style={{
@@ -1287,7 +1287,7 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
           onClick={() => onAuthSuccess(userData)}
           style={{
             background: 'rgba(255, 255, 255, 0.9)',
-            color: '#07c160',
+            color: '#00c8a0',
             border: 'none',
             borderRadius: '25px',
             padding: '16px 40px',
@@ -1325,4 +1325,4 @@ export const WeChatAuth: React.FC<WeChatAuthProps> = ({ onAuthSuccess, onBack })
   );
 };
 
-export default WeChatAuth;
+export default EGChatRegisterAuth;

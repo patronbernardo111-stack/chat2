@@ -10,7 +10,7 @@ const endIdx = c.indexOf(endMarker, startIdx);
 console.log('start:', startIdx, 'end:', endIdx);
 
 if (startIdx > 0 && endIdx > 0) {
-  const newCall = `/* -- LLAMADA estilo WhatsApp -- */}
+  const newCall = `/* -- LLAMADA estilo EGCHAT -- */}
                       {(msg as any).type === 'call' ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 4px', minWidth: '200px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: \`1.5px solid \${(msg as any).callStatus === 'missed' ? '#ef4444' : '#00c8a0'}\` }}>

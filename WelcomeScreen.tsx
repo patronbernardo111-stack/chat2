@@ -352,7 +352,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                 onClick={handlePhoneAuth}
                 style={{
                   width: '100%',
-                  background: '#25d366',
+                  background: '#00c8a0',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
@@ -363,18 +363,18 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                   cursor: 'pointer',
                   transition: 'all 0.3s',
                   textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
-                  boxShadow: '0 4px 20px rgba(37, 211, 102, 0.3)',
+                  boxShadow: '0 4px 20px rgba(0, 200, 160, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#128c7e';
+                  e.currentTarget.style.background = '#00a88a';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#25d366';
+                  e.currentTarget.style.background = '#00c8a0';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
@@ -388,7 +388,7 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                 onClick={handleSocialAuth}
                 style={{
                   width: '100%',
-                  background: '#07c160',
+                  background: '#00c8a0',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   borderRadius: '12px',
@@ -399,18 +399,18 @@ export const WelcomeScreen: React.FC<Props> = ({ onComplete }) => {
                   cursor: 'pointer',
                   transition: 'all 0.3s',
                   textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
-                  boxShadow: '0 4px 20px rgba(7, 193, 96, 0.3)',
+                  boxShadow: '0 4px 20px rgba(0, 200, 160, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#05a050';
+                  e.currentTarget.style.background = '#00a88a';
                   e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#07c160';
+                  e.currentTarget.style.background = '#00c8a0';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >

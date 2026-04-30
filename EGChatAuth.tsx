@@ -4,12 +4,12 @@ import { useTranslation } from './translations';
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
-interface WhatsAppAuthProps {
+interface EGChatPhoneAuthProps {
   onAuthSuccess: (user: any) => void;
   onBack: () => void;
 }
 
-export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBack }) => {
+export const EGChatPhoneAuth: React.FC<EGChatPhoneAuthProps> = ({ onAuthSuccess, onBack }) => {
   const [currentStep, setCurrentStep] = useState<'phone' | 'verification' | 'profile' | 'window'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -136,7 +136,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
     }}>
       {/* Header */}
       <div style={{
-        background: '#075e54',
+        background: '#00c8a0',
         color: 'white',
         padding: '16px 20px',
         display: 'flex',
@@ -179,7 +179,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         <div style={{
           width: '80px',
           height: '80px',
-          background: '#075e54',
+          background: '#00c8a0',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -255,7 +255,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
           onClick={handlePhoneSubmit}
           disabled={loading || phoneNumber.length < 9}
           style={{
-            background: phoneNumber.length >= 9 ? '#00a884' : '#e8f5f1',
+            background: phoneNumber.length >= 9 ? '#00c8a0' : '#e8f5f1',
             color: phoneNumber.length >= 9 ? 'white' : '#8696a0',
             border: 'none',
             borderRadius: '24px',
@@ -281,7 +281,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
     }}>
       {/* Header */}
       <div style={{
-        background: '#075e54',
+        background: '#00c8a0',
         color: 'white',
         padding: '16px 20px',
         display: 'flex',
@@ -324,7 +324,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         <div style={{
           width: '80px',
           height: '80px',
-          background: '#075e54',
+          background: '#00c8a0',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -416,7 +416,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
             style={{
               background: 'none',
               border: 'none',
-              color: countdown > 0 ? '#8696a0' : '#00a884',
+              color: countdown > 0 ? '#8696a0' : '#00c8a0',
               fontSize: '14px',
               fontWeight: '600',
               cursor: countdown > 0 ? 'not-allowed' : 'pointer',
@@ -432,7 +432,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
           onClick={handleVerificationSubmit}
           disabled={loading || verificationCode.length !== 6}
           style={{
-            background: verificationCode.length === 6 ? '#00a884' : '#e8f5f1',
+            background: verificationCode.length === 6 ? '#00c8a0' : '#e8f5f1',
             color: verificationCode.length === 6 ? 'white' : '#8696a0',
             border: 'none',
             borderRadius: '24px',
@@ -458,7 +458,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
     }}>
       {/* Header */}
       <div style={{
-        background: '#075e54',
+        background: '#00c8a0',
         color: 'white',
         padding: '16px 20px',
         display: 'flex',
@@ -501,7 +501,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         <div style={{
           width: '100px',
           height: '100px',
-          background: '#075e54',
+          background: '#00c8a0',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -564,7 +564,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
           onClick={handleProfileSubmit}
           disabled={loading || !fullName.trim()}
           style={{
-            background: fullName.trim() ? '#00a884' : '#e8f5f1',
+            background: fullName.trim() ? '#00c8a0' : '#e8f5f1',
             color: fullName.trim() ? 'white' : '#8696a0',
             border: 'none',
             borderRadius: '24px',
@@ -590,7 +590,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
     }}>
       {/* Header */}
       <div style={{
-        background: '#075e54',
+        background: '#00c8a0',
         color: 'white',
         padding: '16px 20px',
         display: 'flex',
@@ -620,7 +620,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         <div style={{
           width: '100px',
           height: '100px',
-          background: '#25d366',
+          background: '#00c8a0',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -654,7 +654,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
           <div style={{ fontSize: '14px', color: '#667781', marginBottom: '8px' }}>
             Código de referencia:
           </div>
-          <div style={{ fontSize: '20px', fontWeight: '700', color: '#075e54' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', color: '#00c8a0' }}>
             {windowData?.reference_code || 'EG' + Date.now()}
           </div>
         </div>
@@ -683,7 +683,7 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
         <button
           onClick={() => onAuthSuccess(windowData)}
           style={{
-            background: '#00a884',
+            background: '#00c8a0',
             color: 'white',
             border: 'none',
             borderRadius: '24px',
@@ -710,4 +710,4 @@ export const WhatsAppAuth: React.FC<WhatsAppAuthProps> = ({ onAuthSuccess, onBac
   );
 };
 
-export default WhatsAppAuth;
+export default EGChatPhoneAuth;

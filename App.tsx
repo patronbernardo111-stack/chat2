@@ -3541,7 +3541,7 @@ const App: React.FC = () => {
                           {isSel && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                         </button>
                       ) : (
-                        // Botón invitar por SMS/WhatsApp
+                        // Botón invitar por SMS
                         <button onClick={() => {
                           const msg = `Hola ${user.full_name.split(' ')[0]}, únete a EGCHAT, la app de mensajería de Guinea Ecuatorial 🇬🇶 https://egchat-v2.vercel.app`;
                           window.open(`sms:${user.phone}?body=${encodeURIComponent(msg)}`, '_blank');
@@ -12049,7 +12049,7 @@ const App: React.FC = () => {
                   {finData.action || 'La operacion se ha procesado correctamente'}
                 </div>
                 <button onClick={() => setShowFinModal(null)}
-                  style={{ width:'100%', background:'#07C160', border:'none', borderRadius:'10px', padding:'13px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', outline:'none' }}>
+                  style={{ width:'100%', background:'#00c8a0', border:'none', borderRadius:'10px', padding:'13px', color:'#fff', fontSize:'14px', fontWeight:'700', cursor:'pointer', outline:'none' }}>
                   Listo
                 </button>
               </div>

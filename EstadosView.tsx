@@ -1864,7 +1864,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           ) : (
-            /* Cámara activa — controles tipo TikTok */
+            /* Cámara activa — controles tipo EGChat */
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               <video ref={videoRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', filter: VIDEO_FILTERS.find(f => f.id === videoFilter)?.css || 'none' }} />
 
@@ -1884,7 +1884,7 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
               {/* Overlay emoji seleccionado */}
               {videoOverlay && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '72px', pointerEvents: 'none', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.5))' }}>{videoOverlay}</div>}
 
-              {/* Controles laterales derecha — estilo TikTok */}
+              {/* Controles laterales derecha — estilo EGChat */}
               <div style={{ position: 'absolute', right: '12px', top: '110px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
                 {/* Voltear cámara */}
                 <button onClick={async () => {

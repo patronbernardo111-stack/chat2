@@ -54,7 +54,7 @@ if (c.includes(old3)) { c = c.replace(old3, new3); fixes++; console.log('Fix3: s
 else console.log('WARN Fix3: send button not found');
 
 // ============================================================
-// FIX 4: Input bar container - cleaner WhatsApp-style design
+// FIX 4: Input bar container - clean EGChat design
 // ============================================================
 const old4 = `                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'rgba(249,250,251,0.95)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: '22px', minHeight: '44px', padding: '0 10px 0 16px', gap: '6px' }}>`;
 const new4 = `                <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: '#f0f2f5', border: 'none', borderRadius: '24px', minHeight: '44px', padding: '0 8px 0 16px', gap: '4px' }}>`;
