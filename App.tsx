@@ -9383,9 +9383,9 @@ const App: React.FC = () => {
             <div style={{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #00b4e6 40%, #ffffff 60%, #00b4e6 80%, #00c8a0 100%)', boxShadow:'0 0 8px rgba(0,200,160,0.6)', pointerEvents:'none', zIndex:1 }} />
 
             {/* Header de la sidebar — alineado con el header principal (44px) */}
-            <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)', overflow: 'visible' }}>
               {/* Avatar con bandera superpuesta */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{ position: 'relative', flexShrink: 0, marginRight: isTablet ? '0' : '2px' }}>
                 <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
                   {userProfile?.avatar_url
                     ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -9396,9 +9396,11 @@ const App: React.FC = () => {
                 </div>
                 {/* Bandera del país — esquina inferior derecha del avatar */}
                 <span style={{
-                  position: 'absolute', bottom: '-2px', right: '-4px',
-                  fontSize: '13px', lineHeight: 1,
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+                  position: 'absolute', bottom: '-4px', right: '-6px',
+                  fontSize: '14px', lineHeight: 1,
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.7))',
+                  zIndex: 2,
+                  pointerEvents: 'none',
                 }}>{countryFlag}</span>
               </div>
               {!isTablet && (
