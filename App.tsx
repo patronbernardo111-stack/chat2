@@ -4901,12 +4901,12 @@ const App: React.FC = () => {
             {/* Panel lista de chats — visible en desktop/tablet incluso con chat abierto */}
             {!device.isMobile && (
               <div style={{
-                position: 'fixed', top: 0, bottom: 0,
+                position: 'fixed', top: '44px', bottom: 0,
                 left: device.isTablet ? '72px' : '240px',
                 width: device.isTablet ? '280px' : '340px',
                 background: '#f0f2f5', borderRight: '1px solid #e5e7eb',
                 zIndex: 999, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                paddingTop: '60px',
+                paddingTop: '8px',
               }}>
                 {/* Mini lista de chats — solo avatares y nombres */}
                 <div style={{ padding: '8px', overflowY: 'auto', flex: 1 }}>
@@ -4942,7 +4942,7 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '352px' : '580px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : '44px', left: device.isMobile ? 0 : (device.isTablet ? '352px' : '580px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -6166,8 +6166,9 @@ const App: React.FC = () => {
         return (
           <div style={{
             padding: '0 8px 0px',
-            paddingTop: device.isMobile ? 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)' : '60px',
-            height: '100vh',
+            paddingTop: device.isMobile ? 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)' : '8px',
+            height: device.isMobile ? '100vh' : 'calc(100vh - 44px)',
+            marginTop: device.isMobile ? '0' : '44px',
             width: device.isMobile ? '100%' : (device.isTablet ? '280px' : '340px'),
             overflow: 'hidden',
             display: 'flex',
@@ -9367,65 +9368,78 @@ const App: React.FC = () => {
         return (
           <aside style={{
             width: `${sideW}px`, flexShrink: 0,
-            background: 'linear-gradient(180deg, #00c8a0 0%, #00b4e6 100%)',
+            background: '#0f1923',
             display: 'flex', flexDirection: 'column', alignItems: isTablet ? 'center' : 'stretch',
-            paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))',
-            paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-            paddingLeft: isTablet ? '0' : '12px',
-            paddingRight: isTablet ? '0' : '12px',
-            gap: '4px', zIndex: 100,
-            boxShadow: '2px 0 16px rgba(0,0,0,0.15)',
+            paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            paddingLeft: isTablet ? '0' : '10px',
+            paddingRight: isTablet ? '0' : '10px',
+            gap: '2px', zIndex: 100,
+            borderRight: '1px solid rgba(255,255,255,0.06)',
             height: '100vh',
+            position: 'relative',
           }}>
-            {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', marginBottom: '20px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '4px' }}>
-              <div style={{ width: isTablet ? '40px' : '36px', height: isTablet ? '40px' : '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: isTablet ? '14px' : '13px', fontWeight: '900', color: '#fff' }}>EG</span>
+            {/* Borde izquierdo decorativo — igual que en móvil */}
+            <div style={{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow:'0 0 8px rgba(0,200,160,0.6)', pointerEvents:'none', zIndex:1 }} />
+
+            {/* Logo — foto del admin o logo EGCHAT */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', marginBottom: '20px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px' }}>
+              <div style={{ width: isTablet ? '42px' : '38px', height: isTablet ? '42px' : '38px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
+                {userProfile?.avatar_url
+                  ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
+                      <span style={{ fontSize: isTablet ? '14px' : '13px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
+                    </div>
+                }
               </div>
               {!isTablet && (
                 <div>
-                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#fff', lineHeight: 1 }}>EGCHAT</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>Guinea Ecuatorial</div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#fff', lineHeight: 1 }}>EGCHAT</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Guinea Ecuatorial 🇬🇶</div>
                 </div>
               )}
             </div>
 
             {/* Nav items */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', alignItems: isTablet ? 'center' : 'stretch' }}>
-              {navItems.map(item => (
-                <button key={item.id} onClick={() => setCurrentView(item.id)} title={item.label}
-                  style={{
-                    width: isTablet ? '52px' : '100%',
-                    height: isTablet ? '52px' : 'auto',
-                    padding: isTablet ? '0' : '10px 12px',
-                    borderRadius: '12px', border: 'none', cursor: 'pointer',
-                    background: currentView === item.id ? 'rgba(255,255,255,0.25)' : 'transparent',
-                    display: 'flex', flexDirection: isTablet ? 'column' : 'row',
-                    alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start',
-                    gap: isTablet ? '3px' : '12px', outline: 'none',
-                    boxShadow: currentView === item.id ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
-                  }}>
-                  <div style={{ color: '#fff', flexShrink: 0 }}>{item.icon}</div>
-                  <span style={{ fontSize: isTablet ? '8px' : '14px', fontWeight: currentView === item.id ? '700' : '500', color: isTablet ? 'rgba(255,255,255,0.85)' : '#fff', lineHeight: 1 }}>
-                    {item.label}
-                  </span>
-                </button>
-              ))}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: isTablet ? 'center' : 'stretch' }}>
+              {navItems.map(item => {
+                const active = currentView === item.id;
+                return (
+                  <button key={item.id} onClick={() => setCurrentView(item.id)} title={item.label}
+                    style={{
+                      width: isTablet ? '52px' : '100%',
+                      height: isTablet ? '52px' : 'auto',
+                      padding: isTablet ? '0' : '10px 12px',
+                      borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      background: active ? 'rgba(0,200,160,0.15)' : 'transparent',
+                      display: 'flex', flexDirection: isTablet ? 'column' : 'row',
+                      alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start',
+                      gap: isTablet ? '4px' : '12px', outline: 'none',
+                      borderLeft: active && !isTablet ? '3px solid #00c8a0' : '3px solid transparent',
+                      transition: 'background 0.15s ease',
+                    }}>
+                    <div style={{ color: active ? '#00c8a0' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>{item.icon}</div>
+                    <span style={{ fontSize: isTablet ? '9px' : '13px', fontWeight: active ? '700' : '400', color: active ? '#00c8a0' : 'rgba(255,255,255,0.5)', lineHeight: 1 }}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Avatar usuario */}
+            {/* Perfil usuario abajo */}
             <button onClick={() => setShowProfileView(true)}
-              style={{ width: isTablet ? '40px' : '100%', height: isTablet ? '40px' : 'auto', padding: isTablet ? '0' : '10px 12px', borderRadius: isTablet ? '50%' : '12px', border: isTablet ? '2px solid rgba(255,255,255,0.5)' : 'none', background: 'rgba(255,255,255,0.15)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start', gap: '10px', outline: 'none', flexShrink: 0 }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+              style={{ width: isTablet ? '44px' : '100%', padding: isTablet ? '0' : '10px 12px', borderRadius: '10px', border: 'none', background: 'rgba(255,255,255,0.05)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start', gap: '10px', outline: 'none', flexShrink: 0, height: isTablet ? '44px' : 'auto' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.15)' }}>
                 {userProfile?.avatar_url
                   ? <img src={userProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
+                  : <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
                 }
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'Mi perfil'}</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>Ver perfil</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'Mi perfil'}</div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>Ver perfil</div>
                 </div>
               )}
             </button>
@@ -9438,24 +9452,22 @@ const App: React.FC = () => {
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
       {renderLayoutPanel()}
-      {/* Bandas decorativas — solo en móvil */}
-      {device.isMobile && <>
+      {/* Bandas decorativas — en todos los dispositivos */}
+      {device.isMobile ? <>
+        {/* Móvil: bordes en los 4 lados */}
         <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
-          background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)',
-          boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
+        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
         <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
-          background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)',
-          boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
         <div style={{ position:'fixed', left:0, right:0, top:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none',
-          background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
-          boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
         <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none',
-          background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
-          boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+      </> : <>
+        {/* Tablet/Desktop: bordes top, right y bottom (left lo tiene la sidebar) */}
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'3px', zIndex:2000, pointerEvents:'none', background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
       </>}
       {/* Overlay oscuro cuando el mena esta abierto */}
       {isMenuOpen && (
@@ -10011,7 +10023,7 @@ const App: React.FC = () => {
       {!device.isMobile && currentView === 'Mensajería' && !selectedChat && (
         <div style={{
           position: 'fixed',
-          top: 0,
+          top: '44px',
           left: device.isTablet ? `${72 + 280}px` : `${240 + 340}px`,
           right: 0,
           bottom: 0,
