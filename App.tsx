@@ -5061,11 +5061,27 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Dropdown men del chat  cae desde arriba */}
+              {/* Panel lateral del chat — desliza desde la derecha */}
               {showChatMenu && (
-                <div style={{position:'fixed',inset:0,zIndex:2000}} onClick={()=>setShowChatMenu(false)}>
-                  <div style={{position:'absolute',top: device.isMobile ? 'calc(60px + env(safe-area-inset-top, 0px))' : '50px',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)',maxHeight:'calc(100vh - 60px)',overflowY:'auto'}}
+                <div style={{position:'fixed',inset:0,zIndex:2000,display:'flex'}} onClick={()=>setShowChatMenu(false)}>
+                  <div style={{flex:1,background:'rgba(0,0,0,0.4)'}}/>
+                  <div style={{width:'280px',height:'100%',background:'#fff',display:'flex',flexDirection:'column',boxShadow:'-4px 0 24px rgba(0,0,0,0.2)',overflowY:'auto',animation:'slideInRight 0.22s ease'}}
                     onClick={e=>e.stopPropagation()}>
+                    <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+                    <div style={{background:'linear-gradient(135deg,#00b4e6,#0088cc)',padding:'16px',display:'flex',alignItems:'center',gap:'12px',flexShrink:0}}>
+                      <div style={{width:'44px',height:'44px',borderRadius:'50%',overflow:'hidden',border:'2px solid rgba(255,255,255,0.5)',background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        {sc.avatarUrl?<img src={sc.avatarUrl} alt={sc.title} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:'16px',fontWeight:'700',color:'#fff'}}>{sc.initials||sc.title?.slice(0,2).toUpperCase()}</span>}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:'15px',fontWeight:'700',color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.title}</div>
+                        <div style={{fontSize:'11px',color:'rgba(255,255,255,0.75)'}}>{sc.isGroup?'👥 Grupo':sc.status==='online'?'● En línea':'○ Desconectado'}</div>
+                      </div>
+                      <button onClick={()=>setShowChatMenu(false)} style={{background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',flexShrink:0}}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                    <div style={{flex:1}}>
+                    <div style={{padding:'4px 0',borderBottom:'1px solid #f0f2f5'}}>
                     {/* Seccin principal */}
                     {[
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(sc);if(sc.isGroup){await loadGroupMembers(sc.id?.toString()||'');}}},
@@ -5113,6 +5129,8 @@ const App: React.FC = () => {
                         <span style={{fontSize:'13px',color:item.color,fontWeight:'500'}}>{item.label}</span>
                       </button>
                     ))}
+                    </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -9446,15 +9464,9 @@ const App: React.FC = () => {
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.15)' }}>
                   {userProfile?.avatar_url
                     ? <img src={userProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)' }}>{(userProfile?.name || 'U').slice(0,2).toUpperCase()}</span>
+                    : <img src={countryFlagUrl} alt={userCountryCode} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   }
                 </div>
-                {/* Bandera del país */}
-                <span style={{
-                  position: 'absolute', bottom: '-2px', right: '-4px',
-                  fontSize: '13px', lineHeight: 1,
-                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
-                }}>{countryFlag}</span>
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
