@@ -5063,8 +5063,8 @@ const App: React.FC = () => {
 
               {/* Dropdown men del chat  cae desde arriba */}
               {showChatMenu && (
-                <div style={{position:'fixed',inset:0,zIndex:200}} onClick={()=>setShowChatMenu(false)}>
-                  <div style={{position:'absolute',top:'calc(60px + env(safe-area-inset-top, 0px))',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)'}}
+                <div style={{position:'fixed',inset:0,zIndex:2000}} onClick={()=>setShowChatMenu(false)}>
+                  <div style={{position:'absolute',top: device.isMobile ? 'calc(60px + env(safe-area-inset-top, 0px))' : '50px',right:'8px',background:'rgba(255,255,255,0.35)',backdropFilter:'blur(28px) saturate(200%)',WebkitBackdropFilter:'blur(28px) saturate(200%)',borderRadius:'16px',boxShadow:'0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.8)',width:'240px',border:'1.5px solid rgba(255,255,255,0.6)',maxHeight:'calc(100vh - 60px)',overflowY:'auto'}}
                     onClick={e=>e.stopPropagation()}>
                     {/* Seccin principal */}
                     {[
