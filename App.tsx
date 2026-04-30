@@ -6119,14 +6119,16 @@ const App: React.FC = () => {
         return (
           <div style={{
             padding: '0 8px 0px',
-            paddingTop: 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)',
+            paddingTop: device.isMobile ? 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)' : '60px',
             height: '100vh',
+            width: device.isMobile ? '100%' : (device.isTablet ? '280px' : '340px'),
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             background: '#f0f2f5',
             position: 'relative',
-            zIndex: 1
+            zIndex: 1,
+            borderRight: device.isMobile ? 'none' : '1px solid #e5e7eb',
           }}>
             {/* Header - Ultra minimalista */}
             <div style={{ marginBottom: '8px', flexShrink: 0 }}>
@@ -9957,6 +9959,29 @@ const App: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, height: '100%' }}>
         {renderCurrentView()}
       </div>
+
+      {/* Panel bienvenida desktop — visible en Mensajería sin chat seleccionado */}
+      {!device.isMobile && currentView === 'Mensajería' && !selectedChat && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: device.isTablet ? `${72 + 280}px` : `${240 + 340}px`,
+          right: 0,
+          bottom: 0,
+          zIndex: 2,
+          overflow: 'hidden',
+        }}>
+          <EGChatDesktopWelcome
+            userName={userProfile?.name || 'Usuario'}
+            userBalance={userBalance}
+            totalChats={realChats.length}
+            totalContacts={allContacts.length}
+            onNewChat={() => setShowNewChatModal(true)}
+            onOpenWallet={() => setCurrentView('monedero')}
+            onOpenServices={() => setCurrentView('servicios')}
+          />
+        </div>
+      )}
       
       {/* NAVEGACION inferior - solo en vistas principales */}
       {!isMenuOpen && ['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && renderBottomNavigation()}
