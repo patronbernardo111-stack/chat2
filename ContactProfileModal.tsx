@@ -98,7 +98,10 @@ export const ContactProfileModal: React.FC<Props> = ({
 
   // Determinar si el usuario actual es admin del grupo
   const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
-  const isAdmin = myMember?.role === 'admin' || (groupMembers.length > 0 && groupMembers[0]?.user_id?.toString() === currentUserId?.toString());
+  // Es admin si: tiene rol admin, o es el primer miembro, o no hay miembros cargados aún (dar beneficio de la duda al creador)
+  const isAdmin = !isGroup || myMember?.role === 'admin' || 
+    (groupMembers.length > 0 && groupMembers[0]?.user_id?.toString() === currentUserId?.toString()) ||
+    groupMembers.length === 0; // Si no hay miembros cargados, mostrar controles de admin
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);
