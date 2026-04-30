@@ -245,7 +245,7 @@ export default function AuthScreen({onAuth}:Props) {
   );
 
   if(sc==='login') return (
-    <div style={{height:'100vh',height:'100dvh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
+    <div style={{height:'100dvh',background:BG,display:'flex',flexDirection:'column',maxWidth:'420px',margin:'0 auto',overflowY:'auto',WebkitOverflowScrolling:'touch'} as any}>
       <div style={{padding:'36px 20px 14px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
         <div style={{width:'80px',height:'80px',borderRadius:'16px',background:'white',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 32px rgba(0,0,0,0.1)',border:'2px solid rgba(255,255,255,0.8)'}}>
           <img src="/logo-transparent.png" alt="EgChat" style={{width:60,height:60,objectFit:'contain',animation:'spin 20s linear infinite'}}/>
