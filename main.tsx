@@ -7,6 +7,27 @@ import { WalletProvider } from './WalletSystem';
 
 initSelectionErrorHandler();
 
+// ── Forzar limpieza de SW y caches viejos ────────────────────────────────
+// Versión de la app — cambiar esto fuerza que todos los usuarios recarguen
+const APP_VERSION = 'v20260430-flag-fix';
+const storedVersion = localStorage.getItem('egchat_app_version');
+if (storedVersion !== APP_VERSION) {
+  // Nueva versión detectada — limpiar todos los caches del SW
+  if ('caches' in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    });
+  }
+  localStorage.setItem('egchat_app_version', APP_VERSION);
+  // Recargar solo si ya había una versión anterior (no en primera carga)
+  if (storedVersion) {
+    window.location.reload();
+  }
+}
+
 // Registrar tiempo de carga para evitar reload del SW en páginas ya abiertas
 (window as any).__pageLoadTime = Date.now();
 
