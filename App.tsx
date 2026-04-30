@@ -9365,43 +9365,65 @@ const App: React.FC = () => {
           { id: 'servicios',  label: 'Servicios',  icon: renderIcon('services', isTablet ? 22 : 20) },
           { id: 'ajustes',    label: 'Ajustes',    icon: renderIcon('ajustes',  isTablet ? 22 : 20) },
         ];
+
+        // Detectar país por IP para mostrar bandera
+        const [countryFlag, setCountryFlag] = React.useState('🇬🇶');
+        React.useEffect(() => {
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => {
+              if (d.country_code) {
+                // Convertir código de país a emoji de bandera
+                const flag = d.country_code.toUpperCase().split('').map((c: string) =>
+                  String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
+                ).join('');
+                setCountryFlag(flag);
+              }
+            })
+            .catch(() => {});
+        }, []);
+
         return (
           <aside style={{
             width: `${sideW}px`, flexShrink: 0,
             background: '#0f1923',
             display: 'flex', flexDirection: 'column', alignItems: isTablet ? 'center' : 'stretch',
-            paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
+            paddingTop: '0',
             paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
             paddingLeft: isTablet ? '0' : '10px',
             paddingRight: isTablet ? '0' : '10px',
-            gap: '2px', zIndex: 100,
+            gap: '2px', zIndex: 1003,
             borderRight: '1px solid rgba(255,255,255,0.06)',
             height: '100vh',
-            position: 'relative',
+            position: 'fixed', top: 0, left: 0,
           }}>
-            {/* Borde izquierdo decorativo — igual que en móvil */}
+            {/* Borde izquierdo decorativo */}
             <div style={{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow:'0 0 8px rgba(0,200,160,0.6)', pointerEvents:'none', zIndex:1 }} />
 
-            {/* Logo — foto del admin o logo EGCHAT */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', marginBottom: '20px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px' }}>
-              <div style={{ width: isTablet ? '42px' : '38px', height: isTablet ? '42px' : '38px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
+            {/* Header de la sidebar — alineado con el header principal (44px) */}
+            <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
                 {userProfile?.avatar_url
                   ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
-                      <span style={{ fontSize: isTablet ? '14px' : '13px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
                     </div>
                 }
               </div>
               {!isTablet && (
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#fff', lineHeight: 1 }}>EGCHAT</div>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Guinea Ecuatorial 🇬🇶</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    EGCHAT
+                    <span style={{ fontSize: '16px' }}>{countryFlag}</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>Guinea Ecuatorial</div>
                 </div>
               )}
+              {isTablet && <span style={{ fontSize: '18px', position: 'absolute', bottom: '2px', right: '2px' }}>{countryFlag}</span>}
             </div>
 
             {/* Nav items */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: isTablet ? 'center' : 'stretch' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: isTablet ? 'center' : 'stretch', paddingTop: '8px' }}>
               {navItems.map(item => {
                 const active = currentView === item.id;
                 return (
@@ -9416,7 +9438,6 @@ const App: React.FC = () => {
                       alignItems: 'center', justifyContent: isTablet ? 'center' : 'flex-start',
                       gap: isTablet ? '4px' : '12px', outline: 'none',
                       borderLeft: active && !isTablet ? '3px solid #00c8a0' : '3px solid transparent',
-                      transition: 'background 0.15s ease',
                     }}>
                     <div style={{ color: active ? '#00c8a0' : 'rgba(255,255,255,0.5)', flexShrink: 0 }}>{item.icon}</div>
                     <span style={{ fontSize: isTablet ? '9px' : '13px', fontWeight: active ? '700' : '400', color: active ? '#00c8a0' : 'rgba(255,255,255,0.5)', lineHeight: 1 }}>
