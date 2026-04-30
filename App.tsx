@@ -10032,6 +10032,7 @@ const App: React.FC = () => {
         }}>
           <EGChatDesktopWelcome
             userName={userProfile?.name || 'Usuario'}
+            userAvatar={userProfile?.avatar_url || userProfile?.avatarUrl || ''}
             userBalance={userBalance}
             totalChats={realChats.length}
             totalContacts={allContacts.length}
