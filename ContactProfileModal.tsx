@@ -97,11 +97,16 @@ export const ContactProfileModal: React.FC<Props> = ({
   const [groupNameInput, setGroupNameInput] = React.useState(cp.title || cp.name || '');
 
   // Determinar si el usuario actual es admin del grupo
-  const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
-  // Es admin si: tiene rol admin, o es el primer miembro, o no hay miembros cargados aún (dar beneficio de la duda al creador)
-  const isAdmin = !isGroup || myMember?.role === 'admin' || 
-    (groupMembers.length > 0 && groupMembers[0]?.user_id?.toString() === currentUserId?.toString()) ||
-    groupMembers.length === 0; // Si no hay miembros cargados, mostrar controles de admin
+  // Usamos useState para que no cambie una vez establecido como true
+  const [isAdminState, setIsAdminState] = React.useState(groupMembers.length === 0);
+  React.useEffect(() => {
+    if (groupMembers.length === 0) return; // esperar a que carguen
+    const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
+    const admin = myMember?.role === 'admin' || 
+      groupMembers[0]?.user_id?.toString() === currentUserId?.toString();
+    setIsAdminState(admin);
+  }, [groupMembers, currentUserId]);
+  const isAdmin = !isGroup || isAdminState;
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);
