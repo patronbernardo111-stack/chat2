@@ -9474,7 +9474,8 @@ const App: React.FC = () => {
         flex: device.isMobile ? undefined : 1, 
         overflow: 'hidden', 
         position: 'relative', 
-        height: '100vh' 
+        height: '100vh',
+        background: device.isMobile ? '#f0f2f5' : '#fff',
       }}>
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
@@ -10054,8 +10055,9 @@ const App: React.FC = () => {
           left: device.isTablet ? `${72 + 280}px` : `${240 + 300}px`,
           right: 0,
           bottom: 0,
-          zIndex: 2,
+          zIndex: 1003,
           overflow: 'hidden',
+          background: '#f8fafc',
         }}>
           <EGChatDesktopWelcome
             userName={userProfile?.name || 'Usuario'}
