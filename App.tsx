@@ -9505,7 +9505,7 @@ const App: React.FC = () => {
       )}
       
       {/* Header — solo en home y vistas principales, no en chat abierto */}
-      {['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && (!selectedChat || device.isMobile) && renderHeader()}
+      {['home','Mensajería','monedero','servicios','ajustes'].includes(currentView) && !selectedChat && renderHeader()}
       
       {/* Paneles desplegables */}
       {renderNotificationsPanel()}
