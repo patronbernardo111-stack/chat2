@@ -4900,7 +4900,7 @@ const App: React.FC = () => {
 
           return (
             <>
-            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : 0, left: device.isMobile ? 0 : (device.isTablet ? `${72+280}px` : `${240+300}px`), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -4963,7 +4963,7 @@ const App: React.FC = () => {
               <div style={{ 
                 position: device.isMobile ? 'relative' : 'fixed',
                 top: device.isMobile ? 'auto' : 0,
-                left: device.isMobile ? 'auto' : (device.isTablet ? `${72+280}px` : `${240+300}px`),
+                left: device.isMobile ? 'auto' : (device.isTablet ? '72px' : '240px'),
                 right: device.isMobile ? 'auto' : 0,
                 zIndex: 1002,
                 display: 'flex', alignItems: 'center', 
@@ -10030,7 +10030,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Panel lista de chats SIEMPRE visible en desktop cuando estamos en Mensajería */}
-      {!device.isMobile && currentView === 'Mensajería' && (
+      {!device.isMobile && currentView === 'Mensajería' && !selectedChat && (
         <div style={{
           position: 'fixed', top: '44px', bottom: 0,
           left: device.isTablet ? '72px' : '240px',

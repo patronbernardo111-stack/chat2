@@ -203,17 +203,18 @@ export const chatAPI = {
   markAsRead: (chatId:string, message_id: string) => 
     post<any>(`/chats/${chatId}/read`, { message_id }),
   
-  // Subir archivo — envía el buffer directamente con headers de metadata
+  // Subir archivo — usa FormData para máxima compatibilidad con Android/iOS
   uploadFile: async (chatId: string, file: File) => {
     const token = getToken();
-    const arrayBuffer = await file.arrayBuffer();
+    // Usar FormData para compatibilidad con Android WebView (Capacitor)
+    const formData = new FormData();
+    formData.append('file', file, file.name);
     const res = await fetch(`${BASE}/chats/${chatId}/upload`, {
       method: 'POST',
-      body: arrayBuffer,
+      body: formData,
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': file.type || 'application/octet-stream',
-        'X-File-Name': encodeURIComponent(file.name),
+        // NO incluir Content-Type — el browser lo pone automáticamente con el boundary correcto
       },
     });
     if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
