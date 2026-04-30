@@ -878,3 +878,114 @@ span, p, div, label, li, td, th, button {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — EGCHAT v2.5
+   mobile:  < 768px   → bottom nav, full-screen views
+   tablet:  768–1199px → icon sidebar (72px) + content
+   desktop: ≥ 1200px  → full sidebar (240px) + optional side panel + content
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── TABLET ─────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  body {
+    font-size: 15px;
+    overflow: hidden;
+  }
+
+  /* Inputs sin zoom en tablet */
+  input, textarea, select {
+    font-size: 15px !important;
+  }
+
+  /* Botones más grandes en tablet */
+  button {
+    min-height: 40px;
+  }
+
+  /* Scrollbar visible y estilizada en tablet/desktop */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    display: block;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  /* Chat bubbles más anchas en tablet */
+  .chat-bubble-me,
+  .chat-bubble-them {
+    max-width: 65% !important;
+  }
+
+  /* Cards con hover en tablet/desktop */
+  .eg-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  }
+}
+
+/* ── DESKTOP ─────────────────────────────────────────────────────────────── */
+@media (min-width: 1200px) {
+  body {
+    font-size: 15px;
+  }
+
+  /* Chat bubbles más anchas en desktop */
+  .chat-bubble-me,
+  .chat-bubble-them {
+    max-width: 55% !important;
+  }
+
+  /* Modales centrados y con ancho máximo en desktop */
+  .modal-overlay {
+    align-items: center !important;
+  }
+  .modal-content {
+    max-width: 520px !important;
+    border-radius: 20px !important;
+    margin: auto !important;
+  }
+
+  /* Grids de servicios con más columnas en desktop */
+  .services-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  /* Hover effects más pronunciados en desktop */
+  button:hover {
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  }
+}
+
+/* ── PANTALLAS MUY GRANDES (≥ 1600px) ────────────────────────────────────── */
+@media (min-width: 1600px) {
+  /* Limitar ancho máximo del contenido principal */
+  main {
+    max-width: 1400px;
+  }
+}
+
+/* ── LANDSCAPE MÓVIL ─────────────────────────────────────────────────────── */
+@media (max-width: 767px) and (orientation: landscape) {
+  /* En landscape móvil, reducir padding top */
+  body {
+    font-size: 13px;
+  }
+}
+
+/* ── PRINT ───────────────────────────────────────────────────────────────── */
+@media print {
+  nav, aside, .bottom-nav-button, .radial-menu-container {
+    display: none !important;
+  }
+}

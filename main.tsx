@@ -144,18 +144,9 @@ if ('serviceWorker' in navigator) {
       // Registrar nuestro SW
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
 
-      // Cuando el SW nuevo toma control, recargar SOLO si es una actualización real
-      // (no en cada apertura de la app en iOS Safari)
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return;
-        // Solo recargar si la página lleva menos de 3 segundos cargada
-        // (indica que es una actualización del SW, no una apertura normal)
-        const pageAge = Date.now() - ((window as any).__pageLoadTime || Date.now());
-        if (pageAge > 3000) return; // La página ya estaba abierta, no recargar
-        refreshing = true;
-        window.location.reload();
-      });
+      // NO recargar automáticamente cuando el SW toma control
+      // Esto evita el parpadeo en iOS Safari al abrir la app
+      // Las actualizaciones se aplican en la siguiente apertura natural
 
       // Escuchar mensajes del SW (click en notificación)
       navigator.serviceWorker.addEventListener('message', (event) => {

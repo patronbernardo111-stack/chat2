@@ -14,8 +14,8 @@ const PRECACHE_ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  // skipWaiting inmediato para que el nuevo SW tome control sin esperar
-  self.skipWaiting();
+  // NO skipWaiting automático — evita parpadeo en iOS Safari
+  // El nuevo SW esperará hasta que todas las pestañas se cierren
   e.waitUntil(
     caches.open(CACHE).then(cache => cache.addAll(PRECACHE_ASSETS).catch(() => {}))
   );
