@@ -4903,9 +4903,9 @@ const App: React.FC = () => {
               <div style={{
                 position: 'fixed', top: '44px', bottom: 0,
                 left: device.isTablet ? '72px' : '240px',
-                width: device.isTablet ? '280px' : '340px',
-                background: '#f0f2f5', borderRight: '1px solid #e5e7eb',
-                zIndex: 999, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                width: device.isTablet ? '280px' : '300px',
+                background: '#fff', borderRight: '1px solid #e5e7eb',
+                zIndex: 1002, overflow: 'hidden', display: 'flex', flexDirection: 'column',
                 paddingTop: '8px',
               }}>
                 {/* Mini lista de chats — solo avatares y nombres */}
@@ -4942,7 +4942,7 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
-            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : '44px', left: device.isMobile ? 0 : (device.isTablet ? '352px' : '580px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: device.isMobile ? 0 : '44px', left: device.isMobile ? 0 : (device.isTablet ? `${72+280}px` : `${240+300}px`), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -6169,13 +6169,13 @@ const App: React.FC = () => {
             paddingTop: device.isMobile ? 'calc(max(28px, env(safe-area-inset-top, 28px)) + 44px + 6px)' : '8px',
             height: device.isMobile ? '100vh' : 'calc(100vh - 44px)',
             marginTop: device.isMobile ? '0' : '44px',
-            width: device.isMobile ? '100%' : (device.isTablet ? '280px' : '340px'),
+            width: device.isMobile ? '100%' : (device.isTablet ? '280px' : '300px'),
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            background: '#f0f2f5',
+            background: '#fff',
             position: 'relative',
-            zIndex: 1,
+            zIndex: 1002,
             borderRight: device.isMobile ? 'none' : '1px solid #e5e7eb',
           }}>
             {/* Header - Ultra minimalista */}
@@ -10024,7 +10024,7 @@ const App: React.FC = () => {
         <div style={{
           position: 'fixed',
           top: '44px',
-          left: device.isTablet ? `${72 + 280}px` : `${240 + 340}px`,
+          left: device.isTablet ? `${72 + 280}px` : `${240 + 300}px`,
           right: 0,
           bottom: 0,
           zIndex: 2,
