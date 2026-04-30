@@ -3538,11 +3538,28 @@ const App: React.FC = () => {
   const renderCreateGroupModal = () => {
     if (!showCreateGroup) return null;
     const contacts = allContacts.length > 0 ? allContacts : [];
-    const canCreate = groupName.trim().length >= 2 && groupMembers.length >= 1;
+    const addMembersMode = !!(window as any).__addMembersToGroupId;
+    const targetGroupId = (window as any).__addMembersToGroupId as string | undefined;
+    const canCreate = addMembersMode ? groupMembers.length >= 1 : (groupName.trim().length >= 2 && groupMembers.length >= 1);
 
     const doCreate = async () => {
       if (!canCreate) return;
       const memberIds = groupMembers.map(m => m.id);
+
+      // Modo añadir miembros a grupo existente
+      if (addMembersMode && targetGroupId) {
+        try {
+          await chatAPI.addGroupMembers(targetGroupId, memberIds);
+          const members = await chatAPI.getGroupParticipants(targetGroupId);
+          setGroupMembersList(members || []);
+          showToast(`${memberIds.length} miembro(s) añadido(s)`, 'success');
+        } catch { showToast('No se pudo añadir los miembros', 'error'); }
+        (window as any).__addMembersToGroupId = null;
+        setShowCreateGroup(false);
+        setGroupMembers([]);
+        return;
+      }
+
       let groupId = Date.now().toString();
       let backendSuccess = false;
       try {
@@ -3608,19 +3625,23 @@ const App: React.FC = () => {
               </div>
               Nuevo grupo
             </div>
-            <button onClick={() => setShowCreateGroup(false)} style={{ background:'#F3F4F6', border:'none', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+            <button onClick={() => { setShowCreateGroup(false); (window as any).__addMembersToGroupId = null; }} style={{ background:'#F3F4F6', border:'none', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
           <div style={{ padding:'0 16px' }}>
-            {/* Nombre del grupo */}
-            <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>Nombre del grupo *</div>
-            <input value={groupName} onChange={e => setGroupName(e.target.value)}
-              placeholder="Ej: Familia, Trabajo, Amigos..."
-              maxLength={50}
-              style={{ width:'100%', background:'#F9FAFB', border:`1.5px solid ${groupName.trim().length>=2?'#a855f7':'#E5E7EB'}`, borderRadius:'12px', padding:'12px 14px', color:'#111827', fontSize:'15px', outline:'none', fontFamily:'inherit', boxSizing:'border-box', marginBottom:'4px', transition:'border 0.2s' }}/>
-            <div style={{ fontSize:'11px', color:'#9CA3AF', textAlign:'right', marginBottom:'14px' }}>{groupName.length}/50</div>
+            {/* Nombre del grupo — oculto en modo añadir miembros */}
+            {!addMembersMode && (
+              <>
+                <div style={{ fontSize:'11px', fontWeight:'700', color:'#9CA3AF', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'6px' }}>Nombre del grupo *</div>
+                <input value={groupName} onChange={e => setGroupName(e.target.value)}
+                  placeholder="Ej: Familia, Trabajo, Amigos..."
+                  maxLength={50}
+                  style={{ width:'100%', background:'#F9FAFB', border:`1.5px solid ${groupName.trim().length>=2?'#a855f7':'#E5E7EB'}`, borderRadius:'12px', padding:'12px 14px', color:'#111827', fontSize:'15px', outline:'none', fontFamily:'inherit', boxSizing:'border-box', marginBottom:'4px', transition:'border 0.2s' }}/>
+                <div style={{ fontSize:'11px', color:'#9CA3AF', textAlign:'right', marginBottom:'14px' }}>{groupName.length}/50</div>
+              </>
+            )}
 
             {/* Miembros seleccionados */}
             {groupMembers.length > 0 && (
@@ -3685,10 +3706,14 @@ const App: React.FC = () => {
               onClick={doCreate}
               style={{ width:'100%', background: canCreate ? 'linear-gradient(135deg,#a855f7,#6366f1)' : '#E5E7EB', border:'none', borderRadius:'14px', padding:'15px', color: canCreate ? '#fff' : '#9CA3AF', fontSize:'15px', fontWeight:'700', cursor: canCreate ? 'pointer' : 'default', outline:'none', transition:'all 0.2s', boxShadow: canCreate ? '0 4px 16px rgba(168,85,247,0.35)' : 'none' }}>
               {canCreate
-                ? `Crear grupo  -  ${groupMembers.length + 1} miembros`
-                : groupName.trim().length < 2
-                  ? 'Escribe el nombre del grupo'
-                  : 'Selecciona al menos 1 contacto'}
+                ? addMembersMode
+                  ? `Añadir ${groupMembers.length} miembro(s) al grupo`
+                  : `Crear grupo  -  ${groupMembers.length + 1} miembros`
+                : addMembersMode
+                  ? 'Selecciona al menos 1 contacto'
+                  : groupName.trim().length < 2
+                    ? 'Escribe el nombre del grupo'
+                    : 'Selecciona al menos 1 contacto'}
             </button>
           </div>
         </div>
@@ -6401,11 +6426,8 @@ const App: React.FC = () => {
               {/* Chats reales del backend */}
               {realChats.length > 0 && realChats
                 .filter(chat => {
-                  // Determinar si es grupo de forma robusta:
-                  // - type === 'group' (backend lo marca explícitamente)
-                  // - O tiene más de 2 participantes (grupos siempre tienen 3+)
-                  const isGrp = chat.type === 'group' ||
-                    (Array.isArray(chat.participants) && chat.participants.length > 2);
+                  // Usar solo chat.type para determinar si es grupo
+                  const isGrp = chat.type === 'group';
 
                   if (messageFilter === 'group') return isGrp;
                   if (messageFilter === 'individual') return !isGrp;
@@ -6529,7 +6551,7 @@ const App: React.FC = () => {
               {/* Estado vacío cuando el filtro no devuelve resultados */}
               {realChats.length > 0 && messageFilter !== 'all' && (() => {
                 const filtered = realChats.filter(chat => {
-                  const isGrp = chat.type === 'group' || (Array.isArray(chat.participants) && chat.participants.length > 2);
+                  const isGrp = chat.type === 'group';
                   if (messageFilter === 'group') return isGrp;
                   if (messageFilter === 'individual') return !isGrp;
                   if (messageFilter === 'money') {
@@ -11964,8 +11986,13 @@ const App: React.FC = () => {
           }}
           onAddGroupMembers={() => {
             if (showContactProfile?.isGroup) {
+              // Abrir modal de añadir miembros al grupo
               setShowContactProfile(null);
-              setShowGroupMembersPanel(true);
+              setGroupMembers([]);
+              setGroupName(showContactProfile.title || showContactProfile.name || '');
+              // Usar showCreateGroup en modo "añadir" — guardamos el chatId del grupo
+              (window as any).__addMembersToGroupId = showContactProfile.id?.toString();
+              setShowCreateGroup(true);
             }
           }}
           groupMembers={showContactProfile?.isGroup ? groupMembersList : []}
@@ -12016,6 +12043,24 @@ const App: React.FC = () => {
             const gid = showContactProfile.id?.toString();
             setAllGroups(prev => prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g));
             setShowContactProfile((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
+          }}
+          onGroupNameChange={async (name: string) => {
+            if (!showContactProfile?.id) return;
+            const gid = showContactProfile.id?.toString();
+            try {
+              // Actualizar en backend
+              await fetch(`https://egchat-api.onrender.com/api/chats/${gid}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                body: JSON.stringify({ name }),
+              });
+            } catch {}
+            // Actualizar localmente
+            setAllGroups(prev => prev.map(g => g.id?.toString() === gid ? { ...g, name } : g));
+            setRealChats((prev: any[]) => prev.map(c => c.id?.toString() === gid ? { ...c, name } : c));
+            setShowContactProfile((prev: any) => prev ? { ...prev, title: name } : prev);
+            if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, title: name } : prev);
+            showToast(`Nombre actualizado: ${name}`, 'success');
           }}
         />
       )}

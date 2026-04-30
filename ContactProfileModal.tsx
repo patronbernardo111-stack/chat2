@@ -34,6 +34,7 @@ interface Props {
   onLeaveGroup?: () => void;
   onDeleteGroup?: () => void;
   onGroupAvatarChange?: (url: string) => void;
+  onGroupNameChange?: (name: string) => void;
 }
 
 // Toggle switch component
@@ -84,7 +85,7 @@ export const ContactProfileModal: React.FC<Props> = ({
   onDeleteContact, onOpenWallpaper, onSendMoney, onStartCall, onFavoriteToggle,
   isInContacts = true, onAddContact, onAddGroupMembers,
   groupMembers = [], currentUserId, onAddMemberToContacts,
-  onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup, onGroupAvatarChange
+  onRemoveGroupMember, onPromoteToAdmin, onLeaveGroup, onDeleteGroup, onGroupAvatarChange, onGroupNameChange
 }) => {
   const isGroup = !!cp.isGroup;
   const [tab, setTab] = React.useState<'info'|'media'|'grupos'>('info');
@@ -92,6 +93,8 @@ export const ContactProfileModal: React.FC<Props> = ({
   const [editNote, setEditNote] = React.useState('');
   const [showNoteEdit, setShowNoteEdit] = React.useState(false);
   const [starred, setStarred] = React.useState(!!isFavorite);
+  const [editingGroupName, setEditingGroupName] = React.useState(false);
+  const [groupNameInput, setGroupNameInput] = React.useState(cp.title || cp.name || '');
 
   // Determinar si el usuario actual es admin del grupo
   const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
@@ -175,7 +178,33 @@ export const ContactProfileModal: React.FC<Props> = ({
               </button>
             )}
           </div>
-          <div style={{fontSize:'22px',fontWeight:'700',color:'#111827',marginBottom:'3px'}}>{cp.title||cp.name}</div>
+          <div style={{fontSize:'22px',fontWeight:'700',color:'#111827',marginBottom:'3px'}}>
+            {isGroup && isAdmin && editingGroupName ? (
+              <div style={{display:'flex',alignItems:'center',gap:'8px',justifyContent:'center'}}>
+                <input
+                  value={groupNameInput}
+                  onChange={e => setGroupNameInput(e.target.value)}
+                  autoFocus
+                  maxLength={50}
+                  style={{fontSize:'18px',fontWeight:'700',color:'#111827',border:'none',borderBottom:'2px solid #a855f7',outline:'none',textAlign:'center',background:'transparent',width:'200px'}}
+                />
+                <button onClick={() => { if(groupNameInput.trim()) { onGroupNameChange?.(groupNameInput.trim()); } setEditingGroupName(false); }}
+                  style={{background:'#a855f7',border:'none',borderRadius:'8px',padding:'4px 10px',color:'#fff',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>✓</button>
+                <button onClick={() => { setGroupNameInput(cp.title||cp.name||''); setEditingGroupName(false); }}
+                  style={{background:'#e5e7eb',border:'none',borderRadius:'8px',padding:'4px 10px',color:'#6b7280',fontSize:'12px',fontWeight:'700',cursor:'pointer'}}>✕</button>
+              </div>
+            ) : (
+              <div style={{display:'flex',alignItems:'center',gap:'6px',justifyContent:'center'}}>
+                <span>{cp.title||cp.name}</span>
+                {isGroup && isAdmin && (
+                  <button onClick={() => setEditingGroupName(true)}
+                    style={{background:'none',border:'none',cursor:'pointer',padding:'2px',display:'flex',alignItems:'center',color:'#9ca3af'}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div style={{fontSize:'13px',color:cp.status==='online'?'#22c55e':cp.status==='away'?'#f59e0b':'#9CA3AF',marginBottom:'4px'}}>
             {cp.status==='online'?'En línea':cp.status==='away'?'Ausente':'Desconectado'}
           </div>
