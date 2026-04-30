@@ -9380,24 +9380,31 @@ const App: React.FC = () => {
 
             {/* Header de la sidebar — alineado con el header principal (44px) */}
             <div style={{ height: '44px', display: 'flex', alignItems: 'center', gap: isTablet ? '0' : '10px', justifyContent: isTablet ? 'center' : 'flex-start', paddingLeft: isTablet ? '0' : '6px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
-                {userProfile?.avatar_url
-                  ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
-                    </div>
-                }
+              {/* Avatar con bandera superpuesta */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: isTablet ? '32px' : '30px', height: isTablet ? '32px' : '30px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(0,200,160,0.5)', background: '#1a2535' }}>
+                  {userProfile?.avatar_url
+                    ? <img src={userProfile.avatar_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #00c8a0, #00b4e6)' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff' }}>{(userProfile?.name || 'EG').slice(0,2).toUpperCase()}</span>
+                      </div>
+                  }
+                </div>
+                {/* Bandera del país — esquina inferior derecha del avatar */}
+                <span style={{
+                  position: 'absolute', bottom: '-2px', right: '-4px',
+                  fontSize: '13px', lineHeight: 1,
+                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+                }}>{countryFlag}</span>
               </div>
               {!isTablet && (
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', lineHeight: 1 }}>
                     EGCHAT
-                    <span style={{ fontSize: '16px' }}>{countryFlag}</span>
                   </div>
                   <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '1px' }}>Guinea Ecuatorial</div>
                 </div>
               )}
-              {isTablet && <span style={{ fontSize: '18px', position: 'absolute', bottom: '2px', right: '2px' }}>{countryFlag}</span>}
             </div>
 
             {/* Nav items */}
