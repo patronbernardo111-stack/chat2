@@ -2295,11 +2295,7 @@ const App: React.FC = () => {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '44px', padding: '0 10px', boxSizing: 'border-box' }}>
       
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,200,160,0.5)', pointerEvents: 'none', zIndex: 1 }} />
-      
-      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)', boxShadow: '0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(0,180,230,0.5)', pointerEvents: 'none', zIndex: 1 }} />
-      {/* Línea inferior  fusin verde-blanco/negro-azul */}
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '2px', background: 'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)', boxShadow: '0 0 8px rgba(255,255,255,0.8)', pointerEvents: 'none', zIndex: 1 }} />
+
       {/* Logo y texto / Botan de regreso */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
         {['news','banking','historial-completo','id-digital'].includes(currentView) ? (
