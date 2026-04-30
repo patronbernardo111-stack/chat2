@@ -104,8 +104,8 @@ export const ContactProfileModal: React.FC<Props> = ({
   }, [cp.title, cp.name, editingGroupName]);
 
   // Determinar si el usuario actual es admin del grupo
-  // Iniciar como null (desconocido) para evitar parpadeo
-  const [isAdminState, setIsAdminState] = React.useState<boolean | null>(null);
+  // Iniciar como true (optimista) para no ocultar controles mientras cargan los miembros
+  const [isAdminState, setIsAdminState] = React.useState<boolean>(true);
   React.useEffect(() => {
     if (groupMembers.length === 0) return; // esperar a que carguen
     const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
@@ -113,8 +113,7 @@ export const ContactProfileModal: React.FC<Props> = ({
       groupMembers[0]?.user_id?.toString() === currentUserId?.toString();
     setIsAdminState(admin);
   }, [groupMembers, currentUserId]);
-  // Si aún no sabemos (cargando miembros), no mostrar controles de admin para evitar parpadeo
-  const isAdmin = !isGroup || (isAdminState === true);
+  const isAdmin = !isGroup || isAdminState;
 
   const cpId = cp.id?.toString() || cp.title;
   const isMuted = mutedChats.includes(cpId);

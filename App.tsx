@@ -53,6 +53,21 @@ interface Transaction {
 
 const App: React.FC = () => {
   const device = useDevice();
+
+  // Helper: padding de contenido según dispositivo
+  // móvil: header fijo (44px) + safe area top + bottom nav (49px)
+  // tablet/desktop: sin bottom nav, sin safe area top (la sidebar lo gestiona)
+  const viewPadding = {
+    top: device.isMobile
+      ? 'calc(44px + max(36px, env(safe-area-inset-top, 36px)) + 8px)'
+      : '60px',
+    bottom: device.isMobile
+      ? 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)'
+      : '24px',
+    left: device.isDesktop ? '24px' : '16px',
+    right: device.isDesktop ? '24px' : '16px',
+  };
+
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
   // -- Auth persistente -----------------------------------------
@@ -2263,7 +2278,7 @@ const App: React.FC = () => {
       style={{
       position: 'fixed',
       top: 0,
-      left: 0,
+      left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'),
       right: 0,
       background: 'linear-gradient(90deg, #00c8a0 0%, #00b4e6 100%)',
       borderBottom: 'none',
@@ -2272,8 +2287,8 @@ const App: React.FC = () => {
       zIndex: 1000,
       boxShadow: '0 2px 8px rgba(0,200,160,0.3)',
       overflow: 'hidden',
-      // Safe area: 28px fijo para Android status bar + env() para iOS notch
-      paddingTop: 'max(28px, env(safe-area-inset-top, 28px))',
+      // En tablet/desktop no hay status bar — solo en móvil
+      paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '0',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: '44px', padding: '0 10px', boxSizing: 'border-box' }}>
       
@@ -4399,6 +4414,8 @@ const App: React.FC = () => {
   };
   // Renderizar NAVEGACION inferior - OPTIMIZADA PARA Móvil
   const renderBottomNavigation = () => {
+    // En tablet/desktop la navegación es la sidebar — no mostrar bottom nav
+    if (!device.isMobile) return null;
     const allViews = ['home', 'Mensajería', 'monedero', 'servicios', 'ajustes', 'Lia-25', 'estados', 'apuestas', 'cemac', 'mitaxi'];
     if (!allViews.includes(currentView)) return null;
     if (currentView === 'Mensajería' && selectedChat) return null;
@@ -4445,7 +4462,7 @@ const App: React.FC = () => {
   // Renderizar vista principal - PÁGINA DE INICIO CON SOPORTE DE LAYOUTS
   const renderHomeView = () => {
     const containerStyle: React.CSSProperties = {
-      paddingTop: 'calc(44px + max(36px, env(safe-area-inset-top, 36px)) + 8px)',
+      paddingTop: viewPadding.top,
       paddingLeft: '16px',
       paddingRight: '16px',
       paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
@@ -8961,6 +8978,16 @@ const App: React.FC = () => {
     };
   }, [isAuthenticated, realChats]);
 
+  // -- Auto-cargar miembros cuando se abre el perfil de un grupo --
+  React.useEffect(() => {
+    if (showContactProfile?.isGroup && showContactProfile?.id) {
+      loadGroupMembers(showContactProfile.id.toString());
+    } else if (!showContactProfile) {
+      setGroupMembersList([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showContactProfile?.id, showContactProfile?.isGroup]);
+
   // -- Cargar miembros de un grupo con fallback desde realChats --
   const loadGroupMembers = React.useCallback(async (chatId: string) => {
     try {
@@ -9362,27 +9389,25 @@ const App: React.FC = () => {
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
       {renderWallpaperCatalog()}
       {renderLayoutPanel()}
-      {/* Bandas laterales fijas  de arriba a abajo, toda la pantalla */}
-      {/* Izquierda: fondo negro + banda encima */}
-      <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-      <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
-        background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)',
-        boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
-      {/* Derecha: fondo negro + banda encima */}
-      <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-      <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
-        background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)',
-        boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
-      {/* Superior: fondo negro + banda encima */}
-      <div style={{ position:'fixed', left:0, right:0, top:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-      <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none',
-        background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
-        boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
-      {/* Inferior: fondo negro + banda encima */}
-      <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
-      <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none',
-        background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
-        boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+      {/* Bandas decorativas — solo en móvil */}
+      {device.isMobile && <>
+        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
+        <div style={{ position:'fixed', left:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
+          background:'linear-gradient(180deg, #00c8a0 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00c8a0 100%)',
+          boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,200,160,0.5)' }} />
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
+        <div style={{ position:'fixed', right:0, top:0, bottom:0, width:'2px', zIndex:2000, pointerEvents:'none',
+          background:'linear-gradient(180deg, #00b4e6 0%, #ffffff 20%, #000000 40%, #ffffff 60%, #000000 80%, #00b4e6 100%)',
+          boxShadow:'0 0 6px rgba(255,255,255,0.9), 0 0 12px rgba(0,180,230,0.5)' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
+        <div style={{ position:'fixed', left:0, right:0, top:0, height:'2px', zIndex:2000, pointerEvents:'none',
+          background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
+          boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 1px 8px rgba(0,200,160,0.4)' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'4px', zIndex:1999, pointerEvents:'none', background:'#111' }} />
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'2px', zIndex:2000, pointerEvents:'none',
+          background:'linear-gradient(90deg, #00c8a0, #ffffff 20%, #000000 35%, #ffffff 50%, #000000 65%, #ffffff 80%, #00b4e6)',
+          boxShadow:'0 0 6px rgba(255,255,255,0.8), 0 -1px 8px rgba(0,180,230,0.4)' }} />
+      </>}
       {/* Overlay oscuro cuando el mena esta abierto */}
       {isMenuOpen && (
         <div 
@@ -12366,6 +12391,7 @@ const App: React.FC = () => {
         />
       )}
 
+      </div>{/* fin contenido principal */}
     </div>
   );
 };
