@@ -1,14 +1,14 @@
 {
   "enabled": true,
   "name": "Auto Deploy a Vercel (con fallback a Netlify)",
-  "description": "Push a git. Si Vercel tiene límite alcanzado, hace deploy directo a Netlify como fallback.",
+  "description": "Ejecuta deploy-auto.ps1 — push a git, asigna alias en Vercel, y si Vercel tiene limite alcanzado hace fallback a Netlify.",
   "version": "1",
   "when": {
     "type": "agentStop"
   },
   "then": {
     "type": "runCommand",
-    "command": "git add -A && git diff --cached --quiet && echo 'Sin cambios, no se hace deploy' || (git commit -m 'deploy: auto build and push' && git push && sleep 90 && VERCEL_URL=$(npx vercel ls --scope dulcendongs-projects 2>&1 | grep -oP 'egchat-v2-[a-z0-9]+-dulcendongs-projects\\.vercel\\.app' | head -1) && if [ -n \"$VERCEL_URL\" ]; then npx vercel alias set \"$VERCEL_URL\" egchat-v2.vercel.app --scope dulcendongs-projects && echo \"Vercel alias asignado: $VERCEL_URL\"; else echo 'Vercel sin nuevo deployment - intentando Netlify...' && npm run build && npx netlify deploy --prod --dir=dist --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_SITE_ID && echo 'Deploy en Netlify completado'; fi)",
+    "command": "powershell -ExecutionPolicy Bypass -File deploy-auto.ps1",
     "timeout": 420
   }
 }

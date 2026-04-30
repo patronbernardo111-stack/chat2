@@ -4921,7 +4921,7 @@ const App: React.FC = () => {
 
           return (
             <>
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1100 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -4986,9 +4986,9 @@ const App: React.FC = () => {
                 top: device.isMobile ? 'auto' : 0,
                 left: device.isMobile ? 'auto' : (device.isTablet ? '72px' : '240px'),
                 right: device.isMobile ? 'auto' : 0,
-                zIndex: 1002,
+                zIndex: 1102,
                 display: 'flex', alignItems: 'center', 
-                paddingTop: device.isMobile ? 'calc(env(safe-area-inset-top, 0px) + 10px)' : '10px', 
+                paddingTop: device.isMobile ? 'max(44px, calc(env(safe-area-inset-top, 44px) + 10px))' : '10px', 
                 paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', 
                 background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', 
                 borderBottom: 'none', flexShrink: 0, 
