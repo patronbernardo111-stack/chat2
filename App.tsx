@@ -14,6 +14,7 @@ import { useWallet } from './WalletSystem';
 import { ContactProfileModal } from './ContactProfileModal';
 import { CameraModal } from './CameraModal';
 import { useDevice } from './useDevice';
+import { EGChatDesktopWelcome } from './EGChatDesktopWelcome';
 import { UpdateBanner } from './UpdateBanner';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { Avatar } from './Avatar';
@@ -4580,7 +4581,7 @@ const App: React.FC = () => {
     // Layout por defecto y 'cards'
     return (
     <div style={{
-      paddingTop: 'calc(44px + max(36px, env(safe-area-inset-top, 36px)) + 8px)', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
+      paddingTop: viewPadding.top, paddingLeft: viewPadding.left, paddingRight: viewPadding.right, paddingBottom: viewPadding.bottom,
       height: '100vh',
       overflow: 'hidden',
       background: 'transparent'
@@ -4763,14 +4764,14 @@ const App: React.FC = () => {
           <span style={{ fontSize: '12px', fontWeight: '600', color: '#9CA3AF' }}>{title}</span>
         </div>
         {/* 4 columnas */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0', padding: '6px 4px 8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: device.isDesktop ? 'repeat(6, 1fr)' : device.isTablet ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', gap: '0', padding: '6px 4px 8px' }}>
           {children}
         </div>
       </div>
     );
 
     return (
-      <div style={{ padding: '56px 0 0', height: '100vh', display: 'flex', flexDirection: 'column', background: '#F7F8FA', }}>
+      <div style={{ padding: `${device.isMobile ? '56px' : '60px'} 0 0`, height: '100vh', display: 'flex', flexDirection: 'column', background: '#F7F8FA', }}>
         <div style={{ padding: '10px 16px 8px', background: '#FFFFFF', borderBottom: '1px solid #F0F2F5', flexShrink: 0 }}>
           <span style={{ fontSize: '17px', fontWeight: '700', color: '#111827' }}>Servicios</span>
         </div>
@@ -4895,7 +4896,7 @@ const App: React.FC = () => {
           };
 
           return (
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1001 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -6600,7 +6601,7 @@ const App: React.FC = () => {
       case 'news':
         return (
           <div style={{
-            paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
+            paddingTop: viewPadding.top, paddingLeft: viewPadding.left, paddingRight: viewPadding.right, paddingBottom: viewPadding.bottom,
             minHeight: '100vh',
             background: 'transparent'
           }}>
@@ -6640,7 +6641,7 @@ const App: React.FC = () => {
       case 'banking':
         return (
           <div style={{
-            paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
+            paddingTop: viewPadding.top, paddingLeft: viewPadding.left, paddingRight: viewPadding.right, paddingBottom: viewPadding.bottom,
             minHeight: '100vh',
             textAlign: 'center',
             background: 'transparent'
@@ -6656,7 +6657,7 @@ const App: React.FC = () => {
       case 'id-digital':
         return (
           <div style={{
-            paddingTop: 'calc(44px + env(safe-area-inset-top, 0px))', paddingLeft: '16px', paddingRight: '16px', paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)',
+            paddingTop: viewPadding.top, paddingLeft: viewPadding.left, paddingRight: viewPadding.right, paddingBottom: viewPadding.bottom,
             minHeight: '100vh',
             textAlign: 'center',
             background: 'transparent'
@@ -6685,7 +6686,7 @@ const App: React.FC = () => {
       case 'monedero':
         return (
           <div style={{
-            padding: '66px 0 0',
+            padding: `${device.isMobile ? '66px' : '60px'} 0 0`,
             height: '100vh',
             display: 'flex',
             flexDirection: 'column',
@@ -7237,7 +7238,7 @@ const App: React.FC = () => {
       case 'historial-completo':
         return (
           <div style={{
-            padding: '66px 12px 90px',
+            padding: `${device.isMobile ? '66px' : '60px'} 12px ${device.isMobile ? '90px' : '24px'}`,
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',
@@ -7655,7 +7656,7 @@ const App: React.FC = () => {
       case 'grupos':
         return (
           <div style={{
-            padding: '66px 12px 90px',
+            padding: `${device.isMobile ? '66px' : '60px'} 12px ${device.isMobile ? '90px' : '24px'}`,
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',
@@ -7885,7 +7886,7 @@ const App: React.FC = () => {
       case 'ajustes':
         return (
           <div style={{
-            padding: '66px 12px 90px',
+            padding: `${device.isMobile ? '66px' : '60px'} 12px ${device.isMobile ? '90px' : '24px'}`,
             height: '100vh',
             overflow: 'hidden',
             display: 'flex',
@@ -8978,16 +8979,6 @@ const App: React.FC = () => {
     };
   }, [isAuthenticated, realChats]);
 
-  // -- Auto-cargar miembros cuando se abre el perfil de un grupo --
-  React.useEffect(() => {
-    if (showContactProfile?.isGroup && showContactProfile?.id) {
-      loadGroupMembers(showContactProfile.id.toString());
-    } else if (!showContactProfile) {
-      setGroupMembersList([]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showContactProfile?.id, showContactProfile?.isGroup]);
-
   // -- Cargar miembros de un grupo con fallback desde realChats --
   const loadGroupMembers = React.useCallback(async (chatId: string) => {
     try {
@@ -9020,6 +9011,15 @@ const App: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // -- Auto-cargar miembros cuando se abre el perfil de un grupo --
+  React.useEffect(() => {
+    if (showContactProfile?.isGroup && showContactProfile?.id) {
+      loadGroupMembers(showContactProfile.id.toString());
+    } else if (!showContactProfile) {
+      setGroupMembersList([]);
+    }
+  }, [showContactProfile?.id, showContactProfile?.isGroup, loadGroupMembers]);
 
   // -- Cargar contactos ? funci?n reutilizable (debe estar ANTES del useEffect que la usa) --
   const loadContacts = React.useCallback(async () => {

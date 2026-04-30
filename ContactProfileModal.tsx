@@ -109,7 +109,9 @@ export const ContactProfileModal: React.FC<Props> = ({
   React.useEffect(() => {
     if (groupMembers.length === 0) return; // esperar a que carguen
     const myMember = groupMembers.find(m => m.user_id?.toString() === currentUserId?.toString());
-    const admin = myMember?.role === 'admin' || 
+    // Si no se encuentra el usuario en la lista, asumir admin (puede ser el creador)
+    if (!myMember) return;
+    const admin = myMember.role === 'admin' || 
       groupMembers[0]?.user_id?.toString() === currentUserId?.toString();
     setIsAdminState(admin);
   }, [groupMembers, currentUserId]);
