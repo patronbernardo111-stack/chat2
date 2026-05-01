@@ -602,6 +602,20 @@ const App: React.FC = () => {
       document.documentElement.style.setProperty('--header-top-padding', '28px');
     }
   }, []);
+
+  // Fix teclado Android/iOS: ajustar el chat container cuando el teclado sube
+  React.useEffect(() => {
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      document.documentElement.style.setProperty('--keyboard-offset', `${Math.max(0, offset)}px`);
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => { vv.removeEventListener('resize', onResize); vv.removeEventListener('scroll', onResize); };
+  }, []);
   const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings);
   const updateSoundSetting = (key: keyof SoundSettings, value: any) => {
     const updated = { ...soundSettings, [key]: value };
@@ -4921,7 +4935,7 @@ const App: React.FC = () => {
 
           return (
             <>
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1100 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: 'var(--keyboard-offset, 0px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1100 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -5653,48 +5667,41 @@ const App: React.FC = () => {
                           setShowChatAttach(false);
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
+                          // Android WebView fix: input must be in viewport with real size
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.accept='image/*'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
+                          inp.type='file'; inp.accept='image/*,image/heic,image/heif';
+                          inp.style.cssText='position:fixed;bottom:0;left:0;width:100%;height:1px;opacity:0;z-index:-1;pointer-events:none;';
                           document.body.appendChild(inp);
+                          const cleanup = () => { try { if (document.body.contains(inp)) document.body.removeChild(inp); } catch {} };
                           inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            if (document.body.contains(inp)) document.body.removeChild(inp);
+                            cleanup();
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                             const msgId = Date.now().toString();
-                            // Mostrar preview local inmediatamente
                             const localUrl = URL.createObjectURL(file);
                             setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: '📷 Foto', time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const, type: 'image', imageUrl: localUrl } as any] }));
                             try {
-                              // Subir al servidor
                               const result = await chatAPI.uploadFile(chatId, file);
                               const serverUrl = result.file_url;
-                              // Enviar mensaje al backend con la URL real
                               const sent = await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: serverUrl });
-                              // Reemplazar ID local con ID del servidor para evitar duplicados en el polling
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: serverUrl, status: 'delivered' } : m) }));
-                            } catch (e) {
-                              // Fallback: usar base64 local si el servidor falla
+                            } catch {
                               try {
-                                const reader = new FileReader();
-                                reader.onload = async () => {
-                                  const base64Url = reader.result as string;
-                                  // Enviar con la URL local como fallback
-                                  const sent = await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: localUrl });
-                                  const serverId = sent?.id || msgId;
-                                  setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: localUrl, status: 'delivered' } : m) }));
-                                };
-                                reader.readAsDataURL(file);
+                                const sent = await chatAPI.sendMessage(chatId, { text: '📷 Foto', type: 'image', file_url: localUrl });
+                                const serverId = sent?.id || msgId;
+                                setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, imageUrl: localUrl, status: 'delivered' } : m) }));
                               } catch {
-                                // Mantener la imagen local visible aunque no se suba al servidor
                                 setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, imageUrl: localUrl, status: 'delivered' } : m) }));
                                 showToast('Foto guardada localmente', 'info');
                               }
                             }
                           });
-                          setTimeout(() => inp.click(), 50);
+                          inp.addEventListener('cancel', cleanup);
+                          // Small delay so DOM is ready, then click
+                          requestAnimationFrame(() => { requestAnimationFrame(() => { inp.click(); }); });
                         }
                       },
                       {
@@ -5705,11 +5712,13 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.accept='video/*'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
+                          inp.type='file'; inp.accept='video/*';
+                          inp.style.cssText='position:fixed;bottom:0;left:0;width:100%;height:1px;opacity:0;z-index:-1;pointer-events:none;';
                           document.body.appendChild(inp);
+                          const cleanup = () => { try { if (document.body.contains(inp)) document.body.removeChild(inp); } catch {} };
                           inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            if (document.body.contains(inp)) document.body.removeChild(inp);
+                            cleanup();
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
@@ -5718,12 +5727,13 @@ const App: React.FC = () => {
                             setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} MB)`, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'pending' as const } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              const sent = await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'file', file_url: result.file_url });
+                              const sent = await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} MB)`, type: 'video', file_url: result.file_url });
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, fileName: file.name, fileSize: size + ' MB', fileExt: 'mp4', status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir video', 'error'); }
                           });
-                          setTimeout(() => inp.click(), 50);
+                          inp.addEventListener('cancel', cleanup);
+                          requestAnimationFrame(() => { requestAnimationFrame(() => { inp.click(); }); });
                         }
                       },
                       {
@@ -5734,27 +5744,30 @@ const App: React.FC = () => {
                           const key = sc.id?.toString() || sc.title;
                           const chatId = sc.id?.toString() || '';
                           const inp = document.createElement('input');
-                          inp.type='file'; inp.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;width:1px;height:1px;';
+                          inp.type='file';
+                          inp.accept='.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                          inp.style.cssText='position:fixed;bottom:0;left:0;width:100%;height:1px;opacity:0;z-index:-1;pointer-events:none;';
                           document.body.appendChild(inp);
+                          const cleanup = () => { try { if (document.body.contains(inp)) document.body.removeChild(inp); } catch {} };
                           inp.addEventListener('change', async () => {
                             const file = inp.files?.[0];
-                            if (document.body.contains(inp)) document.body.removeChild(inp);
+                            cleanup();
                             if (!file) return;
                             const t = new Date();
                             const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                            const size = (file.size/1024).toFixed(1);
+                            const size = file.size >= 1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : (file.size/1024).toFixed(1)+' KB';
                             const ext = file.name.split('.').pop()?.toLowerCase() || '';
                             const msgId = Date.now().toString();
-                            // Mostrar pendiente
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `🎥 ${file.name} (${size} KB)`, time: tm, status: 'pending' as const, fileName: file.name, fileSize: size + ' KB', fileExt: ext } as any] }));
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: `📄 ${file.name} (${size})`, time: tm, status: 'pending' as const, fileName: file.name, fileSize: size, fileExt: ext } as any] }));
                             try {
                               const result = await chatAPI.uploadFile(chatId, file);
-                              const sent = await chatAPI.sendMessage(chatId, { text: `🎥 ${file.name} (${size} KB)`, type: 'file', file_url: result.file_url });
+                              const sent = await chatAPI.sendMessage(chatId, { text: `📄 ${file.name} (${size})`, type: 'file', file_url: result.file_url });
                               const serverId = sent?.id || msgId;
                               setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map(m => m.id === msgId ? { ...m, id: serverId, fileUrl: result.file_url, status: 'delivered' } : m) }));
                             } catch { showToast('Error al subir archivo', 'error'); }
                           });
-                          setTimeout(() => inp.click(), 50);
+                          inp.addEventListener('cancel', cleanup);
+                          requestAnimationFrame(() => { requestAnimationFrame(() => { inp.click(); }); });
                         }
                       },
                       {
@@ -12675,11 +12688,95 @@ const App: React.FC = () => {
       </div>{/* fin contenido principal */}
     </div>
   );
-};
-
-
+}
 
 export default App;
+
+// ── FIX HARMONYOS & ANDROID KEYBOARD ────────────────────────────────────────────
+if (typeof window !== 'undefined' && 'navigator' in window) {
+  const ua = navigator.userAgent;
+  const isHarmonyOS = /HarmonyOS|harmony/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  
+  if (isHarmonyOS || isAndroid) {
+    let originalHeight = window.innerHeight;
+    let inputContainer = null;
+    let spacer = null;
+    
+    const adjustInput = () => {
+      if (!inputContainer || !spacer) return;
+      
+      if ('visualViewport' in window) {
+        const viewport = window.visualViewport;
+        const viewportHeight = viewport.height;
+        const windowHeight = window.innerHeight;
+        const keyboardHeight = windowHeight - viewportHeight;
+        
+        if (keyboardHeight > 150) {
+          inputContainer.style.bottom = keyboardHeight + 'px';
+          spacer.style.height = Math.max(60, keyboardHeight - 40) + 'px';
+          
+          setTimeout(() => {
+            const scroll = document.querySelector('.chat-messages-scroll');
+            if (scroll) scroll.scrollTop = scroll.scrollHeight;
+          }, 50);
+        } else {
+          inputContainer.style.bottom = '0';
+          spacer.style.height = '0px';
+        }
+        return;
+      }
+      
+      const newHeight = window.innerHeight;
+      const heightDiff = originalHeight - newHeight;
+      
+      if (heightDiff > 150) {
+        inputContainer.style.bottom = heightDiff + 'px';
+        spacer.style.height = Math.max(60, heightDiff - 40) + 'px';
+        
+        setTimeout(() => {
+          const scroll = document.querySelector('.chat-messages-scroll');
+          if (scroll) scroll.scrollTop = scroll.scrollHeight;
+        }, 100);
+      } else if (heightDiff < 100 && newHeight > 100) {
+        inputContainer.style.bottom = '0';
+        spacer.style.height = '0px';
+        originalHeight = newHeight;
+      }
+    };
+    
+    const init = () => {
+      inputContainer = document.getElementById('chat-input-container');
+      spacer = document.getElementById('input-spacer');
+      originalHeight = window.innerHeight;
+      
+      if ('visualViewport' in window) {
+        window.visualViewport.addEventListener('resize', adjustInput);
+        window.visualViewport.addEventListener('scroll', adjustInput);
+      }
+      
+      window.addEventListener('resize', adjustInput);
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => { originalHeight = window.innerHeight; }, 200);
+      });
+      
+      document.addEventListener('focusin', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          setTimeout(() => adjustInput(), 300);
+        }
+      });
+    };
+    
+    if (document.readyState === 'complete') init();
+    else window.addEventListener('load', init);
+    
+    console.log(`✅ ${isHarmonyOS ? 'HarmonyOS' : 'Android'} keyboard fix activado`);
+  }
+}
+
+
+
+
 
 
 

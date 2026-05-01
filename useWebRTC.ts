@@ -1,4 +1,4 @@
-// ─── useWebRTC — señalización via HTTP polling ────────────────────────────────
+// ── useWebRTC — señalización via HTTP polling ────────────────────────────────
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { authAPI } from './api';
 
@@ -8,30 +8,40 @@ const BASE = (() => {
   return url.endsWith('/api') ? url : url.replace(/\/$/, '') + '/api';
 })();
 
-// ── ICE Servers — STUN gratuitos (Google, Cloudflare, Twilio) + TURN público ──
-// Los STUN servers descubren la IP pública.
-// Los TURN servers actúan como relay cuando la conexión directa falla (NAT estricto,
-// redes móviles, diferentes países). Usamos múltiples para máxima cobertura.
-const ICE_SERVERS: RTCIceServer[] = [
-  // STUN — Google (los más confiables, prioritarios)
-  { urls: ['stun:stun.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'] },
-  // STUN — Cloudflare (backup rápido)
+// ── ICE Servers — STUN + TURN dinámico ────────────────────────────────────────
+const STUN_SERVERS = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
   { urls: 'stun:stun.cloudflare.com:3478' },
-  // STUN — stunprotocol.org
-  { urls: 'stun:stun.stunprotocol.org:3478' },
-  // TURN — Open Relay UDP (mejor para móviles)
-  { urls: ['turn:openrelay.metered.ca:80?transport=udp', 'turn:openrelay.metered.ca:80?transport=tcp'],
-    username: 'openrelayproject', credential: 'openrelayproject' },
-  // TURN — Open Relay HTTPS (para firewalls estrictos)
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject', credential: 'openrelayproject' },
-  // TURN — Metered CA (redundancia)
-  { urls: ['turn:a.relay.metered.ca:80?transport=udp', 'turn:a.relay.metered.ca:80?transport=tcp'],
-    username: 'openrelayproject', credential: 'openrelayproject' },
-  // TURN — Numb (gratuito, estable)
-  { urls: ['turn:numb.viagenie.ca:3478?transport=udp', 'turn:numb.viagenie.ca:3478?transport=tcp'],
-    username: 'webrtc@live.com', credential: 'muazkh' },
 ];
+
+/** 
+ * Obtiene configuración TURN dinámica desde el backend
+ * Genera token temporal vía Twilio para evitar hardcode de credenciales
+ */
+async function getTurnServers(): Promise<RTCIceServer[]> {
+  try {
+    const token = authAPI.getToken();
+    if (!token) return [];
+    
+    const res = await fetch(`${BASE}/call/turn-token?_t=${encodeURIComponent(token)}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.turnConfig ? [data.turnConfig] : [];
+  } catch (e) {
+    console.warn('TURN unavailable, continuing with STUN only:', e);
+    return [];
+  }
+}
+
+async function getIceServers(): Promise<RTCIceServer[]> {
+  const stun = STUN_SERVERS;
+  let turn: RTCIceServer[] = [];
+  try { turn = await getTurnServers(); } catch {}
+  return [...stun, ...turn];
+}
 
 // ── FUNCIONES HELPER: Forzar codecs compatibles iOS ↔ Android ───────────────────
 /**
@@ -249,19 +259,22 @@ export function useWebRTC() {
     setCallState('idle');
   }, [cleanupResources]);
 
-  const createPC = useCallback(() => {
+  const createPC = useCallback(async () => {
     // ── DETECTAR ANDROID ─────────────────────────────────────────────────────────
     const isAndroid = /android/i.test(navigator.userAgent);
     
+    // Obtener ICE servers (STUN + TURN) asíncronamente
+    const iceServers = await getIceServers();
+    
     // ── CONFIGURACIÓN BASE PEER CONNECTION ──────────────────────────────────────
     const pcConfig: RTCConfiguration = {
-      iceServers: ICE_SERVERS,
+      iceServers: iceServers.length > 0 ? iceServers : STUN_SERVERS,
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
       iceTransportPolicy: 'all',
       iceCandidatePoolSize: 10,
     };
-    
+
     const p = new RTCPeerConnection(pcConfig);
 
     p.ontrack = (e) => {
@@ -349,43 +362,33 @@ export function useWebRTC() {
       }
     };
 
-    // ── INTERCEPTAR SDP EN ANDROID: Forzar H.264 + Opus ─────────────────────────
+    // ── INTERCEPTAR SDP EN ANDROID ──────────────────────────────────────────────
     if (isAndroid) {
-      console.log('🤖 Android detectado → forzando codecs H.264/Opus');
+      console.log('🤖 Android detectado → Aplicando optimizaciones H.264/Opus');
 
       const originalCreateOffer = p.createOffer.bind(p);
       p.createOffer = async (options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> => {
         const offer = await originalCreateOffer(options);
-        
         if (offer.sdp) {
           let modifiedSDP = offer.sdp;
           modifiedSDP = forceH264InSDP(modifiedSDP);
           modifiedSDP = forceOpusInSDP(modifiedSDP);
-          
-          console.log('📤 SDP Offer MODIFICADO (primeros 800 chars):\n', 
-                      modifiedSDP.substring(0, 800));
-          
+          console.log('📤 SDP Offer (H.264 forzado):', modifiedSDP.substring(0, 500));
           return { type: 'offer', sdp: modifiedSDP };
         }
-        
         return offer;
       };
 
       const originalCreateAnswer = p.createAnswer.bind(p);
       p.createAnswer = async (options?: RTCAnswerOptions): Promise<RTCSessionDescriptionInit> => {
         const answer = await originalCreateAnswer(options);
-        
         if (answer.sdp) {
           let modifiedSDP = answer.sdp;
           modifiedSDP = forceH264InSDP(modifiedSDP);
           modifiedSDP = forceOpusInSDP(modifiedSDP);
-          
-          console.log('📥 SDP Answer MODIFICADO (primeros 800 chars):\n', 
-                      modifiedSDP.substring(0, 800));
-          
+          console.log('📥 SDP Answer (H.264 forzado):', modifiedSDP.substring(0, 500));
           return { type: 'answer', sdp: modifiedSDP };
         }
-        
         return answer;
       };
     }
@@ -460,7 +463,7 @@ export function useWebRTC() {
      callIdRef.current = callId;
      roleRef.current = 'caller';
 
-     const p = createPC();
+     const p = await createPC();
      pc.current = p;
      stream.getTracks().forEach(t => p.addTrack(t, stream));
      p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'caller'); };
@@ -569,7 +572,7 @@ export function useWebRTC() {
      callIdRef.current = callId;
      roleRef.current = 'callee';
 
-     const p = createPC();
+     const p = await createPC();
      pc.current = p;
      stream.getTracks().forEach(t => p.addTrack(t, stream));
      p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'callee'); };
