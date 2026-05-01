@@ -23,13 +23,13 @@ async function getTurnServers(): Promise<RTCIceServer[]> {
     const token = authAPI.getToken();
     if (!token) return [];
     
-    const res = await fetch(`${BASE}/call/turn-token?_t=${encodeURIComponent(token)}`, {
+    const res = await fetch(`${BASE}/turn-token`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return data.turnConfig ? [data.turnConfig] : [];
+    return Array.isArray(data.iceServers) ? data.iceServers : [];
   } catch (e) {
     console.warn('TURN unavailable, continuing with STUN only:', e);
     return [];
