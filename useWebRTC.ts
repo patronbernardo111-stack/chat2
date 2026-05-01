@@ -281,17 +281,24 @@ export function useWebRTC() {
     p.ontrack = (e) => {
       const stream = e.streams[0] || new MediaStream([e.track]);
       setRemoteStream(stream);
-      if (e.track.kind === 'audio' && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = stream;
-        remoteAudioRef.current.play().catch(() => {});
-      }
-      // Debug: log codec del track recibido
-      const receiver = p.getReceivers().find(r => r.track === e.track);
-      if (receiver) {
-        const params = receiver.getParameters();
-        console.log('📥 Track recibido:', e.track.kind, 
-                    '| codec:', params?.codecs?.[0]?.mimeType || 'unknown');
-      }
+      // Forzar reproducción del audio con múltiples intentos
+      const playAudio = (attempt = 0) => {
+        if (!remoteAudioRef.current) {
+          remoteAudioRef.current = new Audio();
+          remoteAudioRef.current.autoplay = true;
+          (remoteAudioRef.current as any).playsInline = true;
+        }
+        const audio = remoteAudioRef.current;
+        if (e.track.kind === 'audio') {
+          audio.srcObject = stream;
+          audio.play().catch((err) => {
+            console.warn(`Audio play attempt ${attempt + 1} failed:`, err);
+            if (attempt < 5) setTimeout(() => playAudio(attempt + 1), 500 * (attempt + 1));
+          });
+        }
+      };
+      if (e.track.kind === 'audio') playAudio();
+      console.log('📥 Track recibido:', e.track.kind);
     };
 
     p.onconnectionstatechange = () => {
@@ -321,10 +328,11 @@ export function useWebRTC() {
       } else if (state === 'disconnected') {
         console.warn('WebRTC disconnected (transient), waiting for recovery...');
         setTimeout(() => {
-          if (p.connectionState === 'disconnected' && roleRef.current === 'caller') {
+          if (p.connectionState === 'disconnected' && !endedRef.current) {
+            console.warn('Still disconnected after 3s, restarting ICE...');
             try { p.restartIce(); } catch {}
           }
-        }, 10000);
+        }, 3000);
       } else if (state === 'failed') {
         console.error('WebRTC connection failed');
         if (roleRef.current === 'caller' && !endedRef.current) {
@@ -356,10 +364,10 @@ export function useWebRTC() {
         console.warn('ICE disconnected, waiting for recovery...');
         setTimeout(() => {
           if (p.iceConnectionState === 'disconnected' && !endedRef.current) {
-            console.warn('ICE still disconnected after 20s, restarting...');
+            console.warn('ICE still disconnected after 5s, restarting...');
             try { p.restartIce(); } catch {}
           }
-        }, 20000);
+        }, 5000);
       }
     };
 
@@ -395,6 +403,27 @@ export function useWebRTC() {
     }
 
     return p;
+  }, []);
+
+  // Detectar cambio de red y reiniciar ICE
+  useEffect(() => {
+    const handleNetworkChange = () => {
+      if (pc.current && !endedRef.current) {
+        const state = pc.current.connectionState;
+        if (state === 'connected' || state === 'connecting') {
+          console.log('🌐 Red cambiada, reiniciando ICE...');
+          try { pc.current.restartIce(); } catch {}
+        }
+      }
+    };
+    window.addEventListener('online', handleNetworkChange);
+    // En móvil, detectar cambio de conexión
+    const conn = (navigator as any).connection;
+    if (conn) conn.addEventListener('change', handleNetworkChange);
+    return () => {
+      window.removeEventListener('online', handleNetworkChange);
+      if (conn) conn.removeEventListener('change', handleNetworkChange);
+    };
   }, []);
 
   const sendIceCandidate = useCallback(async (candidate: RTCIceCandidate, role: string) => {
@@ -515,12 +544,11 @@ export function useWebRTC() {
          // Solo cortar si hay 10+ errores consecutivos Y la conexión WebRTC está definitivamente caída
          const rtcState = p.connectionState || p.iceConnectionState;
          const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
-         // 'disconnected' es transitorio — NO cortar por eso
-         if (consecutiveErrors >= 10 && rtcFailed) {
+         if (consecutiveErrors >= 5 && rtcFailed) {
            triggerEnded();
          }
        }
-     }, 1500);
+     }, 1000);
    }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
    // ── CALLEE ──────────────────────────────────────────────────────────────────
@@ -599,15 +627,25 @@ export function useWebRTC() {
        callerCandidatesApplied++;
      }
 
-     setCallState('connected');
+     // NO poner 'connected' aquí — esperar a que WebRTC conecte realmente
+     // onconnectionstatechange lo hará cuando p.connectionState === 'connected'
+     setCallState('ringing'); // estado intermedio: answer enviado, esperando WebRTC
+
+     // Timeout de seguridad: si en 30s no conecta, reintentar ICE
+     const connectTimeout = setTimeout(() => {
+       if (p.connectionState !== 'connected' && !endedRef.current) {
+         console.warn('[Callee] WebRTC no conectó en 30s, reiniciando ICE...');
+         try { p.restartIce(); } catch {}
+       }
+     }, 30000);
 
      let calleeConsecutiveErrors = 0;
      pollingRef.current = setInterval(async () => {
-       if (endedRef.current) return;
+       if (endedRef.current) { clearTimeout(connectTimeout); return; }
        try {
          const s = await sigFetch(`/call/${callId}`);
          calleeConsecutiveErrors = 0;
-         if (!s || s.ended) { triggerEnded(); return; }
+         if (!s || s.ended) { clearTimeout(connectTimeout); triggerEnded(); return; }
          const cands = s.callerCandidates || [];
          for (let i = callerCandidatesApplied; i < cands.length; i++) {
            try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
@@ -615,13 +653,11 @@ export function useWebRTC() {
          callerCandidatesApplied = cands.length;
        } catch (err: any) {
          calleeConsecutiveErrors++;
-         // Solo cortar si hay 10+ errores Y WebRTC está definitivamente caído
          const rtcState = p.connectionState || p.iceConnectionState;
          const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
-         // 'disconnected' es transitorio — NO cortar por eso, puede recuperarse
-         if (calleeConsecutiveErrors >= 10 && rtcFailed) triggerEnded();
+         if (calleeConsecutiveErrors >= 5 && rtcFailed) { clearTimeout(connectTimeout); triggerEnded(); }
        }
-     }, 1500);
+     }, 1000);
    }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
   const endCall = useCallback(async () => {
