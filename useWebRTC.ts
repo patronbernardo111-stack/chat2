@@ -120,24 +120,13 @@ function forceH264InSDP(sdp: string): string {
     }
 
     // Añadir rtcp-fb si falta (requerido por iOS)
-    if (inVideoSection && h264Pt) {
-      // Insertar rtcp-fb después del m=video si no existen
-      let hasRtcpFb = false;
-      for (const l of newLines) {
-        if (l.startsWith(`a=rtcp-fb:${h264Pt}`)) {
-          hasRtcpFb = true;
-          break;
-        }
-      }
-      if (!hasRtcpFb) {
-        // Insertar antes de la primera línea que no sea de video
-        const insertIdx = newLines.findIndex(l => l.startsWith('m=audio') || l.startsWith('m=application'));
-        if (insertIdx === -1) insertIdx = newLines.length;
-        newLines.splice(insertIdx, 0, `a=rtcp-fb:${h264Pt} goog-remb`);
-        newLines.splice(insertIdx + 1, 0, `a=rtcp-fb:${h264Pt} nack`);
-        newLines.splice(insertIdx + 2, 0, `a=rtcp-fb:${h264Pt} nackpli`);
-        break; // ya insertamos, salir
-      }
+    if (!hasRtcpFb) {
+      // Insertar antes de la primera línea que no sea de video
+      let insertIdx = newLines.findIndex(l => l.startsWith('m=audio') || l.startsWith('m=application'));
+      if (insertIdx === -1) insertIdx = newLines.length;
+      newLines.splice(insertIdx, 0, `a=rtcp-fb:${h264Pt} goog-remb`);
+      newLines.splice(insertIdx + 1, 0, `a=rtcp-fb:${h264Pt} nack`);
+      newLines.splice(insertIdx + 2, 0, `a=rtcp-fb:${h264Pt} nackpli`);
     }
   }
 
