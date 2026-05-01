@@ -228,17 +228,23 @@ const App: React.FC = () => {
           const localById = new Map((prev[chatId] || []).map((m: any) => [m.id, m]));
           const enrichedFmt = filteredFmt.map((m: any) => {
             const local = localById.get(m.id);
-            if (!local) return m;
+            // Detectar tipo por texto si el backend no lo guarda
+            const textType = m.text?.startsWith('👤') ? 'contact'
+              : (m.text?.startsWith('📍') || m.text?.startsWith('📌')) ? 'location'
+              : m.text?.startsWith('💸') ? 'money'
+              : null;
             return {
               ...m,
-              // Preservar type especial del local si el backend devuelve 'text'
-              type: (m.type === 'text' || !m.type) && local.type && local.type !== 'text' ? local.type : m.type,
+              // Preservar type especial: primero del local, luego detectado por texto, luego del backend
+              type: (local?.type && local.type !== 'text') ? local.type
+                : textType ? textType
+                : m.type,
               // Preservar metadata de archivos/contactos
-              imageUrl: m.imageUrl || local.imageUrl,
-              audioUrl: m.audioUrl || local.audioUrl,
-              fileUrl: m.fileUrl || local.fileUrl,
-              videoUrl: m.videoUrl || local.videoUrl,
-              contactAvatar: local.contactAvatar || m.contactAvatar,
+              imageUrl: m.imageUrl || local?.imageUrl,
+              audioUrl: m.audioUrl || local?.audioUrl,
+              fileUrl: m.fileUrl || local?.fileUrl,
+              videoUrl: m.videoUrl || local?.videoUrl,
+              contactAvatar: local?.contactAvatar || m.contactAvatar,
             };
           });
           // Ordenar por tiempo para mantener el orden correcto
@@ -5545,26 +5551,30 @@ const App: React.FC = () => {
                           const lat = coordMatch?.[1] || '3.7520';
                           const lng = coordMatch?.[2] || '8.7735';
                           const directionsUrl = link.includes('dir/') ? link : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-                          const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                          const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=300x150&markers=color:red%7C${lat},${lng}&key=` ||
-                            `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/300x150.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
-                          const tileUrl = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/280x140.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
+                          // OpenStreetMap static tile — completamente gratis, sin API key
+                          const zoom = 15;
+                          const tileUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=280x140&markers=${lat},${lng},red-pushpin`;
                           return (
                             <div style={{ minWidth: '220px', maxWidth: '260px', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer' }}
                               onClick={() => window.open(directionsUrl, '_blank')}>
-                              {/* Mapa */}
-                              <div style={{ position: 'relative', height: '140px', background: '#e8f4e8' }}>
+                              {/* Mapa OSM */}
+                              <div style={{ position: 'relative', height: '140px', background: '#e8f4e8', display:'flex', alignItems:'center', justifyContent:'center' }}>
                                 <img src={tileUrl} alt="mapa"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                  onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+                                  onError={e => {
+                                    // Fallback: mostrar mapa genérico con pin
+                                    const t = e.target as HTMLImageElement;
+                                    t.style.display = 'none';
+                                    const parent = t.parentElement;
+                                    if (parent && !parent.querySelector('.map-fallback')) {
+                                      const fb = document.createElement('div');
+                                      fb.className = 'map-fallback';
+                                      fb.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f5e9,#e3f2fd);gap:8px;';
+                                      fb.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="#ef4444"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span style="font-size:11px;color:#6b7280;font-weight:600">Ver en Google Maps</span>';
+                                      parent.appendChild(fb);
+                                    }
+                                  }}
                                 />
-                                {/* Pin central */}
-                                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
-                                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-                                    <div style={{ width:'28px', height:'28px', borderRadius:'50% 50% 50% 0', background:'#ef4444', transform:'rotate(-45deg)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)', border:'2px solid #fff' }}/>
-                                    <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:'rgba(0,0,0,0.2)', marginTop:'2px' }}/>
-                                  </div>
-                                </div>
                               </div>
                               {/* Footer */}
                               <div style={{ background: msg.from === 'me' ? '#d9fdd3' : '#fff', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', borderTop:'1px solid rgba(0,0,0,0.06)' }}>
