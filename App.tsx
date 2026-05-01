@@ -174,10 +174,16 @@ const App: React.FC = () => {
           } : {}),
           // Archivos e imágenes del backend
           ...(m.file_url ? {
-            fileUrl: m.type !== 'image' && m.type !== 'audio' ? m.file_url : undefined,
+            fileUrl: m.type !== 'image' && m.type !== 'audio' && m.type !== 'video' ? m.file_url : undefined,
             imageUrl: m.type === 'image' ? m.file_url : undefined,
             audioUrl: m.type === 'audio' ? m.file_url : undefined,
-            type: m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : (m.type === 'file' ? 'file' : m.type),
+            videoUrl: m.type === 'video' ? m.file_url : undefined,
+            type: m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : m.type === 'video' ? 'video' : (m.type === 'file' ? 'file' : m.type),
+            // Asegurar que fileName y fileExt se preservan para archivos
+            ...(m.type === 'file' || m.type === 'video' ? {
+              fileName: m.file_name || m.text?.replace(/^[^\s]+ /, '').replace(/ \(.*\)$/, '') || 'archivo',
+              fileExt: (m.file_name || m.file_url || '').split('.').pop()?.toLowerCase() || '',
+            } : {}),
           } : {}),
           // Fallback: detectar llamadas por texto si el backend no guarda type
           ...(m.type !== 'call' && !m.file_url && m.text && (m.text.includes('Llamada') || m.text.includes('📵') || m.text.includes('📞')) ? {
@@ -5439,12 +5445,24 @@ const App: React.FC = () => {
                               onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                           </div>
                         ) : (
-                          /* imageUrl vac?o ? foto no disponible (localStorage lleno) */
+                          /* imageUrl vacío → foto no disponible */
                           <div style={{ width: '220px', height: '120px', background: '#f3f4f6', borderRadius: '12px 12px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                             <span style={{ fontSize: '11px', color: '#9ca3af' }}>Foto no disponible</span>
                           </div>
                         )
+                      ) : (msg as any).type === 'video' && (msg as any).videoUrl ? (
+                        /* -- VIDEO REPRODUCIBLE -- */
+                        <div style={{ borderRadius: '12px 12px 0 0', overflow: 'hidden', width: '240px', background: '#000', position: 'relative' }}>
+                          <video
+                            src={(msg as any).videoUrl}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            style={{ width: '240px', maxHeight: '200px', display: 'block', objectFit: 'cover' }}
+                            onError={e => { (e.target as HTMLVideoElement).style.display='none'; }}
+                          />
+                        </div>
                       ) : msg.text?.startsWith('📄') || msg.text?.startsWith('📎') ? (
                         /* -- DOCUMENTO / ARCHIVO -- */
                         (() => {
