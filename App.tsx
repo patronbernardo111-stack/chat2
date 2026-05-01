@@ -185,7 +185,6 @@ const App: React.FC = () => {
               fileExt: (m.file_name || m.file_url || '').split('.').pop()?.toLowerCase() || '',
             } : {}),
           } : {}),
-          // Fallback: detectar llamadas por texto si el backend no guarda type
           ...(m.type !== 'call' && !m.file_url && m.text && (m.text.includes('Llamada') || m.text.includes('📵') || m.text.includes('📞')) ? {
             type: 'call',
             callType: m.text.includes('Video') || m.text.includes('video') ? 'video' : 'audio',
@@ -5186,7 +5185,7 @@ const App: React.FC = () => {
                         maxWidth: '72%',
                         background: msg.from === 'me' ? '#d9fdd3' : '#ffffff',
                         borderRadius: msg.from === 'me' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                        padding: (msg as any).type === 'image' && (msg as any).imageUrl ? '4px 4px 7px' : '9px 12px 7px',
+                        padding: ((msg as any).type === 'image' || (msg as any).imageUrl) && ((msg as any).imageUrl || (msg as any).file_url) ? '4px 4px 7px' : '9px 12px 7px',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.13)',
                         position: 'relative',
                         overflow: 'hidden',
@@ -5436,21 +5435,23 @@ const App: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      ) : (msg as any).type === 'image' ? (
+                      ) : (msg as any).type === 'image' || ((msg as any).imageUrl) || (msg.text === '📷 Foto' && (msg as any).file_url) ? (
                         /* -- IMAGEN -- */
-                        (msg as any).imageUrl ? (
-                          <div style={{ cursor: 'zoom-in', borderRadius: '12px 12px 0 0', overflow: 'hidden' }} onClick={(e) => { e.stopPropagation(); setChatImageViewer((msg as any).imageUrl); }}>
-                            <img src={(msg as any).imageUrl} alt="foto"
-                              style={{ width: '240px', height: '200px', objectFit: 'cover', display: 'block' }}
-                              onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-                          </div>
-                        ) : (
-                          /* imageUrl vacío → foto no disponible */
-                          <div style={{ width: '220px', height: '120px', background: '#f3f4f6', borderRadius: '12px 12px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <span style={{ fontSize: '11px', color: '#9ca3af' }}>Foto no disponible</span>
-                          </div>
-                        )
+                        (() => {
+                          const imgUrl = (msg as any).imageUrl || (msg as any).file_url || '';
+                          return imgUrl ? (
+                            <div style={{ cursor: 'zoom-in', borderRadius: '12px 12px 0 0', overflow: 'hidden' }} onClick={(e) => { e.stopPropagation(); setChatImageViewer(imgUrl); }}>
+                              <img src={imgUrl} alt="foto"
+                                style={{ width: '240px', height: '200px', objectFit: 'cover', display: 'block' }}
+                                onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                            </div>
+                          ) : (
+                            <div style={{ width: '220px', height: '120px', background: '#f3f4f6', borderRadius: '12px 12px 0 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>Foto no disponible</span>
+                            </div>
+                          );
+                        })()
                       ) : (msg as any).type === 'video' && (msg as any).videoUrl ? (
                         /* -- VIDEO REPRODUCIBLE -- */
                         <div style={{ borderRadius: '12px 12px 0 0', overflow: 'hidden', width: '240px', background: '#000', position: 'relative' }}>
