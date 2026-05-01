@@ -10479,6 +10479,62 @@ const App: React.FC = () => {
       )}
 
       {/* Modal de Transferencia Rapida */}
+      {/* Modal picker de contactos para compartir en chat */}
+      {showContactPickerForChat && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:3000, display:'flex', alignItems:'flex-end', justifyContent:'center' }}
+          onClick={() => setShowContactPickerForChat(false)}>
+          <div style={{ background:'#fff', borderRadius:'20px 20px 0 0', width:'100%', maxWidth:'480px', maxHeight:'70vh', display:'flex', flexDirection:'column', overflow:'hidden' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ padding:'16px 20px 12px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <span style={{ fontSize:'16px', fontWeight:'700', color:'#111827' }}>Compartir contacto</span>
+              <button onClick={() => setShowContactPickerForChat(false)}
+                style={{ background:'none', border:'none', cursor:'pointer', padding:'4px', color:'#6b7280' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            {/* Lista de contactos */}
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {allContacts.length === 0 ? (
+                <div style={{ padding:'40px 20px', textAlign:'center', color:'#9ca3af', fontSize:'14px' }}>No tienes contactos guardados</div>
+              ) : allContacts.map(contact => (
+                <button key={contact.id}
+                  onClick={() => {
+                    const key = contactPickerChatKey;
+                    const chatId = contactPickerChatKey;
+                    const t = new Date();
+                    const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                    const msgId = Date.now().toString();
+                    const msgText = `👤 ${contact.name}\n📞 ${contact.phone}`;
+                    setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), {
+                      id: msgId, from: 'me' as const, text: msgText, time: tm,
+                      status: 'pending' as const, type: 'contact' as any,
+                      contactAvatar: contact.avatarUrl || ''
+                    } as any] }));
+                    chatAPI.sendMessage(chatId, { text: msgText, type: 'text' })
+                      .then((sent: any) => { const sid = sent?.id || msgId; setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map((m: any) => m.id === msgId ? { ...m, id: sid, status: 'delivered' } : m) })); })
+                      .catch(() => {});
+                    setShowContactPickerForChat(false);
+                  }}
+                  style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'12px 20px', display:'flex', alignItems:'center', gap:'12px', borderBottom:'1px solid #f9fafb', textAlign:'left' }}>
+                  <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                    {contact.avatarUrl
+                      ? <img src={contact.avatarUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      : <span style={{ fontSize:'15px', fontWeight:'700', color:'#fff' }}>{contact.name.slice(0,2).toUpperCase()}</span>
+                    }
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'14px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{contact.name}</div>
+                    <div style={{ fontSize:'12px', color:'#6b7280', marginTop:'1px' }}>{contact.phone}</div>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showQuickTransferModal && (
         <div style={{
           position: 'fixed',
