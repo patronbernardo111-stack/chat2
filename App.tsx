@@ -476,6 +476,8 @@ const App: React.FC = () => {
   const [qrConcept, setQrConcept] = useState<string>('');
   const [pendingTransfers, setPendingTransfers] = useState<Array<{ id: string; from: string; to: string; amount: number; status: 'pending' | 'cancelled'; createdAt: Date; expiresAt: Date }>>([]);
   const [showQuickTransferModal, setShowQuickTransferModal] = useState<boolean>(false);
+  const [showContactPickerForChat, setShowContactPickerForChat] = useState<boolean>(false);
+  const [contactPickerChatKey, setContactPickerChatKey] = useState<string>('');
   const [quickTransferData, setQuickTransferData] = useState<{ contactId: string; contactName: string; amount: string; accountId: string }>({ contactId: '', contactName: '', amount: '', accountId: '' });
   
   // Fase 5: Historial y Transacciones
@@ -5800,13 +5802,9 @@ const App: React.FC = () => {
                         icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
                         action: () => {
                           setShowChatAttach(false);
-                          const myName = userProfile.name || 'Mi contacto';
-                          const myPhone = userProfile.phone || '+240 222 *** ***';
-                          const myAvatar = userProfile.avatarUrl || '';
-                          const key = sc.id?.toString() || sc.title;
-                          const t = new Date();
-                          const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `👤 ${myName}\n📞 ${myPhone}`, time: tm, status: 'pending' as const, type: 'contact' as any, contactAvatar: myAvatar } as any] }));
+                          // Abrir picker de contactos
+                          setContactPickerChatKey(sc.id?.toString() || sc.title);
+                          setShowContactPickerForChat(true);
                         }
                       },
                       {
@@ -5815,22 +5813,32 @@ const App: React.FC = () => {
                         action: () => {
                           setShowChatAttach(false);
                           const key = sc.id?.toString() || sc.title;
+                          const chatId = sc.id?.toString() || '';
                           const t = new Date();
                           const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                          const sendLocation = (lat: string, lng: string, label: string) => {
+                            // URL de "Cómo llegar" — abre Google Maps con ruta hasta la ubicación
+                            const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                            const msgText = `📍 ${label}\n${directionsUrl}`;
+                            const msgId = Date.now().toString();
+                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: msgId, from: 'me' as const, text: msgText, time: tm, status: 'pending' as const } as any] }));
+                            chatAPI.sendMessage(chatId, { text: msgText, type: 'text' })
+                              .then((sent: any) => { const sid = sent?.id || msgId; setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map((m: any) => m.id === msgId ? { ...m, id: sid, status: 'delivered' } : m) })); })
+                              .catch(() => {});
+                          };
                           if (!navigator.geolocation) {
-                            setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
+                            sendLocation('3.7520', '8.7735', 'Malabo, Guinea Ecuatorial');
                             return;
                           }
+                          showToast('Obteniendo ubicación GPS...', 'info');
                           navigator.geolocation.getCurrentPosition(
                             pos => {
                               const lat = pos.coords.latitude.toFixed(6);
                               const lng = pos.coords.longitude.toFixed(6);
-                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Mi ubicación\nhttps://maps.google.com/?q=${lat},${lng}`, time: tm, status: 'pending' as const }] }));
+                              sendLocation(lat, lng, 'Mi ubicación actual');
                             },
-                            () => {
-                              setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), { id: Date.now().toString(), from: 'me' as const, text: `📌 Malabo, Guinea Ecuatorial\nhttps://maps.google.com/?q=3.7520,8.7735`, time: tm, status: 'pending' as const }] }));
-                            },
-                            { timeout: 8000, enableHighAccuracy: true }
+                            () => { sendLocation('3.7520', '8.7735', 'Malabo, Guinea Ecuatorial'); },
+                            { timeout: 10000, enableHighAccuracy: true, maximumAge: 30000 }
                           );
                         }
                       },
@@ -5839,20 +5847,9 @@ const App: React.FC = () => {
                         icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><circle cx="12" cy="15" r="2"/></svg>,
                         action: () => {
                           setShowChatAttach(false);
-                          const key = sc.id?.toString() || sc.title;
-                          const amountStr = window.prompt(`Enviar dinero a ${sc.title}\n\nIngresa el monto en XAF:`);
-                          if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) return;
-                          const amount = Number(amountStr);
-                          if (amount > userBalance) { showToast('⚠ Saldo insuficiente', 'error'); return; }
-                          const code = Math.floor(100000 + Math.random() * 900000).toString();
-                          const t = new Date();
-                          const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                          try { subtractBalance(amount); } catch {}
-                          setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), {
-                            id: Date.now().toString(), from: 'me' as const,
-                            text: `📌 Transferencia\n💰 ${amount.toLocaleString()} XAF\n👤 ${sc.title}\n🔑 Código: ${code}\n✅ Enviado`,
-                            time: tm, status: 'pending' as const
-                          }] }));
+                          // Abrir el modal real de transferencia con el contacto del chat
+                          setQuickTransferData({ contactId: sc.id?.toString() || '', contactName: sc.title, amount: '', accountId: bankAccounts[0]?.id || '' });
+                          setShowQuickTransferModal(true);
                         }
                       },
                     ].map((item, i) => (
