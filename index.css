@@ -6,6 +6,14 @@
   -webkit-touch-callout: none;
 }
 
+/* Fix anti-parpadeo iOS Safari: html y body con el mismo fondo que la app
+   para que no haya flash de color blanco/verde al cargar o al volver de background */
+html {
+  background-color: #f0f2f5;
+  /* Evitar el flash blanco en iOS al hacer scroll bounce */
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
@@ -19,6 +27,8 @@ body {
   touch-action: manipulation;
   height: 100dvh;
   height: 100vh;
+  /* Evitar el bounce scroll que expone el fondo en iOS */
+  overscroll-behavior: none;
 }
 
 #root {
@@ -28,6 +38,10 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
+  background-color: #f0f2f5;
+  /* Forzar compositing layer propio para evitar repaints en iOS */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* Evitar selección de texto en elementos interactivos */
@@ -464,13 +478,12 @@ input:focus {
   --font-2xl:   20px;   /* títulos grandes */
 }
 
-/* Fondo global */
-body { background: var(--bg-primary) !important; }
+/* Fondo global — body y #root con el mismo color para evitar flash en iOS */
+body { background: #f0f2f5 !important; }
 
-/* El body tiene el color del header para que no haya gap visible en Android */
-body {
-  background-color: #00c8a0 !important;
-}
+/* El color del header se aplica solo al header, no al body completo.
+   Antes body era #00c8a0 (verde) y #root era #f0f2f5 (gris), causando
+   un flash de color verde en iOS Safari antes de que React pintara el root. */
 #root {
   background-color: #f0f2f5;
 }

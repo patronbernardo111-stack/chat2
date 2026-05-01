@@ -72,7 +72,16 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('home');
   const [previousView, setPreviousView] = useState<string>('home');
   // -- Auth persistente -----------------------------------------
+  // isHydrating: true durante el primer frame para evitar flash en iOS Safari.
+  // El token se lee síncronamente de localStorage, pero en iOS hay un frame
+  // donde el DOM está vacío antes de que React pinte — esto lo previene.
+  const [isHydrating, setIsHydrating] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
+  useEffect(() => {
+    // Marcar hydration completa en el siguiente frame de pintura
+    const raf = requestAnimationFrame(() => setIsHydrating(false));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   // -- WebRTC real -----------------------------------------------
   const webrtc = useWebRTC();
   // -- Llamada entrante ------------------------------------------
@@ -9386,6 +9395,15 @@ const App: React.FC = () => {
   }, [isAuthenticated, loadChats, loadMessages, selectedChat]);
 
   // -- Auth check  todos los hooks declarados -------------------
+  // Guard de hydration: evita flash en iOS Safari durante el primer frame
+  if (isHydrating) return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: '#f0f2f5',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} />
+  );
+
   if (!isAuthenticated) return <AuthScreen onAuth={(user) => {
     if (user) {
       const savedAvatar = localStorage.getItem('user_avatar') || user.avatar_url || '';
@@ -10563,264 +10581,81 @@ const App: React.FC = () => {
       )}
 
       {showQuickTransferModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          backdropFilter: 'blur(4px)'
-        }}
-        onClick={() => setShowQuickTransferModal(false)}
-        >
-          <div style={{
-            background: '#FFFFFF',
-            width: '90%',
-            maxWidth: '400px',
-            borderRadius: '16px',
-            padding: '20px',
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
-          }}
-          onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px'
-            }}>
-              <h2 style={{
-                fontSize: '16px',
-                fontWeight: '700',
-                color: '#0d0d0d',
-                margin: 0
-              }}>
-                Transferencia Rapida
-              </h2>
-              <button style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#374151',
-                fontSize: '24px',
-                cursor: 'pointer',
-                outline: 'none',
-                padding: '0'
-              }}
-              onClick={() => setShowQuickTransferModal(false)}
-              ><svg width='16' height='16' viewBox='0 0 24 24' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round'><line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/></svg></button>
-            </div>
-
-            {/* informacion del Contacto */}
-            <div style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '8px',
-              padding: '12px',
-              marginBottom: '16px'
-            }}>
-              <div style={{ fontSize: '14px', color: '#374151', marginBottom: '4px' }}>
-                Destinatario
-              </div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#00c8a0' }}>
-                {quickTransferData.contactName}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'flex-end', justifyContent:'center', zIndex:2000, backdropFilter:'blur(6px)' }}
+          onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}>
+          <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header gradiente estilo Alipay */}
+            <div style={{ background:'linear-gradient(135deg,#1a73e8,#0d47a1)', padding:'24px 20px 32px', position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', top:'-30px', right:'-30px', width:'120px', height:'120px', borderRadius:'50%', background:'rgba(255,255,255,0.07)' }}/>
+              <div style={{ position:'absolute', bottom:'-40px', left:'-20px', width:'140px', height:'140px', borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
+              <button onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}
+                style={{ position:'absolute', top:'16px', right:'16px', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', position:'relative' }}>
+                <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'800', color:'#fff' }}>
+                  {(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}
+                </div>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.7)', fontWeight:'500' }}>Enviar a</div>
+                  <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{quickTransferData.contactName}</div>
+                </div>
               </div>
             </div>
-
-            {/* Formulario */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Saldo monedero */}
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-                borderRadius: '8px',
-                padding: '8px 12px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <span style={{ fontSize: '14px', color: '#374151' }}>Monedero EGChat</span>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#00c8a0' }}>{userBalance.toLocaleString()} XAF</span>
+            {/* Cuerpo */}
+            <div style={{ padding:'20px 20px 8px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f0fdf4', borderRadius:'10px', padding:'10px 14px', marginBottom:'16px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  <span style={{ fontSize:'13px', color:'#374151', fontWeight:'500' }}>Saldo disponible</span>
+                </div>
+                <span style={{ fontSize:'13px', fontWeight:'700', color:'#16a34a' }}>{userBalance.toLocaleString()} XAF</span>
               </div>
-
-              {/* Cuenta Origen (respaldo) */}
-              <div>
-                <label style={{ fontSize: '14px', color: '#374151', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
-                  Cuenta bancaria (respaldo)
-                </label>
-                <select
-                  value={quickTransferData.accountId}
-                  onChange={(e) => setQuickTransferData({ ...quickTransferData, accountId: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    background: 'rgba(249,250,251,0.88)',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: '8px',
-                    color: '#0d0d0d',
-                    fontSize: '12px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  {bankAccounts.map((account) => (
-                    <option key={account.id} value={account.id} style={{ background: '#FFFFFF', color: '#0d0d0d' }}>
-                      {account.bank} ({account.type})
-                    </option>
-                  ))}
-                </select>
+              <div style={{ textAlign:'center', marginBottom:'16px' }}>
+                <div style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'600', marginBottom:'8px', textTransform:'uppercase', letterSpacing:'1px' }}>Monto a enviar</div>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+                  <span style={{ fontSize:'20px', fontWeight:'700', color:'#9ca3af' }}>XAF</span>
+                  <input id="transfer-amount-input" type="tel" inputMode="numeric" placeholder="0" autoFocus
+                    style={{ border:'none', outline:'none', fontSize:'44px', fontWeight:'800', color:'#111827', width:'180px', textAlign:'center', background:'transparent', caretColor:'#1a73e8' }}/>
+                </div>
+                <div style={{ height:'2px', background:'linear-gradient(90deg,transparent,#1a73e8,transparent)', margin:'4px auto', width:'200px', borderRadius:'2px' }}/>
               </div>
-
-              {/* Monto */}
-              <div>
-                <label style={{ fontSize: '14px', color: '#374151', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
-                  Monto (XAF)
-                </label>
-                <input
-                  id="transfer-amount-input"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="Ej: 5000"
-                  defaultValue={quickTransferData.amount}
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    background: '#f9fafb',
-                    border: '2px solid #00c8a0',
-                    borderRadius: '12px',
-                    color: '#111827',
-                    fontSize: '22px',
-                    fontWeight: '700',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    textAlign: 'center',
-                    letterSpacing: '2px'
-                  }}
-                />
-              </div>
-
-              {/* Error de liquidez */}
               {transferError && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  color: '#ef4444',
-                  textAlign: 'center'
-                }}>
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'8px', padding:'8px 12px', fontSize:'13px', color:'#ef4444', textAlign:'center', marginBottom:'12px' }}>
                   {transferError}
                 </div>
               )}
-
-              {/* Botones */}
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button
-                  onClick={() => {
-                    setTransferError('');
-                    const inputEl = document.getElementById('transfer-amount-input') as HTMLInputElement;
-                    const rawAmount = (inputEl?.value || quickTransferData.amount || '').replace(/[^0-9]/g,'');
-                    if (!rawAmount || parseInt(rawAmount) <= 0) { setTransferError('Introduce un monto válido'); return; }
-                    const amount = parseInt(rawAmount);
-                    const chatKey = quickTransferData.contactId;
-                    const code = Math.floor(100000 + Math.random() * 900000).toString();
-                    const t = new Date();
-                    const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-
-                    const sendMoneyMsg = (source: string) => {
-                      const msgId = Date.now().toString();
-                      const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
-                      setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), {
-                        id: msgId, from: 'me' as const, text: msgText, time: tm,
-                        timestamp: new Date().toISOString(), created_at: new Date().toISOString(),
-                        status: 'delivered' as const
-                      } as any] }));
-                      if (chatKey) {
-                        chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' })
-                          .then((sent: any) => { const sid = sent?.id || msgId; setChatMessages(prev => ({ ...prev, [chatKey]: (prev[chatKey]||[]).map((m: any) => m.id === msgId ? { ...m, id: sid, status: 'delivered' } : m) })); })
-                          .catch(() => {});
-                      }
-                      setShowQuickTransferModal(false);
-                      setQuickTransferData({ contactId: '', contactName: '', amount: '', accountId: '' });
-                      showToast(`✅ ${amount.toLocaleString()} XAF enviados a ${quickTransferData.contactName}`, 'success');
-                    };
-
-                    // 1. Intentar desde monedero EGChat
-                    if (userBalance >= amount) {
-                      setUserBalance(userBalance - amount);
-                      const newTransfer = { id: Date.now().toString(), from: 'Monedero EGChat', to: quickTransferData.contactName, amount, status: 'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now() + 5 * 60 * 1000) };
-                      setPendingTransfers([...pendingTransfers, newTransfer]);
-                      sendMoneyMsg('Monedero EGChat');
-                      return;
-                    }
-
-                    // 2. Intentar desde cuenta bancaria seleccionada
-                    const sourceAccount = bankAccounts.find(a => a.id === quickTransferData.accountId);
-                    if (sourceAccount && amount <= sourceAccount.balance) {
-                      const newTransfer = { id: Date.now().toString(), from: sourceAccount.bank, to: quickTransferData.contactName, amount, status: 'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now() + 5 * 60 * 1000) };
-                      setPendingTransfers([...pendingTransfers, newTransfer]);
-                      setBankAccounts(bankAccounts.map(acc => acc.id === quickTransferData.accountId ? { ...acc, balance: acc.balance - amount } : acc));
-                      sendMoneyMsg(sourceAccount.bank);
-                      return;
-                    }
-
-                    // 3. Sin fondos suficientes
-                    setTransferError('Saldo insuficiente en monedero y cuenta bancaria');
-                  }}
-                  style={{
-                    flex: 1,
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.2))',
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
-                    color: '#00c8a0',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.4), rgba(16, 185, 129, 0.3))';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.2))';
-                  }}
-                >
-                  Enviar
-                </button>
-                <button
-                  onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}
-                  style={{
-                    flex: 1,
-                    background: 'rgba(249,250,251,0.88)',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    color: '#374151',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
+              <button onClick={() => {
+                setTransferError('');
+                const inputEl = document.getElementById('transfer-amount-input') as HTMLInputElement;
+                const rawAmount = (inputEl?.value||'').replace(/[^0-9]/g,'');
+                if (!rawAmount || parseInt(rawAmount) <= 0) { setTransferError('Introduce un monto válido'); return; }
+                const amount = parseInt(rawAmount);
+                const chatKey = quickTransferData.contactId;
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                const t = new Date();
+                const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                const sendMoneyMsg = (source: string) => {
+                  const msgId = Date.now().toString();
+                  const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
+                  setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), { id: msgId, from: 'me' as const, text: msgText, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'delivered' as const } as any] }));
+                  if (chatKey) { chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' }).then((sent: any) => { const sid = sent?.id||msgId; setChatMessages(prev => ({ ...prev, [chatKey]: (prev[chatKey]||[]).map((m: any) => m.id===msgId ? { ...m, id: sid, status:'delivered' } : m) })); }).catch(() => {}); }
+                  setShowQuickTransferModal(false); setTransferError('');
+                  setQuickTransferData({ contactId:'', contactName:'', amount:'', accountId:'' });
+                  showToast(`✅ ${amount.toLocaleString()} XAF enviados`, 'success');
+                };
+                if (userBalance >= amount) { setUserBalance(userBalance - amount); setPendingTransfers(p => [...p, { id: Date.now().toString(), from:'Monedero EGChat', to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg('Monedero EGChat'); return; }
+                const src = bankAccounts.find(a => a.id === quickTransferData.accountId);
+                if (src && amount <= src.balance) { setBankAccounts(bankAccounts.map(a => a.id===quickTransferData.accountId ? { ...a, balance: a.balance-amount } : a)); setPendingTransfers(p => [...p, { id: Date.now().toString(), from: src.bank, to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg(src.bank); return; }
+                setTransferError('Saldo insuficiente');
+              }} style={{ width:'100%', background:'linear-gradient(135deg,#1a73e8,#0d47a1)', border:'none', borderRadius:'14px', padding:'16px', fontSize:'16px', fontWeight:'700', color:'#fff', cursor:'pointer', outline:'none', boxShadow:'0 4px 16px rgba(26,115,232,0.4)', marginBottom:'12px' }}>
+                Enviar dinero
+              </button>
+              <button onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}
+                style={{ width:'100%', background:'none', border:'none', color:'#9ca3af', fontSize:'14px', cursor:'pointer', padding:'8px', marginBottom:'8px' }}>
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
