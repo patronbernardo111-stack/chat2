@@ -33,6 +33,170 @@ const ICE_SERVERS: RTCIceServer[] = [
     username: 'webrtc@live.com', credential: 'muazkh' },
 ];
 
+// ── FUNCIONES HELPER: Forzar codecs compatibles iOS ↔ Android ───────────────────
+/**
+ * Fuerza H.264 como codec de video principal en el SDP.
+ * iOS NO soporta VP8/VP9, solo H.264. Android anuncia VP8 por defecto.
+ * Esta función reordena los codecs en la sección de video para que H.264
+ * sea el primero y asegura que tenga los parámetros correctos (profile-level-id,
+ * packetization-mode, rtcp-fb) requeridos por iOS.
+ */
+function forceH264InSDP(sdp: string): string {
+  if (!sdp) return sdp;
+
+  const lines = sdp.split('\n');
+  const newLines: string[] = [];
+  let inVideoSection = false;
+  let videoMLineIndex = -1;
+  let h264Pt: string | null = null;
+
+  // Primera pasada: encontrar sección de video y líneas de H.264
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('m=video')) {
+      inVideoSection = true;
+      videoMLineIndex = newLines.length;
+      newLines.push(line);
+      continue;
+    }
+
+    if (line.startsWith('m=') && inVideoSection) {
+      inVideoSection = false;
+      newLines.push(line);
+      continue;
+    }
+
+    if (inVideoSection) {
+      // Detectar H.264 en rtpmap
+      if (line.startsWith('a=rtpmap:')) {
+        const match = line.match(/a=rtpmap:(\d+)\s+(\w+)/);
+        if (match) {
+          const pt = match[1];
+          const codec = match[2].toLowerCase();
+          if (codec === 'h264' || codec === 'avc') {
+            h264Pt = pt;
+          }
+        }
+      }
+      newLines.push(line);
+      continue;
+    }
+
+    newLines.push(line);
+  }
+
+  // Segunda pasada: reordenar codecs en m=video (H.264 primero)
+  if (videoMLineIndex !== -1 && h264Pt) {
+    const originalLine = newLines[videoMLineIndex];
+    const parts = originalLine.split(' ');
+    if (parts.length >= 4) {
+      // Reconstruir: m=video <port> <proto> <h264_pt> [otros...]
+      const newParts = [parts[0], parts[1], parts[2], h264Pt];
+      const used = new Set([h264Pt]);
+      for (let j = 3; j < parts.length; j++) {
+        const pt = parts[j].trim();
+        if (pt && !used.has(pt)) {
+          newParts.push(pt);
+          used.add(pt);
+        }
+      }
+      newLines[videoMLineIndex] = newParts.join(' ');
+    }
+  }
+
+  // Tercera pasada: asegurar fmtp y rtcp-fb para H.264
+  for (let i = 0; i < newLines.length; i++) {
+    const line = newLines[i];
+
+    if (line.startsWith('a=fmtp:') && h264Pt) {
+      const match = line.match(/a=fmtp:(\d+)\s+(.*)/);
+      if (match && match[1] === h264Pt) {
+        // Asegurar parámetros H.264 para iOS
+        if (!match[2].includes('profile-level-id') || !match[2].includes('packetization-mode')) {
+          newLines[i] = `a=fmtp:${h264Pt} profile-level-id=42e01f;packetization-mode=1`;
+        }
+      }
+    }
+
+    // Añadir rtcp-fb si falta (requerido por iOS)
+    if (inVideoSection && h264Pt) {
+      // Insertar rtcp-fb después del m=video si no existen
+      let hasRtcpFb = false;
+      for (const l of newLines) {
+        if (l.startsWith(`a=rtcp-fb:${h264Pt}`)) {
+          hasRtcpFb = true;
+          break;
+        }
+      }
+      if (!hasRtcpFb) {
+        // Insertar antes de la primera línea que no sea de video
+        const insertIdx = newLines.findIndex(l => l.startsWith('m=audio') || l.startsWith('m=application'));
+        if (insertIdx === -1) insertIdx = newLines.length;
+        newLines.splice(insertIdx, 0, `a=rtcp-fb:${h264Pt} goog-remb`);
+        newLines.splice(insertIdx + 1, 0, `a=rtcp-fb:${h264Pt} nack`);
+        newLines.splice(insertIdx + 2, 0, `a=rtcp-fb:${h264Pt} nackpli`);
+        break; // ya insertamos, salir
+      }
+    }
+  }
+
+  return newLines.join('\n');
+}
+
+/**
+ * Fuerza Opus como codec de audio principal.
+ * Opus es estándar en WebRTC, pero aseguramos que sea el primero.
+ */
+function forceOpusInSDP(sdp: string): string {
+  if (!sdp) return sdp;
+
+  const lines = sdp.split('\n');
+  const newLines: string[] = [];
+  let audioMLineIndex = -1;
+  let opusPt: string | null = null;
+
+  // Primera pasada: encontrar sección de audio y Opus
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('m=audio')) {
+      audioMLineIndex = newLines.length;
+      newLines.push(line);
+      continue;
+    }
+
+    if (audioMLineIndex !== -1 && line.startsWith('a=rtpmap:')) {
+      const match = line.match(/a=rtpmap:(\d+)\s+(\w+)/);
+      if (match && match[2].toLowerCase() === 'opus') {
+        opusPt = match[1];
+      }
+    }
+
+    newLines.push(line);
+  }
+
+  // Reordenar: Opus primero en m=audio
+  if (audioMLineIndex !== -1 && opusPt) {
+    const originalLine = newLines[audioMLineIndex];
+    const parts = originalLine.split(' ');
+    if (parts.length >= 4) {
+      const newParts = [parts[0], parts[1], parts[2], opusPt];
+      const used = new Set([opusPt]);
+      for (let j = 3; j < parts.length; j++) {
+        const pt = parts[j].trim();
+        if (pt && !used.has(pt)) {
+          newParts.push(pt);
+          used.add(pt);
+        }
+      }
+      newLines[audioMLineIndex] = newParts.join(' ');
+    }
+  }
+
+  return newLines.join('\n');
+}
+
 async function sigFetch(path: string, method = 'GET', body?: object) {
   const token = authAPI.getToken();
   const url = `${BASE}${path}${token ? (path.includes('?') ? '&' : '?') + '_t=' + encodeURIComponent(token) : ''}`;
@@ -97,17 +261,19 @@ export function useWebRTC() {
   }, [cleanupResources]);
 
   const createPC = useCallback(() => {
-    const p = new RTCPeerConnection({
+    // ── DETECTAR ANDROID ─────────────────────────────────────────────────────────
+    const isAndroid = /android/i.test(navigator.userAgent);
+    
+    // ── CONFIGURACIÓN BASE PEER CONNECTION ──────────────────────────────────────
+    const pcConfig: RTCConfiguration = {
       iceServers: ICE_SERVERS,
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
-      // iOS requiere 'all' para pasar TURN correctamente
-      // Android también lo soporta bien
       iceTransportPolicy: 'all',
-      // Optimizaciones para móviles
       iceCandidatePoolSize: 10,
-      iceGatheringState: 'new',
-    });
+    };
+    
+    const p = new RTCPeerConnection(pcConfig);
 
     p.ontrack = (e) => {
       const stream = e.streams[0] || new MediaStream([e.track]);
@@ -116,14 +282,21 @@ export function useWebRTC() {
         remoteAudioRef.current.srcObject = stream;
         remoteAudioRef.current.play().catch(() => {});
       }
+      // Debug: log codec del track recibido
+      const receiver = p.getReceivers().find(r => r.track === e.track);
+      if (receiver) {
+        const params = receiver.getParameters();
+        console.log('📥 Track recibido:', e.track.kind, 
+                    '| codec:', params?.codecs?.[0]?.mimeType || 'unknown');
+      }
     };
 
     p.onconnectionstatechange = () => {
       const state = p.connectionState;
       console.log('WebRTC connection state:', state);
+      
       if (state === 'connected') {
         setCallState('connected');
-        // Ajustar bitrate según tipo de llamada y ancho de banda disponible
         p.getSenders().forEach(async sender => {
           if (!sender.track) return;
           try {
@@ -131,14 +304,10 @@ export function useWebRTC() {
             if (!params.encodings?.length) params.encodings = [{}];
             
             if (sender.track.kind === 'video') {
-              // Bitrate para video: adaptativo basado en red
-              // Rango: 500kbps a 2Mbps
               params.encodings[0].maxBitrate = 1_500_000;
               params.encodings[0].maxFramerate = 30;
-              // Escalabilidad para robustez (IMPORTANTE para móviles)
               params.encodings[0].scalabilityMode = 'L1T2';
             } else {
-              // Audio: 32-128 kbps
               params.encodings[0].maxBitrate = 128_000;
             }
             await sender.setParameters(params);
@@ -146,19 +315,14 @@ export function useWebRTC() {
             console.warn('Failed to set sender parameters:', e);
           }
         });
-      }
-      // 'disconnected' es transitorio — puede recuperarse
-      else if (state === 'disconnected') {
+      } else if (state === 'disconnected') {
         console.warn('WebRTC disconnected (transient), waiting for recovery...');
-        // Esperar 10s antes de reintentar
         setTimeout(() => {
           if (p.connectionState === 'disconnected' && roleRef.current === 'caller') {
             try { p.restartIce(); } catch {}
           }
         }, 10000);
-      }
-      // 'failed' es definitivo — intentar ICE restart o terminar
-      else if (state === 'failed') {
+      } else if (state === 'failed') {
         console.error('WebRTC connection failed');
         if (roleRef.current === 'caller' && !endedRef.current) {
           try { 
@@ -171,14 +335,11 @@ export function useWebRTC() {
         } else {
           triggerEnded();
         }
-      }
-      // 'closed' — limpiar completamente
-      else if (state === 'closed') {
+      } else if (state === 'closed') {
         triggerEnded();
       }
     };
 
-    // ICE connection state — más granular que connectionState
     p.oniceconnectionstatechange = () => {
       const iceState = p.iceConnectionState;
       console.log('WebRTC ICE connection state:', iceState);
@@ -190,7 +351,6 @@ export function useWebRTC() {
         }
       } else if (iceState === 'disconnected') {
         console.warn('ICE disconnected, waiting for recovery...');
-        // Dar 20s para recuperarse antes de declarar fallo
         setTimeout(() => {
           if (p.iceConnectionState === 'disconnected' && !endedRef.current) {
             console.warn('ICE still disconnected after 20s, restarting...');
@@ -199,6 +359,47 @@ export function useWebRTC() {
         }, 20000);
       }
     };
+
+    // ── INTERCEPTAR SDP EN ANDROID: Forzar H.264 + Opus ─────────────────────────
+    if (isAndroid) {
+      console.log('🤖 Android detectado → forzando codecs H.264/Opus');
+
+      const originalCreateOffer = p.createOffer.bind(p);
+      p.createOffer = async (options?: RTCOfferOptions): Promise<RTCSessionDescriptionInit> => {
+        const offer = await originalCreateOffer(options);
+        
+        if (offer.sdp) {
+          let modifiedSDP = offer.sdp;
+          modifiedSDP = forceH264InSDP(modifiedSDP);
+          modifiedSDP = forceOpusInSDP(modifiedSDP);
+          
+          console.log('📤 SDP Offer MODIFICADO (primeros 800 chars):\n', 
+                      modifiedSDP.substring(0, 800));
+          
+          return { type: 'offer', sdp: modifiedSDP };
+        }
+        
+        return offer;
+      };
+
+      const originalCreateAnswer = p.createAnswer.bind(p);
+      p.createAnswer = async (options?: RTCAnswerOptions): Promise<RTCSessionDescriptionInit> => {
+        const answer = await originalCreateAnswer(options);
+        
+        if (answer.sdp) {
+          let modifiedSDP = answer.sdp;
+          modifiedSDP = forceH264InSDP(modifiedSDP);
+          modifiedSDP = forceOpusInSDP(modifiedSDP);
+          
+          console.log('📥 SDP Answer MODIFICADO (primeros 800 chars):\n', 
+                      modifiedSDP.substring(0, 800));
+          
+          return { type: 'answer', sdp: modifiedSDP };
+        }
+        
+        return answer;
+      };
+    }
 
     return p;
   }, []);
@@ -217,202 +418,218 @@ export function useWebRTC() {
     cleanupResources();
   }, [cleanupResources]);
 
-  // ── CALLER ──────────────────────────────────────────────────────────────────
-  const startCall = useCallback(async (type: 'audio' | 'video', targetUserId: string) => {
-    endedRef.current = false;
-    cleanup();
-    setCallType(type);
+   // ── CALLER ──────────────────────────────────────────────────────────────────
+   const startCall = useCallback(async (type: 'audio' | 'video', targetUserId: string) => {
+     endedRef.current = false;
+     cleanup();
+     setCallType(type);
 
-    let stream: MediaStream;
-    try {
-      // Solicitar permisos adecuados según tipo de llamada
-      const constraints = type === 'video'
-        ? { 
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-          }
-        : { 
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: false
-          };
+     let stream: MediaStream;
+     try {
+       // Solicitar permisos adecuados según tipo de llamada
+       const constraints = type === 'video'
+         ? { 
+             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+             video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+           }
+         : { 
+             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+             video: false
+           };
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (err: any) {
-        // Si falla con los constraints óptimos, intentar con defaults
-        const fallbackConstraints = type === 'video'
-          ? { audio: true, video: { facingMode: 'user' } }
-          : { audio: true, video: false };
-        
-        console.warn('Optimal constraints failed, using fallback:', err.message);
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-        } catch (fallbackErr: any) {
-          // Si aún falla, mostrar mensaje de error específico
-          if (fallbackErr.name === 'NotAllowedError') {
-            throw new Error('Permiso denegado para acceder a micrófono/cámara. Verifica los permisos en tu dispositivo.');
-          } else if (fallbackErr.name === 'NotFoundError') {
-            throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
-          } else {
-            throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error('Get user media error:', err);
-      throw err;
-    }
+       try {
+         stream = await navigator.mediaDevices.getUserMedia(constraints);
+       } catch (err: any) {
+         // Si falla con los constraints óptimos, intentar con defaults
+         const fallbackConstraints = type === 'video'
+           ? { audio: true, video: { facingMode: 'user' } }
+           : { audio: true, video: false };
+         
+         console.warn('Optimal constraints failed, using fallback:', err.message);
+         try {
+           stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+         } catch (fallbackErr: any) {
+           // Si aún falla, mostrar mensaje de error específico
+           if (fallbackErr.name === 'NotAllowedError') {
+             throw new Error('Permiso denegado para acceder a micrófono/cámara. Verifica los permisos en tu dispositivo.');
+           } else if (fallbackErr.name === 'NotFoundError') {
+             throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
+           } else {
+             throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
+           }
+         }
+       }
+     } catch (err: any) {
+       console.error('Get user media error:', err);
+       throw err;
+     }
 
-    localStreamRef.current = stream;
-    setLocalStream(stream);
+     localStreamRef.current = stream;
+     setLocalStream(stream);
 
-    const callId = `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    callIdRef.current = callId;
-    roleRef.current = 'caller';
+     const callId = `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+     callIdRef.current = callId;
+     roleRef.current = 'caller';
 
-    const p = createPC();
-    pc.current = p;
-    stream.getTracks().forEach(t => p.addTrack(t, stream));
-    p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'caller'); };
+     const p = createPC();
+     pc.current = p;
+     stream.getTracks().forEach(t => p.addTrack(t, stream));
+     p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'caller'); };
 
-    const offer = await p.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === 'video' });
-    await p.setLocalDescription(offer);
-    await new Promise(r => setTimeout(r, 500));
-    await sigFetch('/call/offer', 'POST', { callId, offer: p.localDescription, targetUserId, type });
+     const offer = await p.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: type === 'video' });
+     await p.setLocalDescription(offer);
+     
+     // ── LOG SDP EN ANDROID PARA DEBUGGING ───────────────────────────────────────
+     const isAndroid = /android/i.test(navigator.userAgent);
+     if (isAndroid) {
+       console.log('📤 [Android] SDP Offer FINAL (enviado al servidor):\n', 
+                   p.localDescription?.sdp || 'sin sdp');
+     }
+     
+     await new Promise(r => setTimeout(r, 500));
+     await sigFetch('/call/offer', 'POST', { callId, offer: p.localDescription, targetUserId, type });
 
-    setCallState('calling');
+     setCallState('calling');
 
-    let pollCount = 0;
-    let answerSet = false;
-    let calleeCandidatesApplied = 0;
-    let consecutiveErrors = 0;
+     let pollCount = 0;
+     let answerSet = false;
+     let calleeCandidatesApplied = 0;
+     let consecutiveErrors = 0;
 
-    pollingRef.current = setInterval(async () => {
-      if (endedRef.current) return;
-      try {
-        pollCount++;
-        const session = await sigFetch(`/call/${callId}`);
-        consecutiveErrors = 0; // reset on success
-        if (!session || session.ended) { triggerEnded(); return; }
+     pollingRef.current = setInterval(async () => {
+       if (endedRef.current) return;
+       try {
+         pollCount++;
+         const session = await sigFetch(`/call/${callId}`);
+         consecutiveErrors = 0; // reset on success
+         if (!session || session.ended) { triggerEnded(); return; }
 
-        if (!answerSet && session.answer && p.signalingState === 'have-local-offer') {
-          await p.setRemoteDescription(new RTCSessionDescription(session.answer));
-          answerSet = true;
-        }
-        if (answerSet) {
-          const cands = session.calleeCandidates || [];
-          for (let i = calleeCandidatesApplied; i < cands.length; i++) {
-            try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
-          }
-          calleeCandidatesApplied = cands.length;
-        }
-        // Timeout 120s sin respuesta (el receptor puede estar desbloqueando el teléfono)
-        if (pollCount > 80 && !answerSet) triggerEnded();
-      } catch (err: any) {
-        consecutiveErrors++;
-        // Solo cortar si hay 10+ errores consecutivos Y la conexión WebRTC está definitivamente caída
-        const rtcState = p.connectionState || p.iceConnectionState;
-        const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
-        // 'disconnected' es transitorio — NO cortar por eso
-        if (consecutiveErrors >= 10 && rtcFailed) {
-          triggerEnded();
-        }
-      }
-    }, 1500);
-  }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
+         if (!answerSet && session.answer && p.signalingState === 'have-local-offer') {
+           await p.setRemoteDescription(new RTCSessionDescription(session.answer));
+           answerSet = true;
+         }
+         if (answerSet) {
+           const cands = session.calleeCandidates || [];
+           for (let i = calleeCandidatesApplied; i < cands.length; i++) {
+             try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
+           }
+           calleeCandidatesApplied = cands.length;
+         }
+         // Timeout 120s sin respuesta (el receptor puede estar desbloqueando el teléfono)
+         if (pollCount > 80 && !answerSet) triggerEnded();
+       } catch (err: any) {
+         consecutiveErrors++;
+         // Solo cortar si hay 10+ errores consecutivos Y la conexión WebRTC está definitivamente caída
+         const rtcState = p.connectionState || p.iceConnectionState;
+         const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
+         // 'disconnected' es transitorio — NO cortar por eso
+         if (consecutiveErrors >= 10 && rtcFailed) {
+           triggerEnded();
+         }
+       }
+     }, 1500);
+   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
-  // ── CALLEE ──────────────────────────────────────────────────────────────────
-  const answerCall = useCallback(async (callId: string, offer: RTCSessionDescriptionInit, type: 'audio' | 'video') => {
-    endedRef.current = false;
-    cleanup();
-    setCallType(type);
+   // ── CALLEE ──────────────────────────────────────────────────────────────────
+   const answerCall = useCallback(async (callId: string, offer: RTCSessionDescriptionInit, type: 'audio' | 'video') => {
+     endedRef.current = false;
+     cleanup();
+     setCallType(type);
 
-    let stream: MediaStream;
-    try {
-      // Solicitar permisos adecuados según tipo de llamada
-      const constraints = type === 'video'
-        ? {
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-          }
-        : {
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: false
-          };
+     let stream: MediaStream;
+     try {
+       // Solicitar permisos adecuados según tipo de llamada
+       const constraints = type === 'video'
+         ? {
+             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+             video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+           }
+         : {
+             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+             video: false
+           };
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (err: any) {
-        // Fallback a constraints más simples
-        const fallbackConstraints = type === 'video'
-          ? { audio: true, video: { facingMode: 'user' } }
-          : { audio: true, video: false };
-        
-        console.warn('Optimal constraints failed, using fallback:', err.message);
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-        } catch (fallbackErr: any) {
-          if (fallbackErr.name === 'NotAllowedError') {
-            throw new Error('Permiso denegado para acceder a micrófono/cámara.');
-          } else if (fallbackErr.name === 'NotFoundError') {
-            throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
-          } else {
-            throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error('Get user media error:', err);
-      throw err;
-    }
+       try {
+         stream = await navigator.mediaDevices.getUserMedia(constraints);
+       } catch (err: any) {
+         // Fallback a constraints más simples
+         const fallbackConstraints = type === 'video'
+           ? { audio: true, video: { facingMode: 'user' } }
+           : { audio: true, video: false };
+         
+         console.warn('Optimal constraints failed, using fallback:', err.message);
+         try {
+           stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+         } catch (fallbackErr: any) {
+           if (fallbackErr.name === 'NotAllowedError') {
+             throw new Error('Permiso denegado para acceder a micrófono/cámara.');
+           } else if (fallbackErr.name === 'NotFoundError') {
+             throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
+           } else {
+             throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
+           }
+         }
+       }
+     } catch (err: any) {
+       console.error('Get user media error:', err);
+       throw err;
+     }
 
-    localStreamRef.current = stream;
-    setLocalStream(stream);
-    callIdRef.current = callId;
-    roleRef.current = 'callee';
+     localStreamRef.current = stream;
+     setLocalStream(stream);
+     callIdRef.current = callId;
+     roleRef.current = 'callee';
 
-    const p = createPC();
-    pc.current = p;
-    stream.getTracks().forEach(t => p.addTrack(t, stream));
-    p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'callee'); };
+     const p = createPC();
+     pc.current = p;
+     stream.getTracks().forEach(t => p.addTrack(t, stream));
+     p.onicecandidate = (e) => { if (e.candidate) sendIceCandidate(e.candidate, 'callee'); };
 
-    await p.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await p.createAnswer();
-    await p.setLocalDescription(answer);
-    await new Promise(r => setTimeout(r, 500));
-    await sigFetch('/call/answer', 'POST', { callId, answer: p.localDescription });
+     await p.setRemoteDescription(new RTCSessionDescription(offer));
+     const answer = await p.createAnswer();
+     await p.setLocalDescription(answer);
+     
+     // ── LOG SDP EN ANDROID PARA DEBUGGING ───────────────────────────────────────
+     const isAndroid = /android/i.test(navigator.userAgent);
+     if (isAndroid) {
+       console.log('📥 [Android] SDP Answer FINAL (enviado al servidor):\n', 
+                   p.localDescription?.sdp || 'sin sdp');
+     }
+     
+     await new Promise(r => setTimeout(r, 500));
+     await sigFetch('/call/answer', 'POST', { callId, answer: p.localDescription });
 
-    const session = await sigFetch(`/call/${callId}`);
-    let callerCandidatesApplied = 0;
-    for (const c of (session.callerCandidates || [])) {
-      try { await p.addIceCandidate(new RTCIceCandidate(c)); } catch {}
-      callerCandidatesApplied++;
-    }
+     const session = await sigFetch(`/call/${callId}`);
+     let callerCandidatesApplied = 0;
+     for (const c of (session.callerCandidates || [])) {
+       try { await p.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+       callerCandidatesApplied++;
+     }
 
-    setCallState('connected');
+     setCallState('connected');
 
-    let calleeConsecutiveErrors = 0;
-    pollingRef.current = setInterval(async () => {
-      if (endedRef.current) return;
-      try {
-        const s = await sigFetch(`/call/${callId}`);
-        calleeConsecutiveErrors = 0;
-        if (!s || s.ended) { triggerEnded(); return; }
-        const cands = s.callerCandidates || [];
-        for (let i = callerCandidatesApplied; i < cands.length; i++) {
-          try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
-        }
-        callerCandidatesApplied = cands.length;
-      } catch (err: any) {
-        calleeConsecutiveErrors++;
-        // Solo cortar si hay 10+ errores Y WebRTC está definitivamente caído
-        const rtcState = p.connectionState || p.iceConnectionState;
-        const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
-        // 'disconnected' es transitorio — NO cortar por eso, puede recuperarse
-        if (calleeConsecutiveErrors >= 10 && rtcFailed) triggerEnded();
-      }
-    }, 1500);
-  }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
+     let calleeConsecutiveErrors = 0;
+     pollingRef.current = setInterval(async () => {
+       if (endedRef.current) return;
+       try {
+         const s = await sigFetch(`/call/${callId}`);
+         calleeConsecutiveErrors = 0;
+         if (!s || s.ended) { triggerEnded(); return; }
+         const cands = s.callerCandidates || [];
+         for (let i = callerCandidatesApplied; i < cands.length; i++) {
+           try { await p.addIceCandidate(new RTCIceCandidate(cands[i])); } catch {}
+         }
+         callerCandidatesApplied = cands.length;
+       } catch (err: any) {
+         calleeConsecutiveErrors++;
+         // Solo cortar si hay 10+ errores Y WebRTC está definitivamente caído
+         const rtcState = p.connectionState || p.iceConnectionState;
+         const rtcFailed = rtcState === 'failed' || rtcState === 'closed';
+         // 'disconnected' es transitorio — NO cortar por eso, puede recuperarse
+         if (calleeConsecutiveErrors >= 10 && rtcFailed) triggerEnded();
+       }
+     }, 1500);
+   }, [cleanup, createPC, sendIceCandidate, triggerEnded]);
 
   const endCall = useCallback(async () => {
     endedRef.current = true;
