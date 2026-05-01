@@ -5217,7 +5217,7 @@ const App: React.FC = () => {
                         maxWidth: '72%',
                         background: msg.from === 'me' ? '#d9fdd3' : '#ffffff',
                         borderRadius: msg.from === 'me' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                        padding: ((msg as any).type === 'image' || (msg as any).imageUrl) && ((msg as any).imageUrl || (msg as any).file_url) ? '4px 4px 7px' : (msg.text?.startsWith('💸') || (msg as any).type === 'money') ? '0' : '9px 12px 7px',
+                        padding: ((msg as any).type === 'image' || (msg as any).imageUrl) && ((msg as any).imageUrl || (msg as any).file_url) ? '4px 4px 7px' : '9px 12px 7px',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.13)',
                         position: 'relative',
                         overflow: 'hidden',
@@ -5654,82 +5654,35 @@ const App: React.FC = () => {
                         })()
                       ) : (
                         /* -- TEXTO NORMAL o DINERO -- */
-                        (msg.text?.startsWith('💸') || (msg as any).type === 'money') ? (() => {
-                          // Tarjeta de transferencia estilo Alipay
-                          const lines = (msg.text || '').split('\n');
-                          const amountLine = lines.find(l => l.includes('XAF')) || '';
-                          const amount = amountLine.replace(/[^0-9,]/g, '').replace(',', '.') || '';
-                          const amountNum = amountLine.match(/[\d,]+/)?.[0] || '';
-                          const toLine = lines.find(l => l.includes('Para:')) || '';
-                          const fromLine = lines.find(l => l.includes('Desde:')) || '';
-                          const refLine = lines.find(l => l.includes('Ref:')) || '';
-                          const to = toLine.replace(/.*Para:\s*/, '');
-                          const from = fromLine.replace(/.*Desde:\s*/, '');
-                          const ref = refLine.replace(/.*Ref:\s*/, '');
-                          const isSender = msg.from === 'me';
-                          return (
-                            <div style={{ width: '240px', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                              {/* Header gradiente */}
-                              <div style={{ background: isSender ? 'linear-gradient(135deg,#1a73e8,#0d47a1)' : 'linear-gradient(135deg,#00c8a0,#00897b)', padding: '16px 16px 20px', position: 'relative' }}>
-                                {/* Círculos decorativos */}
-                                <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'80px', height:'80px', borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
-                                <div style={{ position:'absolute', bottom:'-30px', left:'-10px', width:'100px', height:'100px', borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
-                                {/* Icono + título */}
-                                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px', position:'relative' }}>
-                                  <div style={{ width:'32px', height:'32px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                  </div>
-                                  <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.85)', fontWeight:'600' }}>{isSender ? 'Transferencia enviada' : 'Dinero recibido'}</span>
-                                </div>
-                                {/* Monto */}
-                                <div style={{ position:'relative' }}>
-                                  <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)', fontWeight:'500' }}>XAF</span>
-                                  <div style={{ fontSize:'32px', fontWeight:'800', color:'#fff', lineHeight:1, letterSpacing:'-1px' }}>{amountNum}</div>
-                                </div>
-                              </div>
-                              {/* Body */}
-                              <div style={{ background:'#fff', padding:'12px 16px' }}>
-                                {to && (
-                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                                    <span style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'500' }}>{isSender ? 'Para' : 'De'}</span>
-                                    <span style={{ fontSize:'13px', fontWeight:'700', color:'#111827' }}>{to}</span>
-                                  </div>
-                                )}
-                                {from && (
-                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                                    <span style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'500' }}>Cuenta</span>
-                                    <span style={{ fontSize:'12px', fontWeight:'600', color:'#374151' }}>{from}</span>
-                                  </div>
-                                )}
-                                {ref && (
-                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:'8px', borderTop:'1px solid #f3f4f6' }}>
-                                    <span style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'500' }}>Ref.</span>
-                                    <span style={{ fontSize:'12px', fontWeight:'700', color:'#6b7280', fontFamily:'monospace', letterSpacing:'1px' }}>{ref}</span>
-                                  </div>
-                                )}
-                                {/* Estado */}
-                                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', marginTop:'10px', padding:'6px', background: isSender ? '#eff6ff' : '#f0fdf4', borderRadius:'8px' }}>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isSender ? '#1a73e8' : '#16a34a'} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <span style={{ fontSize:'12px', fontWeight:'700', color: isSender ? '#1a73e8' : '#16a34a' }}>{isSender ? 'Pago completado' : '¡Dinero recibido!'}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()
-                        : msg.text?.startsWith('🎵') ? (() => {
-                          // Burbuja legacy de transferencia (por compatibilidad)
+                        msg.text?.startsWith('🎵') ? (() => {
+                          // Burbuja de transferencia de dinero
                           const lines = (msg.text || '').split('\n');
                           const amount = lines[1]?.replace('💸 ', '') || '';
                           const recipient = lines[2]?.replace('💸 ', '') || '';
                           const code = lines[3]?.replace('🔑 Código: ', '') || '';
+                          const status = lines[4]?.replace('💸 ', '') || '';
                           return (
                             <div style={{ minWidth: '220px' }}>
                               <div style={{ background: 'linear-gradient(135deg,#00c8a0,#00b4e6)', borderRadius: '10px', padding: '12px 14px', marginBottom: '6px' }}>
-                                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>Transferencia</div>
-                                <div style={{ fontSize: '18px', fontWeight: '800', color: '#fff' }}>{amount}</div>
-                                {recipient && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', marginTop:'4px' }}>Para: {recipient}</div>}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>Transferencia enviada</div>
+                                    <div style={{ fontSize: '18px', fontWeight: '800', color: '#fff' }}>{amount}</div>
+                                  </div>
+                                </div>
+                                {recipient && <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>Para: {recipient}</div>}
                               </div>
-                              {code && <div style={{ fontSize: '14px', fontWeight: '800', color: '#111827', letterSpacing: '3px', fontFamily: 'monospace', padding:'6px 0' }}>{code}</div>}
+                              {code && (
+                                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '8px 10px', border: '1px solid #e5e7eb' }}>
+                                  <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '3px', fontWeight: '600', textTransform: 'uppercase' }}>Codigo de confirmacion</div>
+                                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#111827', letterSpacing: '3px', fontFamily: 'monospace' }}>{code}</div>
+                                  <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>Comparte este codigo con el destinatario</div>
+                                </div>
+                              )}
+                              {status && <div style={{ fontSize: '11px', color: '#22c55e', marginTop: '4px', fontWeight: '600' }}>{status}</div>}
                             </div>
                           );
                         })()
@@ -9329,26 +9282,15 @@ const App: React.FC = () => {
     loadContacts();
     // Cargar contactos favoritos reales
     contactsAPI.getFavorites().then((data: any[]) => setFavoriteContacts(data || [])).catch(() => {});
-
-    // ── WARMUP: hacer ping al servidor para que Render despierte ──────────────
-    // Render.com duerme el servidor tras 15min de inactividad.
-    // Este ping lo despierta al abrir la app, evitando el delay de 8+ timbres en llamadas.
-    const warmupServer = () => {
-      const BASE_URL = ((import.meta as any).env?.VITE_API_URL || 'https://egchat-api.onrender.com/api').replace(/\/+$/, '').replace(/\/api$/, '');
-      fetch(`${BASE_URL}/health`, { method: 'GET', cache: 'no-store' }).catch(() => {});
-    };
-    warmupServer();
-    // Repetir cada 10 minutos para mantener el servidor activo
-    const warmupInterval = setInterval(warmupServer, 10 * 60 * 1000);
-
+    // Cargar grupos favoritos reales - endpoint deshabilitado hasta que el backend lo implemente
+    // chatAPI.getFavoriteChats().then(...)
     // Registrar Web Push (con peque?o delay para que el SW est listo)
     setTimeout(() => {
       if (typeof (window as any).__egchat_registerPush === 'function') {
         (window as any).__egchat_registerPush();
       }
     }, 2000);
-
-    return () => clearInterval(warmupInterval);
+  }, [isAuthenticated, loadChats, loadContacts]);
 
   // Escuchar evento de token expirado desde api.ts
   useEffect(() => {
@@ -10118,23 +10060,11 @@ const App: React.FC = () => {
                     <button onClick={async () => {
                       stopRingtone(); playCallConnected(); vibrate(100);
                       const contact = { id: incomingCall.callerId, title: callerName, status: 'online', avatarUrl: callerAvatar };
-                      // Pre-crear audio element ANTES de answerCall para que ontrack lo encuentre
-                      if (!remoteAudioRef.current) {
-                        const audio = new Audio();
-                        audio.autoplay = true;
-                        (audio as any).playsInline = true;
-                        remoteAudioRef.current = audio;
-                        webrtc.setRemoteAudioElement(audio);
-                      }
                       setActiveCall({ type: incomingCall.type, contact, status: 'calling' });
                       incomingCallIdRef.current = null;
                       setIncomingCall(null);
-                      // answerCall maneja el estado internamente — NO cambiar a 'connected' manualmente
-                      // onconnectionstatechange lo hará cuando WebRTC conecte de verdad
-                      webrtc.answerCall(incomingCall.callId, incomingCall.offer, incomingCall.type).catch(e => {
-                        console.error('answerCall failed:', e);
-                        setActiveCall(null);
-                      });
+                      await webrtc.answerCall(incomingCall.callId, incomingCall.offer, incomingCall.type);
+                      setActiveCall(prev => prev ? { ...prev, status: 'connected' } : null);
                     }}
                       style={{ width:'64px', height:'64px', borderRadius:'50%', background:'#22c55e', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(34,197,94,0.4)' }}>
                       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.06 6.06l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
