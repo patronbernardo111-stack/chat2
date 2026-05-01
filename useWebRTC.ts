@@ -130,6 +130,7 @@ function forceH264InSDP(sdp: string): string {
     }
 
     // Añadir rtcp-fb si falta (requerido por iOS)
+    const hasRtcpFb = newLines.some(l => l.startsWith(`a=rtcp-fb:${h264Pt}`));
     if (!hasRtcpFb) {
       // Insertar antes de la primera línea que no sea de video
       let insertIdx = newLines.findIndex(l => l.startsWith('m=audio') || l.startsWith('m=application'));
