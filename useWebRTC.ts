@@ -13,29 +13,24 @@ const BASE = (() => {
 // Los TURN servers actúan como relay cuando la conexión directa falla (NAT estricto,
 // redes móviles, diferentes países). Usamos múltiples para máxima cobertura.
 const ICE_SERVERS: RTCIceServer[] = [
-  // STUN — Google (los más confiables y gratuitos)
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' },
-  // STUN — Cloudflare (muy rápido, global)
+  // STUN — Google (los más confiables, prioritarios)
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302'] },
+  // STUN — Cloudflare (backup rápido)
   { urls: 'stun:stun.cloudflare.com:3478' },
-  // STUN — otros proveedores públicos
+  // STUN — stunprotocol.org
   { urls: 'stun:stun.stunprotocol.org:3478' },
-  { urls: 'stun:stun.voip.blackberry.com:3478' },
-  // TURN — Open Relay (gratuito, sin registro)
-  // Puerto 80 y 443 para pasar firewalls corporativos
-  { urls: 'turn:openrelay.metered.ca:80',              username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443',             username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  // TURN — Metered relay (gratuito, múltiples regiones)
-  { urls: 'turn:a.relay.metered.ca:80',                username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:a.relay.metered.ca:443',               username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:a.relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  // TURN — Numb (gratuito, muy usado)
-  { urls: 'turn:numb.viagenie.ca',                     username: 'webrtc@live.com',  credential: 'muazkh' },
-  { urls: 'turn:numb.viagenie.ca:443?transport=tcp',   username: 'webrtc@live.com',  credential: 'muazkh' },
+  // TURN — Open Relay UDP (mejor para móviles)
+  { urls: ['turn:openrelay.metered.ca:80?transport=udp', 'turn:openrelay.metered.ca:80?transport=tcp'],
+    username: 'openrelayproject', credential: 'openrelayproject' },
+  // TURN — Open Relay HTTPS (para firewalls estrictos)
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject', credential: 'openrelayproject' },
+  // TURN — Metered CA (redundancia)
+  { urls: ['turn:a.relay.metered.ca:80?transport=udp', 'turn:a.relay.metered.ca:80?transport=tcp'],
+    username: 'openrelayproject', credential: 'openrelayproject' },
+  // TURN — Numb (gratuito, estable)
+  { urls: ['turn:numb.viagenie.ca:3478?transport=udp', 'turn:numb.viagenie.ca:3478?transport=tcp'],
+    username: 'webrtc@live.com', credential: 'muazkh' },
 ];
 
 async function sigFetch(path: string, method = 'GET', body?: object) {
@@ -106,10 +101,12 @@ export function useWebRTC() {
       iceServers: ICE_SERVERS,
       bundlePolicy: 'max-bundle',
       rtcpMuxPolicy: 'require',
-      // Forzar uso de TURN cuando la conexión directa falla
-      // 'relay' = solo TURN (garantiza funcionar entre países pero más latencia)
-      // 'all'   = intenta directo primero, cae a TURN si falla (recomendado)
+      // iOS requiere 'all' para pasar TURN correctamente
+      // Android también lo soporta bien
       iceTransportPolicy: 'all',
+      // Optimizaciones para móviles
+      iceCandidatePoolSize: 10,
+      iceGatheringState: 'new',
     });
 
     p.ontrack = (e) => {
@@ -123,37 +120,83 @@ export function useWebRTC() {
 
     p.onconnectionstatechange = () => {
       const state = p.connectionState;
+      console.log('WebRTC connection state:', state);
       if (state === 'connected') {
         setCallState('connected');
-        // Ajustar bitrate según tipo de llamada
+        // Ajustar bitrate según tipo de llamada y ancho de banda disponible
         p.getSenders().forEach(async sender => {
           if (!sender.track) return;
-          const params = sender.getParameters();
-          if (!params.encodings?.length) params.encodings = [{}];
-          if (sender.track.kind === 'video') {
-            params.encodings[0].maxBitrate = 1_500_000; // 1.5 Mbps para video (más conservador para redes lentas)
-            params.encodings[0].maxFramerate = 24;
-          } else {
-            params.encodings[0].maxBitrate = 64_000; // 64 kbps para audio (suficiente y ligero)
+          try {
+            const params = sender.getParameters();
+            if (!params.encodings?.length) params.encodings = [{}];
+            
+            if (sender.track.kind === 'video') {
+              // Bitrate para video: adaptativo basado en red
+              // Rango: 500kbps a 2Mbps
+              params.encodings[0].maxBitrate = 1_500_000;
+              params.encodings[0].maxFramerate = 30;
+              // Escalabilidad para robustez (IMPORTANTE para móviles)
+              params.encodings[0].scalabilityMode = 'L1T2';
+            } else {
+              // Audio: 32-128 kbps
+              params.encodings[0].maxBitrate = 128_000;
+            }
+            await sender.setParameters(params);
+          } catch (e) {
+            console.warn('Failed to set sender parameters:', e);
           }
-          try { await sender.setParameters(params); } catch {}
         });
       }
-      // 'disconnected' es transitorio — puede recuperarse solo (cambio de red, etc.)
-      // Solo terminar si es 'failed' definitivo
-      if (state === 'failed') {
-        // Intentar ICE restart antes de terminar
+      // 'disconnected' es transitorio — puede recuperarse
+      else if (state === 'disconnected') {
+        console.warn('WebRTC disconnected (transient), waiting for recovery...');
+        // Esperar 10s antes de reintentar
+        setTimeout(() => {
+          if (p.connectionState === 'disconnected' && roleRef.current === 'caller') {
+            try { p.restartIce(); } catch {}
+          }
+        }, 10000);
+      }
+      // 'failed' es definitivo — intentar ICE restart o terminar
+      else if (state === 'failed') {
+        console.error('WebRTC connection failed');
         if (roleRef.current === 'caller' && !endedRef.current) {
-          try { p.restartIce(); } catch {}
+          try { 
+            console.log('Attempting ICE restart...');
+            p.restartIce(); 
+          } catch (e) {
+            console.error('ICE restart failed:', e);
+            triggerEnded();
+          }
+        } else {
+          triggerEnded();
         }
+      }
+      // 'closed' — limpiar completamente
+      else if (state === 'closed') {
+        triggerEnded();
       }
     };
 
     // ICE connection state — más granular que connectionState
     p.oniceconnectionstatechange = () => {
-      if (p.iceConnectionState === 'failed' && !endedRef.current) {
-        // Intentar ICE restart (renegocia candidatos usando TURN)
-        try { p.restartIce(); } catch {}
+      const iceState = p.iceConnectionState;
+      console.log('WebRTC ICE connection state:', iceState);
+      
+      if (iceState === 'failed') {
+        console.warn('ICE failed, attempting restart...');
+        if (!endedRef.current) {
+          try { p.restartIce(); } catch {}
+        }
+      } else if (iceState === 'disconnected') {
+        console.warn('ICE disconnected, waiting for recovery...');
+        // Dar 20s para recuperarse antes de declarar fallo
+        setTimeout(() => {
+          if (p.iceConnectionState === 'disconnected' && !endedRef.current) {
+            console.warn('ICE still disconnected after 20s, restarting...');
+            try { p.restartIce(); } catch {}
+          }
+        }, 20000);
       }
     };
 
@@ -182,17 +225,42 @@ export function useWebRTC() {
 
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia(
-        type === 'video'
-          ? { audio: { echoCancellation: true, noiseSuppression: true }, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }
-          : { audio: { echoCancellation: true, noiseSuppression: true }, video: false }
-      );
-    } catch {
+      // Solicitar permisos adecuados según tipo de llamada
+      const constraints = type === 'video'
+        ? { 
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+          }
+        : { 
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: false
+          };
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' ? { facingMode: 'user' } : false });
-      } catch (err) {
-        throw new Error('No se pudo acceder al micrófono/cámara');
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err: any) {
+        // Si falla con los constraints óptimos, intentar con defaults
+        const fallbackConstraints = type === 'video'
+          ? { audio: true, video: { facingMode: 'user' } }
+          : { audio: true, video: false };
+        
+        console.warn('Optimal constraints failed, using fallback:', err.message);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        } catch (fallbackErr: any) {
+          // Si aún falla, mostrar mensaje de error específico
+          if (fallbackErr.name === 'NotAllowedError') {
+            throw new Error('Permiso denegado para acceder a micrófono/cámara. Verifica los permisos en tu dispositivo.');
+          } else if (fallbackErr.name === 'NotFoundError') {
+            throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
+          } else {
+            throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
+          }
+        }
       }
+    } catch (err: any) {
+      console.error('Get user media error:', err);
+      throw err;
     }
 
     localStreamRef.current = stream;
@@ -261,17 +329,41 @@ export function useWebRTC() {
 
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia(
-        type === 'video'
-          ? { audio: { echoCancellation: true, noiseSuppression: true }, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } }
-          : { audio: { echoCancellation: true, noiseSuppression: true }, video: false }
-      );
-    } catch {
+      // Solicitar permisos adecuados según tipo de llamada
+      const constraints = type === 'video'
+        ? {
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+          }
+        : {
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: false
+          };
+
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: type === 'video' ? { facingMode: 'user' } : false });
-      } catch {
-        throw new Error('No se pudo acceder al micrófono/cámara');
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err: any) {
+        // Fallback a constraints más simples
+        const fallbackConstraints = type === 'video'
+          ? { audio: true, video: { facingMode: 'user' } }
+          : { audio: true, video: false };
+        
+        console.warn('Optimal constraints failed, using fallback:', err.message);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        } catch (fallbackErr: any) {
+          if (fallbackErr.name === 'NotAllowedError') {
+            throw new Error('Permiso denegado para acceder a micrófono/cámara.');
+          } else if (fallbackErr.name === 'NotFoundError') {
+            throw new Error('No se encontró micrófono/cámara en tu dispositivo.');
+          } else {
+            throw new Error(`No se pudo acceder a micrófono/cámara: ${fallbackErr.message}`);
+          }
+        }
       }
+    } catch (err: any) {
+      console.error('Get user media error:', err);
+      throw err;
     }
 
     localStreamRef.current = stream;
