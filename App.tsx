@@ -173,18 +173,24 @@ const App: React.FC = () => {
             callDuration: m.call_duration || 0,
           } : {}),
           // Archivos e imágenes del backend
-          ...(m.file_url ? {
-            fileUrl: m.type !== 'image' && m.type !== 'audio' && m.type !== 'video' ? m.file_url : undefined,
-            imageUrl: m.type === 'image' ? m.file_url : undefined,
-            audioUrl: m.type === 'audio' ? m.file_url : undefined,
-            videoUrl: m.type === 'video' ? m.file_url : undefined,
-            type: m.type === 'image' ? 'image' : m.type === 'audio' ? 'audio' : m.type === 'video' ? 'video' : (m.type === 'file' ? 'file' : m.type),
-            // Asegurar que fileName y fileExt se preservan para archivos
-            ...(m.type === 'file' || m.type === 'video' ? {
-              fileName: m.file_name || m.text?.replace(/^[^\s]+ /, '').replace(/ \(.*\)$/, '') || 'archivo',
-              fileExt: (m.file_name || m.file_url || '').split('.').pop()?.toLowerCase() || '',
-            } : {}),
-          } : {}),
+          ...(m.file_url ? (() => {
+            // Detectar tipo por extensión si el backend no lo especifica bien
+            const ext = (m.file_url || '').split('.').pop()?.split('?')[0]?.toLowerCase() || '';
+            const isImg = m.type === 'image' || ['jpg','jpeg','png','gif','webp','heic','heif','bmp','svg'].includes(ext);
+            const isAudio = m.type === 'audio' || ['mp3','ogg','webm','m4a','wav','aac'].includes(ext);
+            const isVideo = m.type === 'video' || ['mp4','mov','avi','mkv','webm'].includes(ext);
+            return {
+              fileUrl: !isImg && !isAudio && !isVideo ? m.file_url : undefined,
+              imageUrl: isImg ? m.file_url : undefined,
+              audioUrl: isAudio ? m.file_url : undefined,
+              videoUrl: isVideo ? m.file_url : undefined,
+              type: isImg ? 'image' : isAudio ? 'audio' : isVideo ? 'video' : (m.type === 'file' ? 'file' : (m.type || 'file')),
+              ...((!isImg && !isAudio) ? {
+                fileName: m.file_name || (m.text || '').replace(/^[^\s]+ /, '').replace(/ \(.*\)$/, '') || 'archivo',
+                fileExt: ext || '',
+              } : {}),
+            };
+          })() : {}),
           ...(m.type !== 'call' && !m.file_url && m.text && (m.text.includes('Llamada') || m.text.includes('📵') || m.text.includes('📞')) ? {
             type: 'call',
             callType: m.text.includes('Video') || m.text.includes('video') ? 'video' : 'audio',
