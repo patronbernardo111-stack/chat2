@@ -5518,46 +5518,42 @@ const App: React.FC = () => {
                           );
                         })()
                       ) : msg.text?.startsWith('👁') || msg.text?.startsWith('📍') || msg.text?.startsWith('📌') ? (
-                        /* -- UBICACIÓN -- */
+                        /* -- UBICACIÓN estilo WhatsApp -- */
                         (() => {
                           const lines = (msg.text || '').split('\n');
                           const label = lines[0].replace(/^[📍📌]\s*/, '');
                           const link = lines[1] || '';
-                          // Extraer coordenadas del link (soporta ?q= y destination=)
                           const coordMatch = link.match(/(?:q=|destination=)(-?\d+\.\d+),(-?\d+\.\d+)/);
                           const lat = coordMatch?.[1] || '3.7520';
                           const lng = coordMatch?.[2] || '8.7735';
-                          // Siempre usar "Cómo llegar" como URL principal
                           const directionsUrl = link.includes('dir/') ? link : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
                           const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                          const staticMapUrl = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/300x120.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
+                          const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=300x150&markers=color:red%7C${lat},${lng}&key=` ||
+                            `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/300x150.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
+                          const tileUrl = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/280x140.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
                           return (
-                            <div style={{ minWidth: '220px', cursor: 'pointer' }} onClick={() => window.open(directionsUrl, '_blank')}>
-                              {/* Mini mapa */}
-                              <div style={{ borderRadius: '10px 10px 0 0', height: '110px', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg,#e8f5e9,#e3f2fd)' }}>
-                                <img src={staticMapUrl} alt="mapa"
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            <div style={{ minWidth: '220px', maxWidth: '260px', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer' }}
+                              onClick={() => window.open(directionsUrl, '_blank')}>
+                              {/* Mapa */}
+                              <div style={{ position: 'relative', height: '140px', background: '#e8f4e8' }}>
+                                <img src={tileUrl} alt="mapa"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                   onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
                                 />
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                                  <svg width="28" height="36" viewBox="0 0 24 32" fill="none">
-                                    <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="#ef4444"/>
-                                    <circle cx="12" cy="8" r="3" fill="#fff"/>
-                                  </svg>
+                                {/* Pin central */}
+                                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
+                                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                                    <div style={{ width:'28px', height:'28px', borderRadius:'50% 50% 50% 0', background:'#ef4444', transform:'rotate(-45deg)', boxShadow:'0 2px 8px rgba(0,0,0,0.3)', border:'2px solid #fff' }}/>
+                                    <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:'rgba(0,0,0,0.2)', marginTop:'2px' }}/>
+                                  </div>
                                 </div>
                               </div>
-                              {/* Info + botones */}
-                              <div style={{ padding: '8px 10px 4px', background: 'rgba(0,0,0,0.02)', borderRadius: '0 0 10px 10px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>{label}</div>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                  <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                                    style={{ flex: 1, background: '#e3f2fd', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', fontWeight: '600', color: '#1565c0', textDecoration: 'none', textAlign: 'center' }}>
-                                    🗺️ Ver mapa
-                                  </a>
-                                  <a href={directionsUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                                    style={{ flex: 1, background: '#e8f5e9', borderRadius: '6px', padding: '5px 8px', fontSize: '11px', fontWeight: '600', color: '#2e7d32', textDecoration: 'none', textAlign: 'center' }}>
-                                    📍 Cómo llegar
-                                  </a>
+                              {/* Footer */}
+                              <div style={{ background: msg.from === 'me' ? '#d9fdd3' : '#fff', padding:'8px 12px', display:'flex', alignItems:'center', gap:'8px', borderTop:'1px solid rgba(0,0,0,0.06)' }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="#ef4444"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontSize:'13px', fontWeight:'600', color:'#111827', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{label}</div>
+                                  <div style={{ fontSize:'11px', color:'#25d366', fontWeight:'600' }}>Toca para ver ruta →</div>
                                 </div>
                               </div>
                             </div>
@@ -10506,15 +10502,18 @@ const App: React.FC = () => {
                     const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
                     const msgId = Date.now().toString();
                     const msgText = `👤 ${contact.name}\n📞 ${contact.phone}`;
+                    // Agregar inmediatamente al estado local con type:'contact' para que persista
                     setChatMessages(prev => ({ ...prev, [key]: [...(prev[key]||[]), {
                       id: msgId, from: 'me' as const, text: msgText, time: tm,
-                      status: 'pending' as const, type: 'contact' as any,
+                      timestamp: new Date().toISOString(), created_at: new Date().toISOString(),
+                      status: 'delivered' as const, type: 'contact' as any,
                       contactAvatar: contact.avatarUrl || ''
                     } as any] }));
                     chatAPI.sendMessage(chatId, { text: msgText, type: 'text' })
                       .then((sent: any) => { const sid = sent?.id || msgId; setChatMessages(prev => ({ ...prev, [key]: (prev[key]||[]).map((m: any) => m.id === msgId ? { ...m, id: sid, status: 'delivered' } : m) })); })
                       .catch(() => {});
                     setShowContactPickerForChat(false);
+                    showToast(`Contacto compartido`, 'success');
                   }}
                   style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'12px 20px', display:'flex', alignItems:'center', gap:'12px', borderBottom:'1px solid #f9fafb', textAlign:'left' }}>
                   <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'linear-gradient(135deg,#00c8a0,#00b4e6)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
@@ -10656,10 +10655,11 @@ const App: React.FC = () => {
                   Monto (XAF)
                 </label>
                 <input
-                  type="number"
-                  placeholder="0"
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="Ej: 5000"
                   value={quickTransferData.amount}
-                  onChange={(e) => setQuickTransferData({ ...quickTransferData, amount: e.target.value })}
+                  onChange={(e) => setQuickTransferData({ ...quickTransferData, amount: e.target.value.replace(/[^0-9]/g,'') })}
                   style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -10667,7 +10667,7 @@ const App: React.FC = () => {
                     border: '1px solid rgba(0,0,0,0.08)',
                     borderRadius: '8px',
                     color: '#0d0d0d',
-                    fontSize: '12px',
+                    fontSize: '16px',
                     outline: 'none',
                     boxSizing: 'border-box'
                   }}
@@ -10696,50 +10696,49 @@ const App: React.FC = () => {
                     setTransferError('');
                     if (!quickTransferData.amount || parseInt(quickTransferData.amount) <= 0) return;
                     const amount = parseInt(quickTransferData.amount);
+                    const chatKey = quickTransferData.contactId;
+                    const code = Math.floor(100000 + Math.random() * 900000).toString();
+                    const t = new Date();
+                    const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+
+                    const sendMoneyMsg = (source: string) => {
+                      const msgId = Date.now().toString();
+                      const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
+                      setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), {
+                        id: msgId, from: 'me' as const, text: msgText, time: tm,
+                        status: 'pending' as const
+                      } as any] }));
+                      if (chatKey) {
+                        chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' })
+                          .then((sent: any) => { const sid = sent?.id || msgId; setChatMessages(prev => ({ ...prev, [chatKey]: (prev[chatKey]||[]).map((m: any) => m.id === msgId ? { ...m, id: sid, status: 'delivered' } : m) })); })
+                          .catch(() => {});
+                      }
+                      setShowQuickTransferModal(false);
+                      setQuickTransferData({ contactId: '', contactName: '', amount: '', accountId: '' });
+                      showToast(`✅ ${amount.toLocaleString()} XAF enviados a ${quickTransferData.contactName}`, 'success');
+                    };
 
                     // 1. Intentar desde monedero EGChat
                     if (userBalance >= amount) {
                       setUserBalance(userBalance - amount);
-                      const newTransfer = {
-                        id: Date.now().toString(),
-                        from: 'Monedero EGChat',
-                        to: quickTransferData.contactName,
-                        amount,
-                        status: 'pending' as const,
-                        createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-                      };
+                      const newTransfer = { id: Date.now().toString(), from: 'Monedero EGChat', to: quickTransferData.contactName, amount, status: 'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now() + 5 * 60 * 1000) };
                       setPendingTransfers([...pendingTransfers, newTransfer]);
-                      setShowQuickTransferModal(false);
-                      setQuickTransferData({ contactId: '', contactName: '', amount: '', accountId: '' });
+                      sendMoneyMsg('Monedero EGChat');
                       return;
                     }
 
                     // 2. Intentar desde cuenta bancaria seleccionada
                     const sourceAccount = bankAccounts.find(a => a.id === quickTransferData.accountId);
                     if (sourceAccount && amount <= sourceAccount.balance) {
-                      const newTransfer = {
-                        id: Date.now().toString(),
-                        from: sourceAccount.bank,
-                        to: quickTransferData.contactName,
-                        amount,
-                        status: 'pending' as const,
-                        createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-                      };
+                      const newTransfer = { id: Date.now().toString(), from: sourceAccount.bank, to: quickTransferData.contactName, amount, status: 'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now() + 5 * 60 * 1000) };
                       setPendingTransfers([...pendingTransfers, newTransfer]);
-                      setBankAccounts(bankAccounts.map(acc =>
-                        acc.id === quickTransferData.accountId
-                          ? { ...acc, balance: acc.balance - amount }
-                          : acc
-                      ));
-                      setShowQuickTransferModal(false);
-                      setQuickTransferData({ contactId: '', contactName: '', amount: '', accountId: '' });
+                      setBankAccounts(bankAccounts.map(acc => acc.id === quickTransferData.accountId ? { ...acc, balance: acc.balance - amount } : acc));
+                      sendMoneyMsg(sourceAccount.bank);
                       return;
                     }
 
                     // 3. Sin fondos suficientes
-                    setTransferError('No se ha podido realizar la transferencia por falta de liquidez');
+                    setTransferError('Saldo insuficiente en monedero y cuenta bancaria');
                   }}
                   style={{
                     flex: 1,
