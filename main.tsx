@@ -1,5 +1,4 @@
-﻿import React from 'react';
-import ReactDOM from 'react-dom/client';
+﻿import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import initSelectionErrorHandler from './selectionErrorHandler';
@@ -23,8 +22,12 @@ if (storedVersion !== APP_VERSION) {
   }
   localStorage.setItem('egchat_app_version', APP_VERSION);
   // Recargar solo si ya había una versión anterior (no en primera carga)
+  // Diferir el reload para que la app cargue primero y no cause parpadeo en iOS
   if (storedVersion) {
-    window.location.reload();
+    // Esperar a que la app esté completamente pintada antes de recargar
+    window.addEventListener('load', () => {
+      setTimeout(() => window.location.reload(), 2000);
+    }, { once: true });
   }
 }
 
@@ -235,9 +238,7 @@ if ('serviceWorker' in navigator) {
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <WalletProvider>
-      <App />
-    </WalletProvider>
-  </React.StrictMode>
+  <WalletProvider>
+    <App />
+  </WalletProvider>
 );

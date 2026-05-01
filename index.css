@@ -418,16 +418,21 @@ input:focus {
 .neon-eg {
   animation: neonPulseEG 1.5s ease-in-out infinite !important;
   color: #00e5ff !important;
-  will-change: text-shadow;
+  will-change: opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  /* Aislar el repaint del neon en su propio layer */
+  isolation: isolate;
+  contain: layout style;
 }
 .neon-chat {
   animation: neonPulseCHAT 1.5s ease-in-out infinite 0.3s !important;
   color: #1e90ff !important;
-  will-change: text-shadow;
+  will-change: opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  isolation: isolate;
+  contain: layout style;
 }
 
 /* ═══════════════════════════════════════════════════════
