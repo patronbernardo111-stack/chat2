@@ -10673,21 +10673,24 @@ const App: React.FC = () => {
                   Monto (XAF)
                 </label>
                 <input
+                  id="transfer-amount-input"
                   type="tel"
                   inputMode="numeric"
                   placeholder="Ej: 5000"
-                  value={quickTransferData.amount}
-                  onChange={(e) => setQuickTransferData({ ...quickTransferData, amount: e.target.value.replace(/[^0-9]/g,'') })}
+                  defaultValue={quickTransferData.amount}
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
-                    background: 'rgba(249,250,251,0.88)',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    borderRadius: '8px',
-                    color: '#0d0d0d',
-                    fontSize: '16px',
+                    padding: '14px 16px',
+                    background: '#f9fafb',
+                    border: '2px solid #00c8a0',
+                    borderRadius: '12px',
+                    color: '#111827',
+                    fontSize: '22px',
+                    fontWeight: '700',
                     outline: 'none',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    textAlign: 'center',
+                    letterSpacing: '2px'
                   }}
                 />
               </div>
@@ -10712,8 +10715,10 @@ const App: React.FC = () => {
                 <button
                   onClick={() => {
                     setTransferError('');
-                    if (!quickTransferData.amount || parseInt(quickTransferData.amount) <= 0) return;
-                    const amount = parseInt(quickTransferData.amount);
+                    const inputEl = document.getElementById('transfer-amount-input') as HTMLInputElement;
+                    const rawAmount = (inputEl?.value || quickTransferData.amount || '').replace(/[^0-9]/g,'');
+                    if (!rawAmount || parseInt(rawAmount) <= 0) { setTransferError('Introduce un monto válido'); return; }
+                    const amount = parseInt(rawAmount);
                     const chatKey = quickTransferData.contactId;
                     const code = Math.floor(100000 + Math.random() * 900000).toString();
                     const t = new Date();
@@ -10724,7 +10729,8 @@ const App: React.FC = () => {
                       const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
                       setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), {
                         id: msgId, from: 'me' as const, text: msgText, time: tm,
-                        status: 'pending' as const
+                        timestamp: new Date().toISOString(), created_at: new Date().toISOString(),
+                        status: 'delivered' as const
                       } as any] }));
                       if (chatKey) {
                         chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' })
