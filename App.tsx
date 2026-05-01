@@ -210,7 +210,7 @@ const App: React.FC = () => {
             }
             lastMsgIds.current[chatId] = newest.id;
           }
-          // Fusionar: conservar mensajes locales (fotos, audio, archivos) que no están en el backend
+          // Fusionar: conservar mensajes locales (fotos, audio, archivos, contactos) que no están en el backend
           const backendIds = new Set(fmt.map((m: any) => m.id));
           // También excluir mensajes locales cuya URL de archivo ya existe en el backend (evita duplicados durante el upload)
           const backendFileUrls = new Set(fmt.map((m: any) => m.imageUrl || m.audioUrl || m.fileUrl).filter(Boolean));
@@ -219,12 +219,30 @@ const App: React.FC = () => {
             !(m.imageUrl && backendFileUrls.has(m.imageUrl)) &&
             !(m.audioUrl && backendFileUrls.has(m.audioUrl)) &&
             !(m.fileUrl && backendFileUrls.has(m.fileUrl)) &&
-            (m.type === 'image' || m.type === 'audio' || m.imageUrl || m.audioUrl || m.status === 'pending')
+            (m.type === 'image' || m.type === 'audio' || m.type === 'contact' || m.type === 'video' || m.imageUrl || m.audioUrl || m.status === 'pending')
           );
           // Filtrar mensajes eliminados para mí localmente (respaldo)
           const filteredFmt = fmt.filter((m: any) => !deletedForMeIds.current.has(m.id));
+          // Enriquecer mensajes del backend con metadata local (type, contactAvatar, imageUrl, etc.)
+          // Esto preserva type:'contact', type:'image', etc. cuando el backend devuelve type:'text'
+          const localById = new Map((prev[chatId] || []).map((m: any) => [m.id, m]));
+          const enrichedFmt = filteredFmt.map((m: any) => {
+            const local = localById.get(m.id);
+            if (!local) return m;
+            return {
+              ...m,
+              // Preservar type especial del local si el backend devuelve 'text'
+              type: (m.type === 'text' || !m.type) && local.type && local.type !== 'text' ? local.type : m.type,
+              // Preservar metadata de archivos/contactos
+              imageUrl: m.imageUrl || local.imageUrl,
+              audioUrl: m.audioUrl || local.audioUrl,
+              fileUrl: m.fileUrl || local.fileUrl,
+              videoUrl: m.videoUrl || local.videoUrl,
+              contactAvatar: local.contactAvatar || m.contactAvatar,
+            };
+          });
           // Ordenar por tiempo para mantener el orden correcto
-          const merged = [...filteredFmt, ...localOnly].sort((a: any, b: any) => {
+          const merged = [...enrichedFmt, ...localOnly].sort((a: any, b: any) => {
             const ta = a.time || '00:00';
             const tb = b.time || '00:00';
             return ta.localeCompare(tb);
