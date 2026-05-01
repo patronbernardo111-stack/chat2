@@ -5517,28 +5517,28 @@ const App: React.FC = () => {
                             </div>
                           );
                         })()
-                      ) : msg.text?.startsWith('👁') ? (
-                        /* -- UBICACIN -- */
+                      ) : msg.text?.startsWith('👁') || msg.text?.startsWith('📍') || msg.text?.startsWith('📌') ? (
+                        /* -- UBICACIÓN -- */
                         (() => {
                           const lines = (msg.text || '').split('\n');
-                          const label = lines[0].replace('💸 ', '');
+                          const label = lines[0].replace(/^[📍📌]\s*/, '');
                           const link = lines[1] || '';
-                          // Extraer coordenadas del link para el mapa esttico
-                          const coordMatch = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                          // Extraer coordenadas del link (soporta ?q= y destination=)
+                          const coordMatch = link.match(/(?:q=|destination=)(-?\d+\.\d+),(-?\d+\.\d+)/);
                           const lat = coordMatch?.[1] || '3.7520';
                           const lng = coordMatch?.[2] || '8.7735';
+                          // Siempre usar "Cómo llegar" como URL principal
+                          const directionsUrl = link.includes('dir/') ? link : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
                           const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-                          const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
                           const staticMapUrl = `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},15/300x120.png?key=bg3FUa7es7Qn1TITIWjO&markers=icon:pin-s-red+${lng},${lat}`;
                           return (
-                            <div style={{ minWidth: '220px', cursor: 'pointer' }} onClick={() => window.open(mapsUrl, '_blank')}>
+                            <div style={{ minWidth: '220px', cursor: 'pointer' }} onClick={() => window.open(directionsUrl, '_blank')}>
                               {/* Mini mapa */}
                               <div style={{ borderRadius: '10px 10px 0 0', height: '110px', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg,#e8f5e9,#e3f2fd)' }}>
                                 <img src={staticMapUrl} alt="mapa"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                   onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
                                 />
-                                {/* Pin overlay */}
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                                   <svg width="28" height="36" viewBox="0 0 24 32" fill="none">
                                     <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="#ef4444"/>
@@ -5563,12 +5563,12 @@ const App: React.FC = () => {
                             </div>
                           );
                         })()
-                      ) : msg.text?.startsWith('👁') ? (
-                        /* -- CONTACTO  siempre abre modal con opciones -- */
+                      ) : (msg as any).type === 'contact' || msg.text?.startsWith('👤') ? (
+                        /* -- CONTACTO — siempre abre modal con opciones -- */
                         (() => {
                           const lines = (msg.text || '').split('\n');
-                          const name = lines[0].replace('💸 ', '');
-                          const phone = lines[1]?.replace('💸 ', '') || '';
+                          const name = lines[0].replace(/^👤\s*/, '').replace('💸 ', '');
+                          const phone = (lines[1] || '').replace(/^📞\s*/, '').replace('💸 ', '');
                           const avatar = (msg as any).contactAvatar || '';
                           const found = allContacts.find(c => c.phone === phone || c.name === name);
                           const isAlreadyContact = !!found;
