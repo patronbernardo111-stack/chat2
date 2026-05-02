@@ -5272,7 +5272,7 @@ const App: React.FC = () => {
               <div
                 className="scroll-container chat-messages-scroll"
                 ref={(el) => { if (el) { el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80; isAtBottomRef.current = atBottom; }; } }}
-                style={{ flex: 1, minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', paddingTop: '70px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: getActiveChatWallpaper() === 'none' ? '#efeae2' : 'transparent' }}
+                style={{ flex: 1, minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', paddingTop: device.isMobile ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 62px)' : '70px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: getActiveChatWallpaper() === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} onClick={() => { if (selectionMode) { setSelectedMsgIds(prev => prev.includes(msg.id) ? prev.filter(x => x !== msg.id) : [...prev, msg.id]); } }} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px', alignItems: 'center', gap: '8px', padding: selectionMode ? '2px 8px' : '0', background: selectionMode && selectedMsgIds.includes(msg.id) ? 'rgba(0,180,230,0.10)' : 'transparent', borderRadius: '8px', transition: 'background 0.15s', cursor: selectionMode ? 'pointer' : 'default' }}>
@@ -12593,30 +12593,45 @@ const App: React.FC = () => {
               showToast('Grupo eliminado', 'success');
             } catch { showToast('No se pudo eliminar el grupo', 'error'); }
           }}
-          onGroupAvatarChange={(url: string) => {
+          onGroupAvatarChange={async (url: string) => {
             if (!showContactProfile?.id) return;
             const gid = showContactProfile.id?.toString();
-            // Guardar override con prioridad absoluta sobre el backend
+
+            // 1. Actualizar UI inmediatamente con base64 (feedback instantáneo)
+            const applyUrl = (finalUrl: string) => {
+              try {
+                const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
+                ov[gid] = { ...(ov[gid] || {}), avatarUrl: finalUrl };
+                localStorage.setItem('egchat_group_overrides', JSON.stringify(ov));
+              } catch {}
+              setAllGroups(prev => {
+                const updated = prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: finalUrl } : g);
+                try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
+                return updated;
+              });
+              setRealChats((prev: any[]) => prev.map(c => c.id?.toString() === gid ? { ...c, avatarUrl: finalUrl } : c));
+              setShowContactProfile((prev: any) => prev ? { ...prev, avatarUrl: finalUrl } : prev);
+              if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, avatarUrl: finalUrl } : prev);
+            };
+
+            applyUrl(url); // mostrar base64 inmediatamente
+
+            // 2. Subir al backend — obtener URL pública en la nube
             try {
-              const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
-              ov[gid] = { ...(ov[gid] || {}), avatarUrl: url };
-              localStorage.setItem('egchat_group_overrides', JSON.stringify(ov));
-            } catch {}
-            setAllGroups(prev => {
-              const updated = prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g);
-              try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
-              return updated;
-            });
-            setRealChats((prev: any[]) => prev.map(c => c.id?.toString() === gid ? { ...c, avatarUrl: url } : c));
-            setShowContactProfile((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
-            if (selectedChat?.id?.toString() === gid) setSelectedChat((prev: any) => prev ? { ...prev, avatarUrl: url } : prev);
-            // Subir avatar al backend
-            try {
-              fetch(`https://egchat-api.onrender.com/api/chats/${gid}`, {
-                method: 'PUT',
+              const mimeMatch = url.match(/^data:(image\/\w+);base64,/);
+              const mimeType = mimeMatch?.[1] || 'image/jpeg';
+              const resp = await fetch(`https://egchat-api.onrender.com/api/chats/${gid}/avatar`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                body: JSON.stringify({ avatar_url: url }),
-              }).catch(() => {});
+                body: JSON.stringify({ base64: url, mimeType }),
+              });
+              if (resp.ok) {
+                const { avatar_url: cloudUrl } = await resp.json();
+                if (cloudUrl && cloudUrl !== url) {
+                  // Reemplazar base64 con URL pública de la nube
+                  applyUrl(cloudUrl);
+                }
+              }
             } catch {}
           }}
           onGroupNameChange={async (name: string) => {
