@@ -115,6 +115,8 @@ const App: React.FC = () => {
       };
     } catch { return chatObj; }
   }, []);
+
+  const loadChats = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
     try {
       const d = await chatAPI.getChats();
