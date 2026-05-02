@@ -128,18 +128,21 @@ const App: React.FC = () => {
           is_favorite: false,
         }));
         setAllGroups(prev => {
-          // Preservar is_favorite, avatarUrl y name de grupos locales
+          // Leer overrides manuales (nombre/avatar editados por el usuario) — prioridad absoluta
+          let overrides: Record<string, {name?: string; avatarUrl?: string}> = {};
+          try { overrides = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}'); } catch {}
+
           const prevMap = new Map(prev.map((g: any) => [g.id?.toString(), g]));
           const backendIds = new Set(mappedGroups.map((g: any) => g.id?.toString()));
           const merged = mappedGroups.map((g: any) => {
             const local = prevMap.get(g.id?.toString());
+            const ov = overrides[g.id?.toString()] || {};
             return {
               ...g,
               is_favorite: local?.is_favorite ?? false,
-              // Preservar avatarUrl local (puede ser base64 recién subido)
-              avatarUrl: local?.avatarUrl || g.avatarUrl || '',
-              // Preservar nombre local si fue editado (el backend puede tardar en sincronizar)
-              name: local?.name && local.name !== 'Grupo' ? local.name : (g.name || local?.name || 'Grupo'),
+              // Override tiene prioridad absoluta, luego local, luego backend
+              avatarUrl: ov.avatarUrl ?? local?.avatarUrl ?? g.avatarUrl ?? '',
+              name: ov.name ?? g.name ?? local?.name ?? 'Grupo',
             };
           });
           // Preservar grupos locales que aún no están en el backend (recién creados)
@@ -12585,6 +12588,12 @@ const App: React.FC = () => {
           onGroupAvatarChange={(url: string) => {
             if (!showContactProfile?.id) return;
             const gid = showContactProfile.id?.toString();
+            // Guardar override con prioridad absoluta sobre el backend
+            try {
+              const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
+              ov[gid] = { ...(ov[gid] || {}), avatarUrl: url };
+              localStorage.setItem('egchat_group_overrides', JSON.stringify(ov));
+            } catch {}
             setAllGroups(prev => {
               const updated = prev.map(g => g.id?.toString() === gid ? { ...g, avatarUrl: url } : g);
               try { localStorage.setItem('egchat_groups', JSON.stringify(updated)); } catch {}
@@ -12605,6 +12614,12 @@ const App: React.FC = () => {
           onGroupNameChange={async (name: string) => {
             if (!showContactProfile?.id) return;
             const gid = showContactProfile.id?.toString();
+            // Guardar override con prioridad absoluta sobre el backend
+            try {
+              const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
+              ov[gid] = { ...(ov[gid] || {}), name };
+              localStorage.setItem('egchat_group_overrides', JSON.stringify(ov));
+            } catch {}
             try {
               // Actualizar en backend
               await fetch(`https://egchat-api.onrender.com/api/chats/${gid}`, {
