@@ -511,7 +511,7 @@ const App: React.FC = () => {
   const [showQuickTransferModal, setShowQuickTransferModal] = useState<boolean>(false);
   const [showContactPickerForChat, setShowContactPickerForChat] = useState<boolean>(false);
   const [contactPickerChatKey, setContactPickerChatKey] = useState<string>('');
-  const [quickTransferData, setQuickTransferData] = useState<{ contactId: string; contactName: string; amount: string; accountId: string }>({ contactId: '', contactName: '', amount: '', accountId: '' });
+  const [quickTransferData, setQuickTransferData] = useState<{ contactId: string; contactName: string; amount: string; accountId: string; avatarUrl?: string }>({ contactId: '', contactName: '', amount: '', accountId: '', avatarUrl: '' });
   const [quickTransferKeyboardOffset, setQuickTransferKeyboardOffset] = useState<number>(0);
   // IDs de mensajes de pago recibido que el usuario ya confirmó con "Gracias, recibido"
   const [acknowledgedPayments, setAcknowledgedPayments] = useState<Set<string>>(() => {
@@ -5197,7 +5197,7 @@ const App: React.FC = () => {
                     ))}
                     {/* Seccin acciones */}
                     {[
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,label:'Enviar dinero',color:'#374151',action:()=>{setShowChatMenu(false);setQuickTransferData({contactId:sc.id?.toString()||'',contactName:sc.title,amount:'',accountId:bankAccounts[0]?.id||''});setShowQuickTransferModal(true);}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,label:'Enviar dinero',color:'#374151',action:()=>{setShowChatMenu(false);setQuickTransferData({contactId:sc.id?.toString()||'',contactName:sc.title,amount:'',accountId:bankAccounts[0]?.id||'',avatarUrl:sc.avatarUrl||''});setShowQuickTransferModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,label:'Compartir contacto',color:'#374151',action:()=>{setShowChatMenu(false);const now=new Date();const time=`${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;const chatId=sc.id?.toString()||'';setChatMessages(prev=>({...prev,[chatId]:[...(prev[chatId]||[]),{id:Date.now().toString(),from:'me',text:`👤 Contacto: ${sc.title}`,time,status:'pending'}]}));}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,label:'Crear grupo con este contacto',color:'#374151',action:()=>{setShowChatMenu(false);setGroupMembers([{id:sc.id?.toString()||'',name:sc.title,initials:sc.initials||sc.title?.slice(0,2).toUpperCase()||'??',color:'#a855f7'}]);setShowCreateGroup(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,label:'Exportar chat',color:'#374151',action:()=>{setShowChatMenu(false);const chatId=sc.id?.toString()||'';const msgs=chatMessages[chatId]||[];const text=msgs.map(m=>`[${m.time}] ${m.from==='me'?'Yo':sc.title}: ${m.text}`).join('\n');const blob=new Blob([text],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`chat_${sc.title}.txt`;a.click();}},
@@ -5958,7 +5958,7 @@ const App: React.FC = () => {
                         action: () => {
                           setShowChatAttach(false);
                           // Abrir el modal real de transferencia con el contacto del chat
-                          setQuickTransferData({ contactId: sc.id?.toString() || '', contactName: sc.title, amount: '', accountId: bankAccounts[0]?.id || '' });
+                          setQuickTransferData({ contactId: sc.id?.toString() || '', contactName: sc.title, amount: '', accountId: bankAccounts[0]?.id || '', avatarUrl: sc.avatarUrl || '' });
                           setShowQuickTransferModal(true);
                         }
                       },
@@ -10700,13 +10700,13 @@ const App: React.FC = () => {
                 {/* Avatar destinatario */}
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                   {(() => {
-                    // Buscar avatar del destinatario en contactos y chats
+                    // Usar avatarUrl pasado directamente, con fallback a búsqueda en contactos/chats
                     const contactId = quickTransferData.contactId;
-                    let avatarUrl = '';
-                    // 1. Buscar en allContacts
-                    const contact = allContacts.find((c: any) => c.id?.toString() === contactId || c.user_id?.toString() === contactId);
-                    if (contact) avatarUrl = contact.avatarUrl || contact.avatar_url || '';
-                    // 2. Buscar en participantes de chats
+                    let avatarUrl = quickTransferData.avatarUrl || '';
+                    if (!avatarUrl) {
+                      const contact = allContacts.find((c: any) => c.id?.toString() === contactId || c.user_id?.toString() === contactId);
+                      if (contact) avatarUrl = contact.avatarUrl || contact.avatar_url || '';
+                    }
                     if (!avatarUrl) {
                       for (const ch of (realChats as any[])) {
                         const p = ch.participants?.find((p: any) => p.user_id?.toString() === contactId);
@@ -10716,7 +10716,7 @@ const App: React.FC = () => {
                     return (
                       <div style={{ width:'52px', height:'52px', borderRadius:'50%', overflow:'hidden', background:'rgba(255,255,255,0.25)', border:'2px solid rgba(255,255,255,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                         {avatarUrl
-                          ? <img src={avatarUrl} alt={quickTransferData.contactName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                          ? <img src={avatarUrl} alt={quickTransferData.contactName} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }}/>
                           : <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}</span>
                         }
                       </div>
@@ -12457,7 +12457,7 @@ const App: React.FC = () => {
               showToast(`${name} anadido a contactos`, 'success');
             } catch { showToast('No se pudo anadir el contacto', 'error'); }
           }}
-          onSendMoney={(contact) => { setQuickTransferData({ contactId: contact.id?.toString() || '', contactName: contact.title || contact.name, amount: '', accountId: bankAccounts[0]?.id || '' }); setShowQuickTransferModal(true); }}
+          onSendMoney={(contact) => { setQuickTransferData({ contactId: contact.id?.toString() || '', contactName: contact.title || contact.name, amount: '', accountId: bankAccounts[0]?.id || '', avatarUrl: contact.avatarUrl || contact.avatar_url || '' }); setShowQuickTransferModal(true); }}
           onStartCall={(type, contact) => startCall(type, contact)}
           onFavoriteToggle={async (id, isFav) => {
             try {
