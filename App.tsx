@@ -5666,10 +5666,10 @@ const App: React.FC = () => {
                       ) : (
                         /* -- TEXTO NORMAL o DINERO -- */
                         (msg.text?.startsWith('💸') || (msg as any).type === 'money') ? (() => {
-                          // Tarjeta estilo Alipay
+                          // Tarjeta compacta estilo Alipay
                           const lines = (msg.text || '').split('\n');
                           const amountLine = lines.find((l: string) => l.includes('XAF')) || '';
-                          const amountNum = amountLine.match(/[\d,.]+/)?.[0]?.replace(',','') || '';
+                          const amountNum = amountLine.match(/[\d,.]+/)?.[0] || '';
                           const toLine = lines.find((l: string) => l.includes('Para:')) || '';
                           const fromLine = lines.find((l: string) => l.includes('Desde:')) || '';
                           const refLine = lines.find((l: string) => l.includes('Ref:')) || '';
@@ -5677,42 +5677,37 @@ const App: React.FC = () => {
                           const from = fromLine.replace(/.*Desde:\s*/, '');
                           const ref = refLine.replace(/.*Ref:\s*/, '');
                           const isSender = msg.from === 'me';
-                          const gradSend = 'linear-gradient(135deg,#1a73e8,#0d47a1)';
-                          const gradRecv = 'linear-gradient(135deg,#00c8a0,#00897b)';
                           return (
-                            <div style={{ width:'240px', borderRadius:'16px', overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.18)' }}>
-                              {/* Header */}
-                              <div style={{ background: isSender ? gradSend : gradRecv, padding:'16px 16px 20px', position:'relative', overflow:'hidden' }}>
-                                <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'80px', height:'80px', borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
-                                <div style={{ position:'absolute', bottom:'-30px', left:'-10px', width:'100px', height:'100px', borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
-                                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'12px', position:'relative' }}>
-                                  <div style={{ width:'30px', height:'30px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                  </div>
-                                  <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.85)', fontWeight:'600' }}>{isSender ? 'Pago enviado' : '¡Dinero recibido!'}</span>
+                            <div style={{ width:'200px', borderRadius:'12px', overflow:'hidden', boxShadow:'0 2px 12px rgba(0,0,0,0.15)' }}>
+                              {/* Header compacto */}
+                              <div style={{ background: isSender ? 'linear-gradient(135deg,#1a73e8,#0d47a1)' : 'linear-gradient(135deg,#00c8a0,#00897b)', padding:'10px 12px 12px', position:'relative', overflow:'hidden' }}>
+                                <div style={{ position:'absolute', top:'-15px', right:'-15px', width:'60px', height:'60px', borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+                                <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                  <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.8)', fontWeight:'600' }}>{isSender ? 'Pago enviado' : 'Dinero recibido'}</span>
                                 </div>
-                                <div style={{ position:'relative' }}>
-                                  <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', fontWeight:'500' }}>XAF</div>
-                                  <div style={{ fontSize:'30px', fontWeight:'800', color:'#fff', lineHeight:1, letterSpacing:'-0.5px' }}>{amountNum}</div>
+                                <div style={{ display:'flex', alignItems:'baseline', gap:'4px' }}>
+                                  <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.65)', fontWeight:'500' }}>XAF</span>
+                                  <span style={{ fontSize:'22px', fontWeight:'800', color:'#fff', lineHeight:1 }}>{amountNum}</span>
                                 </div>
                               </div>
-                              {/* Body */}
-                              <div style={{ background:'#fff', padding:'10px 14px 12px' }}>
+                              {/* Body compacto */}
+                              <div style={{ background:'#fff', padding:'8px 12px 10px' }}>
                                 {(isSender ? to : from) ? (
-                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-                                    <span style={{ fontSize:'11px', color:'#9ca3af' }}>{isSender ? 'Para' : 'De'}</span>
-                                    <span style={{ fontSize:'13px', fontWeight:'700', color:'#111827' }}>{isSender ? to : from}</span>
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                                    <span style={{ fontSize:'10px', color:'#9ca3af' }}>{isSender ? 'Para' : 'De'}</span>
+                                    <span style={{ fontSize:'12px', fontWeight:'700', color:'#111827' }}>{isSender ? to : from}</span>
                                   </div>
                                 ) : null}
                                 {ref ? (
-                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:'6px', borderTop:'1px solid #f3f4f6' }}>
-                                    <span style={{ fontSize:'11px', color:'#9ca3af' }}>Ref.</span>
-                                    <span style={{ fontSize:'11px', fontWeight:'700', color:'#6b7280', fontFamily:'monospace', letterSpacing:'1px' }}>{ref}</span>
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:'4px', borderTop:'1px solid #f3f4f6', marginBottom:'6px' }}>
+                                    <span style={{ fontSize:'10px', color:'#9ca3af' }}>Ref.</span>
+                                    <span style={{ fontSize:'10px', fontWeight:'600', color:'#9ca3af', fontFamily:'monospace' }}>{ref}</span>
                                   </div>
                                 ) : null}
-                                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', marginTop:'8px', padding:'5px', background: isSender ? '#eff6ff' : '#f0fdf4', borderRadius:'8px' }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isSender ? '#1a73e8' : '#16a34a'} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <span style={{ fontSize:'11px', fontWeight:'700', color: isSender ? '#1a73e8' : '#16a34a' }}>{isSender ? 'Pago completado' : '¡Recibido!'}</span>
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', padding:'4px 8px', background: isSender ? '#eff6ff' : '#f0fdf4', borderRadius:'6px' }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isSender ? '#1a73e8' : '#16a34a'} strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  <span style={{ fontSize:'10px', fontWeight:'700', color: isSender ? '#1a73e8' : '#16a34a' }}>{isSender ? 'Completado' : '¡Recibido!'}</span>
                                 </div>
                               </div>
                             </div>
