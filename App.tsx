@@ -7485,7 +7485,9 @@ const App: React.FC = () => {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            background: 'transparent'
+            background: 'linear-gradient(160deg, #e8f5f2 0%, #f0f7ff 40%, #eef4fb 70%, #e6f5f0 100%)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)'
           }}>
             {/* Header */}
             <div style={{
@@ -7495,11 +7497,11 @@ const App: React.FC = () => {
               marginBottom: '12px'
             }}>
               <h2 style={{
-                fontSize: '16px',
+                fontSize: '18px',
                 fontWeight: '700',
-                color: '#ffffff',
+                color: '#0f4c3a',
                 margin: 0,
-                textShadow: '0 1px 4px rgba(0,0,0,0.4)'
+                letterSpacing: '-0.3px'
               }}>
                 Historial Completo
               </h2>
@@ -7534,17 +7536,26 @@ const App: React.FC = () => {
                   key={filter}
                   onClick={() => setTransactionFilter(filter as any)}
                   style={{
-                    padding: '6px 12px',
-                    background: transactionFilter === filter ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 0, 0, 0.06)',
-                    border: transactionFilter === filter ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(0,0,0,0.15)',
+                    padding: '7px 14px',
+                    background: transactionFilter === filter
+                      ? 'linear-gradient(135deg, #00c8a0, #00a880)'
+                      : 'rgba(255,255,255,0.65)',
+                    border: transactionFilter === filter
+                      ? '1px solid rgba(0,180,140,0.6)'
+                      : '1px solid rgba(255,255,255,0.9)',
                     borderRadius: '20px',
-                    color: transactionFilter === filter ? '#00a880' : '#374151',
+                    color: transactionFilter === filter ? '#ffffff' : '#1f4e3d',
                     fontSize: '13px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     outline: 'none',
                     whiteSpace: 'nowrap',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    boxShadow: transactionFilter === filter
+                      ? '0 2px 8px rgba(0,180,140,0.35)'
+                      : '0 1px 4px rgba(0,0,0,0.08)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)'
                   }}
                 >
                   {filter === 'all' ? 'Todas' : filter === 'sent' ? 'Enviadas' : filter === 'received' ? 'Recibidas' : filter === 'payment' ? 'Pagos' : filter === 'deposit' ? 'Depósitos' : 'Retiros'}
@@ -7560,6 +7571,22 @@ const App: React.FC = () => {
             }}>
               {transactionHistory
                 .filter(trans => transactionFilter === 'all' || trans.type === transactionFilter)
+                .length === 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '60px 20px',
+                    gap: '12px'
+                  }}>
+                    <div style={{ fontSize: '40px' }}>📭</div>
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#1f4e3d' }}>Sin transacciones</div>
+                    <div style={{ fontSize: '13px', color: '#6b9e8a', textAlign: 'center' }}>No hay movimientos en esta categoría</div>
+                  </div>
+                )}
+              {transactionHistory
+                .filter(trans => transactionFilter === 'all' || trans.type === transactionFilter)
                 .map((trans) => (
                   <button
                     key={trans.id}
@@ -7569,18 +7596,21 @@ const App: React.FC = () => {
                     }}
                     style={{
                       width: '100%',
-                      background: 'rgba(250,250,250,0.88)',
-                      border: '1px solid rgba(0,0,0,0.07)',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      marginBottom: '6px',
+                      background: 'rgba(255,255,255,0.72)',
+                      border: '1px solid rgba(255,255,255,0.9)',
+                      borderRadius: '14px',
+                      padding: '12px',
+                      marginBottom: '8px',
                       color: '#0d0d0d',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
                       outline: 'none',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(240, 253, 250, 0.95)';
