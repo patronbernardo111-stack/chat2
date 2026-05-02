@@ -10617,75 +10617,108 @@ const App: React.FC = () => {
           onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}>
           <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}>
-            {/* Header gradiente estilo Alipay */}
-            <div style={{ background:'linear-gradient(135deg,#1a73e8,#0d47a1)', padding:'24px 20px 32px', position:'relative', overflow:'hidden' }}>
-              <div style={{ position:'absolute', top:'-30px', right:'-30px', width:'120px', height:'120px', borderRadius:'50%', background:'rgba(255,255,255,0.07)' }}/>
-              <div style={{ position:'absolute', bottom:'-40px', left:'-20px', width:'140px', height:'140px', borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
+
+            {/* Header — remitente → destinatario */}
+            <div style={{ background:'linear-gradient(160deg,#1a73e8 0%,#0d47a1 100%)', padding:'20px 20px 28px', position:'relative', overflow:'hidden' }}>
+              {/* Círculos decorativos */}
+              <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'140px', height:'140px', borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
+              <div style={{ position:'absolute', bottom:'-50px', left:'-30px', width:'160px', height:'160px', borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+              {/* Botón cerrar */}
               <button onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}
-                style={{ position:'absolute', top:'16px', right:'16px', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                style={{ position:'absolute', top:'14px', right:'14px', background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:'30px', height:'30px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', zIndex:1 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', position:'relative' }}>
-                <div style={{ width:'56px', height:'56px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:'800', color:'#fff' }}>
-                  {(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}
+              {/* Avatares: yo → destinatario */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'12px', position:'relative' }}>
+                {/* Mi avatar */}
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
+                  <div style={{ width:'52px', height:'52px', borderRadius:'50%', overflow:'hidden', border:'2px solid rgba(255,255,255,0.5)', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {userProfile?.avatar_url
+                      ? <img src={userProfile.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      : <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(userProfile?.name||'Y').slice(0,1).toUpperCase()}</span>
+                    }
+                  </div>
+                  <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.75)', fontWeight:'600' }}>Yo</span>
                 </div>
-                <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.7)', fontWeight:'500' }}>Enviar a</div>
-                  <div style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{quickTransferData.contactName}</div>
+                {/* Flecha */}
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+                  <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
+                    <path d="M0 8h24M18 2l6 6-6 6" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{ fontSize:'9px', color:'rgba(255,255,255,0.5)', fontWeight:'500' }}>Enviar</span>
+                </div>
+                {/* Avatar destinatario */}
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
+                  <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.25)', border:'2px solid rgba(255,255,255,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}</span>
+                  </div>
+                  <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.75)', fontWeight:'600', maxWidth:'60px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'center' }}>{quickTransferData.contactName}</span>
                 </div>
               </div>
             </div>
+
             {/* Cuerpo */}
-            <div style={{ padding:'20px 20px 8px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f0fdf4', borderRadius:'10px', padding:'10px 14px', marginBottom:'16px' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                  <span style={{ fontSize:'13px', color:'#374151', fontWeight:'500' }}>Saldo disponible</span>
-                </div>
+            <div style={{ padding:'20px 20px 12px' }}>
+              {/* Saldo */}
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f0fdf4', borderRadius:'10px', padding:'8px 14px', marginBottom:'16px' }}>
+                <span style={{ fontSize:'12px', color:'#374151', fontWeight:'500' }}>💳 Saldo disponible</span>
                 <span style={{ fontSize:'13px', fontWeight:'700', color:'#16a34a' }}>{userBalance.toLocaleString()} XAF</span>
               </div>
+
+              {/* Input monto — no controlado para evitar bloqueo en móvil */}
               <div style={{ textAlign:'center', marginBottom:'16px' }}>
-                <div style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'600', marginBottom:'8px', textTransform:'uppercase', letterSpacing:'1px' }}>Monto a enviar</div>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
-                  <span style={{ fontSize:'20px', fontWeight:'700', color:'#9ca3af' }}>XAF</span>
-                  <input id="transfer-amount-input" type="tel" inputMode="numeric" placeholder="0" autoFocus
-                    style={{ border:'none', outline:'none', fontSize:'44px', fontWeight:'800', color:'#111827', width:'180px', textAlign:'center', background:'transparent', caretColor:'#1a73e8' }}/>
+                <div style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'600', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'1px' }}>Monto (XAF)</div>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', borderBottom:'2px solid #1a73e8', paddingBottom:'4px', margin:'0 20px' }}>
+                  <span style={{ fontSize:'18px', fontWeight:'600', color:'#9ca3af' }}>XAF</span>
+                  <input
+                    id="transfer-amount-input"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="0"
+                    autoFocus
+                    style={{ border:'none', outline:'none', fontSize:'40px', fontWeight:'800', color:'#111827', width:'160px', textAlign:'center', background:'transparent', caretColor:'#1a73e8', fontFamily:'inherit' }}
+                  />
                 </div>
-                <div style={{ height:'2px', background:'linear-gradient(90deg,transparent,#1a73e8,transparent)', margin:'4px auto', width:'200px', borderRadius:'2px' }}/>
               </div>
+
+              {/* Error */}
               {transferError && (
                 <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'8px', padding:'8px 12px', fontSize:'13px', color:'#ef4444', textAlign:'center', marginBottom:'12px' }}>
                   {transferError}
                 </div>
               )}
-              <button onClick={() => {
-                setTransferError('');
-                const inputEl = document.getElementById('transfer-amount-input') as HTMLInputElement;
-                const rawAmount = (inputEl?.value||'').replace(/[^0-9]/g,'');
-                if (!rawAmount || parseInt(rawAmount) <= 0) { setTransferError('Introduce un monto válido'); return; }
-                const amount = parseInt(rawAmount);
-                const chatKey = quickTransferData.contactId;
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                const t = new Date();
-                const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
-                const sendMoneyMsg = (source: string) => {
-                  const msgId = Date.now().toString();
-                  const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
-                  setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), { id: msgId, from: 'me' as const, text: msgText, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'delivered' as const } as any] }));
-                  if (chatKey) { chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' }).then((sent: any) => { const sid = sent?.id||msgId; setChatMessages(prev => ({ ...prev, [chatKey]: (prev[chatKey]||[]).map((m: any) => m.id===msgId ? { ...m, id: sid, status:'delivered' } : m) })); }).catch(() => {}); }
-                  setShowQuickTransferModal(false); setTransferError('');
-                  setQuickTransferData({ contactId:'', contactName:'', amount:'', accountId:'' });
-                  showToast(`✅ ${amount.toLocaleString()} XAF enviados`, 'success');
-                };
-                if (userBalance >= amount) { setUserBalance(userBalance - amount); setPendingTransfers(p => [...p, { id: Date.now().toString(), from:'Monedero EGChat', to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg('Monedero EGChat'); return; }
-                const src = bankAccounts.find(a => a.id === quickTransferData.accountId);
-                if (src && amount <= src.balance) { setBankAccounts(bankAccounts.map(a => a.id===quickTransferData.accountId ? { ...a, balance: a.balance-amount } : a)); setPendingTransfers(p => [...p, { id: Date.now().toString(), from: src.bank, to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg(src.bank); return; }
-                setTransferError('Saldo insuficiente');
-              }} style={{ width:'100%', background:'linear-gradient(135deg,#1a73e8,#0d47a1)', border:'none', borderRadius:'14px', padding:'16px', fontSize:'16px', fontWeight:'700', color:'#fff', cursor:'pointer', outline:'none', boxShadow:'0 4px 16px rgba(26,115,232,0.4)', marginBottom:'12px' }}>
-                Enviar dinero
+
+              {/* Botón enviar */}
+              <button
+                onClick={() => {
+                  setTransferError('');
+                  const inputEl = document.getElementById('transfer-amount-input') as HTMLInputElement;
+                  const rawAmount = (inputEl?.value||'').replace(/[^0-9]/g,'');
+                  if (!rawAmount || parseInt(rawAmount) <= 0) { setTransferError('Introduce un monto válido'); return; }
+                  const amount = parseInt(rawAmount);
+                  const chatKey = quickTransferData.contactId;
+                  const code = Math.floor(100000 + Math.random() * 900000).toString();
+                  const t = new Date();
+                  const tm = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}`;
+                  const sendMoneyMsg = (source: string) => {
+                    const msgId = Date.now().toString();
+                    const msgText = `💸 Transferencia enviada\n💰 ${amount.toLocaleString()} XAF\n👤 Para: ${quickTransferData.contactName}\n🏦 Desde: ${source}\n🔑 Ref: ${code}\n✅ Completado`;
+                    setChatMessages(prev => ({ ...prev, [chatKey]: [...(prev[chatKey]||[]), { id: msgId, from: 'me' as const, text: msgText, time: tm, timestamp: new Date().toISOString(), created_at: new Date().toISOString(), status: 'delivered' as const } as any] }));
+                    if (chatKey) { chatAPI.sendMessage(chatKey, { text: msgText, type: 'text' }).then((sent: any) => { const sid = sent?.id||msgId; setChatMessages(prev => ({ ...prev, [chatKey]: (prev[chatKey]||[]).map((m: any) => m.id===msgId ? { ...m, id: sid, status:'delivered' } : m) })); }).catch(() => {}); }
+                    setShowQuickTransferModal(false); setTransferError('');
+                    setQuickTransferData({ contactId:'', contactName:'', amount:'', accountId:'' });
+                    showToast(`✅ ${amount.toLocaleString()} XAF enviados a ${quickTransferData.contactName}`, 'success');
+                  };
+                  if (userBalance >= amount) { setUserBalance(userBalance - amount); setPendingTransfers(p => [...p, { id: Date.now().toString(), from:'Monedero EGChat', to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg('Monedero EGChat'); return; }
+                  const src = bankAccounts.find(a => a.id === quickTransferData.accountId);
+                  if (src && amount <= src.balance) { setBankAccounts(bankAccounts.map(a => a.id===quickTransferData.accountId ? { ...a, balance: a.balance-amount } : a)); setPendingTransfers(p => [...p, { id: Date.now().toString(), from: src.bank, to: quickTransferData.contactName, amount, status:'pending' as const, createdAt: new Date(), expiresAt: new Date(Date.now()+5*60*1000) }]); sendMoneyMsg(src.bank); return; }
+                  setTransferError('Saldo insuficiente');
+                }}
+                style={{ width:'100%', background:'linear-gradient(135deg,#1a73e8,#0d47a1)', border:'none', borderRadius:'14px', padding:'15px', fontSize:'16px', fontWeight:'700', color:'#fff', cursor:'pointer', outline:'none', boxShadow:'0 4px 16px rgba(26,115,232,0.35)', marginBottom:'10px' }}>
+                Enviar {quickTransferData.contactName ? `a ${quickTransferData.contactName}` : 'dinero'}
               </button>
               <button onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}
-                style={{ width:'100%', background:'none', border:'none', color:'#9ca3af', fontSize:'14px', cursor:'pointer', padding:'8px', marginBottom:'8px' }}>
+                style={{ width:'100%', background:'none', border:'none', color:'#9ca3af', fontSize:'14px', cursor:'pointer', padding:'6px', marginBottom:'6px' }}>
                 Cancelar
               </button>
             </div>
