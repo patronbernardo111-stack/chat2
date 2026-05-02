@@ -100,7 +100,21 @@ const App: React.FC = () => {
   const currentUserId = useRef<string>('');
   const pollingRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
-  const loadChats = useCallback(async () => {
+  // Helper: enriquecer objeto de chat/grupo con overrides del usuario antes de mostrarlo
+  const withGroupOverrides = useCallback((chatObj: any) => {
+    if (!chatObj?.isGroup && chatObj?.type !== 'group') return chatObj;
+    try {
+      const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
+      const gid = chatObj.id?.toString();
+      const override = ov[gid] || {};
+      return {
+        ...chatObj,
+        title: override.name || chatObj.title || chatObj.name || '',
+        name: override.name || chatObj.name || chatObj.title || '',
+        avatarUrl: override.avatarUrl || chatObj.avatarUrl || chatObj.avatar_url || '',
+      };
+    } catch { return chatObj; }
+  }, []);
     if (!localStorage.getItem('token')) return;
     try {
       const d = await chatAPI.getChats();
@@ -5153,7 +5167,7 @@ const App: React.FC = () => {
                     <div style={{padding:'4px 0',borderBottom:'1px solid #f0f2f5'}}>
                     {/* Seccin principal */}
                     {[
-                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(sc);if(sc.isGroup){await loadGroupMembers(sc.id?.toString()||'');}}},
+                      {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,label:'Ver perfil',color:'#374151',action:async ()=>{setShowChatMenu(false);setShowContactProfile(withGroupOverrides(sc));if(sc.isGroup){await loadGroupMembers(sc.id?.toString()||'');}}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,label:'Buscar en el chat',color:'#374151',action:()=>{setShowChatMenu(false);setShowChatSearch(true);setChatSearchQuery('');}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,label:'Mensajes destacados',color:'#374151',action:()=>{setShowChatMenu(false);setStarredChatId(sc.id?.toString()||'');setShowStarredModal(true);}},
                       {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="12" cy="12" r="10"/></svg>,label:pinnedChats.includes(sc.id?.toString()||'')?'Desfijar chat':'Fijar chat',color:'#374151',action:()=>{const id=sc.id?.toString()||'';setPinnedChats(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);setShowChatMenu(false);}},
@@ -5221,7 +5235,7 @@ const App: React.FC = () => {
               <div
                 className="scroll-container chat-messages-scroll"
                 ref={(el) => { if (el) { el.onscroll = () => { const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80; isAtBottomRef.current = atBottom; }; } }}
-                style={{ flex: 1, minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', paddingTop: device.isMobile ? 'calc(max(env(safe-area-inset-top, 0px), 8px) + 62px)' : '70px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: getActiveChatWallpaper() === 'none' ? '#efeae2' : 'transparent' }}
+                style={{ flex: 1, minHeight: 0, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, padding: '10px 10px 8px', paddingTop: device.isMobile ? 'calc(max(env(safe-area-inset-top, 50px), 50px) + 54px)' : '70px', display: 'flex', flexDirection: 'column', gap: '3px', position: 'relative', zIndex: 1, background: getActiveChatWallpaper() === 'none' ? '#efeae2' : 'transparent' }}
               >
                 {[...msgs].filter((m,i,a)=>a.findIndex((x:any)=>x.id===m.id)===i).sort((a:any,b:any)=>{const ts=(m:any)=>{if(m.created_at){const d=new Date(m.created_at);if(!isNaN(d.getTime()))return d.getTime();}if(m.timestamp){const d=new Date(m.timestamp);if(!isNaN(d.getTime()))return d.getTime();}const n=parseInt((m.id?.toString()||"").replace(/\D/g,"")||"0");return n>1e12?n:0;};return ts(a)-ts(b);}).map((msg) => (
                   <div key={msg.id} onClick={() => { if (selectionMode) { setSelectedMsgIds(prev => prev.includes(msg.id) ? prev.filter(x => x !== msg.id) : [...prev, msg.id]); } }} style={{ display: 'flex', justifyContent: msg.from === 'me' ? 'flex-end' : 'flex-start', position: 'relative', zIndex: 1, marginBottom: '2px', alignItems: 'center', gap: '8px', padding: selectionMode ? '2px 8px' : '0', background: selectionMode && selectedMsgIds.includes(msg.id) ? 'rgba(0,180,230,0.10)' : 'transparent', borderRadius: '8px', transition: 'background 0.15s', cursor: selectionMode ? 'pointer' : 'default' }}>
@@ -10361,6 +10375,14 @@ const App: React.FC = () => {
                   const other = chat.participants.find((p: any) => p.user_id?.toString() !== currentUserId.current?.toString());
                   if (other) { name = other.full_name || other.users?.full_name || name; avatarUrl = other.avatar_url || other.users?.avatar_url || ''; }
                 }
+                // Para grupos: aplicar overrides locales y avatar del backend
+                if (isGrp) {
+                  let _ov: Record<string, {name?: string; avatarUrl?: string}> = {};
+                  try { _ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}'); } catch {}
+                  const ov = _ov[chat.id?.toString()] || {};
+                  if (ov.name && ov.name.trim() !== '') name = ov.name;
+                  avatarUrl = (ov.avatarUrl && ov.avatarUrl !== '') ? ov.avatarUrl : (chat.avatar_url || chat.avatarUrl || '');
+                }
                 if (!name) name = 'Chat';
                 const initials2 = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
                 const isActive = selectedChat?.id?.toString() === chat.id?.toString();
@@ -10406,7 +10428,7 @@ const App: React.FC = () => {
             right: 0,
             zIndex: 1102,
             display: 'flex', alignItems: 'center', 
-            paddingTop: device.isMobile ? 'max(env(safe-area-inset-top, 44px), 44px)' : '10px', 
+            paddingTop: device.isMobile ? 'max(env(safe-area-inset-top, 44px), 50px)' : '10px', 
             paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', 
             background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', 
             flexShrink: 0, 
@@ -10416,10 +10438,10 @@ const App: React.FC = () => {
               style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', outline: 'none', padding: '5px', display: 'flex', borderRadius: '50%', flexShrink: 0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={async () => { setShowContactProfile(sc); if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || ''); }}>
+            <div style={{ cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }} onClick={async () => { setShowContactProfile(withGroupOverrides(sc)); if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || ''); }}>
               <Avatar name={sc.title} size={50} status={sc.status as any} showStatus={!sc.isGroup} photo={sc.avatarUrl} />
             </div>
-            <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={async () => { setShowContactProfile(sc); if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || ''); }}>
+            <div style={{ flex: 1, cursor: 'pointer', minWidth: 0, marginLeft: '10px' }} onClick={async () => { setShowContactProfile(withGroupOverrides(sc)); if (sc.isGroup) await loadGroupMembers(sc.id?.toString() || ''); }}>
               <div style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>{sc.title}</div>
               <div style={{ fontSize: '11px', fontWeight: '600', color: sc.isGroup ? 'rgba(255,255,255,0.85)' : sc.status === 'online' ? '#a8ffdd' : sc.status === 'away' ? '#ffe08a' : 'rgba(255,255,255,0.6)' }}>
                 {sc.isGroup ? `👥 ${sc.members || ''} miembros` : sc.status === 'online' ? '● En línea' : sc.status === 'away' ? '● Ausente' : '○ Desconectado'}
