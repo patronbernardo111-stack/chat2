@@ -10613,7 +10613,7 @@ const App: React.FC = () => {
       )}
 
       {showQuickTransferModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'flex-end', justifyContent:'center', zIndex:2000, backdropFilter:'blur(6px)' }}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'flex-end', justifyContent:'center', zIndex:1200, backdropFilter:'blur(6px)' }}
           onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}>
           <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)' }}
             onClick={e => e.stopPropagation()}>
