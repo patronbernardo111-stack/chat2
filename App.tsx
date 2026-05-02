@@ -677,18 +677,29 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Fix teclado Android/iOS: ajustar el chat container cuando el teclado sube
+  // Fix teclado iOS/Android: el chat container se ajusta al visualViewport
+  // Esto hace que el input quede PEGADO al teclado sin espacio extra, como WhatsApp
   React.useEffect(() => {
     const vv = (window as any).visualViewport as VisualViewport | undefined;
     if (!vv) return;
+
     const onResize = () => {
-      const offset = window.innerHeight - vv.height - vv.offsetTop;
-      document.documentElement.style.setProperty('--keyboard-offset', `${Math.max(0, offset)}px`);
+      // Calcular cuánto ha subido el teclado
+      const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      // Guardar como variable CSS para que el chat container la use
+      document.documentElement.style.setProperty('--keyboard-offset', `${keyboardHeight}px`);
+      // También guardar la altura del viewport visible
+      document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
+      document.documentElement.style.setProperty('--vv-offset-top', `${vv.offsetTop}px`);
     };
+
     vv.addEventListener('resize', onResize);
     vv.addEventListener('scroll', onResize);
     onResize();
-    return () => { vv.removeEventListener('resize', onResize); vv.removeEventListener('scroll', onResize); };
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
   }, []);
   const [soundSettings, setSoundSettings] = React.useState<SoundSettings>(getSoundSettings);
   const updateSoundSetting = (key: keyof SoundSettings, value: any) => {
@@ -5011,7 +5022,19 @@ const App: React.FC = () => {
 
           return (
             <>
-            <div className="chat-view-container" style={{ position: 'fixed', top: 0, left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), right: 0, bottom: device.isMobile ? 'var(--keyboard-offset, 0px)' : 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 1100 }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
+            <div className="chat-view-container" style={{ 
+              position: 'fixed', 
+              top: 0, 
+              left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), 
+              right: 0, 
+              // En móvil: bottom sube con el teclado (keyboard-offset)
+              // En desktop: bottom = 0 siempre
+              bottom: device.isMobile ? 'var(--keyboard-offset, 0px)' : 0,
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden', 
+              zIndex: 1100 
+            }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
               {(() => {
                 const activeChatWp = getActiveChatWallpaper();
@@ -7514,10 +7537,10 @@ const App: React.FC = () => {
                   onClick={() => setTransactionFilter(filter as any)}
                   style={{
                     padding: '6px 12px',
-                    background: transactionFilter === filter ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                    border: transactionFilter === filter ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(0,0,0,0.08)',
+                    background: transactionFilter === filter ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 0, 0, 0.06)',
+                    border: transactionFilter === filter ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(0,0,0,0.15)',
                     borderRadius: '20px',
-                    color: transactionFilter === filter ? '#00c8a0' : 'rgba(255, 255, 255, 0.6)',
+                    color: transactionFilter === filter ? '#00a880' : '#374151',
                     fontSize: '13px',
                     fontWeight: '600',
                     cursor: 'pointer',
@@ -7526,7 +7549,7 @@ const App: React.FC = () => {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  {filter === 'all' ? 'Todas' : filter === 'sent' ? 'Enviadas' : filter === 'received' ? 'Recibidas' : filter === 'payment' ? 'Pagos' : filter === 'deposit' ? 'Depsitos' : 'Retiros'}
+                  {filter === 'all' ? 'Todas' : filter === 'sent' ? 'Enviadas' : filter === 'received' ? 'Recibidas' : filter === 'payment' ? 'Pagos' : filter === 'deposit' ? 'Depósitos' : 'Retiros'}
                 </button>
               ))}
             </div>
@@ -7562,12 +7585,12 @@ const App: React.FC = () => {
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                      e.currentTarget.style.background = 'rgba(240, 253, 250, 0.95)';
+                      e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.25)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                      e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)';
+                      e.currentTarget.style.background = 'rgba(250,250,250,0.88)';
+                      e.currentTarget.style.borderColor = 'rgba(0,0,0,0.07)';
                     }}
                   >
                     <div style={{
