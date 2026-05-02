@@ -128,14 +128,20 @@ const App: React.FC = () => {
           is_favorite: false,
         }));
         setAllGroups(prev => {
-          // Preservar is_favorite y avatarUrl de grupos locales
+          // Preservar is_favorite, avatarUrl y name de grupos locales
           const prevMap = new Map(prev.map((g: any) => [g.id?.toString(), g]));
           const backendIds = new Set(mappedGroups.map((g: any) => g.id?.toString()));
-          const merged = mappedGroups.map((g: any) => ({
-            ...g,
-            is_favorite: prevMap.get(g.id?.toString())?.is_favorite ?? false,
-            avatarUrl: prevMap.get(g.id?.toString())?.avatarUrl || g.avatarUrl || '',
-          }));
+          const merged = mappedGroups.map((g: any) => {
+            const local = prevMap.get(g.id?.toString());
+            return {
+              ...g,
+              is_favorite: local?.is_favorite ?? false,
+              // Preservar avatarUrl local (puede ser base64 recién subido)
+              avatarUrl: local?.avatarUrl || g.avatarUrl || '',
+              // Preservar nombre local si fue editado (el backend puede tardar en sincronizar)
+              name: local?.name && local.name !== 'Grupo' ? local.name : (g.name || local?.name || 'Grupo'),
+            };
+          });
           // Preservar grupos locales que aún no están en el backend (recién creados)
           const localOnly = prev.filter((g: any) => !backendIds.has(g.id?.toString()));
           const final = [...localOnly, ...merged];
