@@ -513,7 +513,18 @@ const App: React.FC = () => {
   const [contactPickerChatKey, setContactPickerChatKey] = useState<string>('');
   const [quickTransferData, setQuickTransferData] = useState<{ contactId: string; contactName: string; amount: string; accountId: string }>({ contactId: '', contactName: '', amount: '', accountId: '' });
   const [quickTransferKeyboardOffset, setQuickTransferKeyboardOffset] = useState<number>(0);
-  
+  // IDs de mensajes de pago recibido que el usuario ya confirmó con "Gracias, recibido"
+  const [acknowledgedPayments, setAcknowledgedPayments] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('egchat_ack_payments') || '[]')); } catch { return new Set(); }
+  });
+  const acknowledgePayment = (msgId: string) => {
+    setAcknowledgedPayments(prev => {
+      const next = new Set(prev); next.add(msgId);
+      localStorage.setItem('egchat_ack_payments', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
   // Fase 5: Historial y Transacciones
   const [transactionHistory, setTransactionHistory] = useState<Array<{ id: string; type: 'sent' | 'received' | 'payment' | 'deposit' | 'withdrawal' | 'salary' | 'card_withdrawal'; amount: number; description: string; date: string; status: 'completed' | 'pending' | 'failed'; fromAccount?: string; toAccount?: string; commission?: number }>>([
     { id: '1', type: 'received', amount: 50000, description: 'Transferencia recibida de Juan', date: '12/03/2026', status: 'completed' },
@@ -5722,10 +5733,27 @@ const App: React.FC = () => {
                                     <span style={{ fontSize:'10px', fontWeight:'600', color:'#9ca3af', fontFamily:'monospace' }}>{ref}</span>
                                   </div>
                                 ) : null}
-                                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', padding:'4px 8px', background: isSender ? '#eff6ff' : '#f0fdf4', borderRadius:'6px' }}>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isSender ? '#1a73e8' : '#16a34a'} strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                  <span style={{ fontSize:'10px', fontWeight:'700', color: isSender ? '#1a73e8' : '#16a34a' }}>{isSender ? 'Completado' : '¡Recibido!'}</span>
-                                </div>
+                                {isSender ? (
+                                  /* Enviador: estado fijo "Completado" */
+                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', padding:'4px 8px', background:'#eff6ff', borderRadius:'6px' }}>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span style={{ fontSize:'10px', fontWeight:'700', color:'#1a73e8' }}>Completado</span>
+                                  </div>
+                                ) : acknowledgedPayments.has(msg.id) ? (
+                                  /* Receptor: ya confirmó — estado final */
+                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', padding:'6px 8px', background:'#f0fdf4', borderRadius:'6px' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span style={{ fontSize:'11px', fontWeight:'700', color:'#16a34a' }}>¡Gracias, recibido!</span>
+                                  </div>
+                                ) : (
+                                  /* Receptor: botón para confirmar */
+                                  <button
+                                    onClick={() => acknowledgePayment(msg.id)}
+                                    style={{ width:'100%', background:'linear-gradient(135deg,#00c8a0,#00897b)', border:'none', borderRadius:'6px', padding:'7px 8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', cursor:'pointer', outline:'none' }}>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span style={{ fontSize:'11px', fontWeight:'700', color:'#fff' }}>Gracias, recibido</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -10655,8 +10683,8 @@ const App: React.FC = () => {
                 {/* Mi avatar */}
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
                   <div style={{ width:'52px', height:'52px', borderRadius:'50%', overflow:'hidden', border:'2px solid rgba(255,255,255,0.5)', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {userProfile?.avatar_url
-                      ? <img src={userProfile.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                    {(userProfile?.avatarUrl || (userProfile as any)?.avatar_url)
+                      ? <img src={userProfile?.avatarUrl || (userProfile as any)?.avatar_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                       : <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(userProfile?.name||'Y').slice(0,1).toUpperCase()}</span>
                     }
                   </div>
