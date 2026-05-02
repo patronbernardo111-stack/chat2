@@ -30,17 +30,16 @@ export const UpdateBanner: React.FC = () => {
         });
       });
     });
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
+
+    // ELIMINADO: controllerchange → reload() automático
+    // Esto causaba que el SW disparara un reload completo de la página en iOS
+    // cada vez que se activaba (skipWaiting + clients.claim), causando el parpadeo.
+    // Ahora el reload solo ocurre cuando el usuario toca el banner manualmente.
   }, []);
 
   return (
     <>
-      {/* Banner cuando hay actualización */}
+      {/* Banner cuando hay actualización — solo visible si hay update real */}
       {hasUpdate && (
         <div onClick={forceUpdate} style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 99999,

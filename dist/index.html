@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" style="background:#0a1428">
+<html lang="es" style="background:#f0f2f5">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/egchat-icon.svg" />
@@ -22,17 +22,25 @@
     <link rel="apple-touch-icon" sizes="152x152" href="./logo-transparent.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./logo-transparent.png" />
 
-    <!-- Theme color — fijo para evitar parpadeo en iOS Safari -->
-    <meta name="theme-color" content="#0a1428" />
-    <meta name="msapplication-TileColor" content="#0a1428" />
-    <script type="module" crossorigin src="./assets/index-Z4Djpajy.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/react-core-Ba9WgjX5.js">
-    <link rel="modulepreload" crossorigin href="./assets/icons-BhmQL20A.js">
-    <link rel="modulepreload" crossorigin href="./assets/qr-BBaqZHHl.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-F2qK1WQ0.css">
+    <!-- Theme color — coincide con el fondo de la app para evitar parpadeo en iOS Safari -->
+    <meta name="theme-color" content="#f0f2f5" />
+    <meta name="msapplication-TileColor" content="#f0f2f5" />
+
+    <!-- Anti-flash inline: fondo del body antes de que cargue el CSS -->
+    <style>
+      html, body, #root {
+        background-color: #f0f2f5 !important;
+        margin: 0;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-KGCXZMXd.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/react-core-B1rSPtcn.js">
+    <link rel="modulepreload" crossorigin href="./assets/icons-Be6fsX7F.js">
+    <link rel="modulepreload" crossorigin href="./assets/qr-PoIushue.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-DtlOJEBP.css">
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background:#f0f2f5">
+    <div id="root" style="background:#f0f2f5"></div>
     
     <!-- Forzar limpieza de SW y cache antigua -->
     <script>
