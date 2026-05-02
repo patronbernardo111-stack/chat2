@@ -386,9 +386,15 @@ export const ChatView: React.FC = () => {
       : selectedChat.name || 'Grupo';
 
     return (
-      <div className="flex flex-col h-screen bg-white">
-        {/* Header */}
-        <div className="flex items-center p-4 border-b bg-white">
+      <div
+        className="flex flex-col bg-white"
+        style={{ height: '100dvh', maxHeight: '100dvh' }}
+      >
+        {/* Header — sticky so it stays visible when the keyboard opens */}
+        <div
+          className="flex items-center p-4 border-b bg-white z-10"
+          style={{ position: 'sticky', top: 0, flexShrink: 0 }}
+        >
           <button
             onClick={() => setSelectedChat(null)}
             className="mr-3 p-2 hover:bg-gray-100 rounded-full"
@@ -414,14 +420,14 @@ export const ChatView: React.FC = () => {
           </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {/* Messages — takes remaining space and scrolls internally */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ overscrollBehavior: 'contain' }}>
           {messages.map(renderMessage)}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="border-t p-4 bg-white">
+        {/* Input — stays above the keyboard */}
+        <div className="border-t p-4 bg-white" style={{ flexShrink: 0 }}>
           <div className="flex items-center space-x-2">
             <input
               type="file"
@@ -470,9 +476,9 @@ export const ChatView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col bg-gray-50" style={{ height: '100dvh', maxHeight: '100dvh' }}>
       {/* Header */}
-      <div className="bg-white border-b p-4">
+      <div className="bg-white border-b p-4" style={{ position: 'sticky', top: 0, zIndex: 10, flexShrink: 0 }}>
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-gray-900">Mensajes</h1>
           <div className="flex space-x-2">

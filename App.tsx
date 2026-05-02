@@ -6176,6 +6176,11 @@ const App: React.FC = () => {
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } }}
                     placeholder="Escribe un mensaje..."
                     autoFocus
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="sentences"
+                    spellCheck={false}
+                    inputMode="text"
                     ref={el => { if (el && document.activeElement !== el) el.focus(); }}
                     style={{ flex: 1, background: 'none', border: 'none', color: '#111827', fontSize: '15px', outline: 'none', fontFamily: 'inherit', lineHeight: '1.4' }}
                   />

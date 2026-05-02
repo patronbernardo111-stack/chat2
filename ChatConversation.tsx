@@ -94,10 +94,37 @@ export const ChatConversation: React.FC<Props> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ msg: Msg; x: number; y: number } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isNearBottomRef = useRef(true);
+
+  // Detectar teclado virtual en móvil usando visualViewport API
+  // Esto evita que el header desaparezca cuando el teclado sube
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const onResize = () => {
+      // Diferencia entre el viewport completo y el viewport visual (área visible)
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      setKeyboardOffset(Math.max(0, offset));
+      // Scroll al fondo cuando aparece el teclado
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      });
+    };
+
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
 
   // Ordenar mensajes ASC (antiguo arriba, nuevo abajo)
   const sorted = [...messages].sort((a, b) => getMsgTs(a) - getMsgTs(b));
@@ -258,7 +285,15 @@ export const ChatConversation: React.FC<Props> = ({
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#fff', zIndex: 1100 }}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      bottom: keyboardOffset,
+      display: 'flex',
+      flexDirection: 'column',
+      background: '#fff',
+      zIndex: 1100,
+    }}>
 
       {/* Header */}
       <div style={{
