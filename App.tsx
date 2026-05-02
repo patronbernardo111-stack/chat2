@@ -5095,10 +5095,8 @@ const App: React.FC = () => {
               })()}
               {/* Header conversacin */}
               <div style={{ 
-                position: device.isMobile ? 'relative' : 'fixed',
-                top: device.isMobile ? 'auto' : 0,
-                left: device.isMobile ? 'auto' : (device.isTablet ? '72px' : '240px'),
-                right: device.isMobile ? 'auto' : 0,
+                position: 'sticky',
+                top: 0,
                 zIndex: 1102,
                 display: 'flex', alignItems: 'center', 
                 paddingTop: device.isMobile ? 'max(env(safe-area-inset-top, 0px), 8px)' : '10px', 
