@@ -5746,12 +5746,12 @@ const App: React.FC = () => {
                                     <span style={{ fontSize:'11px', fontWeight:'700', color:'#16a34a' }}>¡Gracias, recibido!</span>
                                   </div>
                                 ) : (
-                                  /* Receptor: botón para confirmar */
+                                  /* Receptor: botón inicial — pendiente de confirmar */
                                   <button
                                     onClick={() => acknowledgePayment(msg.id)}
                                     style={{ width:'100%', background:'linear-gradient(135deg,#00c8a0,#00897b)', border:'none', borderRadius:'6px', padding:'7px 8px', display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', cursor:'pointer', outline:'none' }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                    <span style={{ fontSize:'11px', fontWeight:'700', color:'#fff' }}>Gracias, recibido</span>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v13M7 10l5 5 5-5"/><path d="M3 19h18"/></svg>
+                                    <span style={{ fontSize:'11px', fontWeight:'700', color:'#fff' }}>Recibir dinero</span>
                                   </button>
                                 )}
                               </div>
