@@ -4883,11 +4883,11 @@ const App: React.FC = () => {
         onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)'; }}
         onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; }}
       >
-        {/* Contenedor icono sin fondo, icono 34px */}
-        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color }}>
-          {renderIcon(icon, 34)}
+        {/* Contenedor icono sin fondo, icono 28px */}
+        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color }}>
+          {renderIcon(icon, 28)}
         </div>
-        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '500', textAlign: 'center', lineHeight: 1.3, maxWidth: '66px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+        <span style={{ fontSize: '12px', color: '#374151', fontWeight: '500', textAlign: 'center', lineHeight: 1.3, maxWidth: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
       </button>
     );
 
