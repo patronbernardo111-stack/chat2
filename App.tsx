@@ -640,6 +640,22 @@ const App: React.FC = () => {
     document.documentElement.style.fontFamily = fonts[appFontFamily] || fonts.default;
   }, [appFontSize, appFontFamily]);
 
+  // Detectar teclado virtual para el modal de transferencia rápida
+  React.useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onVVChange = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setQuickTransferKeyboardOffset(offset);
+    };
+    vv.addEventListener('resize', onVVChange);
+    vv.addEventListener('scroll', onVVChange);
+    return () => {
+      vv.removeEventListener('resize', onVVChange);
+      vv.removeEventListener('scroll', onVVChange);
+    };
+  }, []);
+
   // Detectar Android y establecer altura de status bar
   React.useEffect(() => {
     const isAndroid = /android/i.test(navigator.userAgent);
@@ -10621,7 +10637,7 @@ const App: React.FC = () => {
       {showQuickTransferModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'flex-end', justifyContent:'center', zIndex:1200, backdropFilter:'blur(6px)' }}
           onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}>
-          <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)', marginBottom: typeof window !== 'undefined' && window.visualViewport ? Math.max(0, window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop)) : 0 }}
+          <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)', marginBottom: quickTransferKeyboardOffset }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header — remitente → destinatario */}
@@ -10694,14 +10710,18 @@ const App: React.FC = () => {
               {/* Input monto — no controlado para evitar bloqueo en móvil */}
               <div style={{ textAlign:'center', marginBottom:'16px' }}>
                 <div style={{ fontSize:'11px', color:'#9ca3af', fontWeight:'600', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'1px' }}>Monto (XAF)</div>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', borderBottom:'2px solid #1a73e8', paddingBottom:'4px', margin:'0 20px' }}>
+                <div
+                  style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'4px', borderBottom:'2px solid #1a73e8', paddingBottom:'4px', margin:'0 20px' }}
+                  onClick={() => { const el = document.getElementById('transfer-amount-input') as HTMLInputElement; el?.focus(); }}
+                >
                   <span style={{ fontSize:'18px', fontWeight:'600', color:'#9ca3af' }}>XAF</span>
                   <input
                     id="transfer-amount-input"
                     type="tel"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="0"
-                    autoFocus
+                    ref={(el) => { if (el) setTimeout(() => el.focus(), 100); }}
                     style={{ border:'none', outline:'none', fontSize:'40px', fontWeight:'800', color:'#111827', width:'160px', textAlign:'center', background:'transparent', caretColor:'#1a73e8', fontFamily:'inherit' }}
                   />
                 </div>
