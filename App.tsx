@@ -7535,24 +7535,29 @@ const App: React.FC = () => {
             {/* Filtros */}
             <div style={{
               display: 'flex',
-              gap: '6px',
+              gap: '8px',
               marginBottom: '12px',
               overflowX: 'auto',
-              paddingBottom: '6px'
+              paddingBottom: '8px',
+              paddingRight: '4px',
+              WebkitOverflowScrolling: 'touch' as any,
+              scrollbarWidth: 'none' as any,
+              msOverflowStyle: 'none' as any
             }}>
               {['all', 'sent', 'received', 'payment', 'deposit', 'withdrawal'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setTransactionFilter(filter as any)}
                   style={{
-                    padding: '7px 14px',
+                    padding: '8px 16px',
+                    flexShrink: 0,
                     background: transactionFilter === filter
                       ? 'linear-gradient(135deg, #00c8a0, #00a880)'
-                      : 'rgba(255,255,255,0.65)',
+                      : 'rgba(255,255,255,0.75)',
                     border: transactionFilter === filter
-                      ? '1px solid rgba(0,180,140,0.6)'
-                      : '1px solid rgba(255,255,255,0.9)',
-                    borderRadius: '20px',
+                      ? '1.5px solid rgba(0,180,140,0.6)'
+                      : '1.5px solid rgba(255,255,255,0.95)',
+                    borderRadius: '22px',
                     color: transactionFilter === filter ? '#ffffff' : '#1f4e3d',
                     fontSize: '13px',
                     fontWeight: '600',
@@ -7561,10 +7566,11 @@ const App: React.FC = () => {
                     whiteSpace: 'nowrap',
                     transition: 'all 0.2s ease',
                     boxShadow: transactionFilter === filter
-                      ? '0 2px 8px rgba(0,180,140,0.35)'
-                      : '0 1px 4px rgba(0,0,0,0.08)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)'
+                      ? '0 3px 10px rgba(0,180,140,0.4)'
+                      : '0 1px 6px rgba(0,0,0,0.08)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    minWidth: 'max-content'
                   }}
                 >
                   {filter === 'all' ? 'Todas' : filter === 'sent' ? 'Enviadas' : filter === 'received' ? 'Recibidas' : filter === 'payment' ? 'Pagos' : filter === 'deposit' ? 'Depósitos' : 'Retiros'}
