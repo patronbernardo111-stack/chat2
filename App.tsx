@@ -9416,7 +9416,8 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentView === 'Mensajería') loadChats();
+    // Solo recargar chats al entrar a Mensajería si no hay grupo seleccionado
+    if (currentView === 'Mensajería' && !selectedChat?.isGroup) loadChats();
   }, [currentView, loadChats]);
 
   // -- Polling: actualizar mensajes del chat abierto cada 1.5s ---
@@ -9460,13 +9461,16 @@ const App: React.FC = () => {
     loadContacts();
   }, [currentView, loadContacts]);
 
-  // -- Polling de chats cada 15s para refrescar nombre/avatar de contactos --
+  // -- Polling de chats cada 30s — solo cuando NO hay chat de grupo abierto --
   useEffect(() => {
     if (!isAuthenticated) return;
     const iv = setInterval(() => {
-      loadChats();
-      loadContacts(); // refrescar fotos y nombres de contactos
-    }, 15000);
+      // No recargar si hay un grupo seleccionado — evita sobreescribir nombre/avatar editados
+      if (!selectedChat?.isGroup) {
+        loadChats();
+      }
+      loadContacts();
+    }, 30000);
     return () => clearInterval(iv);
   }, [isAuthenticated, loadChats, loadContacts]);
 
@@ -9475,8 +9479,10 @@ const App: React.FC = () => {
     if (!isAuthenticated) return;
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      // Recargar chats y mensajes activos sin recargar la página
-      loadChats();
+      // No recargar chats si hay un grupo seleccionado — evita sobreescribir nombre/avatar
+      if (!selectedChat?.isGroup) {
+        loadChats();
+      }
       if (selectedChat) {
         const chatId = selectedChat.id?.toString() || '';
         if (chatId && chatId.includes('-') && chatId.length >= 20) {
@@ -9485,7 +9491,6 @@ const App: React.FC = () => {
       }
     };
     document.addEventListener('visibilitychange', onVisible);
-    // También escuchar el evento online (cuando recupera red)
     window.addEventListener('online', onVisible);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
@@ -10401,7 +10406,7 @@ const App: React.FC = () => {
             right: 0,
             zIndex: 1102,
             display: 'flex', alignItems: 'center', 
-            paddingTop: device.isMobile ? 'max(env(safe-area-inset-top, 0px), 8px)' : '10px', 
+            paddingTop: device.isMobile ? 'max(env(safe-area-inset-top, 44px), 44px)' : '10px', 
             paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', 
             background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', 
             flexShrink: 0, 
