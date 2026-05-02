@@ -512,6 +512,7 @@ const App: React.FC = () => {
   const [showContactPickerForChat, setShowContactPickerForChat] = useState<boolean>(false);
   const [contactPickerChatKey, setContactPickerChatKey] = useState<string>('');
   const [quickTransferData, setQuickTransferData] = useState<{ contactId: string; contactName: string; amount: string; accountId: string }>({ contactId: '', contactName: '', amount: '', accountId: '' });
+  const [quickTransferKeyboardOffset, setQuickTransferKeyboardOffset] = useState<number>(0);
   
   // Fase 5: Historial y Transacciones
   const [transactionHistory, setTransactionHistory] = useState<Array<{ id: string; type: 'sent' | 'received' | 'payment' | 'deposit' | 'withdrawal' | 'salary' | 'card_withdrawal'; amount: number; description: string; date: string; status: 'completed' | 'pending' | 'failed'; fromAccount?: string; toAccount?: string; commission?: number }>>([
@@ -10620,7 +10621,7 @@ const App: React.FC = () => {
       {showQuickTransferModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'flex-end', justifyContent:'center', zIndex:1200, backdropFilter:'blur(6px)' }}
           onClick={() => { setShowQuickTransferModal(false); setTransferError(''); }}>
-          <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)' }}
+          <div style={{ background:'#fff', borderRadius:'24px 24px 0 0', width:'100%', maxWidth:'480px', overflow:'hidden', boxShadow:'0 -8px 40px rgba(0,0,0,0.3)', marginBottom: typeof window !== 'undefined' && window.visualViewport ? Math.max(0, window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop)) : 0 }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header — remitente → destinatario */}
@@ -10654,9 +10655,29 @@ const App: React.FC = () => {
                 </div>
                 {/* Avatar destinatario */}
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
-                  <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.25)', border:'2px solid rgba(255,255,255,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}</span>
-                  </div>
+                  {(() => {
+                    // Buscar avatar del destinatario en contactos y chats
+                    const contactId = quickTransferData.contactId;
+                    let avatarUrl = '';
+                    // 1. Buscar en allContacts
+                    const contact = allContacts.find((c: any) => c.id?.toString() === contactId || c.user_id?.toString() === contactId);
+                    if (contact) avatarUrl = contact.avatarUrl || contact.avatar_url || '';
+                    // 2. Buscar en participantes de chats
+                    if (!avatarUrl) {
+                      for (const ch of (realChats as any[])) {
+                        const p = ch.participants?.find((p: any) => p.user_id?.toString() === contactId);
+                        if (p) { avatarUrl = p.avatar_url || p.users?.avatar_url || ''; break; }
+                      }
+                    }
+                    return (
+                      <div style={{ width:'52px', height:'52px', borderRadius:'50%', overflow:'hidden', background:'rgba(255,255,255,0.25)', border:'2px solid rgba(255,255,255,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {avatarUrl
+                          ? <img src={avatarUrl} alt={quickTransferData.contactName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                          : <span style={{ fontSize:'18px', fontWeight:'800', color:'#fff' }}>{(quickTransferData.contactName||'?').slice(0,1).toUpperCase()}</span>
+                        }
+                      </div>
+                    );
+                  })()}
                   <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.75)', fontWeight:'600', maxWidth:'60px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', textAlign:'center' }}>{quickTransferData.contactName}</span>
                 </div>
               </div>
