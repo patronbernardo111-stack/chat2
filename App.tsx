@@ -105,11 +105,25 @@ const App: React.FC = () => {
     try {
       const d = await chatAPI.getChats();
       if (Array.isArray(d)) {
+        // Leer overrides una vez para usarlos en ambos merges
+        let _overrides: Record<string, {name?: string; avatarUrl?: string}> = {};
+        try { _overrides = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}'); } catch {}
+
         // Merge: preservar chats locales recién creados que aún no están en el backend
         setRealChats(prev => {
           const backendIds = new Set(d.map((c: any) => c.id?.toString()));
           const localOnly = prev.filter((c: any) => !backendIds.has(c.id?.toString()));
-          const merged = [...localOnly, ...d];
+          // Aplicar overrides a los chats de grupo del backend
+          const merged = [...localOnly, ...d.map((c: any) => {
+            if (c.type !== 'group') return c;
+            const ov = _overrides[c.id?.toString()] || {};
+            return {
+              ...c,
+              name: (ov.name && ov.name.trim() !== '') ? ov.name : (c.name || 'Grupo'),
+              avatar_url: (ov.avatarUrl && ov.avatarUrl !== '') ? ov.avatarUrl : (c.avatar_url || ''),
+              avatarUrl: (ov.avatarUrl && ov.avatarUrl !== '') ? ov.avatarUrl : (c.avatar_url || ''),
+            };
+          })];
           realChatsRef.current = merged;
           return merged;
         });
@@ -137,12 +151,26 @@ const App: React.FC = () => {
           const merged = mappedGroups.map((g: any) => {
             const local = prevMap.get(g.id?.toString());
             const ov = overrides[g.id?.toString()] || {};
+            // Override tiene prioridad absoluta — si existe, siempre gana
+            const finalAvatarUrl = (ov.avatarUrl && ov.avatarUrl !== '')
+              ? ov.avatarUrl
+              : (g.avatarUrl && g.avatarUrl !== '')
+                ? g.avatarUrl
+                : (local?.avatarUrl && local.avatarUrl !== '')
+                  ? local.avatarUrl
+                  : '';
+            const finalName = (ov.name && ov.name.trim() !== '')
+              ? ov.name
+              : (g.name && g.name.trim() !== '' && g.name !== 'Grupo')
+                ? g.name
+                : (local?.name && local.name.trim() !== '')
+                  ? local.name
+                  : g.name || 'Grupo';
             return {
               ...g,
               is_favorite: local?.is_favorite ?? false,
-              // Override tiene prioridad absoluta, luego local, luego backend
-              avatarUrl: ov.avatarUrl ?? local?.avatarUrl ?? g.avatarUrl ?? '',
-              name: ov.name ?? g.name ?? local?.name ?? 'Grupo',
+              avatarUrl: finalAvatarUrl,
+              name: finalName,
             };
           });
           // Preservar grupos locales que aún no están en el backend (recién creados)
