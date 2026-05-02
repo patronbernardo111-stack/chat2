@@ -5027,12 +5027,10 @@ const App: React.FC = () => {
               top: 0, 
               left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), 
               right: 0, 
-              // En móvil: bottom sube con el teclado (keyboard-offset)
-              // En desktop: bottom = 0 siempre
               bottom: device.isMobile ? 'var(--keyboard-offset, 0px)' : 0,
               display: 'flex', 
               flexDirection: 'column', 
-              overflow: 'hidden', 
+              overflow: 'clip',
               zIndex: 1100 
             }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
@@ -6219,7 +6217,9 @@ const App: React.FC = () => {
                 background: '#f0f2f5',
                 borderTop: 'none',
                 padding: '8px 8px',
-                paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+                // Cuando el teclado está abierto (keyboard-offset > 0), no añadir safe area bottom
+                // porque el keyboard-offset ya lo incluye
+                paddingBottom: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
