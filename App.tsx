@@ -5039,7 +5039,7 @@ const App: React.FC = () => {
               bottom: device.isMobile ? 'var(--keyboard-offset, 0px)' : 0,
               display: 'flex', 
               flexDirection: 'column', 
-              overflow: 'clip',
+              overflow: 'hidden',
               zIndex: 1100 
             }} onClick={() => { if(showChatMenu) setShowChatMenu(false); }}>
               {/* Wallpaper del chat — individual por chat, no afecta a otros */}
