@@ -1,0 +1,7 @@
+/web
+/public
+/api
+/backend
+/node_modules
+dist
+build
