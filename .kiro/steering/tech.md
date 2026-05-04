@@ -4,11 +4,13 @@ inclusion: always
 
 # Steering: Stack Nativo
 
-Estamos migrando EGCHAT de web (React/Vite) a nativa.
+Estamos migrando EGCHAT de web (React/Vite) a nativa con React Native + Expo.
 
-- Android: Kotlin + Jetpack Compose
-- iOS: Swift + SwiftUI
+- Mobile: React Native + Expo + TypeScript
 - Backend: Supabase + Render API (https://chat2-0x2c.onrender.com)
+- Navegación: Expo Router
+- Estado: Zustand
+- Estilos: NativeWind (Tailwind para RN)
 
 **NUNCA modificar archivos del proyecto web original.**
-Todo código nativo va en carpetas separadas: `android-app/` e `ios-app/`.
+Todo código nativo va en la carpeta `egchat-mobile/`.
