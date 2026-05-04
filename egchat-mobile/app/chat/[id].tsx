@@ -482,3 +482,162 @@ export default function ChatScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bgTertiary },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgPrimary },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  backBtn: { padding: Spacing.sm },
+  backIcon: { fontSize: 28, color: Colors.textPrimary, lineHeight: 32 },
+  headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  headerText: { flex: 1 },
+  headerName: { ...Typography.chatHeaderName, color: Colors.textPrimary },
+  headerStatus: { ...Typography.onlineStatus, color: Colors.accent },
+  headerActions: { flexDirection: 'row', gap: 4 },
+  headerBtn: { padding: Spacing.sm },
+  headerBtnIcon: { fontSize: 18 },
+
+  // Messages
+  messagesList: { paddingHorizontal: Spacing.sm + 2, paddingVertical: Spacing.sm, gap: 2 },
+
+  // Bubble
+  bubbleWrapper: { marginVertical: 1, flexDirection: 'row', alignItems: 'flex-end' },
+  ownWrapper: { justifyContent: 'flex-end' },
+  theirWrapper: { justifyContent: 'flex-start' },
+  groupAvatarCol: { marginRight: 6, marginBottom: 2 },
+  bubble: {
+    maxWidth: '75%',
+    paddingVertical: Spacing.bubblePaddingV,
+    paddingHorizontal: Spacing.bubblePaddingH,
+  },
+  ownBubble: {
+    backgroundColor: Colors.bubbleOwn,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 4,
+  },
+  theirBubble: {
+    backgroundColor: Colors.bubbleOther,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 18,
+    ...Shadow.bubble,
+  },
+  senderName: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.accent,
+    marginBottom: 2,
+  },
+  bubbleText: { ...Typography.messageText, color: Colors.textPrimary },
+  bubbleMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 3,
+  },
+  bubbleTime: { ...Typography.timestamp, color: Colors.textTertiary },
+
+  // Date separator
+  dateSeparator: { alignItems: 'center', marginVertical: Spacing.sm },
+  dateSeparatorText: {
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    color: Colors.white,
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+
+  // Typing indicator
+  typingContainer: { alignItems: 'flex-start', paddingHorizontal: Spacing.sm + 2, marginVertical: 4 },
+  typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bubbleOther,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+    ...Shadow.bubble,
+  },
+  typingDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: Colors.textTertiary },
+
+  // Context menu
+  contextOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  contextMenu: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.xl,
+    width: 260,
+    overflow: 'hidden',
+    ...Shadow.lg,
+  },
+  contextItem: { padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  contextItemText: { fontSize: FontSize.md, color: Colors.textPrimary },
+
+  // Reply preview
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgTertiary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  replyBar: { width: 3, height: 36, backgroundColor: Colors.accent, borderRadius: 2 },
+  replyText: { flex: 1, fontSize: FontSize.sm, color: Colors.textSecondary },
+  replyCancel: { padding: Spacing.xs },
+  replyCancelText: { fontSize: 16, color: Colors.textTertiary },
+
+  // Empty state
+  emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
+  emptyChatIcon: { fontSize: 48, marginBottom: Spacing.md },
+  emptyChatText: { ...Typography.subtitle, color: Colors.textSecondary },
+
+  // Input bar
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: Colors.bgSecondary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    paddingHorizontal: Spacing.chatInputBarPadding + 2,
+    paddingVertical: Spacing.chatInputBarPadding,
+    gap: Spacing.chatInputBarGap,
+  },
+  inputWrapper: {
+    flex: 1,
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: 22,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  input: { fontSize: FontSize.md, color: Colors.textPrimary, maxHeight: 120, padding: 0 },
+  sendBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sendBtnDisabled: { backgroundColor: Colors.border },
+  sendBtnIcon: { color: Colors.white, fontSize: 16 },
+});
