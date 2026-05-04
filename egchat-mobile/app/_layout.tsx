@@ -4,21 +4,40 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { authAPI } from '../src/api';
+import { authAPI, setUnauthorizedHandler } from '../src/api';
 import { Colors } from '../src/theme';
 
 export default function RootLayout() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    authAPI.isAuthenticated().then((auth) => {
-      if (auth) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/(auth)/login');
-      }
-      setChecking(false);
+    // Interceptor global 401 — redirige al login si la sesión expira
+    setUnauthorizedHandler(() => {
+      router.replace('/(auth)/login');
     });
+
+    // Verificar sesión al arrancar
+    const init = async () => {
+      try {
+        const isAuth = await authAPI.isAuthenticated();
+        if (isAuth) {
+          // Verificar que el token sigue siendo válido en el servidor
+          try {
+            await authAPI.me();
+            router.replace('/(tabs)');
+          } catch {
+            // Token inválido o expirado — ir al login
+            router.replace('/(auth)/login');
+          }
+        } else {
+          router.replace('/(auth)/login');
+        }
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    init();
   }, []);
 
   if (checking) {
