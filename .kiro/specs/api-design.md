@@ -48,13 +48,26 @@ POST /api/wallet/transfer                → { balance, transaction }
 POST /api/wallet/recharge-code           → { balance, amount }
 ```
 
-## Chat en tiempo real
-- Actualmente: polling via `loadChats()` con RefreshControl (pull to refresh)
-- Próximo paso: Supabase Realtime subscriptions para mensajes nuevos
-- Canal: `supabase.channel('messages').on('INSERT', ...)` filtrado por chat_id
+## Arquitectura de conexión
+
+```
+App Móvil
+  │
+  ├── Render API (chat2-0x2c.onrender.com)  ← auth, chat, wallet, contactos
+  │       └── Supabase DB (dptpdifjqgzccjauhodq.supabase.co)
+  │
+  └── Supabase Realtime (anon key)          ← mensajes en tiempo real
+          └── Supabase DB (misma instancia)
+```
+
+## Chat en tiempo real (src/supabase.ts — implementado)
+- Cliente Supabase con `anon key` para Realtime subscriptions
+- `subscribeToChat(chatId, onNewMessage)` — escucha INSERT en tabla messages
+- `subscribeToUserChats(userId, onChatUpdated)` — escucha cambios en chats del usuario
+- Se usa junto con la Render API (no en lugar de ella)
 
 ## Reglas de seguridad
-- Solo `anon key` de Supabase en la app (para Realtime futuro)
-- `service_role key` NUNCA en el cliente
+- `anon key` de Supabase en la app — solo para Realtime (lectura pública con RLS)
+- `service_role key` NUNCA en el cliente — solo en Render API
 - Token JWT en `expo-secure-store` (cifrado, no accesible fuera de la app)
 - Interceptor 401 limpia token automáticamente si expira
