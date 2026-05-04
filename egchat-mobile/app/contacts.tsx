@@ -150,11 +150,19 @@ export default function ContactsScreen() {
   const blockContact = async () => {
     if (!selectedContact) return;
     setShowActions(false);
-    try {
-      await contactsAPI.block(selectedContact.id);
-      loadContacts();
-      Alert.alert('✅', 'Contacto bloqueado');
-    } catch { }
+    Alert.alert('Bloquear contacto', '¿Bloquear a este contacto?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Bloquear', style: 'destructive',
+        onPress: async () => {
+          try {
+            await contactsAPI.remove(selectedContact.id);
+            loadContacts();
+            Alert.alert('✅', 'Contacto bloqueado y eliminado');
+          } catch { }
+        },
+      },
+    ]);
   };
 
   const removeContact = async () => {

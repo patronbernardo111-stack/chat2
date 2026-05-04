@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { storiesAPI, getToken } from '../src/api';
+import { storiesAPI, authAPI } from '../src/api';
 import { EGAvatar } from '../src/components/ui';
 import {
   Colors, Typography, Spacing, BorderRadius,
@@ -338,20 +338,18 @@ export default function StoriesScreen() {
 
   const loadStories = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(payload.id || '');
-      }
+      const me = await authAPI.me();
+      const myId = me?.id || '';
+      setCurrentUserId(myId);
       const data = await storiesAPI.getAll();
       const all = Array.isArray(data) ? data : [];
-      const me = all.find((s: any) => s.user_id === currentUserId);
-      const others = all.filter((s: any) => s.user_id !== currentUserId);
-      setMyStory(me || null);
+      const myS = all.find((s: any) => s.user_id === myId);
+      const others = all.filter((s: any) => s.user_id !== myId);
+      setMyStory(myS || null);
       setStories(others);
     } catch { }
     finally { setLoading(false); }
-  }, [currentUserId]);
+  }, []);
 
   useEffect(() => { loadStories(); }, []);
 
