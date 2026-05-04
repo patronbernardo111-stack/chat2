@@ -161,11 +161,28 @@ export default function MensajesScreen() {
 
   useEffect(() => {
     loadChats();
-    // Obtener usuario actual
-    import('../../src/api').then(({ authAPI }) => {
-      authAPI.getMe?.().then((u: any) => setCurrentUserId(u?.id || ''));
+    // Obtener usuario actual del token
+    import('../../src/api').then(({ getToken }) => {
+      getToken().then((token: string | null) => {
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            setCurrentUserId(payload.id || '');
+          } catch {}
+        }
+      });
     });
   }, []);
+
+  // Supabase Realtime — actualizar lista cuando llegan mensajes nuevos
+  useEffect(() => {
+    if (!currentUserId) return;
+    const { subscribeToUserChats } = require('../../src/supabase');
+    const unsubscribe = subscribeToUserChats(currentUserId, () => {
+      loadChats();
+    });
+    return unsubscribe;
+  }, [currentUserId]);
 
   const onRefresh = () => {
     setRefreshing(true);

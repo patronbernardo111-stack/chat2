@@ -2,11 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated,
+  Animated, Modal, Pressable, Alert, Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { chatAPI, getToken } from '../../src/api';
 import { subscribeToChat } from '../../src/supabase';
 import { EGAvatar } from '../../src/components/ui';
@@ -44,14 +43,6 @@ const getDateLabel = (dateStr: string) => {
   return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 };
 
-const getLastMsgText = (msg?: Message) => {
-  if (!msg) return '';
-  if (msg.type === 'text') return msg.text || '';
-  if (msg.type === 'image') return '📷 Foto';
-  if (msg.type === 'file') return '📄 Archivo';
-  return 'Mensaje';
-};
-
 // ── StatusTicks ───────────────────────────────────────────────────
 const StatusTicks = ({ status }: { status: Message['status'] }) => {
   const color = status === 'read' ? '#53bdeb' : Colors.textTertiary;
@@ -61,28 +52,120 @@ const StatusTicks = ({ status }: { status: Message['status'] }) => {
   return <Text style={{ color, fontSize: 11 }}>✓✓</Text>;
 };
 
+// ── TypingIndicator ───────────────────────────────────────────────
+const TypingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: -4, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+        ])
+      ).start();
+    animate(dot1, 0);
+    animate(dot2, 150);
+    animate(dot3, 300);
+  }, []);
+
+  return (
+    <View style={styles.typingContainer}>
+      <View style={styles.typingBubble}>
+        {[dot1, dot2, dot3].map((dot, i) => (
+          <Animated.View
+            key={i}
+            style={[styles.typingDot, { transform: [{ translateY: dot }] }]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+// ── ContextMenu ───────────────────────────────────────────────────
+interface ContextMenuProps {
+  visible: boolean;
+  message: Message | null;
+  isOwn: boolean;
+  onClose: () => void;
+  onCopy: () => void;
+  onReply: () => void;
+  onDelete: () => void;
+  onDeleteForMe: () => void;
+}
+
+const ContextMenu = ({ visible, message, isOwn, onClose, onCopy, onReply, onDelete, onDeleteForMe }: ContextMenuProps) => (
+  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Pressable style={styles.contextOverlay} onPress={onClose}>
+      <View style={styles.contextMenu}>
+        <TouchableOpacity style={styles.contextItem} onPress={onCopy}>
+          <Text style={styles.contextItemText}>📋 Copiar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.contextItem} onPress={onReply}>
+          <Text style={styles.contextItemText}>↩️ Responder</Text>
+        </TouchableOpacity>
+        {isOwn && (
+          <TouchableOpacity style={styles.contextItem} onPress={onDelete}>
+            <Text style={[styles.contextItemText, { color: Colors.errorText }]}>🗑️ Eliminar para todos</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={[styles.contextItem, { borderBottomWidth: 0 }]} onPress={onDeleteForMe}>
+          <Text style={[styles.contextItemText, { color: Colors.errorText }]}>✕ Eliminar para mí</Text>
+        </TouchableOpacity>
+      </View>
+    </Pressable>
+  </Modal>
+);
+
+// ── ReplyPreview ──────────────────────────────────────────────────
+const ReplyPreview = ({ text, onCancel }: { text: string; onCancel: () => void }) => (
+  <View style={styles.replyPreview}>
+    <View style={styles.replyBar} />
+    <Text style={styles.replyText} numberOfLines={1}>{text}</Text>
+    <TouchableOpacity onPress={onCancel} style={styles.replyCancel}>
+      <Text style={styles.replyCancelText}>✕</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 // ── MessageBubble ─────────────────────────────────────────────────
-const MessageBubble = React.memo(({ message, isOwn }: { message: Message; isOwn: boolean }) => {
+const MessageBubble = React.memo(({
+  message, isOwn, onLongPress,
+}: {
+  message: Message;
+  isOwn: boolean;
+  onLongPress: (msg: Message) => void;
+}) => {
   const time = formatTime(message.created_at);
 
   return (
-    <View style={[styles.bubbleWrapper, isOwn ? styles.ownWrapper : styles.theirWrapper]}>
-      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
-        {message.type === 'text' && (
-          <Text style={styles.bubbleText}>{message.text}</Text>
-        )}
-        {message.type === 'image' && (
-          <Text style={styles.bubbleText}>📷 Imagen</Text>
-        )}
-        {message.type === 'file' && (
-          <Text style={styles.bubbleText}>📄 Archivo</Text>
-        )}
-        <View style={styles.bubbleMeta}>
-          <Text style={styles.bubbleTime}>{time}</Text>
-          {isOwn && <StatusTicks status={message.status} />}
+    <TouchableOpacity
+      onLongPress={() => onLongPress(message)}
+      activeOpacity={0.8}
+      delayLongPress={400}
+    >
+      <View style={[styles.bubbleWrapper, isOwn ? styles.ownWrapper : styles.theirWrapper]}>
+        <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
+          {message.type === 'text' && (
+            <Text style={styles.bubbleText}>{message.text}</Text>
+          )}
+          {message.type === 'image' && (
+            <Text style={styles.bubbleText}>📷 Imagen</Text>
+          )}
+          {message.type === 'file' && (
+            <Text style={styles.bubbleText}>📄 {message.file_url?.split('/').pop() || 'Archivo'}</Text>
+          )}
+          <View style={styles.bubbleMeta}>
+            <Text style={styles.bubbleTime}>{time}</Text>
+            {isOwn && <StatusTicks status={message.status} />}
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 });
 
@@ -102,28 +185,37 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Menú contextual
+  const [contextMsg, setContextMsg] = useState<Message | null>(null);
+  const [contextVisible, setContextVisible] = useState(false);
+
+  // Responder
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+
   const flatListRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
     const init = async () => {
       try {
-        // Obtener usuario actual del token
         const token = await getToken();
         if (token) {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setCurrentUserId(payload.id || '');
         }
-
-        // Cargar chats para encontrar el actual
         const chats = await chatAPI.getChats();
         const current = chats.find((c: any) => c.id === chatId);
         if (current) setChat(current);
-
-        // Cargar mensajes
-        const msgs = await chatAPI.getMessages(chatId);
+        const msgs = await chatAPI.getMessages(chatId, 1, 50);
         setMessages(msgs || []);
+        setHasMore((msgs || []).length === 50);
       } catch (e) {
         console.error('Error cargando chat:', e);
       } finally {
@@ -133,25 +225,19 @@ export default function ChatScreen() {
     init();
   }, [chatId]);
 
-  // Supabase Realtime — mensajes nuevos
+  // Supabase Realtime
   useEffect(() => {
     if (!chatId || !currentUserId) return;
     const unsubscribe = subscribeToChat(chatId, (newMsg: any) => {
       if (newMsg.sender_id !== currentUserId) {
         setMessages(prev => [...prev, newMsg]);
-        // Marcar como leído
         chatAPI.markAsRead(chatId, newMsg.id).catch(() => {});
+        // Simular typing indicator brevemente
+        setIsTyping(false);
       }
     });
     return unsubscribe;
   }, [chatId, currentUserId]);
-
-  // Scroll al fondo cuando llegan mensajes
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  }, [messages.length]);
 
   // Marcar como leídos al abrir
   useEffect(() => {
@@ -161,20 +247,44 @@ export default function ChatScreen() {
     }
   }, [chatId, messages.length]);
 
+  // Scroll al fondo
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages.length]);
+
+  // Cargar más mensajes (paginación)
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const older = await chatAPI.getMessages(chatId, nextPage, 50);
+      if (older && older.length > 0) {
+        setMessages(prev => [...older, ...prev]);
+        setPage(nextPage);
+        setHasMore(older.length === 50);
+      } else {
+        setHasMore(false);
+      }
+    } catch {}
+    finally { setLoadingMore(false); }
+  }, [chatId, page, hasMore, loadingMore]);
+
   const sendMessage = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
     setText('');
+    setReplyTo(null);
     setSending(true);
 
-    // Animación del botón enviar
     Animated.sequence([
       Animated.spring(sendScale, { toValue: 0.85, useNativeDriver: true, speed: 50 }),
       Animated.spring(sendScale, { toValue: 1, useNativeDriver: true, speed: 30 }),
     ]).start();
 
-    // Mensaje optimista
     const tempId = `temp-${Date.now()}`;
     const tempMsg: Message = {
       id: tempId,
@@ -183,18 +293,63 @@ export default function ChatScreen() {
       sender_id: currentUserId,
       status: 'pending',
       created_at: new Date().toISOString(),
+      reply_to: replyTo?.id,
     };
     setMessages(prev => [...prev, tempMsg]);
 
     try {
-      const real = await chatAPI.sendMessage(chatId, { text: trimmed, type: 'text' });
+      const real = await chatAPI.sendMessage(chatId, {
+        text: trimmed,
+        type: 'text',
+        reply_to: replyTo?.id,
+      });
       setMessages(prev => prev.map(m => m.id === tempId ? { ...real, status: 'sent' } : m));
     } catch {
       setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'failed' } : m));
     } finally {
       setSending(false);
     }
-  }, [text, sending, chatId, currentUserId]);
+  }, [text, sending, chatId, currentUserId, replyTo]);
+
+  // Menú contextual
+  const handleLongPress = useCallback((msg: Message) => {
+    setContextMsg(msg);
+    setContextVisible(true);
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    if (contextMsg?.text) Clipboard.setString(contextMsg.text);
+    setContextVisible(false);
+  }, [contextMsg]);
+
+  const handleReply = useCallback(() => {
+    if (contextMsg) setReplyTo(contextMsg);
+    setContextVisible(false);
+  }, [contextMsg]);
+
+  const handleDelete = useCallback(() => {
+    setContextVisible(false);
+    Alert.alert('Eliminar mensaje', '¿Eliminar para todos?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive',
+        onPress: async () => {
+          if (!contextMsg) return;
+          try {
+            await chatAPI.deleteMessage(contextMsg.id);
+            setMessages(prev => prev.filter(m => m.id !== contextMsg.id));
+          } catch {}
+        }
+      }
+    ]);
+  }, [contextMsg]);
+
+  const handleDeleteForMe = useCallback(() => {
+    setContextVisible(false);
+    if (!contextMsg) return;
+    chatAPI.deleteMessageForMe(contextMsg.id).catch(() => {});
+    setMessages(prev => prev.filter(m => m.id !== contextMsg.id));
+  }, [contextMsg]);
 
   // Nombre del chat
   const chatName = chat
@@ -207,7 +362,6 @@ export default function ChatScreen() {
     ? chat.participants?.find((p: any) => p.user_id !== currentUserId)?.avatar_url
     : chat?.avatar_url;
 
-  // Renderizar lista con separadores de fecha
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
     const isOwn = item.sender_id === currentUserId;
     const prevMsg = index > 0 ? messages[index - 1] : null;
@@ -216,7 +370,7 @@ export default function ChatScreen() {
     return (
       <>
         {showDate && <DateSeparator label={getDateLabel(item.created_at)} />}
-        <MessageBubble message={item} isOwn={isOwn} />
+        <MessageBubble message={item} isOwn={isOwn} onLongPress={handleLongPress} />
       </>
     );
   };
@@ -236,7 +390,6 @@ export default function ChatScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backIcon}>‹</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.headerInfo} activeOpacity={0.7}>
           <EGAvatar src={chatAvatar} name={chatName} size={40} />
           <View style={styles.headerText}>
@@ -248,7 +401,6 @@ export default function ChatScreen() {
             </Text>
           </View>
         </TouchableOpacity>
-
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerBtn}>
             <Text style={styles.headerBtnIcon}>📞</Text>
@@ -263,7 +415,6 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
       >
         <FlatList
           ref={flatListRef}
@@ -273,6 +424,12 @@ export default function ChatScreen() {
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.1}
+          ListHeaderComponent={loadingMore ? (
+            <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} />
+          ) : null}
+          ListFooterComponent={isTyping ? <TypingIndicator /> : null}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
               <Text style={styles.emptyChatIcon}>💬</Text>
@@ -280,6 +437,14 @@ export default function ChatScreen() {
             </View>
           }
         />
+
+        {/* ── Reply preview ── */}
+        {replyTo && (
+          <ReplyPreview
+            text={replyTo.text || 'Mensaje'}
+            onCancel={() => setReplyTo(null)}
+          />
+        )}
 
         {/* ── Input ── */}
         <View style={styles.inputBar}>
@@ -296,7 +461,6 @@ export default function ChatScreen() {
               placeholderTextColor={Colors.textTertiary}
               multiline
               maxLength={4000}
-              returnKeyType="default"
             />
           </View>
 
@@ -312,6 +476,18 @@ export default function ChatScreen() {
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* ── Context Menu ── */}
+      <ContextMenu
+        visible={contextVisible}
+        message={contextMsg}
+        isOwn={contextMsg?.sender_id === currentUserId}
+        onClose={() => setContextVisible(false)}
+        onCopy={handleCopy}
+        onReply={handleReply}
+        onDelete={handleDelete}
+        onDeleteForMe={handleDeleteForMe}
+      />
     </SafeAreaView>
   );
 }
@@ -372,10 +548,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 18,
     ...Shadow.bubble,
   },
-  bubbleText: {
-    ...Typography.messageText,
-    color: Colors.textPrimary,
-  },
+  bubbleText: { ...Typography.messageText, color: Colors.textPrimary },
   bubbleMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -386,10 +559,7 @@ const styles = StyleSheet.create({
   bubbleTime: { ...Typography.timestamp, color: Colors.textTertiary },
 
   // Date separator
-  dateSeparator: {
-    alignItems: 'center',
-    marginVertical: Spacing.sm,
-  },
+  dateSeparator: { alignItems: 'center', marginVertical: Spacing.sm },
   dateSeparatorText: {
     backgroundColor: 'rgba(0,0,0,0.18)',
     color: Colors.white,
@@ -401,13 +571,76 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // Empty state
-  emptyChat: {
+  // Typing indicator
+  typingContainer: { alignItems: 'flex-start', paddingHorizontal: Spacing.sm + 2, marginVertical: 4 },
+  typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bubbleOther,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+    ...Shadow.bubble,
+  },
+  typingDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: Colors.textTertiary,
+  },
+
+  // Context menu
+  contextOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
   },
+  contextMenu: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.xl,
+    width: 260,
+    overflow: 'hidden',
+    ...Shadow.lg,
+  },
+  contextItem: {
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  contextItemText: {
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
+  },
+
+  // Reply preview
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgTertiary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  replyBar: {
+    width: 3,
+    height: 36,
+    backgroundColor: Colors.accent,
+    borderRadius: 2,
+  },
+  replyText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
+  replyCancel: { padding: Spacing.xs },
+  replyCancelText: { fontSize: 16, color: Colors.textTertiary },
+
+  // Empty state
+  emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
   emptyChatIcon: { fontSize: 48, marginBottom: Spacing.md },
   emptyChatText: { ...Typography.subtitle, color: Colors.textSecondary },
 
@@ -454,8 +687,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnDisabled: {
-    backgroundColor: Colors.border,
-  },
+  sendBtnDisabled: { backgroundColor: Colors.border },
   sendBtnIcon: { color: Colors.white, fontSize: 16 },
 });
