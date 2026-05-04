@@ -78,37 +78,54 @@ export default function AjustesScreen() {
     loadProfile();
   }, []);
 
-  // Cambiar foto
+  // Cambiar foto — cámara o galería
   const pickPhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para cambiar la foto.');
-      return;
-    }
+    Alert.alert('Foto de perfil', '¿Cómo quieres añadir tu foto?', [
+      {
+        text: '📷 Cámara',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permiso requerido', 'Necesitamos acceso a tu cámara.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+        },
+      },
+      {
+        text: '🖼️ Galería',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) uploadPhoto(result.assets[0].uri);
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }, []);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-
+  const uploadPhoto = useCallback(async (uri: string) => {
     setUploadingPhoto(true);
     try {
-      const asset = result.assets[0];
-      // Crear FormData con la imagen
-      const formData = new FormData();
-      formData.append('avatar', {
-        uri: asset.uri,
-        type: 'image/jpeg',
-        name: 'avatar.jpg',
-      } as any);
-
-      // Subir via API
       const token = await getToken();
       const BASE = process.env.EXPO_PUBLIC_API_URL || 'https://chat2-0x2c.onrender.com';
+      const formData = new FormData();
+      formData.append('avatar', { uri, type: 'image/jpeg', name: 'avatar.jpg' } as any);
+
       const res = await fetch(`${BASE}/api/user/avatar`, {
         method: 'POST',
         body: formData,
@@ -117,16 +134,14 @@ export default function AjustesScreen() {
 
       if (res.ok) {
         const { avatar_url } = await res.json();
-        // Actualizar perfil con la nueva URL
         await authAPI.updateProfile({ avatar_url });
         setUser(prev => prev ? { ...prev, avatar_url } : prev);
-        Alert.alert('✅', 'Foto actualizada correctamente');
       } else {
-        // Si el endpoint no existe, guardar localmente
-        setUser(prev => prev ? { ...prev, avatar_url: asset.uri } : prev);
+        // Fallback: mostrar localmente sin subir
+        setUser(prev => prev ? { ...prev, avatar_url: uri } : prev);
       }
     } catch {
-      Alert.alert('Error', 'No se pudo actualizar la foto. Intenta de nuevo.');
+      Alert.alert('Error', 'No se pudo actualizar la foto.');
     } finally {
       setUploadingPhoto(false);
     }
