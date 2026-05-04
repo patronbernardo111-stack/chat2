@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { authAPI } from '../../src/api';
+import { useAuth } from '../../src/hooks/useAuth';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
@@ -54,8 +55,9 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { register, isLoading, error: authError, clearError } = useAuth();
+  const [localError, setLocalError] = useState('');
+  const displayError = localError || authError;
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const selectedCountry = COUNTRIES.find(c => c.phone === countryCode) || COUNTRIES[0];
@@ -76,48 +78,23 @@ export default function RegisterScreen() {
   };
 
   const goNext = async () => {
-    setError('');
+    setLocalError('');
+    clearError();
     if (step === 1) {
-      if (!name.trim()) { setError('Escribe tu nombre completo'); return; }
+      if (!name.trim()) { setLocalError('Escribe tu nombre completo'); return; }
       setStep(2);
     } else if (step === 2) {
-      if (!phone.trim()) { setError('Introduce tu número de teléfono'); return; }
-      if (phone.replace(/\s/g, '').length < 6) { setError('Número de teléfono inválido'); return; }
-      // Verificar si el teléfono ya existe
+      if (!phone.trim()) { setLocalError('Introduce tu número de teléfono'); return; }
+      if (phone.replace(/\s/g, '').length < 6) { setLocalError('Número de teléfono inválido'); return; }
       try {
         const { exists } = await authAPI.checkPhone(fullPhone);
-        if (exists) { setError('Este número ya está registrado. Usa "Ya tengo cuenta".'); return; }
+        if (exists) { setLocalError('Este número ya está registrado. Usa "Ya tengo cuenta".'); return; }
       } catch {}
       setStep(3);
     } else if (step === 3) {
-      if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
-      if (password !== password2) { setError('Las contraseñas no coinciden'); return; }
-      await doRegister();
-    }
-  };
-
-  const doRegister = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await authAPI.register({
-        full_name: name.trim(),
-        phone: fullPhone,
-        password,
-        avatar_url: avatar || undefined,
-      });
-      router.replace('/(tabs)');
-    } catch (e: any) {
-      const msg = e.message || '';
-      if (msg.includes('ya está registrado') || msg.includes('409')) {
-        setError('Este número ya está registrado.');
-      } else if (msg.includes('fetch') || msg.includes('network')) {
-        setError('Error de conexión. Verifica tu internet.');
-      } else {
-        setError(msg || 'Error al registrarse. Intenta de nuevo.');
-      }
-    } finally {
-      setLoading(false);
+      if (password.length < 6) { setLocalError('La contraseña debe tener al menos 6 caracteres'); return; }
+      if (password !== password2) { setLocalError('Las contraseñas no coinciden'); return; }
+      await register({ full_name: name.trim(), phone: fullPhone, password, avatar_url: avatar || undefined });
     }
   };
 
@@ -276,17 +253,17 @@ export default function RegisterScreen() {
             )}
 
             {/* Error */}
-            {error ? <EGErrorMessage text={error} /> : null}
+            {displayError ? <EGErrorMessage text={displayError} /> : null}
 
             {/* Botón continuar */}
             <EGButton
               title={
                 step === 3
-                  ? (loading ? 'Registrando...' : 'Registrarme')
+                  ? (isLoading ? 'Registrando...' : 'Registrarme')
                   : (!name.trim() && step === 1 ? 'Escribe tu nombre primero' : 'Continuar →')
               }
               onPress={goNext}
-              loading={loading}
+              loading={isLoading}
               disabled={step === 1 && !name.trim()}
             />
           </View>

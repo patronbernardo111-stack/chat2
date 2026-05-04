@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { authAPI } from '../../src/api';
+import { useAuth } from '../../src/hooks/useAuth';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight,
@@ -35,23 +36,38 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
 
+  const { sendVerification, verifyCode: doVerifyCode, resetPassword: doResetPassword } = useAuth();
+
   const fullPhone = countryCode + phone.replace(/\s/g, '');
   const selectedCountry = COUNTRIES.find(c => c.phone === countryCode) || COUNTRIES[0];
 
   const sendCode = async () => {
     if (!phone.trim()) { setError('Introduce tu número de teléfono'); return; }
     setLoading(true); setError('');
-    try {
-      await authAPI.sendVerification(fullPhone);
-      setRecoverStep(2);
-    } catch (e: any) {
-      setError(e.message || 'Error al enviar el código');
-    } finally { setLoading(false); }
+    const ok = await sendVerification(fullPhone);
+    setLoading(false);
+    if (ok) setRecoverStep(2);
+    else setError('Error al enviar el código');
   };
 
   const verifyCode = async () => {
     if (code.length < 4) { setError('Introduce el código completo'); return; }
     setLoading(true); setError('');
+    const verified = await doVerifyCode(fullPhone, code);
+    setLoading(false);
+    if (verified) setRecoverStep(3);
+    else setError('Código incorrecto. Inténtalo de nuevo.');
+  };
+
+  const savePassword = async () => {
+    if (newPass.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+    if (newPass !== newPass2) { setError('Las contraseñas no coinciden'); return; }
+    setLoading(true); setError('');
+    const ok = await doResetPassword(fullPhone, code, newPass);
+    setLoading(false);
+    if (ok) setDone(true);
+    else setError('Error al cambiar la contraseña');
+  };
     try {
       const { verified } = await authAPI.verifyCode(fullPhone, code);
       if (verified) setRecoverStep(3);

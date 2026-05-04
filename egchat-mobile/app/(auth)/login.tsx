@@ -7,22 +7,16 @@ import {
   Platform,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { authAPI } from '../../src/api';
 import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadow,
-  FontSize,
-  FontWeight,
+  Colors, Typography, Spacing, BorderRadius,
+  Shadow, FontSize, FontWeight,
 } from '../../src/theme';
 import { EGButton, EGInput, EGErrorMessage } from '../../src/components/ui';
+import { useAuth } from '../../src/hooks/useAuth';
 
 // Países igual que la web
 const COUNTRIES = [
@@ -45,19 +39,15 @@ export default function LoginScreen() {
   const [countryCode, setCountryCode] = useState('+240');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+
+  const { login, isLoading, error, clearError } = useAuth();
 
   // Animación del logo (spin igual que la web)
   const spinAnim = useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
     Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 20000,
-        useNativeDriver: true,
-      })
+      Animated.timing(spinAnim, { toValue: 1, duration: 20000, useNativeDriver: true })
     ).start();
   }, []);
   const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -65,29 +55,7 @@ export default function LoginScreen() {
   const selectedCountry = COUNTRIES.find(c => c.phone === countryCode) || COUNTRIES[0];
   const fullPhone = countryCode + phone.replace(/\s/g, '');
 
-  const doLogin = async () => {
-    if (!phone || !password) {
-      setError('Rellena todos los campos');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const r = await authAPI.login(fullPhone, password);
-      router.replace('/(tabs)');
-    } catch (e: any) {
-      const msg = e.message || '';
-      if (msg.includes('credenciales') || msg.includes('401')) {
-        setError('Usuario o contraseña incorrectos.');
-      } else if (msg.includes('fetch') || msg.includes('network')) {
-        setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
-      } else {
-        setError(msg || 'Error al iniciar sesión.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const doLogin = () => login(fullPhone, password);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -188,9 +156,9 @@ export default function LoginScreen() {
 
             {/* Botón entrar */}
             <EGButton
-              title={loading ? 'Entrando...' : 'Entrar'}
+              title={isLoading ? 'Entrando...' : 'Entrar'}
               onPress={doLogin}
-              loading={loading}
+              loading={isLoading}
               style={styles.loginBtn}
             />
 

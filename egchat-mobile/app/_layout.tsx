@@ -1,43 +1,19 @@
-import { useEffect, useState } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { authAPI, setUnauthorizedHandler } from '../src/api';
+import { setUnauthorizedHandler } from '../src/api';
+import { useSessionCheck } from '../src/hooks/useAuth';
 import { Colors } from '../src/theme';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function RootLayout() {
-  const [checking, setChecking] = useState(true);
+  const { checking } = useSessionCheck();
 
   useEffect(() => {
-    // Interceptor global 401 — redirige al login si la sesión expira
-    setUnauthorizedHandler(() => {
-      router.replace('/(auth)/login');
-    });
-
-    // Verificar sesión al arrancar
-    const init = async () => {
-      try {
-        const isAuth = await authAPI.isAuthenticated();
-        if (isAuth) {
-          // Verificar que el token sigue siendo válido en el servidor
-          try {
-            await authAPI.me();
-            router.replace('/(tabs)');
-          } catch {
-            // Token inválido o expirado — ir al login
-            router.replace('/(auth)/login');
-          }
-        } else {
-          router.replace('/(auth)/login');
-        }
-      } finally {
-        setChecking(false);
-      }
-    };
-
-    init();
+    setUnauthorizedHandler(() => router.replace('/(auth)/login'));
   }, []);
 
   if (checking) {
