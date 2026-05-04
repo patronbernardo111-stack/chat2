@@ -413,7 +413,23 @@ const App: React.FC = () => {
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [messageFilter, setMessageFilter] = useState<string>('individual');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [_selectedChat, _setSelectedChat] = useState<any>(null);
+  // selectedChat siempre tiene los overrides aplicados
+  const selectedChat = _selectedChat ? (() => {
+    if (!_selectedChat?.isGroup && _selectedChat?.type !== 'group') return _selectedChat;
+    try {
+      const ov = JSON.parse(localStorage.getItem('egchat_group_overrides') || '{}');
+      const override = ov[_selectedChat.id?.toString()] || {};
+      if (!override.name && !override.avatarUrl) return _selectedChat;
+      return {
+        ..._selectedChat,
+        title: override.name || _selectedChat.title || _selectedChat.name || '',
+        name: override.name || _selectedChat.name || _selectedChat.title || '',
+        avatarUrl: override.avatarUrl || _selectedChat.avatarUrl || _selectedChat.avatar_url || '',
+      };
+    } catch { return _selectedChat; }
+  })() : null;
+  const setSelectedChat = _setSelectedChat;
   const [chatMessages, setChatMessages] = useState<Record<string, Array<{id: string; from: 'me'|'them'; text: string; time: string; type?: 'text'|'audio'|'image'; status?: 'pending'|'delivered'|'read'; audioUrl?: string; imageUrl?: string; fileUrl?: string; fileName?: string; fileSize?: string; fileExt?: string}>>>(() => {
     try { const s = localStorage.getItem('egchat_messages'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
