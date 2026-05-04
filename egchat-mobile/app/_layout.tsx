@@ -89,6 +89,7 @@ export default function RootLayout() {
           <Stack.Screen name="stories" options={{ presentation: 'modal' }} />
           <Stack.Screen name="map" options={{ presentation: 'modal' }} />
           <Stack.Screen name="qr-scanner" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="call/[callId]" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
