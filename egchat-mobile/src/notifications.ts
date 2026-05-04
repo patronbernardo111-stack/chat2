@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from './api';
 
-const API_BASE = 'https://egchat-api-1.onrender.com';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://chat2-0x2c.onrender.com';
 const BACKGROUND_TASK = 'EGCHAT_BACKGROUND_NOTIFICATION';
 
 // ── Configurar cómo se muestran las notificaciones en primer plano ──────────
