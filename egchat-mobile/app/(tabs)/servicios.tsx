@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Modal, Pressable, TextInput, ActivityIndicator,
+  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { serviciosAPI, taxiAPI, walletAPI } from '../../src/api';
@@ -283,12 +283,380 @@ const RecargaModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
   );
 };
 
+// ── Modal Internet ────────────────────────────────────────────────
+const INTERNET_PROVIDERS = [
+  { name: 'GETESA',     cat: 'Telecom / Internet',    color: '#003082', plans: ['Hogar 10Mbps — 15,000 XAF/mes', 'Fibra 100Mbps — 30,000 XAF/mes', 'Empresa 500Mbps — 80,000 XAF/mes'] },
+  { name: 'GECOMSA',    cat: 'Operador Móvil / Datos', color: '#0066CC', plans: ['Datos Diario 1GB — 500 XAF', 'Mensual 10GB — 8,000 XAF', 'Ilimitado — 20,000 XAF/mes'] },
+  { name: 'Conexxia',   cat: 'Internet Empresarial',   color: '#8B5CF6', plans: ['Empresarial — 120,000 XAF/mes', 'VPN Corporativa — 50,000 XAF/mes'] },
+  { name: 'Guineanet',  cat: 'Proveedor Internet',     color: '#10B981', plans: ['Residencial 20Mbps — 12,000 XAF/mes', 'Inalámbrico 50Mbps — 18,000 XAF/mes'] },
+  { name: 'Fenix',      cat: 'Tecnología / Internet',  color: '#F97316', plans: ['Fibra Residencial — 22,000 XAF/mes', 'Empresarial — 95,000 XAF/mes'] },
+  { name: 'IPX EG',     cat: 'Conectividad',           color: '#6366F1', plans: ['Internet Dedicado 1Gbps — 200,000 XAF/mes'] },
+  { name: 'Officetech', cat: 'Tecnología / TI',        color: '#0EA5E9', plans: ['Internet + Soporte TI — 60,000 XAF/mes'] },
+  { name: 'GITGE',      cat: 'Infraestructura Telecom', color: '#1E293B', plans: ['Backbone Nacional — Consultar'] },
+  { name: 'ORTEL GE',   cat: 'Supervisión Telecom',    color: '#DC2626', plans: ['Soporte Sectorial — Consultar'] },
+];
+
+const InternetModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [selected, setSelected] = useState<typeof INTERNET_PROVIDERS[0] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const contract = async (plan: string) => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert('✅ Solicitud enviada', `Tu solicitud para "${plan}" ha sido registrada. Un agente te contactará pronto.`);
+      setSelected(null);
+      onClose();
+    }, 1500);
+  };
+
+  return (
+    <ServiceModal visible={visible} title="🌐 Internet" onClose={() => { setSelected(null); onClose(); }}>
+      {!selected ? (
+        <View>
+          <Text style={styles.sectionLabel}>Proveedores disponibles</Text>
+          {INTERNET_PROVIDERS.map(p => (
+            <TouchableOpacity key={p.name} style={styles.providerCard} onPress={() => setSelected(p)} activeOpacity={0.7}>
+              <View style={[styles.providerDot, { backgroundColor: p.color }]} />
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerName}>{p.name}</Text>
+                <Text style={styles.providerCat}>{p.cat}</Text>
+              </View>
+              <Text style={styles.providerArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.backRow}>
+            <Text style={styles.backText}>← {selected.name}</Text>
+          </TouchableOpacity>
+          <Text style={styles.sectionLabel}>Planes disponibles</Text>
+          {selected.plans.map(plan => (
+            <TouchableOpacity key={plan} style={styles.planCard} onPress={() => contract(plan)} activeOpacity={0.7}>
+              <Text style={styles.planText}>{plan}</Text>
+              <Text style={styles.planAction}>Contratar →</Text>
+            </TouchableOpacity>
+          ))}
+          {loading && <ActivityIndicator color={Colors.accent} style={{ marginTop: Spacing.lg }} />}
+        </View>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Canales TV ──────────────────────────────────────────────
+const TV_CHANNELS = [
+  { name: 'Canal Sol',    cat: 'TV Local',    color: '#0A2463', plans: ['Sol Básico — 3,000 XAF/mes', 'Sol Plus — 6,000 XAF/mes', 'Sol Anual — 60,000 XAF/año'] },
+  { name: 'Canal+',       cat: 'TV Premium',  color: '#0A0A0A', plans: ['Séries — 18,000 XAF/mes', 'Sport — 22,000 XAF/mes', 'Canal+ Tout — 38,000 XAF/mes'] },
+  { name: 'Canal Sat',    cat: 'TV Satélite', color: '#1E3A5F', plans: ['Sat Básico 50ch — 8,000 XAF/mes', 'Sat Familiar 80ch — 14,000 XAF/mes', 'Sat Premium 150ch — 25,000 XAF/mes'] },
+  { name: 'Sony Sat',     cat: 'TV Satélite', color: '#1A1A1A', plans: ['Sony Sat Básico — 10,000 XAF/mes', 'Sony Sat Plus — 18,000 XAF/mes'] },
+  { name: 'Guinea Vista', cat: 'TV Local',    color: '#B45309', plans: ['Info — 2,000 XAF/mes', 'Plus — 4,500 XAF/mes'] },
+  { name: 'Cachu y Hnos', cat: 'Entretenimiento', color: '#1B4332', plans: ['Básico — 2,500 XAF/mes', 'Premium — 5,000 XAF/mes'] },
+  { name: 'Kuryebe',      cat: 'TV Digital',  color: '#7C3AED', plans: ['Básico — 2,000 XAF/mes', 'Plus — 4,000 XAF/mes'] },
+];
+
+const CanalesTVModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [selected, setSelected] = useState<typeof TV_CHANNELS[0] | null>(null);
+
+  const subscribe = (plan: string) => {
+    Alert.alert('✅ Suscripción', `Suscripción a "${plan}" procesada correctamente.`);
+    setSelected(null);
+    onClose();
+  };
+
+  return (
+    <ServiceModal visible={visible} title="📺 Canales TV" onClose={() => { setSelected(null); onClose(); }}>
+      {!selected ? (
+        <View>
+          <Text style={styles.sectionLabel}>Operadores de TV</Text>
+          {TV_CHANNELS.map(c => (
+            <TouchableOpacity key={c.name} style={styles.providerCard} onPress={() => setSelected(c)} activeOpacity={0.7}>
+              <View style={[styles.providerDot, { backgroundColor: c.color }]} />
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerName}>{c.name}</Text>
+                <Text style={styles.providerCat}>{c.cat}</Text>
+              </View>
+              <Text style={styles.providerArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.backRow}>
+            <Text style={styles.backText}>← {selected.name}</Text>
+          </TouchableOpacity>
+          <Text style={styles.sectionLabel}>Paquetes disponibles</Text>
+          {selected.plans.map(plan => (
+            <TouchableOpacity key={plan} style={styles.planCard} onPress={() => subscribe(plan)} activeOpacity={0.7}>
+              <Text style={styles.planText}>{plan}</Text>
+              <Text style={styles.planAction}>Suscribirse →</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Bancos ──────────────────────────────────────────────────
+const BANKS = [
+  { name: 'BANGE',    full: 'Banco Nacional de Guinea Ecuatorial', color: '#003082', phone: '+240 333 09 00 00', services: ['Cuenta corriente', 'Tarjeta débito/crédito', 'Transferencias', 'Préstamos'] },
+  { name: 'BGFI',     full: 'BGFI Bank Guinea Ecuatorial',         color: '#1E3A5F', phone: '+240 333 09 11 11', services: ['Banca personal', 'Banca empresarial', 'Inversiones', 'Seguros'] },
+  { name: 'CCEI',     full: 'CCEI Bank Guinea Ecuatorial',         color: '#0066CC', phone: '+240 333 09 22 22', services: ['Cuenta de ahorro', 'Microcréditos', 'Transferencias CEMAC', 'Domiciliaciones'] },
+  { name: 'Ecobank',  full: 'Ecobank Guinea Ecuatorial',           color: '#00A651', phone: '+240 333 09 33 33', services: ['Banca digital', 'Xpress Account', 'Transferencias África', 'Divisas'] },
+  { name: 'Société Générale', full: 'Société Générale GQ',        color: '#E30613', phone: '+240 333 09 44 44', services: ['Banca personal', 'Banca privada', 'Financiación', 'Seguros'] },
+];
+
+const BancosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [selected, setSelected] = useState<typeof BANKS[0] | null>(null);
+
+  return (
+    <ServiceModal visible={visible} title="🏦 Bancos" onClose={() => { setSelected(null); onClose(); }}>
+      {!selected ? (
+        <View>
+          <Text style={styles.sectionLabel}>Bancos en Guinea Ecuatorial</Text>
+          {BANKS.map(b => (
+            <TouchableOpacity key={b.name} style={styles.providerCard} onPress={() => setSelected(b)} activeOpacity={0.7}>
+              <View style={[styles.providerDot, { backgroundColor: b.color }]} />
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerName}>{b.name}</Text>
+                <Text style={styles.providerCat}>{b.full}</Text>
+              </View>
+              <Text style={styles.providerArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.backRow}>
+            <Text style={styles.backText}>← {selected.name}</Text>
+          </TouchableOpacity>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>{selected.full}</Text>
+            <Text style={styles.sectionLabel}>Servicios disponibles</Text>
+            {selected.services.map(sv => (
+              <View key={sv} style={styles.serviceRow}>
+                <Text style={styles.serviceRowDot}>●</Text>
+                <Text style={styles.serviceRowText}>{sv}</Text>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${selected.phone}`)}>
+              <Text style={styles.callBtnText}>📞 Llamar: {selected.phone}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Salud ───────────────────────────────────────────────────
+const HEALTH_CENTERS = [
+  { name: 'Hospital General de Malabo', type: 'Hospital público', phone: '+240 333 09 50 00', services: ['Urgencias 24h', 'Cirugía', 'Maternidad', 'Pediatría', 'Laboratorio'] },
+  { name: 'Clínica La Paz',             type: 'Clínica privada',  phone: '+240 333 09 51 00', services: ['Consultas generales', 'Especialistas', 'Radiología', 'Farmacia'] },
+  { name: 'Hospital de Bata',           type: 'Hospital público', phone: '+240 333 09 52 00', services: ['Urgencias', 'Cirugía', 'Maternidad', 'Pediatría'] },
+  { name: 'Centro de Salud Ela Nguema', type: 'Centro de salud',  phone: '+240 333 09 53 00', services: ['Consultas', 'Vacunación', 'Planificación familiar'] },
+  { name: 'INSESO',                     type: 'Seguridad Social', phone: '+240 333 09 54 00', services: ['Prestaciones sociales', 'Pensiones', 'Accidentes laborales'] },
+];
+
+const SaludModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [selected, setSelected] = useState<typeof HEALTH_CENTERS[0] | null>(null);
+
+  return (
+    <ServiceModal visible={visible} title="🏥 Salud" onClose={() => { setSelected(null); onClose(); }}>
+      {!selected ? (
+        <View>
+          <Text style={styles.sectionLabel}>Centros de salud</Text>
+          {HEALTH_CENTERS.map(h => (
+            <TouchableOpacity key={h.name} style={styles.providerCard} onPress={() => setSelected(h)} activeOpacity={0.7}>
+              <Text style={styles.providerDotEmoji}>🏥</Text>
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerName}>{h.name}</Text>
+                <Text style={styles.providerCat}>{h.type}</Text>
+              </View>
+              <Text style={styles.providerArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.backRow}>
+            <Text style={styles.backText}>← {selected.name}</Text>
+          </TouchableOpacity>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>{selected.type}</Text>
+            <Text style={styles.sectionLabel}>Servicios</Text>
+            {selected.services.map(sv => (
+              <View key={sv} style={styles.serviceRow}>
+                <Text style={styles.serviceRowDot}>●</Text>
+                <Text style={styles.serviceRowText}>{sv}</Text>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${selected.phone}`)}>
+              <Text style={styles.callBtnText}>📞 Llamar: {selected.phone}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Seguros ─────────────────────────────────────────────────
+const INSURANCE_TYPES = [
+  { icon: '🚗', name: 'Seguro de Auto',    desc: 'Cobertura total o terceros para tu vehículo', price: 'Desde 25,000 XAF/año' },
+  { icon: '🏠', name: 'Seguro de Hogar',   desc: 'Protección para tu vivienda y contenido',     price: 'Desde 15,000 XAF/año' },
+  { icon: '❤️', name: 'Seguro de Vida',    desc: 'Protección para ti y tu familia',             price: 'Desde 10,000 XAF/mes' },
+  { icon: '🏥', name: 'Seguro Médico',     desc: 'Cobertura sanitaria completa',                price: 'Desde 20,000 XAF/mes' },
+  { icon: '✈️', name: 'Seguro de Viaje',   desc: 'Cobertura para viajes nacionales e internacionales', price: 'Desde 5,000 XAF/viaje' },
+  { icon: '💼', name: 'Seguro Empresarial',desc: 'Protección para tu negocio y empleados',      price: 'Consultar' },
+];
+
+const SegurosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🛡️ Seguros" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Tipos de seguro disponibles</Text>
+    {INSURANCE_TYPES.map(ins => (
+      <TouchableOpacity
+        key={ins.name}
+        style={styles.planCard}
+        onPress={() => Alert.alert('Solicitar seguro', `Un agente te contactará para el "${ins.name}".\n\nPrecio: ${ins.price}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{ins.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{ins.name}</Text>
+            <Text style={styles.providerCat}>{ins.desc}</Text>
+            <Text style={[styles.providerCat, { color: Colors.accent, fontWeight: FontWeight.semibold }]}>{ins.price}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Impuestos ───────────────────────────────────────────────
+const ImpuestosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [nif, setNif] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const consultar = () => {
+    if (!nif.trim()) { Alert.alert('Error', 'Introduce tu NIF'); return; }
+    setLoading(true);
+    setTimeout(() => {
+      setResult({ nif, deuda: 0, estado: 'Al corriente', periodo: '2025' });
+      setLoading(false);
+    }, 1500);
+  };
+
+  return (
+    <ServiceModal visible={visible} title="📋 Impuestos DGI" onClose={() => { setResult(null); setNif(''); onClose(); }}>
+      <Text style={styles.sectionLabel}>Consulta tu situación fiscal</Text>
+      <EGInput label="NIF / Número de contribuyente" value={nif} onChangeText={setNif} placeholder="Ej: GQ-123456789" />
+      <EGButton title={loading ? 'Consultando...' : 'Consultar DGI'} onPress={consultar} loading={loading} />
+      {result && (
+        <EGCard style={styles.facturaCard}>
+          <Text style={styles.facturaTitle}>Resultado DGI</Text>
+          {[['NIF', result.nif], ['Estado', result.estado], ['Período', result.periodo], ['Deuda pendiente', `${result.deuda.toLocaleString()} XAF`]].map(([l, v]) => (
+            <View key={l} style={styles.facturaRow}>
+              <Text style={styles.facturaLabel}>{l}</Text>
+              <Text style={[styles.facturaValue, l === 'Estado' && { color: Colors.accent }]}>{v}</Text>
+            </View>
+          ))}
+          <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL('tel:+240333095500')}>
+            <Text style={styles.callBtnText}>📞 Contactar DGI</Text>
+          </TouchableOpacity>
+        </EGCard>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Correos ─────────────────────────────────────────────────
+const POSTAL_SERVICES = [
+  { icon: '📦', name: 'Envío nacional',       desc: 'Paquetes dentro de Guinea Ecuatorial', price: 'Desde 2,000 XAF' },
+  { icon: '✈️', name: 'Envío internacional',  desc: 'Paquetes al extranjero',               price: 'Desde 15,000 XAF' },
+  { icon: '📬', name: 'Apartado postal',       desc: 'Alquiler de apartado en Correos GQ',  price: '5,000 XAF/año' },
+  { icon: '🔍', name: 'Seguimiento de envío',  desc: 'Rastrea tu paquete en tiempo real',   price: 'Gratis' },
+  { icon: '🏢', name: 'Oficinas de Correos',   desc: 'Malabo, Bata, Ebebiyín, Mongomo',     price: 'L-V 8:00-17:00' },
+];
+
+const CorreosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="📮 Correos GQ" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Servicios postales</Text>
+    {POSTAL_SERVICES.map(ps => (
+      <TouchableOpacity
+        key={ps.name}
+        style={styles.planCard}
+        onPress={() => Alert.alert(ps.name, `${ps.desc}\n\nPrecio: ${ps.price}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{ps.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{ps.name}</Text>
+            <Text style={styles.providerCat}>{ps.desc}</Text>
+            <Text style={[styles.providerCat, { color: Colors.accent }]}>{ps.price}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+    <TouchableOpacity style={[styles.callBtn, { marginTop: Spacing.md }]} onPress={() => Linking.openURL('tel:+240333095600')}>
+      <Text style={styles.callBtnText}>📞 Llamar a Correos GQ</Text>
+    </TouchableOpacity>
+  </ServiceModal>
+);
+
+// ── Modal Supermercado ────────────────────────────────────────────
+const SUPERMARKETS = [
+  { name: 'Supermarket Malabo',  area: 'Centro Malabo',    phone: '+240 222 30 10 01', hours: 'L-D 8:00-21:00' },
+  { name: 'Hipermarket Caracolas',area: 'Caracolas, Malabo',phone: '+240 222 30 10 02', hours: 'L-D 8:00-22:00' },
+  { name: 'Supermercado Bata',   area: 'Centro Bata',      phone: '+240 222 30 10 03', hours: 'L-S 8:00-20:00' },
+  { name: 'Tienda Nguema',       area: 'Ela Nguema',       phone: '+240 222 30 10 04', hours: 'L-D 7:00-21:00' },
+  { name: 'Mercado Central',     area: 'Malabo',           phone: '+240 222 30 10 05', hours: 'L-S 6:00-18:00' },
+];
+
+const CATEGORIES = ['🥩 Carnicería', '🥦 Verduras', '🥛 Lácteos', '🍞 Panadería', '🧴 Higiene', '🍷 Bebidas', '🧹 Limpieza', '🐟 Pescadería'];
+
+const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🛒 Supermercados" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Categorías</Text>
+    <View style={styles.categoryGrid}>
+      {CATEGORIES.map(cat => (
+        <TouchableOpacity
+          key={cat}
+          style={styles.categoryChip}
+          onPress={() => Alert.alert('Próximamente', 'Compra online disponible pronto')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.categoryText}>{cat}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+    <Text style={styles.sectionLabel}>Supermercados cercanos</Text>
+    {SUPERMARKETS.map(sm => (
+      <View key={sm.name} style={styles.providerCard}>
+        <Text style={styles.providerDotEmoji}>🛒</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{sm.name}</Text>
+          <Text style={styles.providerCat}>📍 {sm.area}  ·  🕐 {sm.hours}</Text>
+        </View>
+        <TouchableOpacity onPress={() => Linking.openURL(`tel:${sm.phone}`)}>
+          <Text style={styles.callIcon}>📞</Text>
+        </TouchableOpacity>
+      </View>
+    ))}
+  </ServiceModal>
+);
+
 // ── Pantalla principal ────────────────────────────────────────────
 export default function ServiciosScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const openService = (id: string) => {
-    const implemented = ['taxi', 'electricidad', 'agua', 'recarga'];
+    const implemented = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
     if (implemented.includes(id)) {
       setActiveModal(id);
     } else {
@@ -326,6 +694,14 @@ export default function ServiciosScreen() {
       <UtilityModal visible={activeModal === 'electricidad'} onClose={() => setActiveModal(null)} type="electricidad" />
       <UtilityModal visible={activeModal === 'agua'} onClose={() => setActiveModal(null)} type="agua" />
       <RecargaModal visible={activeModal === 'recarga'} onClose={() => setActiveModal(null)} />
+      <InternetModal visible={activeModal === 'internet'} onClose={() => setActiveModal(null)} />
+      <CanalesTVModal visible={activeModal === 'tv'} onClose={() => setActiveModal(null)} />
+      <BancosModal visible={activeModal === 'bancos'} onClose={() => setActiveModal(null)} />
+      <SaludModal visible={activeModal === 'salud'} onClose={() => setActiveModal(null)} />
+      <SegurosModal visible={activeModal === 'seguros'} onClose={() => setActiveModal(null)} />
+      <ImpuestosModal visible={activeModal === 'impuestos'} onClose={() => setActiveModal(null)} />
+      <CorreosModal visible={activeModal === 'correos'} onClose={() => setActiveModal(null)} />
+      <SupermercadoModal visible={activeModal === 'supermercado'} onClose={() => setActiveModal(null)} />
     </SafeAreaView>
   );
 }
@@ -499,4 +875,78 @@ const styles = StyleSheet.create({
   amountChipActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
   amountText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
   amountTextActive: { color: Colors.accent },
+
+  // Provider list
+  providerCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+    borderWidth: 1, borderColor: Colors.borderLight,
+  },
+  providerDot: { width: 12, height: 12, borderRadius: 6 },
+  providerDotEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
+  providerInfo: { flex: 1 },
+  providerName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
+  providerCat: { fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: 2 },
+  providerArrow: { fontSize: 22, color: Colors.textTertiary },
+
+  // Plan card
+  planCard: {
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.borderLight,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  planText: { flex: 1, fontSize: FontSize.sm, color: Colors.textPrimary, fontWeight: FontWeight.semibold },
+  planAction: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.bold },
+
+  // Back row
+  backRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+  backText: { fontSize: FontSize.base, color: Colors.accent, fontWeight: FontWeight.semibold },
+
+  // Info card
+  infoCard: {
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderWidth: 1, borderColor: Colors.borderLight,
+  },
+  infoCardTitle: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.md },
+
+  // Service row
+  serviceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs },
+  serviceRowDot: { fontSize: 8, color: Colors.accent },
+  serviceRowText: { fontSize: FontSize.sm, color: Colors.textPrimary },
+
+  // Call button
+  callBtn: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  callBtnText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.semibold },
+  callIcon: { fontSize: 22 },
+
+  // Insurance
+  insuranceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, flex: 1 },
+  insuranceIcon: { fontSize: 26, width: 32, textAlign: 'center' },
+  insuranceInfo: { flex: 1 },
+
+  // Category grid
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
+  categoryChip: {
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.borderLight,
+  },
+  categoryText: { fontSize: FontSize.sm, color: Colors.textPrimary },
 });
