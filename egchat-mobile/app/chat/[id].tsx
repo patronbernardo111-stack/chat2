@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated, Modal, Pressable, Alert, Clipboard,
+  Animated, Modal, Pressable, Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { chatAPI, getToken } from '../../src/api';
+import { chatAPI, authAPI } from '../../src/api';
 import { subscribeToChat } from '../../src/supabase';
 import { EGAvatar } from '../../src/components/ui';
 import {
@@ -76,10 +77,7 @@ const TypingIndicator = () => {
     <View style={styles.typingContainer}>
       <View style={styles.typingBubble}>
         {[dot1, dot2, dot3].map((dot, i) => (
-          <Animated.View
-            key={i}
-            style={[styles.typingDot, { transform: [{ translateY: dot }] }]}
-          />
+          <Animated.View key={i} style={[styles.typingDot, { transform: [{ translateY: dot }] }]} />
         ))}
       </View>
     </View>
@@ -87,18 +85,13 @@ const TypingIndicator = () => {
 };
 
 // ── ContextMenu ───────────────────────────────────────────────────
-interface ContextMenuProps {
-  visible: boolean;
-  message: Message | null;
-  isOwn: boolean;
-  onClose: () => void;
-  onCopy: () => void;
-  onReply: () => void;
-  onDelete: () => void;
-  onDeleteForMe: () => void;
-}
-
-const ContextMenu = ({ visible, message, isOwn, onClose, onCopy, onReply, onDelete, onDeleteForMe }: ContextMenuProps) => (
+const ContextMenu = ({
+  visible, message, isOwn, onClose, onCopy, onReply, onDelete, onDeleteForMe,
+}: {
+  visible: boolean; message: Message | null; isOwn: boolean;
+  onClose: () => void; onCopy: () => void; onReply: () => void;
+  onDelete: () => void; onDeleteForMe: () => void;
+}) => (
   <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
     <Pressable style={styles.contextOverlay} onPress={onClose}>
       <View style={styles.contextMenu}>
@@ -132,29 +125,40 @@ const ReplyPreview = ({ text, onCancel }: { text: string; onCancel: () => void }
   </View>
 );
 
+// ── SenderName (grupos) ───────────────────────────────────────────
+const SenderName = ({ name }: { name: string }) => (
+  <Text style={styles.senderName}>{name}</Text>
+);
+
 // ── MessageBubble ─────────────────────────────────────────────────
 const MessageBubble = React.memo(({
-  message, isOwn, onLongPress,
+  message, isOwn, isGroup, onLongPress,
 }: {
-  message: Message;
-  isOwn: boolean;
+  message: Message; isOwn: boolean; isGroup: boolean;
   onLongPress: (msg: Message) => void;
 }) => {
   const time = formatTime(message.created_at);
 
   return (
-    <TouchableOpacity
-      onLongPress={() => onLongPress(message)}
-      activeOpacity={0.8}
-      delayLongPress={400}
-    >
+    <TouchableOpacity onLongPress={() => onLongPress(message)} activeOpacity={0.8} delayLongPress={400}>
       <View style={[styles.bubbleWrapper, isOwn ? styles.ownWrapper : styles.theirWrapper]}>
+        {!isOwn && isGroup && (
+          <View style={styles.groupAvatarCol}>
+            <EGAvatar src={message.sender?.avatar_url} name={message.sender?.full_name || '?'} size={28} />
+          </View>
+        )}
         <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.theirBubble]}>
+          {!isOwn && isGroup && message.sender?.full_name && (
+            <SenderName name={message.sender.full_name} />
+          )}
           {message.type === 'text' && (
             <Text style={styles.bubbleText}>{message.text}</Text>
           )}
           {message.type === 'image' && (
             <Text style={styles.bubbleText}>📷 Imagen</Text>
+          )}
+          {message.type === 'audio' && (
+            <Text style={styles.bubbleText}>🎵 Audio</Text>
           )}
           {message.type === 'file' && (
             <Text style={styles.bubbleText}>📄 {message.file_url?.split('/').pop() || 'Archivo'}</Text>
@@ -189,33 +193,38 @@ export default function ChatScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-
-  // Menú contextual
   const [contextMsg, setContextMsg] = useState<Message | null>(null);
   const [contextVisible, setContextVisible] = useState(false);
-
-  // Responder
   const [replyTo, setReplyTo] = useState<Message | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
-  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
     const init = async () => {
       try {
-        const token = await getToken();
-        if (token) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          setCurrentUserId(payload.id || '');
-        }
-        const chats = await chatAPI.getChats();
+        // Obtener usuario actual via API (no decodificar JWT en RN)
+        const me = await authAPI.me();
+        setCurrentUserId(me?.id || '');
+
+        // Cargar chat y mensajes en paralelo
+        const [chats, msgs] = await Promise.all([
+          chatAPI.getChats(),
+          chatAPI.getMessages(chatId, 1, 50),
+        ]);
+
         const current = chats.find((c: any) => c.id === chatId);
         if (current) setChat(current);
-        const msgs = await chatAPI.getMessages(chatId, 1, 50);
-        setMessages(msgs || []);
-        setHasMore((msgs || []).length === 50);
+
+        const msgList = msgs || [];
+        setMessages(msgList);
+        setHasMore(msgList.length === 50);
+
+        // Marcar como leídos
+        if (msgList.length > 0) {
+          chatAPI.markAsRead(chatId, msgList[msgList.length - 1].id).catch(() => {});
+        }
       } catch (e) {
         console.error('Error cargando chat:', e);
       } finally {
@@ -232,29 +241,20 @@ export default function ChatScreen() {
       if (newMsg.sender_id !== currentUserId) {
         setMessages(prev => [...prev, newMsg]);
         chatAPI.markAsRead(chatId, newMsg.id).catch(() => {});
-        // Simular typing indicator brevemente
         setIsTyping(false);
       }
     });
     return unsubscribe;
   }, [chatId, currentUserId]);
 
-  // Marcar como leídos al abrir
-  useEffect(() => {
-    if (messages.length > 0 && chatId) {
-      const last = messages[messages.length - 1];
-      chatAPI.markAsRead(chatId, last.id).catch(() => {});
-    }
-  }, [chatId, messages.length]);
-
-  // Scroll al fondo
+  // Scroll al fondo cuando llegan mensajes nuevos
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
     }
   }, [messages.length]);
 
-  // Cargar más mensajes (paginación)
+  // Cargar más mensajes (scroll hacia arriba)
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
@@ -311,14 +311,13 @@ export default function ChatScreen() {
     }
   }, [text, sending, chatId, currentUserId, replyTo]);
 
-  // Menú contextual
   const handleLongPress = useCallback((msg: Message) => {
     setContextMsg(msg);
     setContextVisible(true);
   }, []);
 
-  const handleCopy = useCallback(() => {
-    if (contextMsg?.text) Clipboard.setString(contextMsg.text);
+  const handleCopy = useCallback(async () => {
+    if (contextMsg?.text) await Clipboard.setStringAsync(contextMsg.text);
     setContextVisible(false);
   }, [contextMsg]);
 
@@ -339,8 +338,8 @@ export default function ChatScreen() {
             await chatAPI.deleteMessage(contextMsg.id);
             setMessages(prev => prev.filter(m => m.id !== contextMsg.id));
           } catch {}
-        }
-      }
+        },
+      },
     ]);
   }, [contextMsg]);
 
@@ -351,16 +350,16 @@ export default function ChatScreen() {
     setMessages(prev => prev.filter(m => m.id !== contextMsg.id));
   }, [contextMsg]);
 
-  // Nombre del chat
+  // Nombre y avatar del chat
+  const isGroup = chat?.type === 'group';
+  const otherParticipant = chat?.participants?.find((p: any) => p.user_id !== currentUserId);
   const chatName = chat
-    ? chat.type === 'private'
-      ? chat.participants?.find((p: any) => p.user_id !== currentUserId)?.full_name || 'Usuario'
-      : chat.name || 'Grupo'
+    ? isGroup ? (chat.name || 'Grupo') : (otherParticipant?.full_name || 'Usuario')
     : '...';
-
-  const chatAvatar = chat?.type === 'private'
-    ? chat.participants?.find((p: any) => p.user_id !== currentUserId)?.avatar_url
-    : chat?.avatar_url;
+  const chatAvatar = isGroup ? chat?.avatar_url : otherParticipant?.avatar_url;
+  const chatSubtitle = isGroup
+    ? `${chat?.participants?.length || 0} miembros`
+    : 'En línea';
 
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
     const isOwn = item.sender_id === currentUserId;
@@ -370,7 +369,12 @@ export default function ChatScreen() {
     return (
       <>
         {showDate && <DateSeparator label={getDateLabel(item.created_at)} />}
-        <MessageBubble message={item} isOwn={isOwn} onLongPress={handleLongPress} />
+        <MessageBubble
+          message={item}
+          isOwn={isOwn}
+          isGroup={isGroup}
+          onLongPress={handleLongPress}
+        />
       </>
     );
   };
@@ -394,11 +398,7 @@ export default function ChatScreen() {
           <EGAvatar src={chatAvatar} name={chatName} size={40} />
           <View style={styles.headerText}>
             <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
-            <Text style={styles.headerStatus}>
-              {chat?.type === 'group'
-                ? `${chat.participants?.length || 0} miembros`
-                : 'En línea'}
-            </Text>
+            <Text style={styles.headerStatus}>{chatSubtitle}</Text>
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -412,10 +412,7 @@ export default function ChatScreen() {
       </View>
 
       {/* ── Mensajes ── */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -426,9 +423,9 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           onEndReached={loadMore}
           onEndReachedThreshold={0.1}
-          ListHeaderComponent={loadingMore ? (
-            <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} />
-          ) : null}
+          ListHeaderComponent={loadingMore
+            ? <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} />
+            : null}
           ListFooterComponent={isTyping ? <TypingIndicator /> : null}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
@@ -438,20 +435,12 @@ export default function ChatScreen() {
           }
         />
 
-        {/* ── Reply preview ── */}
         {replyTo && (
-          <ReplyPreview
-            text={replyTo.text || 'Mensaje'}
-            onCancel={() => setReplyTo(null)}
-          />
+          <ReplyPreview text={replyTo.text || 'Mensaje'} onCancel={() => setReplyTo(null)} />
         )}
 
         {/* ── Input ── */}
         <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.inputAction}>
-            <Text style={styles.inputActionIcon}>＋</Text>
-          </TouchableOpacity>
-
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
@@ -461,9 +450,9 @@ export default function ChatScreen() {
               placeholderTextColor={Colors.textTertiary}
               multiline
               maxLength={4000}
+              onSubmitEditing={Platform.OS === 'ios' ? undefined : sendMessage}
             />
           </View>
-
           <Animated.View style={{ transform: [{ scale: sendScale }] }}>
             <TouchableOpacity
               onPress={sendMessage}
@@ -471,7 +460,9 @@ export default function ChatScreen() {
               style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
               activeOpacity={0.8}
             >
-              <Text style={styles.sendBtnIcon}>➤</Text>
+              {sending
+                ? <ActivityIndicator size="small" color={Colors.white} />
+                : <Text style={styles.sendBtnIcon}>➤</Text>}
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -491,202 +482,3 @@ export default function ChatScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgTertiary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgPrimary },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  backBtn: { padding: Spacing.sm },
-  backIcon: { fontSize: 28, color: Colors.textPrimary, lineHeight: 32 },
-  headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  headerText: { flex: 1 },
-  headerName: { ...Typography.chatHeaderName, color: Colors.textPrimary },
-  headerStatus: { ...Typography.onlineStatus, color: Colors.accent },
-  headerActions: { flexDirection: 'row', gap: 4 },
-  headerBtn: { padding: Spacing.sm },
-  headerBtnIcon: { fontSize: 18 },
-
-  // Messages
-  messagesList: {
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.sm,
-    gap: 2,
-  },
-
-  // Bubble
-  bubbleWrapper: { marginVertical: 1 },
-  ownWrapper: { alignItems: 'flex-end' },
-  theirWrapper: { alignItems: 'flex-start' },
-  bubble: {
-    maxWidth: '75%',
-    paddingVertical: Spacing.bubblePaddingV,
-    paddingHorizontal: Spacing.bubblePaddingH,
-  },
-  ownBubble: {
-    backgroundColor: Colors.bubbleOwn,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 4,
-  },
-  theirBubble: {
-    backgroundColor: Colors.bubbleOther,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 18,
-    ...Shadow.bubble,
-  },
-  bubbleText: { ...Typography.messageText, color: Colors.textPrimary },
-  bubbleMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
-    marginTop: 3,
-  },
-  bubbleTime: { ...Typography.timestamp, color: Colors.textTertiary },
-
-  // Date separator
-  dateSeparator: { alignItems: 'center', marginVertical: Spacing.sm },
-  dateSeparatorText: {
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    color: Colors.white,
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-
-  // Typing indicator
-  typingContainer: { alignItems: 'flex-start', paddingHorizontal: Spacing.sm + 2, marginVertical: 4 },
-  typingBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bubbleOther,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 4,
-    ...Shadow.bubble,
-  },
-  typingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: Colors.textTertiary,
-  },
-
-  // Context menu
-  contextOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contextMenu: {
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.xl,
-    width: 260,
-    overflow: 'hidden',
-    ...Shadow.lg,
-  },
-  contextItem: {
-    padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  contextItemText: {
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-
-  // Reply preview
-  replyPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgTertiary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  replyBar: {
-    width: 3,
-    height: 36,
-    backgroundColor: Colors.accent,
-    borderRadius: 2,
-  },
-  replyText: {
-    flex: 1,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  replyCancel: { padding: Spacing.xs },
-  replyCancelText: { fontSize: 16, color: Colors.textTertiary },
-
-  // Empty state
-  emptyChat: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-  emptyChatIcon: { fontSize: 48, marginBottom: Spacing.md },
-  emptyChatText: { ...Typography.subtitle, color: Colors.textSecondary },
-
-  // Input bar
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: Colors.bgSecondary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-    paddingHorizontal: Spacing.chatInputBarPadding + 2,
-    paddingVertical: Spacing.chatInputBarPadding,
-    gap: Spacing.chatInputBarGap,
-  },
-  inputAction: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.bgTertiary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputActionIcon: { fontSize: 22, color: Colors.textSecondary, lineHeight: 26 },
-  inputWrapper: {
-    flex: 1,
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: 22,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  input: {
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-    maxHeight: 120,
-    padding: 0,
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendBtnDisabled: { backgroundColor: Colors.border },
-  sendBtnIcon: { color: Colors.white, fontSize: 16 },
-});
