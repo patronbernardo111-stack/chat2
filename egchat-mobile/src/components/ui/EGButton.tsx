@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  Animated,
 } from 'react-native';
 import { Colors, Typography, BorderRadius, Spacing, Shadow } from '../../theme';
 
@@ -33,31 +34,53 @@ export const EGButton: React.FC<EGButtonProps> = ({
   fullWidth = true,
 }) => {
   const isDisabled = disabled || loading;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 6,
+    }).start();
+  };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={isDisabled}
-      activeOpacity={0.85}
-      style={[
-        styles.base,
-        fullWidth && styles.fullWidth,
-        styles[variant],
-        isDisabled && styles.disabled,
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'primary' ? Colors.white : Colors.accent}
-          size="small"
-        />
-      ) : (
-        <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
-          {title}
-        </Text>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={[fullWidth && styles.fullWidth, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        disabled={isDisabled}
+        activeOpacity={0.85}
+        style={[
+          styles.base,
+          styles[variant],
+          isDisabled && styles.disabled,
+          style,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={variant === 'primary' ? Colors.white : Colors.accent}
+            size="small"
+          />
+        ) : (
+          <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
+            {title}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
