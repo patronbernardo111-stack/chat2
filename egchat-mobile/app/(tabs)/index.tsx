@@ -212,6 +212,12 @@ export default function MensajesScreen() {
             <Text style={styles.headerTitle}>Mensajes</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity
+                onPress={() => router.push('/contacts' as any)}
+                style={styles.headerBtn}
+              >
+                <Text style={styles.headerBtnIcon}>👥</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => setShowSearch(true)}
                 style={styles.headerBtn}
               >
