@@ -95,7 +95,9 @@ create table if not exists messages (
 );
 
 alter table messages
-  add constraint if not exists messages_reply_to_fkey
+  drop constraint if exists messages_reply_to_fkey;
+alter table messages
+  add constraint messages_reply_to_fkey
   foreign key (reply_to) references messages(id) on delete set null;
 
 create table if not exists message_reads (
