@@ -1,88 +1,400 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Animated,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { authAPI } from '../../src/api';
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  Shadow,
+  FontSize,
+  FontWeight,
+} from '../../src/theme';
+import { EGButton, EGInput, EGErrorMessage } from '../../src/components/ui';
+
+// Países igual que la web
+const COUNTRIES = [
+  { code: 'GQ', name: 'Guinea Ecuatorial', phone: '+240' },
+  { code: 'CM', name: 'Camerún', phone: '+237' },
+  { code: 'GA', name: 'Gabón', phone: '+241' },
+  { code: 'NG', name: 'Nigeria', phone: '+234' },
+  { code: 'ES', name: 'España', phone: '+34' },
+  { code: 'FR', name: 'Francia', phone: '+33' },
+  { code: 'GB', name: 'Reino Unido', phone: '+44' },
+  { code: 'US', name: 'Estados Unidos', phone: '+1' },
+];
+
+const getFlag = (code: string) =>
+  String.fromCodePoint(
+    ...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0))
+  );
 
 export default function LoginScreen() {
+  const [countryCode, setCountryCode] = useState('+240');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [error, setError] = useState('');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!phone || !password) return Alert.alert('Error', 'Rellena todos los campos');
+  // Animación del logo (spin igual que la web)
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 20000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
+  const selectedCountry = COUNTRIES.find(c => c.phone === countryCode) || COUNTRIES[0];
+  const fullPhone = countryCode + phone.replace(/\s/g, '');
+
+  const doLogin = async () => {
+    if (!phone || !password) {
+      setError('Rellena todos los campos');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
-      if (isRegister) {
-        if (!fullName) return Alert.alert('Error', 'Introduce tu nombre completo');
-        await authAPI.register({ full_name: fullName, phone, password });
-      } else {
-        await authAPI.login(phone, password);
-      }
+      const r = await authAPI.login(fullPhone, password);
       router.replace('/(tabs)');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Error de conexión');
+      const msg = e.message || '';
+      if (msg.includes('credenciales') || msg.includes('401')) {
+        setError('Usuario o contraseña incorrectos.');
+      } else if (msg.includes('fetch') || msg.includes('network')) {
+        setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      } else {
+        setError(msg || 'Error al iniciar sesión.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>EG</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Header con logo (igual que la web) ── */}
+          <View style={styles.header}>
+            <View style={styles.logoBox}>
+              <Animated.Image
+                source={require('../../assets/icon.png')}
+                style={[styles.logoImg, { transform: [{ rotate: spin }] }]}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Banderas de países */}
+            <View style={styles.flagsRow}>
+              {['GQ', 'CM', 'GA', 'NG', 'ES', 'FR', 'GB', 'US'].map(code => (
+                <Text key={code} style={styles.flag}>{getFlag(code)}</Text>
+              ))}
+            </View>
           </View>
-          <Text style={styles.appName}>EGCHAT</Text>
-          <Text style={styles.appSub}>Guinea Ecuatorial</Text>
-        </View>
 
-        {/* Form */}
-        <View style={styles.card}>
-          <Text style={styles.title}>{isRegister ? 'Crear cuenta' : 'Iniciar sesión'}</Text>
+          {/* ── Formulario ── */}
+          <View style={styles.formArea}>
+            <Text style={styles.title}>Iniciar sesión</Text>
+            <Text style={styles.subtitle}>Introduce tu teléfono y contraseña</Text>
 
-          {isRegister && (
-            <TextInput style={styles.input} placeholder="Nombre completo" value={fullName}
-              onChangeText={setFullName} autoCapitalize="words" placeholderTextColor="#9CA3AF" />
-          )}
+            {/* Selector de país */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>País</Text>
+              <TouchableOpacity
+                style={styles.countrySelector}
+                onPress={() => setShowCountryPicker(p => !p)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.countryFlag}>{getFlag(selectedCountry.code)}</Text>
+                <Text style={styles.countryName}>{selectedCountry.name}:</Text>
+                <Text style={styles.countryChevron}>›</Text>
+              </TouchableOpacity>
 
-          <TextInput style={styles.input} placeholder="+240 XXX XXX XXX" value={phone}
-            onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#9CA3AF" />
+              {showCountryPicker && (
+                <View style={styles.countryDropdown}>
+                  {COUNTRIES.map(c => (
+                    <TouchableOpacity
+                      key={c.phone}
+                      style={styles.countryOption}
+                      onPress={() => {
+                        setCountryCode(c.phone);
+                        setShowCountryPicker(false);
+                      }}
+                    >
+                      <Text style={styles.countryFlag}>{getFlag(c.code)}</Text>
+                      <Text style={styles.countryOptionText}>{c.name}</Text>
+                      <Text style={styles.countryPhone}>{c.phone}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
-          <TextInput style={styles.input} placeholder="Contraseña" value={password}
-            onChangeText={setPassword} secureTextEntry placeholderTextColor="#9CA3AF" />
+            {/* Teléfono */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Teléfono</Text>
+              <View style={styles.phoneRow}>
+                <View style={styles.phonePrefix}>
+                  <Text style={styles.phonePrefixText}>{countryCode}</Text>
+                </View>
+                <EGInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="222 XXX XXX"
+                  keyboardType="phone-pad"
+                  containerStyle={styles.phoneInputContainer}
+                />
+              </View>
+            </View>
 
-          <TouchableOpacity style={styles.btn} onPress={handleSubmit} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{isRegister ? 'Registrarse' : 'Entrar'}</Text>}
-          </TouchableOpacity>
+            {/* Contraseña */}
+            <EGInput
+              label="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              showPasswordToggle
+              onSubmitEditing={doLogin}
+              returnKeyType="done"
+            />
 
-          <TouchableOpacity onPress={() => setIsRegister(p => !p)} style={styles.switchBtn}>
-            <Text style={styles.switchText}>
-              {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {/* Error */}
+            {error ? <EGErrorMessage text={error} /> : null}
+
+            {/* Botón entrar */}
+            <EGButton
+              title={loading ? 'Entrando...' : 'Entrar'}
+              onPress={doLogin}
+              loading={loading}
+              style={styles.loginBtn}
+            />
+
+            {/* Olvidé contraseña */}
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/forgot-password' as any)}
+              style={styles.forgotBtn}
+            >
+              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+
+            {/* Crear cuenta */}
+            <EGButton
+              title="Crear cuenta nueva"
+              onPress={() => router.push('/(auth)/register' as any)}
+              variant="outline"
+            />
+
+            {/* Volver */}
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backBtn}
+            >
+              <Text style={styles.backText}>← Volver al inicio</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#00c8a0' },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  logoContainer: { alignItems: 'center', marginBottom: 32 },
-  logo: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  logoText: { fontSize: 28, fontWeight: '900', color: '#fff' },
-  appName: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
-  appSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4 },
-  card: { backgroundColor: '#fff', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 8 },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 20, textAlign: 'center' },
-  input: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 14, fontSize: 15, color: '#111827', marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  btn: { backgroundColor: '#00c8a0', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  switchBtn: { marginTop: 16, alignItems: 'center' },
-  switchText: { color: '#00c8a0', fontSize: 13, fontWeight: '600' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.bgPrimary,
+  },
+  scroll: {
+    flexGrow: 1,
+    paddingBottom: Spacing['3xl'],
+  },
+
+  // Header
+  header: {
+    alignItems: 'center',
+    paddingTop: Spacing['3xl'],
+    paddingBottom: Spacing.xl,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.sm,
+  },
+  logoBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadow.lg,
+  },
+  logoImg: {
+    width: 60,
+    height: 60,
+  },
+  flagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: Spacing.xs,
+  },
+  flag: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+
+  // Form
+  formArea: {
+    flex: 1,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.md,
+  },
+  title: {
+    ...Typography.headerTitle,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitle: {
+    ...Typography.subtitle,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+
+  // Country selector
+  fieldGroup: {
+    marginBottom: Spacing.md,
+  },
+  fieldLabel: {
+    ...Typography.fieldLabel,
+    color: Colors.textTertiary,
+    marginBottom: 5,
+  },
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.inputPaddingV,
+    paddingHorizontal: Spacing.inputPaddingH,
+    minHeight: 46,
+    gap: Spacing.sm,
+  },
+  countryFlag: {
+    fontSize: 18,
+  },
+  countryName: {
+    flex: 1,
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.medium,
+    color: Colors.textPrimary,
+  },
+  countryChevron: {
+    fontSize: 18,
+    color: Colors.textTertiary,
+  },
+  countryDropdown: {
+    marginTop: 4,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadow.md,
+    zIndex: 100,
+  },
+  countryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    gap: Spacing.sm,
+  },
+  countryOptionText: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+  },
+  countryPhone: {
+    fontSize: FontSize.sm,
+    color: Colors.textTertiary,
+    fontWeight: FontWeight.medium,
+  },
+
+  // Phone input
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 0,
+  },
+  phonePrefix: {
+    backgroundColor: Colors.bgTertiary,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRightWidth: 0,
+    borderTopLeftRadius: BorderRadius.md,
+    borderBottomLeftRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phonePrefixText: {
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  phoneInputContainer: {
+    flex: 1,
+    marginBottom: 0,
+  },
+
+  // Buttons
+  loginBtn: {
+    marginBottom: Spacing.md,
+  },
+  forgotBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  forgotText: {
+    color: Colors.brand,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+  },
+  backBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  backText: {
+    color: Colors.textTertiary,
+    fontSize: FontSize.base,
+  },
 });
