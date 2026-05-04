@@ -37,8 +37,15 @@ export default function RootLayout() {
             notifCleanup.current = setupNotificationListeners(
               (chatId) => router.push(`/chat/${chatId}` as any),
               (callData) => {
-                // Navegar a pantalla de llamada cuando esté implementada
-                console.log('Llamada entrante:', callData);
+                router.push({
+                  pathname: '/call/[callId]',
+                  params: {
+                    callId: callData.callId,
+                    targetName: callData.callerName,
+                    callType: callData.callType || 'audio',
+                    role: 'callee',
+                  }
+                } as any);
               }
             );
 
