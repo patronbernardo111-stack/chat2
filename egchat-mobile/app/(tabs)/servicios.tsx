@@ -656,9 +656,13 @@ export default function ServiciosScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const openService = (id: string) => {
-    const implemented = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
-    if (implemented.includes(id)) {
+    const modalServices = ['taxi', 'electricidad', 'agua', 'recarga'];
+    if (modalServices.includes(id)) {
       setActiveModal(id);
+    } else if (id === 'bancos') {
+      router.push('/bancos' as any);
+    } else if (id === 'cemac') {
+      router.push('/cemac' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
     }
