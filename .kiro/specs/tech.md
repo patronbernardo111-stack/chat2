@@ -1,29 +1,58 @@
-# Stack Técnico - Migración a React Native
+# Stack Técnico - Migración a Nativa
 
-## Stack
-- React Native (con Expo)
-- Supabase (backend y base de datos)
-- TypeScript
+## Plataformas
+- Android: Kotlin + Jetpack Compose
+- iOS: Swift + SwiftUI
+- Backend: Supabase (compartido entre ambas plataformas)
 
-## Reglas
-- No usar HTML ni CSS
-- Solo componentes nativos de React Native (View, Text, TouchableOpacity, etc.)
-- Estilos con StyleSheet.create() o NativeWind
+## Reglas generales
+- No modificar ningún archivo del proyecto web original
+- La app nativa debe ser idéntica en funcionalidad y diseño a la web
+- No usar WebView para simular nativo — todo debe ser componentes nativos reales
+- Código 100% en Kotlin para Android, 100% en Swift para iOS
 
-## Arquitectura
-- Modular por pantallas y componentes
-- Mantener la lógica de negocio de la web adaptada a móvil
-- Navegación con React Navigation
-- Estado global con Zustand o Context API
+## Android - Arquitectura
+- Patrón: MVVM + Clean Architecture
+- UI: Jetpack Compose
+- Navegación: Navigation Compose
+- Estado: StateFlow + ViewModel
+- DI: Hilt
+- Red: Supabase Kotlin SDK + Ktor
+- Imágenes: Coil
 
-## Estructura de carpetas
+## iOS - Arquitectura
+- Patrón: MVVM
+- UI: SwiftUI
+- Navegación: NavigationStack
+- Estado: @StateObject + ObservableObject
+- Red: Supabase Swift SDK
+
+## Estructura Android
 ```
-src/
-  screens/       # Pantallas principales
-  components/    # Componentes reutilizables
-  services/      # Llamadas a API y Supabase
-  store/         # Estado global
-  navigation/    # Configuración de navegación
-  utils/         # Utilidades compartidas
-  types/         # Tipos TypeScript
+android-app/
+  app/src/main/java/com/egchat/
+    ui/
+      screens/     # Pantallas Compose
+      components/  # Componentes reutilizables
+      theme/       # Colores, tipografía, formas
+    viewmodel/     # ViewModels por feature
+    data/
+      repository/  # Repositorios
+      remote/      # Supabase calls
+      model/       # Data classes
+    di/            # Módulos Hilt
+    navigation/    # NavGraph
+```
+
+## Estructura iOS
+```
+ios-app/
+  EGChat/
+    Views/
+      Screens/     # Vistas principales SwiftUI
+      Components/  # Componentes reutilizables
+    ViewModels/    # ObservableObjects
+    Services/      # Supabase calls
+    Models/        # Structs de datos
+    Navigation/    # NavigationStack config
 ```
