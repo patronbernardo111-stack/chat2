@@ -1,61 +1,428 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { chatAPI } from '../../src/api';
+import { EGAvatar } from '../../src/components/ui';
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  FontSize,
+  FontWeight,
+  Shadow,
+} from '../../src/theme';
 
-const CHATS = [
-  { id: '1', name: 'Juan García', msg: 'Hola, ¿cómo estás?', time: '10:30', unread: 2, color: '#00c8a0' },
-  { id: '2', name: 'María López', msg: 'Te envié el dinero', time: '09:15', unread: 0, color: '#6B5BD6' },
-  { id: '3', name: 'Familia', msg: 'Nos vemos el domingo', time: 'Ayer', unread: 5, color: '#F59E0B' },
-  { id: '4', name: 'Carlos Mba', msg: '¿Puedes llamarme?', time: 'Ayer', unread: 0, color: '#EF4444' },
-];
+interface Chat {
+  id: string;
+  type: 'private' | 'group';
+  name?: string;
+  avatar_url?: string;
+  participants: Array<{
+    user_id: string;
+    full_name?: string;
+    avatar_url?: string;
+  }>;
+  last_message?: {
+    text?: string;
+    type: string;
+    created_at: string;
+    sender_id: string;
+  };
+  unread_count: number;
+  updated_at: string;
+}
 
-export default function MensajesScreen() {
+const formatTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  if (isToday) return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  if (isYesterday) return 'Ayer';
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+};
+
+const getLastMessageText = (msg?: Chat['last_message']) => {
+  if (!msg) return '';
+  if (msg.type === 'text') return msg.text || '';
+  if (msg.type === 'image') return '📷 Foto';
+  if (msg.type === 'video') return '🎥 Video';
+  if (msg.type === 'audio') return '🎵 Audio';
+  if (msg.type === 'file') return '📄 Archivo';
+  return 'Mensaje';
+};
+
+// ── ChatItem ──────────────────────────────────────────────────────────────────
+const ChatItem = React.memo(({ chat, currentUserId, onPress }: {
+  chat: Chat;
+  currentUserId: string;
+  onPress: () => void;
+}) => {
+  const other = chat.participants.find(p => p.user_id !== currentUserId);
+  const chatName = chat.type === 'private'
+    ? other?.full_name || 'Usuario'
+    : chat.name || 'Grupo';
+  const avatarSrc = chat.type === 'private' ? other?.avatar_url : chat.avatar_url;
+  const lastMsg = getLastMessageText(chat.last_message);
+  const time = formatTime(chat.updated_at);
+  const hasUnread = chat.unread_count > 0;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mensajes</Text>
-        <TouchableOpacity style={styles.newBtn}><Text style={styles.newBtnText}>+</Text></TouchableOpacity>
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.chatItem}
+      activeOpacity={0.7}
+    >
+      {/* Avatar */}
+      <EGAvatar src={avatarSrc} name={chatName} size={48} />
+
+      {/* Info */}
+      <View style={styles.chatInfo}>
+        {/* Fila 1: nombre + hora */}
+        <View style={styles.chatRow}>
+          <Text style={styles.chatName} numberOfLines={1}>{chatName}</Text>
+          <Text style={[styles.chatTime, hasUnread && styles.chatTimeUnread]}>
+            {time}
+          </Text>
+        </View>
+
+        {/* Fila 2: último mensaje + badge */}
+        <View style={styles.chatRow}>
+          <Text style={styles.chatMsg} numberOfLines={1}>{lastMsg}</Text>
+          {hasUnread && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {chat.unread_count > 99 ? '99+' : chat.unread_count}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-      <FlatList
-        data={CHATS}
-        keyExtractor={i => i.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.chatItem}>
-            <View style={[styles.avatar, { backgroundColor: item.color + '25' }]}>
-              <Text style={[styles.avatarText, { color: item.color }]}>{item.name.slice(0, 2).toUpperCase()}</Text>
+    </TouchableOpacity>
+  );
+});
+
+// ── SearchBar ─────────────────────────────────────────────────────────────────
+const SearchBar = ({ value, onChangeText, onClose }: {
+  value: string;
+  onChangeText: (t: string) => void;
+  onClose: () => void;
+}) => (
+  <View style={styles.searchContainer}>
+    <TextInput
+      style={styles.searchInput}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder="Buscar usuarios..."
+      placeholderTextColor={Colors.textTertiary}
+      autoFocus
+    />
+    <TouchableOpacity onPress={onClose} style={styles.searchClose}>
+      <Text style={styles.searchCloseText}>✕</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// ── Pantalla principal ────────────────────────────────────────────────────────
+export default function MensajesScreen() {
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentUserId, setCurrentUserId] = useState('');
+
+  const loadChats = useCallback(async () => {
+    try {
+      const data = await chatAPI.getChats();
+      setChats(data || []);
+    } catch (e) {
+      console.error('Error cargando chats:', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadChats();
+    // Obtener usuario actual
+    import('../../src/api').then(({ authAPI }) => {
+      authAPI.getMe?.().then((u: any) => setCurrentUserId(u?.id || ''));
+    });
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadChats();
+  };
+
+  const filteredChats = searchQuery
+    ? chats.filter(c => {
+        const other = c.participants.find(p => p.user_id !== currentUserId);
+        const name = c.type === 'private' ? other?.full_name : c.name;
+        return name?.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    : chats;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        {showSearch ? (
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onClose={() => { setShowSearch(false); setSearchQuery(''); }}
+          />
+        ) : (
+          <>
+            <Text style={styles.headerTitle}>Mensajes</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => setShowSearch(true)}
+                style={styles.headerBtn}
+              >
+                <Text style={styles.headerBtnIcon}>🔍</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push('/new-chat' as any)}
+                style={[styles.headerBtn, styles.headerBtnAccent]}
+              >
+                <Text style={styles.headerBtnIconWhite}>✏️</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.chatInfo}>
-              <View style={styles.chatRow}>
-                <Text style={styles.chatName}>{item.name}</Text>
-                <Text style={styles.chatTime}>{item.time}</Text>
-              </View>
-              <View style={styles.chatRow}>
-                <Text style={styles.chatMsg} numberOfLines={1}>{item.msg}</Text>
-                {item.unread > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{item.unread}</Text></View>}
-              </View>
-            </View>
-          </TouchableOpacity>
+          </>
         )}
-        ItemSeparatorComponent={() => <View style={styles.sep} />}
-      />
+      </View>
+
+      {/* ── Lista ── */}
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.accent} />
+        </View>
+      ) : filteredChats.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyIcon}>💬</Text>
+          <Text style={styles.emptyTitle}>
+            {searchQuery ? 'Sin resultados' : 'No tienes chats aún'}
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            {searchQuery ? 'Prueba con otro nombre' : 'Busca un contacto para empezar'}
+          </Text>
+          {!searchQuery && (
+            <TouchableOpacity
+              onPress={() => setShowSearch(true)}
+              style={styles.emptyBtn}
+            >
+              <Text style={styles.emptyBtnText}>Buscar usuarios</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredChats}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <ChatItem
+              chat={item}
+              currentUserId={currentUserId}
+              onPress={() => router.push(`/chat/${item.id}` as any)}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.accent}
+              colors={[Colors.accent]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8FA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F2F5' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  newBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#00c8a0', alignItems: 'center', justifyContent: 'center' },
-  newBtnText: { color: '#fff', fontSize: 22, fontWeight: '300', lineHeight: 28 },
-  chatItem: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: '#fff', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '800' },
-  chatInfo: { flex: 1 },
-  chatRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 },
-  chatName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  chatTime: { fontSize: 11, color: '#9CA3AF' },
-  chatMsg: { fontSize: 12, color: '#6B7280', flex: 1 },
-  badge: { backgroundColor: '#00c8a0', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  sep: { height: 1, backgroundColor: '#F3F4F6', marginLeft: 74 },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.bgPrimary,
+  },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.listItemPaddingH,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  headerTitle: {
+    ...Typography.headerTitle,
+    color: Colors.textPrimary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bgTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBtnAccent: {
+    backgroundColor: Colors.accent,
+  },
+  headerBtnIcon: {
+    fontSize: 16,
+  },
+  headerBtnIconWhite: {
+    fontSize: 16,
+  },
+
+  // Search
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgInput,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    paddingVertical: Spacing.sm,
+  },
+  searchClose: {
+    padding: Spacing.xs,
+  },
+  searchCloseText: {
+    fontSize: FontSize.base,
+    color: Colors.textTertiary,
+  },
+
+  // Chat item — igual que .eg-list-item del web
+  chatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.listItemPaddingV,
+    paddingHorizontal: Spacing.listItemPaddingH,
+    backgroundColor: Colors.bgSecondary,
+    gap: Spacing.listItemGap,
+  },
+  chatInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  chatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  // .wa-name
+  chatName: {
+    ...Typography.chatName,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  // .wa-time
+  chatTime: {
+    ...Typography.timestamp,
+    color: Colors.textTertiary,
+  },
+  chatTimeUnread: {
+    color: Colors.accent,
+    fontWeight: FontWeight.semibold,
+  },
+  // .wa-subtitle
+  chatMsg: {
+    ...Typography.subtitle,
+    color: Colors.textSecondary,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+
+  // Badge — igual que .eg-badge del web
+  badge: {
+    backgroundColor: Colors.accent,
+    borderRadius: BorderRadius.badge,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  badgeText: {
+    ...Typography.badge,
+    color: Colors.white,
+  },
+
+  // Separador — igual que border-bottom del web
+  separator: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginLeft: Spacing.listItemPaddingH + 48 + Spacing.listItemGap, // alineado tras el avatar
+  },
+
+  // Estados vacíos
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.screenPadding,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    ...Typography.chatHeaderName,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...Typography.subtitle,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  emptyBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyBtnText: {
+    color: Colors.white,
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.semibold,
+  },
 });
