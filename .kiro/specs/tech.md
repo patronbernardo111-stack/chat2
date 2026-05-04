@@ -1,58 +1,42 @@
-# Stack Técnico - Migración a Nativa
+# Stack Técnico - Migración a React Native
 
-## Plataformas
-- Android: Kotlin + Jetpack Compose
-- iOS: Swift + SwiftUI
-- Backend: Supabase (compartido entre ambas plataformas)
+## Stack
+- React Native + Expo SDK 51+
+- TypeScript
+- Expo Router (navegación basada en archivos)
+- NativeWind v4 (Tailwind CSS para React Native)
+- Zustand (estado global)
+- Supabase JS SDK v2 (mismo que la web)
 
-## Reglas generales
+## Reglas
 - No modificar ningún archivo del proyecto web original
-- La app nativa debe ser idéntica en funcionalidad y diseño a la web
-- No usar WebView para simular nativo — todo debe ser componentes nativos reales
-- Código 100% en Kotlin para Android, 100% en Swift para iOS
+- No usar HTML ni CSS — solo componentes React Native
+- Estilos con NativeWind o StyleSheet.create()
+- Toda la lógica de negocio reutilizada de la web adaptada a RN
 
-## Android - Arquitectura
-- Patrón: MVVM + Clean Architecture
-- UI: Jetpack Compose
-- Navegación: Navigation Compose
-- Estado: StateFlow + ViewModel
-- DI: Hilt
-- Red: Supabase Kotlin SDK + Ktor
-- Imágenes: Coil
-
-## iOS - Arquitectura
-- Patrón: MVVM
-- UI: SwiftUI
-- Navegación: NavigationStack
-- Estado: @StateObject + ObservableObject
-- Red: Supabase Swift SDK
-
-## Estructura Android
+## Estructura de carpetas
 ```
-android-app/
-  app/src/main/java/com/egchat/
-    ui/
-      screens/     # Pantallas Compose
-      components/  # Componentes reutilizables
-      theme/       # Colores, tipografía, formas
-    viewmodel/     # ViewModels por feature
-    data/
-      repository/  # Repositorios
-      remote/      # Supabase calls
-      model/       # Data classes
-    di/            # Módulos Hilt
-    navigation/    # NavGraph
+egchat-mobile/
+  app/                  # Expo Router — rutas como archivos
+    (auth)/             # Pantallas de autenticación
+    (tabs)/             # Navegación principal con tabs
+      index.tsx         # Chat
+      wallet.tsx        # Wallet
+      contacts.tsx      # Contactos
+      services.tsx      # Servicios
+      profile.tsx       # Perfil
+  components/           # Componentes reutilizables
+  services/             # Llamadas a Supabase y API
+  store/                # Zustand stores
+  hooks/                # Custom hooks
+  types/                # Tipos TypeScript
+  constants/            # Colores, tamaños, config
+  assets/               # Imágenes, fuentes, iconos
 ```
 
-## Estructura iOS
+## Variables de entorno
 ```
-ios-app/
-  EGChat/
-    Views/
-      Screens/     # Vistas principales SwiftUI
-      Components/  # Componentes reutilizables
-    ViewModels/    # ObservableObjects
-    Services/      # Supabase calls
-    Models/        # Structs de datos
-    Navigation/    # NavigationStack config
+EXPO_PUBLIC_API_URL=https://chat2-0x2c.onrender.com
+EXPO_PUBLIC_SUPABASE_URL=https://dptpdifjqgzccjauhodq.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```

@@ -54,7 +54,7 @@
     ],
     "scheme": "egchat",
     "extra": {
-      "apiUrl": "https://egchat-api-1.onrender.com",
+      "apiUrl": "https://chat2-0x2c.onrender.com",
       "router": {
         "origin": false
       },
