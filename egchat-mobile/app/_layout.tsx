@@ -85,6 +85,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="chat/[id]" />
+          <Stack.Screen name="contacts" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="stories" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

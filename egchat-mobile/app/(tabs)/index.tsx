@@ -8,10 +8,11 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { chatAPI } from '../../src/api';
+import { chatAPI, storiesAPI, getToken } from '../../src/api';
 import { EGAvatar } from '../../src/components/ui';
 import {
   Colors,
@@ -22,6 +23,23 @@ import {
   FontWeight,
   Shadow,
 } from '../../src/theme';
+
+// ── StoryBubble ───────────────────────────────────────────────────
+const StoryBubble = ({ story, onPress }: { story: any; onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress} style={stylesStory.bubble} activeOpacity={0.8}>
+    <View style={[stylesStory.ring, story.media?.length > 0 && stylesStory.ringActive]}>
+      <EGAvatar src={story.avatar} name={story.userName || 'Estado'} size={48} />
+    </View>
+    <Text style={stylesStory.name} numberOfLines={1}>{story.userName || 'Mi estado'}</Text>
+  </TouchableOpacity>
+);
+
+const stylesStory = StyleSheet.create({
+  bubble: { alignItems: 'center', width: 64, gap: 4 },
+  ring: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  ringActive: { borderColor: Colors.accent, borderWidth: 2.5 },
+  name: { fontSize: FontSize.xs, color: Colors.textSecondary, textAlign: 'center', maxWidth: 60 },
+});
 
 interface Chat {
   id: string;
@@ -146,6 +164,7 @@ export default function MensajesScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
+  const [stories, setStories] = useState<any[]>([]);
 
   const loadChats = useCallback(async () => {
     try {
@@ -172,6 +191,10 @@ export default function MensajesScreen() {
         }
       });
     });
+    // Cargar stories
+    storiesAPI.getAll().then((data: any) => {
+      if (Array.isArray(data)) setStories(data.filter((s: any) => s.media?.length > 0).slice(0, 8));
+    }).catch(() => {});
   }, []);
 
   // Supabase Realtime — actualizar lista cuando llegan mensajes nuevos
@@ -233,6 +256,25 @@ export default function MensajesScreen() {
           </>
         )}
       </View>
+
+      {/* ── Stories ── */}
+      {stories.length > 0 && (
+        <View style={styles.storiesContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
+            <StoryBubble
+              story={{ userName: 'Mi estado', media: [] }}
+              onPress={() => router.push('/stories' as any)}
+            />
+            {stories.map((s: any) => (
+              <StoryBubble
+                key={s.id}
+                story={s}
+                onPress={() => router.push('/stories' as any)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Lista ── */}
       {loading ? (
@@ -414,7 +456,16 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.listItemPaddingH + 48 + Spacing.listItemGap, // alineado tras el avatar
   },
 
-  // Estados vacíos
+  storiesContainer: {
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  storiesScroll: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.md,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
