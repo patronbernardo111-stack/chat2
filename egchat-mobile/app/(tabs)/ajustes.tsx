@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Image, ActivityIndicator, Modal, Pressable,
+  Alert, Image, ActivityIndicator, Modal, Pressable, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { authAPI, userAPI, getToken } from '../../src/api';
+import QRCode from 'react-native-qrcode-svg';
+import { authAPI, getToken } from '../../src/api';
 import { EGButton, EGInput, EGCard, EGAvatar } from '../../src/components/ui';
 import {
   Colors, Typography, Spacing, BorderRadius,
@@ -54,6 +55,7 @@ export default function AjustesScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [showQR, setShowQR] = useState(false);
 
   // Cargar perfil
   useEffect(() => {
@@ -63,14 +65,7 @@ export default function AjustesScreen() {
         setUser(data);
         setEditedName(data.full_name || '');
       } catch {
-        // Fallback: leer del token
-        const token = await getToken();
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            setUser({ id: payload.id, phone: payload.phone, full_name: '' });
-          } catch {}
-        }
+        // Si falla la API, dejamos user en null
       } finally {
         setLoading(false);
       }
@@ -236,6 +231,13 @@ export default function AjustesScreen() {
                   onPress={() => { setEditing(true); setEditedName(user?.full_name || ''); }}
                   style={styles.editBtn}
                 />
+                <TouchableOpacity
+                  style={styles.qrBtn}
+                  onPress={() => setShowQR(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.qrBtnText}>📲 Compartir QR</Text>
+                </TouchableOpacity>
               </View>
             </>
           ) : (
@@ -305,6 +307,40 @@ export default function AjustesScreen() {
 
         <Text style={styles.version}>EGCHAT v1.0.0 · Guinea Ecuatorial</Text>
       </ScrollView>
+
+      {/* ── QR Modal ── */}
+      <Modal visible={showQR} transparent animationType="fade" onRequestClose={() => setShowQR(false)}>
+        <Pressable style={styles.qrOverlay} onPress={() => setShowQR(false)}>
+          <Pressable style={styles.qrCard} onPress={() => {}}>
+            <Text style={styles.qrTitle}>Tu QR Personal</Text>
+            <Text style={styles.qrSub}>Comparte este código para que otros te agreguen</Text>
+            <View style={styles.qrBox}>
+              <QRCode
+                value={JSON.stringify({
+                  type: 'contact',
+                  app: 'EGCHAT',
+                  user: { id: user?.id, phone: user?.phone, name: user?.full_name },
+                })}
+                size={180}
+                color={Colors.textPrimary}
+                backgroundColor={Colors.white}
+              />
+            </View>
+            <Text style={styles.qrName}>{user?.full_name}</Text>
+            <Text style={styles.qrPhone}>{user?.phone}</Text>
+            <TouchableOpacity
+              style={styles.shareBtn}
+              onPress={() => Share.share({ message: `Agrégame en EGCHAT: ${user?.phone}` })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.shareBtnText}>📤 Compartir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.closeQrBtn} onPress={() => setShowQR(false)}>
+              <Text style={styles.closeQrText}>Cerrar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -372,8 +408,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
-  profileActions: { width: '100%' },
+  profileActions: { width: '100%', gap: Spacing.sm },
   editBtn: { marginTop: 0 },
+  qrBtn: {
+    backgroundColor: '#00B4E6',
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: 'center',
+  },
+  qrBtnText: { color: Colors.white, fontSize: FontSize.base, fontWeight: FontWeight.semibold },
 
   // Edit form
   editForm: { width: '100%', marginTop: Spacing.sm },
@@ -433,4 +476,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     marginVertical: Spacing.xl,
   },
+
+  // QR Modal
+  qrOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  qrCard: {
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    width: 300,
+    alignItems: 'center',
+    ...Shadow.lg,
+  },
+  qrTitle: { ...Typography.headerTitle, color: Colors.textPrimary, marginBottom: 4 },
+  qrSub: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg },
+  qrBox: {
+    padding: Spacing.md,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    ...Shadow.sm,
+  },
+  qrName: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: 2 },
+  qrPhone: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: Spacing.lg },
+  shareBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.sm,
+    width: '100%',
+    alignItems: 'center',
+  },
+  shareBtnText: { color: Colors.white, fontWeight: FontWeight.semibold, fontSize: FontSize.base },
+  closeQrBtn: { paddingVertical: Spacing.sm },
+  closeQrText: { color: Colors.textSecondary, fontSize: FontSize.sm },
 });
