@@ -28,6 +28,16 @@ const SUGGESTIONS = [
   'Clima en Malabo',
 ];
 
+const QUICK_CHIPS = [
+  { icon: '💳', text: 'Saldo' },
+  { icon: '📰', text: 'Noticias' },
+  { icon: '🚕', text: 'Taxi' },
+  { icon: '↗️', text: 'Enviar' },
+  { icon: '🏥', text: 'Salud' },
+  { icon: '🛒', text: 'Compras' },
+  { icon: '☀️', text: 'Clima' },
+];
+
 const formatTime = () => {
   const d = new Date();
   return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
@@ -100,6 +110,7 @@ export default function LiaScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [showChips, setShowChips] = useState(false);
   const listRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
 
@@ -130,6 +141,7 @@ export default function LiaScreen() {
       const res = await liaAPI.chat(msg, history);
       const aiMsg: Msg = { id: (Date.now() + 1).toString(), role: 'assistant', content: res.reply, time };
       setMessages(prev => [...prev, aiMsg]);
+      setShowChips(true);
 
       // Leer en voz alta
       if (res.reply.length < 200) {
@@ -198,6 +210,23 @@ export default function LiaScreen() {
             {SUGGESTIONS.map(s => (
               <TouchableOpacity key={s} style={styles.chip} onPress={() => send(s)} activeOpacity={0.7}>
                 <Text style={styles.chipText}>{s}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Chips rápidos — después de la primera respuesta */}
+        {showChips && messages.length > 1 && (
+          <View style={styles.quickChipsRow}>
+            {QUICK_CHIPS.map(c => (
+              <TouchableOpacity
+                key={c.text}
+                style={styles.quickChip}
+                onPress={() => send(c.text)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickChipIcon}>{c.icon}</Text>
+                <Text style={styles.quickChipText}>{c.text}</Text>
               </TouchableOpacity>
             ))}
           </View>
