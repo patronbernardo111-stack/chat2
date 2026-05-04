@@ -3,6 +3,15 @@
 
 $ErrorActionPreference = "Continue"
 
+# Asegurar que Git esté en el PATH
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    $env:PATH += ";C:\Program Files\Git\cmd"
+}
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "ERROR: Git no encontrado. Instálalo desde https://git-scm.com"
+    exit 1
+}
+
 # 1. Verificar si hay cambios
 git add -A
 $diff = git diff --cached --quiet 2>&1
