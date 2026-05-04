@@ -365,6 +365,27 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
 
+  // Quick chips (post-respuesta)
+  quickChipsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.bgSecondary,
+    borderRadius: 20,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs + 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  quickChipIcon: { fontSize: 12 },
+  quickChipText: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
+
   // Input
   inputBar: {
     flexDirection: 'row',
