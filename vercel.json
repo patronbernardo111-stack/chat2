@@ -9,7 +9,7 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "env": {
-    "VITE_API_URL": "https://egchat-api.onrender.com/api"
+    "VITE_API_URL": "https://chat2-0x2c.onrender.com"
   },
   "headers": [
     {
