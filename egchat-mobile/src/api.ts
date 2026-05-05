@@ -203,3 +203,40 @@ const keepAlive = async () => {
   try { await fetch(`${BASE}/health`); } catch {}
 };
 setInterval(keepAlive, 4 * 60 * 1000);
+
+// ══════════════════════════════════════════════════════════════════
+// STORIES
+// ══════════════════════════════════════════════════════════════════
+export const storiesAPI = {
+  getAll: () => get<any[]>('/api/stories'),
+  create: (data: { media_url: string; type: string; caption?: string }) =>
+    post<any>('/api/stories', data),
+  delete: (id: string) => del<void>(`/api/stories/${id}`),
+};
+
+// ══════════════════════════════════════════════════════════════════
+// SERVICIOS (electricidad, agua, etc.)
+// ══════════════════════════════════════════════════════════════════
+export const serviciosAPI = {
+  consultarFacturaElec: (contrato: string) =>
+    get<any>(`/api/servicios/electricidad/${contrato}`),
+  pagarElectricidad: (contrato: string, amount: number, method: string) =>
+    post<any>('/api/servicios/electricidad/pagar', { contrato, amount, method }),
+  consultarFacturaAgua: (contrato: string) =>
+    get<any>(`/api/servicios/agua/${contrato}`),
+  pagarAgua: (contrato: string, amount: number, method: string) =>
+    post<any>('/api/servicios/agua/pagar', { contrato, amount, method }),
+};
+
+// ══════════════════════════════════════════════════════════════════
+// TAXI
+// ══════════════════════════════════════════════════════════════════
+export const taxiAPI = {
+  requestRide: (
+    origin: { address: string; lat?: number; lng?: number },
+    destination: { address: string; lat?: number; lng?: number },
+    rideType: string
+  ) => post<any>('/api/taxi/request', { origin, destination, rideType }),
+  cancelRide: (rideId: string) => post<any>(`/api/taxi/${rideId}/cancel`, {}),
+  getRideStatus: (rideId: string) => get<any>(`/api/taxi/${rideId}`),
+};
