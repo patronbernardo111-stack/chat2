@@ -105,6 +105,8 @@ export default function RootLayout() {
           <Stack.Screen name="apuestas" options={{ presentation: 'modal' }} />
           <Stack.Screen name="servicios-diarios" options={{ presentation: 'modal' }} />
           <Stack.Screen name="seguros-salud" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="mitaxi" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="new-chat" options={{ presentation: 'modal' }} />
           <Stack.Screen name="welcome" />
         </Stack>
         </ThemeProvider>
