@@ -21,6 +21,8 @@ export default function MiTaxiScreen() {
   const [selected, setSelected] = useState(RIDE_TYPES[1]);
   const [step, setStep] = useState<'form' | 'searching' | 'matched'>('form');
   const [loading, setLoading] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const requestRide = async () => {
     if (!origin.trim() || !dest.trim()) { Alert.alert('Error', 'Introduce origen y destino'); return; }
@@ -35,68 +37,54 @@ export default function MiTaxiScreen() {
   const cancel = () => { setStep('form'); setOrigin(''); setDest(''); setLoading(false); };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🚕 MiTaxi</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>🚕 MiTaxi</Text>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {step === 'form' && (
           <>
             <EGInput label="Origen" value={origin} onChangeText={setOrigin} placeholder="¿Dónde estás?" />
             <EGInput label="Destino" value={dest} onChangeText={setDest} placeholder="¿A dónde vas?" />
-
-            <Text style={styles.sectionLabel}>TIPO DE VEHÍCULO</Text>
+            <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>TIPO DE VEHÍCULO</Text>
             {RIDE_TYPES.map(r => (
-              <TouchableOpacity
-                key={r.id}
-                style={[styles.rideCard, selected.id === r.id && { borderColor: r.color, borderWidth: 2 }]}
-                onPress={() => setSelected(r)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.rideIcon, { backgroundColor: r.color + '20' }]}>
-                  <Text style={styles.rideEmoji}>{r.icon}</Text>
-                </View>
+              <TouchableOpacity key={r.id} style={[styles.rideCard, { backgroundColor: C.bgSecondary, borderColor: selected.id === r.id ? r.color : C.borderLight }, selected.id === r.id && { borderWidth: 2 }]} onPress={() => setSelected(r)} activeOpacity={0.7}>
+                <View style={[styles.rideIcon, { backgroundColor: r.color + '20' }]}><Text style={styles.rideEmoji}>{r.icon}</Text></View>
                 <View style={styles.rideInfo}>
-                  <Text style={styles.rideName}>{r.label}</Text>
-                  <Text style={styles.rideSub}>{r.sub} · {r.eta}</Text>
+                  <Text style={[styles.rideName, { color: C.textPrimary }]}>{r.label}</Text>
+                  <Text style={[styles.rideSub, { color: C.textTertiary }]}>{r.sub} · {r.eta}</Text>
                 </View>
                 <Text style={[styles.ridePrice, { color: r.color }]}>{r.price.toLocaleString()} XAF</Text>
               </TouchableOpacity>
             ))}
-
             <EGButton title="Pedir taxi" onPress={requestRide} style={{ marginTop: Spacing.md }} />
           </>
         )}
-
         {step === 'searching' && (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={Colors.accent} />
-            <Text style={styles.searchTitle}>Buscando conductor...</Text>
-            <Text style={styles.searchSub}>Esto puede tardar unos segundos</Text>
+            <Text style={[styles.searchTitle, { color: C.textPrimary }]}>Buscando conductor...</Text>
+            <Text style={[styles.searchSub, { color: C.textSecondary }]}>Esto puede tardar unos segundos</Text>
           </View>
         )}
-
         {step === 'matched' && (
           <>
-            <View style={styles.driverCard}>
-              <View style={styles.driverAvatar}>
-                <Text style={styles.driverInitials}>CN</Text>
-              </View>
+            <View style={[styles.driverCard, { backgroundColor: C.bgSecondary }]}>
+              <View style={styles.driverAvatar}><Text style={styles.driverInitials}>CN</Text></View>
               <View style={styles.driverInfo}>
-                <Text style={styles.driverName}>Carlos Nguema</Text>
-                <Text style={styles.driverSub}>⭐ 4.9 · Toyota Corolla · GE-1234</Text>
+                <Text style={[styles.driverName, { color: C.textPrimary }]}>Carlos Nguema</Text>
+                <Text style={[styles.driverSub, { color: C.textSecondary }]}>⭐ 4.9 · Toyota Corolla · GE-1234</Text>
               </View>
             </View>
-            <View style={styles.tripInfo}>
-              <Text style={styles.tripRow}>📍 {origin}</Text>
-              <Text style={styles.tripArrow}>↓</Text>
-              <Text style={styles.tripRow}>🏁 {dest}</Text>
+            <View style={[styles.tripInfo, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
+              <Text style={[styles.tripRow, { color: C.textPrimary }]}>📍 {origin}</Text>
+              <Text style={[styles.tripArrow, { color: C.textTertiary }]}>↓</Text>
+              <Text style={[styles.tripRow, { color: C.textPrimary }]}>🏁 {dest}</Text>
             </View>
-            <Text style={styles.eta}>🕐 Llegará en {selected.eta}</Text>
+            <Text style={[styles.eta, { color: C.textPrimary }]}>🕐 Llegará en {selected.eta}</Text>
             <Text style={styles.fare}>Tarifa estimada: {selected.price.toLocaleString()} XAF</Text>
             <EGButton title="Cancelar viaje" onPress={cancel} variant="danger" style={{ marginTop: Spacing.md }} />
           </>

@@ -7,7 +7,13 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { authAPI, setUnauthorizedHandler } from '../src/api';
 import { registerForPushNotifications, setupNotificationListeners, clearBadge } from '../src/notifications';
-import { Colors, ThemeProvider } from '../src/theme';
+import { Colors, ThemeProvider, useThemeContext } from '../src/theme';
+
+// StatusBar dinámica según el tema
+function StatusBarController() {
+  const { isDark } = useThemeContext();
+  return <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#0d1117' : Colors.bgPrimary} />;
+}
 
 export default function RootLayout() {
   const [checking, setChecking] = useState(true);
@@ -88,8 +94,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-        <StatusBar style="dark" backgroundColor={Colors.bgPrimary} />
-        <Stack screenOptions={{ headerShown: false }}>
+          <StatusBarController />
+          <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="chat/[id]" />

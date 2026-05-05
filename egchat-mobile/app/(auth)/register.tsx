@@ -182,27 +182,27 @@ export default function RegisterScreen() {
               <>
                 {/* Selector de país */}
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>País</Text>
+                  <Text style={[styles.fieldLabel, { color: C.textTertiary }]}>País</Text>
                   <TouchableOpacity
-                    style={styles.countrySelector}
+                    style={[styles.countrySelector, { backgroundColor: C.bgSecondary, borderColor: C.border }]}
                     onPress={() => setShowCountryPicker(p => !p)}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.countryFlag}>{getFlag(selectedCountry.code)}</Text>
-                    <Text style={styles.countryName}>{selectedCountry.name}:</Text>
-                    <Text style={styles.countryChevron}>›</Text>
+                    <Text style={[styles.countryName, { color: C.textPrimary }]}>{selectedCountry.name}:</Text>
+                    <Text style={[styles.countryChevron, { color: C.textTertiary }]}>›</Text>
                   </TouchableOpacity>
                   {showCountryPicker && (
-                    <View style={styles.countryDropdown}>
+                    <View style={[styles.countryDropdown, { backgroundColor: C.bgSecondary, borderColor: C.border }]}>
                       {COUNTRIES.map(c => (
                         <TouchableOpacity
                           key={c.phone}
-                          style={styles.countryOption}
+                          style={[styles.countryOption, { borderBottomColor: C.borderLight }]}
                           onPress={() => { setCountryCode(c.phone); setShowCountryPicker(false); }}
                         >
                           <Text style={styles.countryFlag}>{getFlag(c.code)}</Text>
-                          <Text style={styles.countryOptionText}>{c.name}</Text>
-                          <Text style={styles.countryPhone}>{c.phone}</Text>
+                          <Text style={[styles.countryOptionText, { color: C.textPrimary }]}>{c.name}</Text>
+                          <Text style={[styles.countryPhone, { color: C.textTertiary }]}>{c.phone}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -211,10 +211,10 @@ export default function RegisterScreen() {
 
                 {/* Teléfono */}
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>Teléfono</Text>
+                  <Text style={[styles.fieldLabel, { color: C.textTertiary }]}>Teléfono</Text>
                   <View style={styles.phoneRow}>
-                    <View style={styles.phonePrefix}>
-                      <Text style={styles.phonePrefixText}>{countryCode}</Text>
+                    <View style={[styles.phonePrefix, { backgroundColor: C.bgTertiary, borderColor: C.border }]}>
+                      <Text style={[styles.phonePrefixText, { color: C.textPrimary }]}>{countryCode}</Text>
                     </View>
                     <EGInput
                       value={phone}

@@ -4,7 +4,7 @@
     "slug": "egchat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.egchat.app",
       "supportsTablet": false

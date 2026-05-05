@@ -66,8 +66,8 @@ export default function StoriesScreen() {
       ) : stories.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>📸</Text>
-          <Text style={styles.emptyTitle}>Sin estados aún</Text>
-          <Text style={styles.emptySub}>Comparte una foto o vídeo con tus contactos</Text>
+          <Text style={[styles.emptyTitle, { color: C.textPrimary }]}>Sin estados aún</Text>
+          <Text style={[styles.emptySub, { color: C.textSecondary }]}>Comparte una foto o vídeo con tus contactos</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={addStory}>
             <Text style={styles.emptyBtnText}>Añadir estado</Text>
           </TouchableOpacity>
@@ -77,20 +77,20 @@ export default function StoriesScreen() {
           data={stories}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.storyItem} onPress={() => setViewing(item)} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.storyItem, { backgroundColor: C.bgSecondary }]} onPress={() => setViewing(item)} activeOpacity={0.8}>
               <View style={styles.storyRing}>
                 <EGAvatar src={item.avatar} name={item.userName || 'Estado'} size={52} />
               </View>
               <View style={styles.storyInfo}>
-                <Text style={styles.storyName}>{item.userName || 'Mi estado'}</Text>
-                <Text style={styles.storyTime}>
+                <Text style={[styles.storyName, { color: C.textPrimary }]}>{item.userName || 'Mi estado'}</Text>
+                <Text style={[styles.storyTime, { color: C.textTertiary }]}>
                   {item.media?.length || 0} {item.media?.length === 1 ? 'foto' : 'fotos'}
                 </Text>
               </View>
-              <Text style={styles.storyArrow}>›</Text>
+              <Text style={[styles.storyArrow, { color: C.border }]}>›</Text>
             </TouchableOpacity>
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.borderLight }]} />}
           showsVerticalScrollIndicator={false}
         />
       )}

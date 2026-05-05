@@ -56,60 +56,47 @@ export default function SegurosSaludScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => { if (selectedHealth) { setSelectedHealth(null); } else { router.back(); } }}
-          style={styles.backBtn}
-        >
-          <Text style={styles.backIcon}>‹</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+        <TouchableOpacity onPress={() => { if (selectedHealth) { setSelectedHealth(null); } else { router.back(); } }} style={styles.backBtn}>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: C.textPrimary }]}>
           {selectedHealth ? selectedHealth.name : TABS.find(t => t.id === active)?.icon + ' ' + TABS.find(t => t.id === active)?.label}
         </Text>
       </View>
-
-      {/* Tabs */}
       {!selectedHealth && (
-        <View style={styles.tabs}>
+        <View style={[styles.tabs, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
           {TABS.map(t => (
-            <TouchableOpacity
-              key={t.id}
-              style={[styles.tab, active === t.id && styles.tabActive]}
-              onPress={() => { setActive(t.id); setTaxResult(null); setNif(''); }}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity key={t.id} style={[styles.tab, active === t.id && styles.tabActive]} onPress={() => { setActive(t.id); setTaxResult(null); setNif(''); }} activeOpacity={0.7}>
               <Text style={styles.tabIcon}>{t.icon}</Text>
-              <Text style={[styles.tabText, active === t.id && styles.tabTextActive]}>{t.label}</Text>
+              <Text style={[styles.tabText, { color: active === t.id ? Colors.accent : C.textTertiary }, active === t.id && styles.tabTextActive]}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-
-        {/* SALUD */}
         {active === 'salud' && !selectedHealth && HEALTH.map(h => (
-          <TouchableOpacity key={h.name} style={styles.card} onPress={() => setSelectedHealth(h)} activeOpacity={0.7}>
+          <TouchableOpacity key={h.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]} onPress={() => setSelectedHealth(h)} activeOpacity={0.7}>
             <Text style={styles.cardEmoji}>🏥</Text>
             <View style={styles.cardInfo}>
-              <Text style={styles.cardName}>{h.name}</Text>
-              <Text style={styles.cardSub}>{h.type}</Text>
+              <Text style={[styles.cardName, { color: C.textPrimary }]}>{h.name}</Text>
+              <Text style={[styles.cardSub, { color: C.textTertiary }]}>{h.type}</Text>
             </View>
-            <Text style={styles.arrow}>›</Text>
+            <Text style={[styles.arrow, { color: C.border }]}>›</Text>
           </TouchableOpacity>
         ))}
-
         {active === 'salud' && selectedHealth && (
           <View>
-            <View style={styles.detailHeader}>
+            <View style={[styles.detailHeader, { backgroundColor: C.accentLight }]}>
               <Text style={styles.detailType}>{selectedHealth.type}</Text>
             </View>
-            <Text style={styles.sectionLabel}>SERVICIOS</Text>
+            <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>SERVICIOS</Text>
             {selectedHealth.services.map(s => (
               <View key={s} style={styles.serviceRow}>
                 <Text style={styles.dot}>●</Text>
-                <Text style={styles.serviceText}>{s}</Text>
+                <Text style={[styles.serviceText, { color: C.textPrimary }]}>{s}</Text>
               </View>
             ))}
             <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${selectedHealth.phone}`)}>
@@ -117,52 +104,31 @@ export default function SegurosSaludScreen() {
             </TouchableOpacity>
           </View>
         )}
-
-        {/* SEGUROS */}
         {active === 'seguros' && INSURANCE.map(ins => (
-          <TouchableOpacity
-            key={ins.name}
-            style={styles.card}
-            onPress={() => Alert.alert('Solicitar seguro', `Un agente te contactará para "${ins.name}".\n\nPrecio: ${ins.price}`)}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity key={ins.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]} onPress={() => Alert.alert('Solicitar seguro', `Un agente te contactará para "${ins.name}".\n\nPrecio: ${ins.price}`)} activeOpacity={0.7}>
             <Text style={styles.cardEmoji}>{ins.icon}</Text>
             <View style={styles.cardInfo}>
-              <Text style={styles.cardName}>{ins.name}</Text>
-              <Text style={styles.cardSub}>{ins.desc}</Text>
+              <Text style={[styles.cardName, { color: C.textPrimary }]}>{ins.name}</Text>
+              <Text style={[styles.cardSub, { color: C.textTertiary }]}>{ins.desc}</Text>
               <Text style={styles.cardPrice}>{ins.price}</Text>
             </View>
           </TouchableOpacity>
         ))}
-
-        {/* IMPUESTOS */}
         {active === 'impuestos' && (
           <View style={styles.taxSection}>
-            <Text style={styles.sectionLabel}>CONSULTA TU SITUACIÓN FISCAL</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                value={nif}
-                onChangeText={setNif}
-                placeholder="NIF / Número de contribuyente"
-                placeholderTextColor={Colors.textTertiary}
-              />
+            <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>CONSULTA TU SITUACIÓN FISCAL</Text>
+            <View style={[styles.inputWrap, { backgroundColor: C.bgSecondary, borderColor: C.border }]}>
+              <TextInput style={[styles.input, { color: C.textPrimary }]} value={nif} onChangeText={setNif} placeholder="NIF / Número de contribuyente" placeholderTextColor={C.textTertiary} />
             </View>
-            <TouchableOpacity
-              style={[styles.callBtn, !nif.trim() && { opacity: 0.5 }]}
-              onPress={consultarDGI}
-              disabled={!nif.trim() || taxLoading}
-            >
-              {taxLoading
-                ? <ActivityIndicator color={Colors.white} />
-                : <Text style={styles.callBtnText}>Consultar DGI</Text>}
+            <TouchableOpacity style={[styles.callBtn, !nif.trim() && { opacity: 0.5 }]} onPress={consultarDGI} disabled={!nif.trim() || taxLoading}>
+              {taxLoading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.callBtnText}>Consultar DGI</Text>}
             </TouchableOpacity>
             {taxResult && (
-              <View style={styles.resultCard}>
+              <View style={[styles.resultCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
                 {[['NIF', taxResult.nif], ['Estado', taxResult.estado], ['Período', taxResult.periodo], ['Deuda', `${taxResult.deuda.toLocaleString()} XAF`]].map(([l, v]) => (
                   <View key={l} style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>{l}</Text>
-                    <Text style={[styles.resultValue, l === 'Estado' && { color: Colors.accent }]}>{v}</Text>
+                    <Text style={[styles.resultLabel, { color: C.textSecondary }]}>{l}</Text>
+                    <Text style={[styles.resultValue, { color: C.textPrimary }, l === 'Estado' && { color: Colors.accent }]}>{v}</Text>
                   </View>
                 ))}
                 <TouchableOpacity style={[styles.callBtn, { marginTop: Spacing.md }]} onPress={() => Linking.openURL('tel:+240333095500')}>
@@ -172,15 +138,13 @@ export default function SegurosSaludScreen() {
             )}
           </View>
         )}
-
-        {/* CORREOS */}
         {active === 'correos' && (
           <View>
             {POSTAL.map(p => (
-              <View key={p.name} style={styles.card}>
+              <View key={p.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
                 <Text style={styles.cardEmoji}>{p.icon}</Text>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardName}>{p.name}</Text>
+                  <Text style={[styles.cardName, { color: C.textPrimary }]}>{p.name}</Text>
                   <Text style={styles.cardPrice}>{p.price}</Text>
                 </View>
               </View>
@@ -190,7 +154,6 @@ export default function SegurosSaludScreen() {
             </TouchableOpacity>
           </View>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );

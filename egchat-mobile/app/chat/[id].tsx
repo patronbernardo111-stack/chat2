@@ -14,6 +14,8 @@ import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 // ── Tipos ─────────────────────────────────────────────────────────
 interface Message {
@@ -196,9 +198,11 @@ export default function ChatScreen() {
   const [contextMsg, setContextMsg] = useState<Message | null>(null);
   const [contextVisible, setContextVisible] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
-
   const flatListRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -275,7 +279,8 @@ export default function ChatScreen() {
   const sendMessage = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
-
+    // Cancelar typing timer
+    if (typingTimer.current) clearTimeout(typingTimer.current);
     setText('');
     setReplyTo(null);
     setSending(true);
@@ -350,7 +355,18 @@ export default function ChatScreen() {
     setMessages(prev => prev.filter(m => m.id !== contextMsg.id));
   }, [contextMsg]);
 
-  // Nombre y avatar del chat
+  // Emitir "escribiendo..." al servidor con debounce
+  const handleTextChange = useCallback((val: string) => {
+    setText(val);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    if (val.trim()) {
+      chatAPI.sendTyping?.(chatId).catch(() => {});
+      typingTimer.current = setTimeout(() => {
+        chatAPI.stopTyping?.(chatId).catch(() => {});
+      }, 2000);
+    }
+  }, [chatId]);
+
   const isGroup = chat?.type === 'group';
   const otherParticipant = chat?.participants?.find((p: any) => p.user_id !== currentUserId);
   const chatName = chat
@@ -388,53 +404,27 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgTertiary }]} edges={['top']}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerInfo} activeOpacity={0.7}>
           <EGAvatar src={chatAvatar} name={chatName} size={40} />
           <View style={styles.headerText}>
-            <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
+            <Text style={[styles.headerName, { color: C.textPrimary }]} numberOfLines={1}>{chatName}</Text>
             <Text style={styles.headerStatus}>{chatSubtitle}</Text>
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.headerBtn}
-            onPress={() => router.push({
-              pathname: '/call/[callId]',
-              params: {
-                callId: `call-${chatId}-${Date.now()}`,
-                targetName: chatName,
-                targetAvatar: chatAvatar || '',
-                callType: 'audio',
-                role: 'caller',
-              }
-            } as any)}
-          >
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call-${chatId}-${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller' } } as any)}>
             <Text style={styles.headerBtnIcon}>📞</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerBtn}
-            onPress={() => router.push({
-              pathname: '/call/[callId]',
-              params: {
-                callId: `call-${chatId}-${Date.now()}`,
-                targetName: chatName,
-                targetAvatar: chatAvatar || '',
-                callType: 'video',
-                role: 'caller',
-              }
-            } as any)}
-          >
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call-${chatId}-${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller' } } as any)}>
             <Text style={styles.headerBtnIcon}>📹</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
-            <Text style={styles.headerBtnIcon}>⋮</Text>
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn}><Text style={styles.headerBtnIcon}>⋮</Text></TouchableOpacity>
         </View>
       </View>
 
@@ -450,62 +440,38 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
           onEndReached={loadMore}
           onEndReachedThreshold={0.1}
-          ListHeaderComponent={loadingMore
-            ? <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} />
-            : null}
+          ListHeaderComponent={loadingMore ? <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} /> : null}
           ListFooterComponent={isTyping ? <TypingIndicator /> : null}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
               <Text style={styles.emptyChatIcon}>💬</Text>
-              <Text style={styles.emptyChatText}>Empieza la conversación</Text>
+              <Text style={[styles.emptyChatText, { color: C.textSecondary }]}>Empieza la conversación</Text>
             </View>
           }
         />
-
-        {replyTo && (
-          <ReplyPreview text={replyTo.text || 'Mensaje'} onCancel={() => setReplyTo(null)} />
-        )}
-
+        {replyTo && <ReplyPreview text={replyTo.text || 'Mensaje'} onCancel={() => setReplyTo(null)} />}
         {/* ── Input ── */}
-        <View style={styles.inputBar}>
-          <View style={styles.inputWrapper}>
+        <View style={[styles.inputBar, { backgroundColor: C.bgSecondary, borderTopColor: C.borderLight }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: C.bgTertiary }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: C.textPrimary }]}
               value={text}
-              onChangeText={setText}
+              onChangeText={handleTextChange}
               placeholder="Escribe un mensaje..."
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               multiline
               maxLength={4000}
               onSubmitEditing={Platform.OS === 'ios' ? undefined : sendMessage}
             />
           </View>
           <Animated.View style={{ transform: [{ scale: sendScale }] }}>
-            <TouchableOpacity
-              onPress={sendMessage}
-              disabled={!text.trim() || sending}
-              style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]}
-              activeOpacity={0.8}
-            >
-              {sending
-                ? <ActivityIndicator size="small" color={Colors.white} />
-                : <Text style={styles.sendBtnIcon}>➤</Text>}
+            <TouchableOpacity onPress={sendMessage} disabled={!text.trim() || sending} style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]} activeOpacity={0.8}>
+              {sending ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.sendBtnIcon}>➤</Text>}
             </TouchableOpacity>
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
-
-      {/* ── Context Menu ── */}
-      <ContextMenu
-        visible={contextVisible}
-        message={contextMsg}
-        isOwn={contextMsg?.sender_id === currentUserId}
-        onClose={() => setContextVisible(false)}
-        onCopy={handleCopy}
-        onReply={handleReply}
-        onDelete={handleDelete}
-        onDeleteForMe={handleDeleteForMe}
-      />
+      <ContextMenu visible={contextVisible} message={contextMsg} isOwn={contextMsg?.sender_id === currentUserId} onClose={() => setContextVisible(false)} onCopy={handleCopy} onReply={handleReply} onDelete={handleDelete} onDeleteForMe={handleDeleteForMe} />
     </SafeAreaView>
   );
 }
