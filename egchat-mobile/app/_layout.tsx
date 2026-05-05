@@ -102,6 +102,7 @@ export default function RootLayout() {
           <Stack.Screen name="ocio" options={{ presentation: 'modal' }} />
           <Stack.Screen name="supermercados" options={{ presentation: 'modal' }} />
           <Stack.Screen name="apuestas" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="servicios-diarios" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

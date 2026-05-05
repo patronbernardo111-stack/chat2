@@ -13,18 +13,24 @@ import {
 
 // ── Tipos de servicios ────────────────────────────────────────────
 const SERVICES = [
-  { id: 'taxi',        icon: '🚕', label: 'MiTaxi',       sub: 'Pedir taxi',          color: '#F59E0B', bg: '#FFFBEB' },
-  { id: 'electricidad',icon: '⚡', label: 'Electricidad',  sub: 'SEGESA',              color: '#EAB308', bg: '#FEFCE8' },
-  { id: 'agua',        icon: '💧', label: 'Agua',          sub: 'SNGE',                color: '#0EA5E9', bg: '#F0F9FF' },
-  { id: 'internet',    icon: '🌐', label: 'Internet',      sub: 'Proveedores',         color: '#6366F1', bg: '#EEF2FF' },
-  { id: 'recarga',     icon: '📱', label: 'Recarga',       sub: 'Telefonía móvil',     color: '#8B5CF6', bg: '#F5F3FF' },
-  { id: 'tv',          icon: '📺', label: 'Canales TV',    sub: 'Suscripciones',       color: '#EF4444', bg: '#FFF1F2' },
-  { id: 'bancos',      icon: '🏦', label: 'Bancos',        sub: 'BANGE, BGFI, CCEI',   color: '#1E3A5F', bg: '#EFF6FF' },
-  { id: 'salud',       icon: '🏥', label: 'Salud',         sub: 'Hospitales',          color: '#DC2626', bg: '#FFF1F2' },
-  { id: 'impuestos',   icon: '📋', label: 'Impuestos',     sub: 'DGI',                 color: '#374151', bg: '#F9FAFB' },
-  { id: 'correos',     icon: '📮', label: 'Correos',       sub: 'Envíos',              color: '#C0392B', bg: '#FFF5F5' },
-  { id: 'seguros',     icon: '🛡️', label: 'Seguros',       sub: 'Vida, auto...',       color: '#065F46', bg: '#F0FDF4' },
-  { id: 'supermercado',icon: '🛒', label: 'Supermercado',  sub: 'Compras online',      color: '#00c8a0', bg: '#F0FDF9' },
+  { id: 'taxi',          icon: '🚕', label: 'MiTaxi',          sub: 'Pedir taxi',          color: '#F59E0B', bg: '#FFFBEB' },
+  { id: 'electricidad',  icon: '⚡', label: 'Electricidad',     sub: 'SEGESA',              color: '#EAB308', bg: '#FEFCE8' },
+  { id: 'agua',          icon: '💧', label: 'Agua',             sub: 'SNGE',                color: '#0EA5E9', bg: '#F0F9FF' },
+  { id: 'internet',      icon: '🌐', label: 'Internet',         sub: 'Proveedores',         color: '#6366F1', bg: '#EEF2FF' },
+  { id: 'recarga',       icon: '📱', label: 'Recarga',          sub: 'Telefonía móvil',     color: '#8B5CF6', bg: '#F5F3FF' },
+  { id: 'tv',            icon: '📺', label: 'Canales TV',       sub: 'Suscripciones',       color: '#EF4444', bg: '#FFF1F2' },
+  { id: 'bancos',        icon: '🏦', label: 'Bancos',           sub: 'BANGE, BGFI, CCEI',   color: '#1E3A5F', bg: '#EFF6FF' },
+  { id: 'salud',         icon: '🏥', label: 'Salud',            sub: 'Hospitales',          color: '#DC2626', bg: '#FFF1F2' },
+  { id: 'impuestos',     icon: '📋', label: 'Impuestos',        sub: 'DGI',                 color: '#374151', bg: '#F9FAFB' },
+  { id: 'correos',       icon: '📮', label: 'Correos',          sub: 'Envíos',              color: '#C0392B', bg: '#FFF5F5' },
+  { id: 'seguros',       icon: '🛡️', label: 'Seguros',          sub: 'Vida, auto...',       color: '#065F46', bg: '#F0FDF4' },
+  { id: 'supermercado',  icon: '🛒', label: 'Supermercado',     sub: 'Compras online',      color: '#00c8a0', bg: '#F0FDF9' },
+  { id: 'restaurantes',  icon: '🍽️', label: 'Restaurantes',     sub: 'Reservas',            color: '#C47D2A', bg: '#FEF3C7' },
+  { id: 'vuelos',        icon: '✈️', label: 'Vuelos',           sub: 'Ceiba, Iberia...',    color: '#1B3A6B', bg: '#EFF6FF' },
+  { id: 'gasolineras',   icon: '⛽', label: 'Gasolineras',      sub: 'GEPetrol, Total',     color: '#C0392B', bg: '#FFF5F5' },
+  { id: 'cemac',         icon: '🌍', label: 'Zona CEMAC',       sub: '6 países',            color: '#00b96b', bg: '#F0FDF4' },
+  { id: 'ocio',          icon: '🎭', label: 'Ocio',             sub: 'Hoteles, cine...',    color: '#EC4899', bg: '#FDF2F8' },
+  { id: 'apuestas',      icon: '🎰', label: 'Apuestas',         sub: 'Juegos y loterías',   color: '#F59E0B', bg: '#FFFBEB' },
 ];
 
 // ── Tipos de taxi ─────────────────────────────────────────────────
@@ -665,6 +671,12 @@ export default function ServiciosScreen() {
       router.push('/cemac' as any);
     } else if (id === 'supermercado') {
       router.push('/supermercados' as any);
+    } else if (id === 'restaurantes' || id === 'vuelos' || id === 'gasolineras') {
+      router.push('/servicios-diarios' as any);
+    } else if (id === 'ocio') {
+      router.push('/ocio' as any);
+    } else if (id === 'apuestas') {
+      router.push('/apuestas' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
     }
