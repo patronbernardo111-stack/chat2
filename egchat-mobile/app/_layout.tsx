@@ -29,13 +29,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     const init = async () => {
-      // Esperar a que el NavigationContainer esté listo
-      await new Promise<void>(resolve => {
-        if (navigationRef.isReady()) { resolve(); return; }
-        const unsub = navigationRef.addListener('state', () => {
-          if (navigationRef.isReady()) { unsub(); resolve(); }
-        });
-      });
+      // Polling hasta que el NavigationContainer esté listo
+      let attempts = 0;
+      while (!navigationRef.isReady() && attempts < 50) {
+        await new Promise(r => setTimeout(r, 50));
+        attempts++;
+      }
       try {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
