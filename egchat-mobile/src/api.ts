@@ -219,13 +219,17 @@ export const storiesAPI = {
 // ══════════════════════════════════════════════════════════════════
 export const serviciosAPI = {
   consultarFacturaElec: (contrato: string) =>
-    get<any>(`/api/servicios/electricidad/${contrato}`),
+    post<any>('/api/servicios/segesa/consultar', { contrato }),
   pagarElectricidad: (contrato: string, amount: number, method: string) =>
-    post<any>('/api/servicios/electricidad/pagar', { contrato, amount, method }),
+    post<any>('/api/servicios/segesa/pagar', { contrato, importe: amount, metodo: method }),
   consultarFacturaAgua: (contrato: string) =>
-    get<any>(`/api/servicios/agua/${contrato}`),
+    post<any>('/api/servicios/snge/consultar', { contrato }),
   pagarAgua: (contrato: string, amount: number, method: string) =>
-    post<any>('/api/servicios/agua/pagar', { contrato, amount, method }),
+    post<any>('/api/servicios/snge/pagar', { contrato, importe: amount, metodo: method }),
+  consultarDGI: (nif: string) =>
+    post<any>('/api/servicios/dgi/consultar', { nif }),
+  pagarDGI: (nif: string, amount: number, referencia: string) =>
+    post<any>('/api/servicios/dgi/pagar', { nif, importe: amount, referencia }),
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -236,7 +240,11 @@ export const taxiAPI = {
     origin: { address: string; lat?: number; lng?: number },
     destination: { address: string; lat?: number; lng?: number },
     rideType: string
-  ) => post<any>('/api/taxi/request', { origin, destination, rideType }),
+  ) => post<any>('/api/taxi/request', {
+    origin: origin.address,
+    dest: destination.address,
+    type: rideType,
+  }),
   cancelRide: (rideId: string) => post<any>(`/api/taxi/${rideId}/cancel`, {}),
-  getRideStatus: (rideId: string) => get<any>(`/api/taxi/${rideId}`),
+  getRideStatus: (rideId: string) => get<any>(`/api/taxi/${rideId}/status`),
 };
