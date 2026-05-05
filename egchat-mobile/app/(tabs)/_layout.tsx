@@ -1,33 +1,34 @@
 import { Tabs } from 'expo-router';
 import { Text, Platform } from 'react-native';
 import { Colors } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 const Icon = ({ name, color }: { name: string; color: string }) => {
   const icons: Record<string, string> = {
-    mensajes: '💬',
-    monedero: '💳',
-    servicios: '⚡',
-    lia: '🤖',
-    ajustes: '⚙️',
+    mensajes: '💬', monedero: '💳', servicios: '⚡', lia: '🤖', ajustes: '⚙️',
   };
   return <Text style={{ fontSize: 22 }}>{icons[name] || '●'}</Text>;
 };
 
 export default function TabsLayout() {
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.bgSecondary,
-          borderTopColor: Colors.borderLight,
+          backgroundColor: C.bgSecondary,
+          borderTopColor: C.borderLight,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 80 : 60,
           paddingBottom: Platform.OS === 'ios' ? 20 : 8,
           paddingTop: 4,
         },
         tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarInactiveTintColor: C.textTertiary,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >

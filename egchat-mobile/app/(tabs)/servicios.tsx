@@ -4,6 +4,7 @@ import {
   Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { serviciosAPI, taxiAPI, walletAPI } from '../../src/api';
 import { EGButton, EGInput, EGCard } from '../../src/components/ui';
 import {
@@ -689,26 +690,26 @@ export default function ServiciosScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Servicios</Text>
-        <Text style={styles.headerSub}>Guinea Ecuatorial</Text>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+        <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Servicios</Text>
+        <Text style={[styles.headerSub, { color: C.textTertiary }]}>Guinea Ecuatorial</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.grid}>
         {SERVICES.map(s => (
           <TouchableOpacity
             key={s.id}
-            style={styles.serviceItem}
+            style={[styles.serviceItem, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}
             onPress={() => openService(s.id)}
             activeOpacity={0.7}
           >
-            <View style={[styles.serviceIconBox, { backgroundColor: s.bg }]}>
+            <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
               <Text style={styles.serviceEmoji}>{s.icon}</Text>
             </View>
-            <Text style={styles.serviceLabel}>{s.label}</Text>
-            <Text style={styles.serviceSub}>{s.sub}</Text>
+            <Text style={[styles.serviceLabel, { color: C.textPrimary }]}>{s.label}</Text>
+            <Text style={[styles.serviceSub, { color: C.textTertiary }]}>{s.sub}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -973,4 +974,5 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.borderLight,
   },
   categoryText: { fontSize: FontSize.sm, color: Colors.textPrimary },
+});
 });
