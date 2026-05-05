@@ -172,6 +172,8 @@ export default function MensajesScreen() {
 
   const loadChats = useCallback(async () => {
     try {
+      const token = await getToken();
+      if (!token) return; // Sin sesión, el layout redirigirá al login
       const data = await chatAPI.getChats();
       setChats(data || []);
     } catch (e) {

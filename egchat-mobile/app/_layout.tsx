@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Stack, router, useRootNavigationState } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,18 +21,15 @@ export default function RootLayout() {
   const notifCleanup = useRef<(() => void) | null>(null);
   const incomingCleanup = useRef<(() => void) | null>(null);
   const { pollIncoming } = useWebRTC();
-  const navState = useRootNavigationState();
 
-  // Setear handler global para 401
   setUnauthorizedHandler(() => {
     router.replace('/(auth)/login');
   });
 
   useEffect(() => {
-    // Esperar a que el router esté listo
-    if (!navState?.key) return;
-
     const init = async () => {
+      // Pequeño delay para que el router de Expo esté montado
+      await new Promise(r => setTimeout(r, 100));
       try {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
@@ -125,7 +122,7 @@ export default function RootLayout() {
       notifCleanup.current?.();
       incomingCleanup.current?.();
     };
-  }, [navState?.key]);
+  }, []);
 
   if (checking) {
     return (
