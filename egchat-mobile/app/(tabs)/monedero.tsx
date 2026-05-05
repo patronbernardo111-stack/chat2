@@ -9,6 +9,8 @@ import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 // ── Helpers ───────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 0 });
@@ -457,6 +459,8 @@ export default function MonederoScreen() {
   const [showRecharge, setShowRecharge] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showSend, setShowSend] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const loadData = useCallback(async () => {
     try {
@@ -477,21 +481,21 @@ export default function MonederoScreen() {
 
   if (loading) {
     return (
-      <View style={s.center}>
+      <View style={[s.center, { backgroundColor: C.bgPrimary }]}>
         <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <SafeAreaView style={[s.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
       >
         {/* Header */}
-        <View style={s.header}>
-          <Text style={s.headerTitle}>Monedero</Text>
+        <View style={[s.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+          <Text style={[s.headerTitle, { color: C.textPrimary }]}>Monedero</Text>
         </View>
 
         {/* Tarjeta de saldo */}

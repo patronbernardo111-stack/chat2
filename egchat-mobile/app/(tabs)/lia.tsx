@@ -11,6 +11,8 @@ import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 interface Msg {
   id: string;
@@ -100,12 +102,7 @@ const TypingDots = () => {
 // ── Pantalla principal ────────────────────────────────────────────
 export default function LiaScreen() {
   const [messages, setMessages] = useState<Msg[]>([
-    {
-      id: '0',
-      role: 'assistant',
-      content: '¡Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. ¿En qué puedo ayudarte hoy?',
-      time: formatTime(),
-    },
+    { id: '0', role: 'assistant', content: '¡Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. ¿En qué puedo ayudarte hoy?', time: formatTime() },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -113,6 +110,8 @@ export default function LiaScreen() {
   const [showChips, setShowChips] = useState(false);
   const listRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
@@ -171,15 +170,15 @@ export default function LiaScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <View style={styles.headerAvatar}>
           <Text style={styles.headerAvatarText}>🤖</Text>
-          <View style={styles.onlineDot} />
+          <View style={[styles.onlineDot, { borderColor: C.bgSecondary }]} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>Lia-25</Text>
+          <Text style={[styles.headerName, { color: C.textPrimary }]}>Lia-25</Text>
           <Text style={styles.headerStatus}>
             {loading ? '● Escribiendo...' : '● Asistente inteligente'}
           </Text>
@@ -197,50 +196,65 @@ export default function LiaScreen() {
           ref={listRef}
           data={messages}
           keyExtractor={item => item.id}
-          renderItem={({ item }) => <MessageBubble msg={item} />}
+          renderItem={({ item }) => {
+            const isUser = item.role === 'user';
+            return (
+              <View style={[styles.bubbleWrapper, isUser ? styles.userWrapper : styles.aiWrapper]}>
+                {!isUser && (
+                  <View style={[styles.aiAvatar, { backgroundColor: C.accentLight }]}>
+                    <Text style={styles.aiAvatarText}>🤖</Text>
+                  </View>
+                )}
+                <View style={[
+                  styles.bubble,
+                  isUser
+                    ? styles.userBubble
+                    : [styles.aiBubble, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }],
+                ]}>
+                  <Text style={[styles.bubbleText, isUser ? styles.userText : { color: C.textPrimary }]}>
+                    {item.content}
+                  </Text>
+                  <Text style={[styles.bubbleTime, isUser && styles.userTime]}>{item.time}</Text>
+                </View>
+              </View>
+            );
+          }}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToEnd}
           ListFooterComponent={loading ? <TypingDots /> : null}
         />
 
-        {/* Sugerencias — solo al inicio */}
         {messages.length <= 1 && !loading && (
           <View style={styles.suggestions}>
             {SUGGESTIONS.map(s => (
-              <TouchableOpacity key={s} style={styles.chip} onPress={() => send(s)} activeOpacity={0.7}>
-                <Text style={styles.chipText}>{s}</Text>
+              <TouchableOpacity key={s} style={[styles.chip, { backgroundColor: C.bgSecondary, borderColor: C.border }]} onPress={() => send(s)} activeOpacity={0.7}>
+                <Text style={[styles.chipText, { color: C.textSecondary }]}>{s}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* Chips rápidos — después de la primera respuesta */}
         {showChips && messages.length > 1 && (
           <View style={styles.quickChipsRow}>
             {QUICK_CHIPS.map(c => (
-              <TouchableOpacity
-                key={c.text}
-                style={styles.quickChip}
-                onPress={() => send(c.text)}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity key={c.text} style={[styles.quickChip, { backgroundColor: C.bgSecondary, borderColor: C.border }]} onPress={() => send(c.text)} activeOpacity={0.7}>
                 <Text style={styles.quickChipIcon}>{c.icon}</Text>
-                <Text style={styles.quickChipText}>{c.text}</Text>
+                <Text style={[styles.quickChipText, { color: C.textSecondary }]}>{c.text}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
         {/* ── Input ── */}
-        <View style={styles.inputBar}>
-          <View style={styles.inputWrapper}>
+        <View style={[styles.inputBar, { backgroundColor: C.bgSecondary, borderTopColor: C.borderLight }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: C.bgTertiary, borderColor: C.border }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: C.textPrimary }]}
               value={input}
               onChangeText={setInput}
               placeholder="Pregunta a Lia-25..."
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               onSubmitEditing={() => send()}
               returnKeyType="send"
               multiline

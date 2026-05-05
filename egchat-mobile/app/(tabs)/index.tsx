@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { chatAPI, storiesAPI, getToken } from '../../src/api';
-import { EGAvatar } from '../../src/components/ui';
+import { EGAvatar, OfflineBanner } from '../../src/components/ui';
 import {
   Colors,
   Typography,
@@ -23,6 +23,8 @@ import {
   FontWeight,
   Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 // ── StoryBubble ───────────────────────────────────────────────────
 const StoryBubble = ({ story, onPress }: { story: any; onPress: () => void }) => (
@@ -165,6 +167,8 @@ export default function MensajesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
   const [stories, setStories] = useState<any[]>([]);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const loadChats = useCallback(async () => {
     try {
@@ -221,35 +225,35 @@ export default function MensajesScreen() {
     : chats;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <OfflineBanner />
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         {showSearch ? (
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClose={() => { setShowSearch(false); setSearchQuery(''); }}
-          />
+          <View style={[styles.searchContainer, { backgroundColor: C.bgInput }]}>
+            <TextInput
+              style={[styles.searchInput, { color: C.textPrimary }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Buscar usuarios..."
+              placeholderTextColor={C.textTertiary}
+              autoFocus
+            />
+            <TouchableOpacity onPress={() => { setShowSearch(false); setSearchQuery(''); }} style={styles.searchClose}>
+              <Text style={[styles.searchCloseText, { color: C.textTertiary }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
-            <Text style={styles.headerTitle}>Mensajes</Text>
+            <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Mensajes</Text>
             <View style={styles.headerActions}>
-              <TouchableOpacity
-                onPress={() => router.push('/contacts' as any)}
-                style={styles.headerBtn}
-              >
+              <TouchableOpacity onPress={() => router.push('/contacts' as any)} style={[styles.headerBtn, { backgroundColor: C.bgTertiary }]}>
                 <Text style={styles.headerBtnIcon}>👥</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowSearch(true)}
-                style={styles.headerBtn}
-              >
+              <TouchableOpacity onPress={() => setShowSearch(true)} style={[styles.headerBtn, { backgroundColor: C.bgTertiary }]}>
                 <Text style={styles.headerBtnIcon}>🔍</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/new-chat' as any)}
-                style={[styles.headerBtn, styles.headerBtnAccent]}
-              >
+              <TouchableOpacity onPress={() => router.push('/new-chat' as any)} style={[styles.headerBtn, styles.headerBtnAccent]}>
                 <Text style={styles.headerBtnIconWhite}>✏️</Text>
               </TouchableOpacity>
             </View>
@@ -259,18 +263,11 @@ export default function MensajesScreen() {
 
       {/* ── Stories ── */}
       {stories.length > 0 && (
-        <View style={styles.storiesContainer}>
+        <View style={[styles.storiesContainer, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-            <StoryBubble
-              story={{ userName: 'Mi estado', media: [] }}
-              onPress={() => router.push('/stories' as any)}
-            />
+            <StoryBubble story={{ userName: 'Mi estado', media: [] }} onPress={() => router.push('/stories' as any)} />
             {stories.map((s: any) => (
-              <StoryBubble
-                key={s.id}
-                story={s}
-                onPress={() => router.push('/stories' as any)}
-              />
+              <StoryBubble key={s.id} story={s} onPress={() => router.push('/stories' as any)} />
             ))}
           </ScrollView>
         </View>
@@ -284,17 +281,14 @@ export default function MensajesScreen() {
       ) : filteredChats.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>💬</Text>
-          <Text style={styles.emptyTitle}>
+          <Text style={[styles.emptyTitle, { color: C.textPrimary }]}>
             {searchQuery ? 'Sin resultados' : 'No tienes chats aún'}
           </Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptySubtitle, { color: C.textSecondary }]}>
             {searchQuery ? 'Prueba con otro nombre' : 'Busca un contacto para empezar'}
           </Text>
           {!searchQuery && (
-            <TouchableOpacity
-              onPress={() => setShowSearch(true)}
-              style={styles.emptyBtn}
-            >
+            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.emptyBtn}>
               <Text style={styles.emptyBtnText}>Buscar usuarios</Text>
             </TouchableOpacity>
           )}
@@ -310,14 +304,9 @@ export default function MensajesScreen() {
               onPress={() => router.push(`/chat/${item.id}` as any)}
             />
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.borderLight }]} />}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} colors={[Colors.accent]} />
           }
           showsVerticalScrollIndicator={false}
         />
