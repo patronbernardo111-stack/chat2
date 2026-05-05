@@ -3,6 +3,9 @@
 
 export { Colors } from './colors';
 export type { ColorKey } from './colors';
+export { ThemeProvider, useThemeContext } from './ThemeContext';
+export { DarkColors } from './darkMode';
+export type { ThemeMode } from './darkMode';
 export { Typography, FontSize, FontWeight, LineHeight } from './typography';
 export { Spacing, BorderRadius, Shadow } from './spacing';
 

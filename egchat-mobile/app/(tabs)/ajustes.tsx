@@ -13,6 +13,8 @@ import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import type { ThemeMode } from '../../src/theme';
 
 interface User {
   id: string;
