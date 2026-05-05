@@ -671,11 +671,11 @@ export default function ServiciosScreen() {
     if (modalServices.includes(id)) {
       setActiveModal(id);
     } else if (id === 'bancos') {
-      router.push('/bancos' as any);
+      setActiveModal('bancos');
     } else if (id === 'cemac') {
       router.push('/cemac' as any);
     } else if (id === 'supermercado') {
-      router.push('/supermercados' as any);
+      setActiveModal('supermercado');
     } else if (id === 'restaurantes' || id === 'vuelos' || id === 'gasolineras') {
       router.push('/servicios-diarios' as any);
     } else if (id === 'ocio') {
@@ -683,7 +683,7 @@ export default function ServiciosScreen() {
     } else if (id === 'apuestas') {
       router.push('/apuestas' as any);
     } else if (id === 'seguros' || id === 'salud' || id === 'impuestos' || id === 'correos') {
-      router.push('/seguros-salud' as any);
+      setActiveModal(id);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
     }
