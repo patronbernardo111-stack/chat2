@@ -52,6 +52,10 @@
         }
       ]
     ],
+    "web": {
+      "bundler": "webpack",
+      "output": "single"
+    },
     "scheme": "egchat",
     "extra": {
       "apiUrl": "https://chat2-0x2c.onrender.com",
