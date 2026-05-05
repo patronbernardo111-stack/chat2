@@ -975,4 +975,3 @@ const styles = StyleSheet.create({
   },
   categoryText: { fontSize: FontSize.sm, color: Colors.textPrimary },
 });
-});
