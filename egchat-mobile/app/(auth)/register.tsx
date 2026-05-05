@@ -14,11 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { authAPI } from '../../src/api';
-import { useAuth } from '../../src/hooks/useAuth';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 import { EGButton, EGInput, EGErrorMessage } from '../../src/components/ui';
 
 const COUNTRIES = [
@@ -99,7 +100,8 @@ export default function RegisterScreen() {
   };
 
   const goBack = () => {
-    setError('');
+    setLocalError('');
+    clearError();
     if (step === 1) router.back();
     else setStep(s => s - 1);
   };
