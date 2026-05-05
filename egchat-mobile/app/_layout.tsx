@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ export default function RootLayout() {
   const notifCleanup = useRef<(() => void) | null>(null);
   const incomingCleanup = useRef<(() => void) | null>(null);
   const { pollIncoming } = useWebRTC();
+  const navigationRef = useNavigationContainerRef();
 
   setUnauthorizedHandler(() => {
     router.replace('/(auth)/login');
@@ -28,8 +29,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     const init = async () => {
-      // Pequeño delay para que el router de Expo esté montado
-      await new Promise(r => setTimeout(r, 100));
+      // Esperar a que el NavigationContainer esté listo
+      await new Promise<void>(resolve => {
+        if (navigationRef.isReady()) { resolve(); return; }
+        const unsub = navigationRef.addListener('state', () => {
+          if (navigationRef.isReady()) { unsub(); resolve(); }
+        });
+      });
       try {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
