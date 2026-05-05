@@ -22,12 +22,12 @@ export default function RootLayout() {
   const incomingCleanup = useRef<(() => void) | null>(null);
   const { pollIncoming } = useWebRTC();
 
-  useEffect(() => {
-    // Interceptor global 401
-    setUnauthorizedHandler(() => {
-      router.replace('/(auth)/login');
-    });
+  // Setear handler ANTES del primer render para que esté disponible de inmediato
+  setUnauthorizedHandler(() => {
+    router.replace('/(auth)/login');
+  });
 
+  useEffect(() => {
     const init = async () => {
       try {
         const isAuth = await authAPI.isAuthenticated();
