@@ -10,6 +10,8 @@ import { storiesAPI } from '../src/api';
 
 import { EGAvatar } from '../src/components/ui';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const { width: W } = Dimensions.get('window');
 
@@ -18,6 +20,8 @@ export default function StoriesScreen() {
   const [loading, setLoading] = useState(true);
   const [viewing, setViewing] = useState<any | null>(null);
   const [uploading, setUploading] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   useEffect(() => {
     storiesAPI.getAll()
@@ -44,16 +48,14 @@ export default function StoriesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Estados</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>Estados</Text>
         <TouchableOpacity onPress={addStory} style={styles.addBtn} disabled={uploading}>
-          {uploading
-            ? <ActivityIndicator size="small" color={Colors.white} />
-            : <Text style={styles.addBtnText}>+</Text>}
+          {uploading ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.addBtnText}>+</Text>}
         </TouchableOpacity>
       </View>
 

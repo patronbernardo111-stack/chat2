@@ -5,6 +5,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const FEATURES = [
   { icon: '💬', title: 'Chats en tiempo real',  sub: 'Mensajes instantáneos' },
@@ -17,6 +19,8 @@ const FLAGS = ['🇬🇶', '🇨🇲', '🇬🇦', '🇨🇬', '🇪🇸', '🇫
 export default function WelcomeScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   useEffect(() => {
     // Logo spin
@@ -31,7 +35,7 @@ export default function WelcomeScreen() {
   const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]}>
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo */}
         <View style={styles.logoSection}>
@@ -52,15 +56,15 @@ export default function WelcomeScreen() {
         </View>
 
         {/* Features */}
-        <View style={styles.featuresCard}>
+        <View style={[styles.featuresCard, { backgroundColor: isDark ? C.bgSecondary : 'rgba(255,255,255,0.8)' }]}>
           {FEATURES.map((f, i) => (
             <View key={i} style={styles.featureItem}>
               <View style={styles.featureIconBox}>
                 <Text style={styles.featureIcon}>{f.icon}</Text>
               </View>
               <View>
-                <Text style={styles.featureTitle}>{f.title}</Text>
-                <Text style={styles.featureSub}>{f.sub}</Text>
+                <Text style={[styles.featureTitle, { color: C.textPrimary }]}>{f.title}</Text>
+                <Text style={[styles.featureSub, { color: C.textSecondary }]}>{f.sub}</Text>
               </View>
             </View>
           ))}

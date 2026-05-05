@@ -8,6 +8,8 @@ import { router } from 'expo-router';
 import { chatAPI, contactsAPI } from '../src/api';
 import { EGAvatar } from '../src/components/ui';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 export default function NewChatScreen() {
   const [query, setQuery] = useState('');
@@ -15,6 +17,8 @@ export default function NewChatScreen() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState<string | null>(null);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   useEffect(() => {
     contactsAPI.getAll().then(data => setContacts(data || [])).catch(() => {});
@@ -62,41 +66,48 @@ export default function NewChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Nuevo chat</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>Nuevo chat</Text>
       </View>
-
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, { backgroundColor: C.bgSecondary, borderColor: C.border }]}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: C.textPrimary }]}
           value={query}
           onChangeText={search}
           placeholder="Buscar por nombre o teléfono..."
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={C.textTertiary}
           autoFocus
         />
         {loading && <ActivityIndicator size="small" color={Colors.accent} />}
       </View>
 
       {query.trim().length < 2 && contacts.length > 0 && (
-        <Text style={styles.sectionLabel}>MIS CONTACTOS</Text>
+        <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>MIS CONTACTOS</Text>
       )}
       {query.trim().length >= 2 && results.length === 0 && !loading && (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>Sin resultados para "{query}"</Text>
+          <Text style={[styles.emptyText, { color: C.textSecondary }]}>Sin resultados para "{query}"</Text>
         </View>
       )}
-
       <FlatList
         data={displayList}
         keyExtractor={item => item.id}
-        renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={[styles.item, { backgroundColor: C.bgSecondary }]} onPress={() => startChat(item)} disabled={creating === item.id} activeOpacity={0.7}>
+            <EGAvatar src={item.avatar_url} name={item.full_name || item.name || '?'} size={46} />
+            <View style={styles.info}>
+              <Text style={[styles.name, { color: C.textPrimary }]}>{item.full_name || item.name || 'Usuario'}</Text>
+              <Text style={[styles.phone, { color: C.textTertiary }]}>{item.phone || ''}</Text>
+            </View>
+            {creating === item.id ? <ActivityIndicator size="small" color={Colors.accent} /> : <Text style={[styles.arrow, { color: C.border }]}>›</Text>}
+          </TouchableOpacity>
+        )}
+        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.borderLight }]} />}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>

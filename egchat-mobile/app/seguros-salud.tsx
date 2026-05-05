@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Alert, T
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const TABS = [
   { id: 'salud', icon: '🏥', label: 'Salud' },
@@ -41,6 +43,8 @@ export default function SegurosSaludScreen() {
   const [nif, setNif] = useState('');
   const [taxResult, setTaxResult] = useState<any>(null);
   const [taxLoading, setTaxLoading] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const consultarDGI = () => {
     if (!nif.trim()) { Alert.alert('Error', 'Introduce tu NIF'); return; }

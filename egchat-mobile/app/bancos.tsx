@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const BANKS = [
   { name: 'BANGE', full: 'Banco Nacional de Guinea Ecuatorial', color: '#003082', phone: '+240 333 09 00 00', web: 'https://bange.gq', services: ['Cuenta corriente', 'Tarjeta débito/crédito', 'Transferencias CEMAC', 'Préstamos personales', 'Banca empresarial'] },
@@ -14,26 +16,27 @@ const BANKS = [
 
 export default function BancosScreen() {
   const [selected, setSelected] = useState<typeof BANKS[0] | null>(null);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => selected ? setSelected(null) : router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{selected ? selected.name : '🏦 Bancos'}</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>{selected ? selected.name : '🏦 Bancos'}</Text>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {!selected ? (
           BANKS.map(b => (
-            <TouchableOpacity key={b.name} style={styles.card} onPress={() => setSelected(b)} activeOpacity={0.7}>
+            <TouchableOpacity key={b.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]} onPress={() => setSelected(b)} activeOpacity={0.7}>
               <View style={[styles.dot, { backgroundColor: b.color }]} />
               <View style={styles.info}>
-                <Text style={styles.name}>{b.name}</Text>
-                <Text style={styles.sub}>{b.full}</Text>
+                <Text style={[styles.name, { color: C.textPrimary }]}>{b.name}</Text>
+                <Text style={[styles.sub, { color: C.textTertiary }]}>{b.full}</Text>
               </View>
-              <Text style={styles.arrow}>›</Text>
+              <Text style={[styles.arrow, { color: C.border }]}>›</Text>
             </TouchableOpacity>
           ))
         ) : (
@@ -42,18 +45,18 @@ export default function BancosScreen() {
               <Text style={styles.bankName}>{selected.name}</Text>
               <Text style={styles.bankFull}>{selected.full}</Text>
             </View>
-            <Text style={styles.sectionLabel}>SERVICIOS</Text>
+            <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>SERVICIOS</Text>
             {selected.services.map(s => (
               <View key={s} style={styles.serviceRow}>
                 <Text style={styles.serviceDot}>●</Text>
-                <Text style={styles.serviceText}>{s}</Text>
+                <Text style={[styles.serviceText, { color: C.textPrimary }]}>{s}</Text>
               </View>
             ))}
             <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${selected.phone}`)}>
               <Text style={styles.callBtnText}>📞 {selected.phone}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.callBtn, styles.webBtn]} onPress={() => Linking.openURL(selected.web)}>
-              <Text style={styles.callBtnText}>🌐 Visitar web</Text>
+            <TouchableOpacity style={[styles.callBtn, styles.webBtn, { backgroundColor: C.bgSecondary }]} onPress={() => Linking.openURL(selected.web)}>
+              <Text style={[styles.callBtnText, { color: Colors.accent }]}>🌐 Visitar web</Text>
             </TouchableOpacity>
           </View>
         )}

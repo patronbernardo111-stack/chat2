@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Linking } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const GAMES = [
   { icon: '⚽', name: 'Apuestas deportivas', desc: 'Fútbol, baloncesto, tenis y más', color: '#22c55e', available: true },
@@ -15,52 +17,34 @@ const GAMES = [
 const DISCLAIMER = '⚠️ El juego puede crear adicción. Juega con responsabilidad. Solo mayores de 18 años. Si tienes problemas con el juego, llama al +240 333 09 99 99.';
 
 export default function ApuestasScreen() {
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
   const openGame = (game: typeof GAMES[0]) => {
-    if (!game.available) {
-      Alert.alert('Próximamente', `${game.name} estará disponible pronto.`);
-      return;
-    }
-    Alert.alert(
-      game.icon + ' ' + game.name,
-      'Serás redirigido al operador de juego autorizado.\n\n' + DISCLAIMER,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Continuar', onPress: () => {} },
-      ]
-    );
+    if (!game.available) { Alert.alert('Próximamente', `${game.name} estará disponible pronto.`); return; }
+    Alert.alert(game.icon + ' ' + game.name, 'Serás redirigido al operador de juego autorizado.\n\n' + DISCLAIMER, [{ text: 'Cancelar', style: 'cancel' }, { text: 'Continuar', onPress: () => {} }]);
   };
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🎰 Apuestas y Juegos</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>🎰 Apuestas y Juegos</Text>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.disclaimer}>
-          <Text style={styles.disclaimerText}>{DISCLAIMER}</Text>
-        </View>
-
+        <View style={styles.disclaimer}><Text style={styles.disclaimerText}>{DISCLAIMER}</Text></View>
         {GAMES.map(g => (
-          <TouchableOpacity key={g.name} style={[styles.card, !g.available && styles.cardDisabled]} onPress={() => openGame(g)} activeOpacity={0.7}>
-            <View style={[styles.iconBox, { backgroundColor: g.color + '20' }]}>
-              <Text style={styles.icon}>{g.icon}</Text>
-            </View>
+          <TouchableOpacity key={g.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }, !g.available && styles.cardDisabled]} onPress={() => openGame(g)} activeOpacity={0.7}>
+            <View style={[styles.iconBox, { backgroundColor: g.color + '20' }]}><Text style={styles.icon}>{g.icon}</Text></View>
             <View style={styles.info}>
-              <Text style={styles.name}>{g.name}</Text>
-              <Text style={styles.desc}>{g.desc}</Text>
+              <Text style={[styles.name, { color: C.textPrimary }]}>{g.name}</Text>
+              <Text style={[styles.desc, { color: C.textTertiary }]}>{g.desc}</Text>
             </View>
-            {g.available
-              ? <Text style={styles.badge}>Disponible</Text>
-              : <Text style={styles.badgeSoon}>Pronto</Text>}
+            {g.available ? <Text style={styles.badge}>Disponible</Text> : <Text style={[styles.badgeSoon, { backgroundColor: C.bgTertiary, color: C.textTertiary }]}>Pronto</Text>}
           </TouchableOpacity>
         ))}
-
-        <TouchableOpacity style={styles.helpBtn} onPress={() => Linking.openURL('tel:+240333099999')}>
-          <Text style={styles.helpBtnText}>🆘 Ayuda con el juego responsable</Text>
+        <TouchableOpacity style={[styles.helpBtn, { backgroundColor: C.bgSecondary, borderColor: C.border }]} onPress={() => Linking.openURL('tel:+240333099999')}>
+          <Text style={[styles.helpBtnText, { color: C.textSecondary }]}>🆘 Ayuda con el juego responsable</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

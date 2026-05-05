@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Alert } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const CATEGORIES = [
   {
@@ -42,35 +44,35 @@ const CATEGORIES = [
 
 export default function OcioScreen() {
   const [selected, setSelected] = useState<typeof CATEGORIES[0] | null>(null);
-
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => selected ? setSelected(null) : router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{selected ? selected.title : '🎭 Ocio'}</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>{selected ? selected.title : '🎭 Ocio'}</Text>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {!selected ? (
           CATEGORIES.map(cat => (
-            <TouchableOpacity key={cat.id} style={styles.catCard} onPress={() => setSelected(cat)} activeOpacity={0.7}>
+            <TouchableOpacity key={cat.id} style={[styles.catCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]} onPress={() => setSelected(cat)} activeOpacity={0.7}>
               <View style={[styles.catIcon, { backgroundColor: cat.color + '20' }]}>
                 <Text style={styles.catEmoji}>{cat.icon}</Text>
               </View>
               <View style={styles.catInfo}>
-                <Text style={styles.catTitle}>{cat.title}</Text>
-                <Text style={styles.catSub}>{cat.items.length} lugares disponibles</Text>
+                <Text style={[styles.catTitle, { color: C.textPrimary }]}>{cat.title}</Text>
+                <Text style={[styles.catSub, { color: C.textTertiary }]}>{cat.items.length} lugares disponibles</Text>
               </View>
-              <Text style={styles.arrow}>›</Text>
+              <Text style={[styles.arrow, { color: C.border }]}>›</Text>
             </TouchableOpacity>
           ))
         ) : (
           selected.items.map(item => (
-            <View key={item.name} style={styles.itemCard}>
+            <View key={item.name} style={[styles.itemCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={[styles.itemName, { color: C.textPrimary }]}>{item.name}</Text>
                 {item.stars ? <Text style={styles.itemStars}>{item.stars}</Text> : null}
                 <Text style={styles.itemPrice}>{item.price}</Text>
               </View>

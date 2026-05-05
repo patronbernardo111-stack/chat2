@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Alert } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const SECTIONS = [
   {
@@ -37,43 +39,33 @@ const SECTIONS = [
 export default function ServiciosDiariosScreen() {
   const [active, setActive] = useState(SECTIONS[0].id);
   const section = SECTIONS.find(s => s.id === active)!;
-
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Servicios diarios</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>Servicios diarios</Text>
       </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         {SECTIONS.map(s => (
-          <TouchableOpacity
-            key={s.id}
-            style={[styles.tab, active === s.id && styles.tabActive]}
-            onPress={() => setActive(s.id)}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity key={s.id} style={[styles.tab, active === s.id && styles.tabActive]} onPress={() => setActive(s.id)} activeOpacity={0.7}>
             <Text style={styles.tabIcon}>{s.icon}</Text>
-            <Text style={[styles.tabText, active === s.id && styles.tabTextActive]}>{s.title}</Text>
+            <Text style={[styles.tabText, active === s.id && styles.tabTextActive, { color: active === s.id ? Colors.accent : C.textTertiary }]}>{s.title}</Text>
           </TouchableOpacity>
         ))}
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {section.items.map(item => (
-          <View key={item.name} style={styles.card}>
+          <View key={item.name} style={[styles.card, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
             <View style={styles.cardInfo}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemDesc}>{item.desc}</Text>
+              <Text style={[styles.itemName, { color: C.textPrimary }]}>{item.name}</Text>
+              <Text style={[styles.itemDesc, { color: C.textSecondary }]}>{item.desc}</Text>
               <Text style={styles.itemPrice}>{item.price}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.callBtn}
-              onPress={() => Linking.openURL(`tel:${item.phone}`)}
-            >
+            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${item.phone}`)}>
               <Text style={styles.callIcon}>📞</Text>
             </TouchableOpacity>
           </View>

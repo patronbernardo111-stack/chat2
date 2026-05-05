@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { authAPI } from '../../src/api';
+import { useAuth } from '../../src/hooks/useAuth';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
@@ -60,6 +61,8 @@ export default function RegisterScreen() {
   const [localError, setLocalError] = useState('');
   const displayError = localError || authError;
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const selectedCountry = COUNTRIES.find(c => c.phone === countryCode) || COUNTRIES[0];
   const fullPhone = countryCode + phone.replace(/\s/g, '');
@@ -107,20 +110,16 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={goBack} style={styles.backBtn}>
-              <Text style={styles.backText}>← Atrás</Text>
+              <Text style={[styles.backText, { color: C.textPrimary }]}>← Atrás</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.stepLabel}>Paso {step} de 3</Text>
+            <Text style={[styles.title, { color: C.textPrimary }]}>Crear Cuenta</Text>
+            <Text style={[styles.stepLabel, { color: C.textSecondary }]}>Paso {step} de 3</Text>
             <ProgressBar step={step} />
           </View>
 

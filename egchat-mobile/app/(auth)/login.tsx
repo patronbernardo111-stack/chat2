@@ -12,10 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {
-  Colors, Typography, Spacing, BorderRadius,
-  Shadow, FontSize, FontWeight,
-} from '../../src/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadow, FontSize, FontWeight } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 import { EGButton, EGInput, EGErrorMessage } from '../../src/components/ui';
 import { useAuth } from '../../src/hooks/useAuth';
 import {
@@ -49,6 +48,8 @@ export default function LoginScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const { login, isLoading, error, clearError } = useAuth();
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   // Animación del logo (spin igual que la web)
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -65,7 +66,7 @@ export default function LoginScreen() {
   const doLogin = () => login(fullPhone, password);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: C.bgPrimary }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -95,8 +96,8 @@ export default function LoginScreen() {
 
           {/* ── Formulario ── */}
           <View style={styles.formArea}>
-            <Text style={styles.title}>Iniciar sesión</Text>
-            <Text style={styles.subtitle}>Introduce tu teléfono y contraseña</Text>
+            <Text style={[styles.title, { color: C.textPrimary }]}>Iniciar sesión</Text>
+            <Text style={[styles.subtitle, { color: C.textSecondary }]}>Introduce tu teléfono y contraseña</Text>
 
             {/* Selector de país */}
             <View style={styles.fieldGroup}>

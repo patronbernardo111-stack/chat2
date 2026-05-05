@@ -6,6 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { EGAvatar } from '../../src/components/ui';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 export default function CallScreen() {
   const { callId, targetName, targetAvatar, callType, role } = useLocalSearchParams<{
@@ -19,6 +21,8 @@ export default function CallScreen() {
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
   const [speaker, setSpeaker] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

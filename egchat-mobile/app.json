@@ -1,4 +1,4 @@
- {
+{
   "expo": {
     "name": "EGCHAT",
     "slug": "egchat",
@@ -50,9 +50,14 @@
             "./assets/notification.wav"
           ]
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "web": {
       "bundler": "metro",
       "output": "single"

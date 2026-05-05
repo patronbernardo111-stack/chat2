@@ -5,6 +5,8 @@ import { router } from 'expo-router';
 import { taxiAPI } from '../src/api';
 import { EGInput, EGButton } from '../src/components/ui';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const RIDE_TYPES = [
   { id: 'moto', label: 'Moto', sub: '1 pasajero', price: 500, eta: '2 min', color: '#F97316', icon: '🏍️' },

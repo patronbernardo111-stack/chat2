@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 const COUNTRIES = [
   { flag: '🇬🇶', name: 'Guinea Ecuatorial', capital: 'Malabo', currency: 'XAF', phone: '+240' },
@@ -22,49 +24,42 @@ const SERVICES = [
 ];
 
 export default function CemacScreen() {
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🌍 Zona CEMAC</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>🌍 Zona CEMAC</Text>
       </View>
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.banner}>
           <Text style={styles.bannerTitle}>Comunidad Económica y Monetaria de África Central</Text>
           <Text style={styles.bannerSub}>6 países · 1 moneda (XAF) · 55 millones de habitantes</Text>
         </View>
-
-        <Text style={styles.sectionLabel}>PAÍSES MIEMBROS</Text>
+        <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>PAÍSES MIEMBROS</Text>
         <View style={styles.countriesGrid}>
           {COUNTRIES.map(c => (
-            <View key={c.name} style={styles.countryCard}>
+            <View key={c.name} style={[styles.countryCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
               <Text style={styles.countryFlag}>{c.flag}</Text>
-              <Text style={styles.countryName}>{c.name}</Text>
-              <Text style={styles.countrySub}>{c.capital}</Text>
+              <Text style={[styles.countryName, { color: C.textPrimary }]}>{c.name}</Text>
+              <Text style={[styles.countrySub, { color: C.textTertiary }]}>{c.capital}</Text>
               <Text style={styles.countryPhone}>{c.phone}</Text>
             </View>
           ))}
         </View>
-
-        <Text style={styles.sectionLabel}>SERVICIOS DISPONIBLES</Text>
+        <Text style={[styles.sectionLabel, { color: C.textTertiary }]}>SERVICIOS DISPONIBLES</Text>
         {SERVICES.map(s => (
-          <TouchableOpacity
-            key={s.title}
-            style={styles.serviceCard}
-            onPress={() => {}}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity key={s.title} style={[styles.serviceCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]} onPress={() => {}} activeOpacity={0.7}>
             <Text style={styles.serviceIcon}>{s.icon}</Text>
             <View style={styles.serviceInfo}>
-              <Text style={styles.serviceTitle}>{s.title}</Text>
-              <Text style={styles.serviceDesc}>{s.desc}</Text>
+              <Text style={[styles.serviceTitle, { color: C.textPrimary }]}>{s.title}</Text>
+              <Text style={[styles.serviceDesc, { color: C.textSecondary }]}>{s.desc}</Text>
             </View>
           </TouchableOpacity>
         ))}
-
         <TouchableOpacity style={styles.webBtn} onPress={() => Linking.openURL('https://www.cemac.int')}>
           <Text style={styles.webBtnText}>🌐 Sitio oficial CEMAC</Text>
         </TouchableOpacity>

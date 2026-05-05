@@ -8,6 +8,8 @@ import { router } from 'expo-router';
 import { contactsAPI, chatAPI } from '../src/api';
 import { EGAvatar } from '../src/components/ui';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight } from '../src/theme';
+import { useThemeContext } from '../src/theme/ThemeContext';
+import { DarkColors } from '../src/theme/darkMode';
 
 export default function ContactsScreen() {
   const [contacts, setContacts] = useState<any[]>([]);
@@ -15,6 +17,8 @@ export default function ContactsScreen() {
   const [loading, setLoading] = useState(true);
   const [addPhone, setAddPhone] = useState('');
   const [adding, setAdding] = useState(false);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const load = useCallback(async () => {
     try {
@@ -68,80 +72,50 @@ export default function ContactsScreen() {
     : contacts;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Contactos</Text>
+        <Text style={[styles.title, { color: C.textPrimary }]}>Contactos</Text>
         <Text style={styles.count}>{contacts.length}</Text>
       </View>
-
-      {/* Añadir contacto */}
       <View style={styles.addBar}>
-        <TextInput
-          style={styles.addInput}
-          value={addPhone}
-          onChangeText={setAddPhone}
-          placeholder="Añadir por teléfono..."
-          placeholderTextColor={Colors.textTertiary}
-          keyboardType="phone-pad"
-        />
-        <TouchableOpacity
-          style={[styles.addBtn, !addPhone.trim() && styles.addBtnDisabled]}
-          onPress={addContact}
-          disabled={!addPhone.trim() || adding}
-        >
-          {adding
-            ? <ActivityIndicator size="small" color={Colors.white} />
-            : <Text style={styles.addBtnText}>+</Text>}
+        <TextInput style={[styles.addInput, { backgroundColor: C.bgSecondary, borderColor: C.border, color: C.textPrimary }]} value={addPhone} onChangeText={setAddPhone} placeholder="Añadir por teléfono..." placeholderTextColor={C.textTertiary} keyboardType="phone-pad" />
+        <TouchableOpacity style={[styles.addBtn, !addPhone.trim() && styles.addBtnDisabled]} onPress={addContact} disabled={!addPhone.trim() || adding}>
+          {adding ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.addBtnText}>+</Text>}
         </TouchableOpacity>
       </View>
-
-      {/* Búsqueda */}
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, { backgroundColor: C.bgSecondary, borderColor: C.border }]}>
         <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Buscar contacto..."
-          placeholderTextColor={Colors.textTertiary}
-        />
+        <TextInput style={[styles.searchInput, { color: C.textPrimary }]} value={query} onChangeText={setQuery} placeholder="Buscar contacto..." placeholderTextColor={C.textTertiary} />
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
+        <View style={styles.center}><ActivityIndicator size="large" color={Colors.accent} /></View>
       ) : filtered.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyIcon}>👥</Text>
-          <Text style={styles.emptyText}>{query ? 'Sin resultados' : 'No tienes contactos aún'}</Text>
-          <Text style={styles.emptySub}>Añade un contacto por su número de teléfono</Text>
+          <Text style={[styles.emptyText, { color: C.textPrimary }]}>{query ? 'Sin resultados' : 'No tienes contactos aún'}</Text>
+          <Text style={[styles.emptySub, { color: C.textSecondary }]}>Añade un contacto por su número de teléfono</Text>
         </View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => openChat(item.contact_user_id || item.id)}
-              onLongPress={() => removeContact(item.id, item.full_name || item.name || 'Contacto')}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={[styles.item, { backgroundColor: C.bgSecondary }]} onPress={() => openChat(item.contact_user_id || item.id)} onLongPress={() => removeContact(item.id, item.full_name || item.name || 'Contacto')} activeOpacity={0.7}>
               <EGAvatar src={item.avatar_url} name={item.full_name || item.name || '?'} size={46} />
               <View style={styles.info}>
-                <Text style={styles.name}>{item.full_name || item.name || 'Usuario'}</Text>
-                <Text style={styles.phone}>{item.phone || ''}</Text>
+                <Text style={[styles.name, { color: C.textPrimary }]}>{item.full_name || item.name || 'Usuario'}</Text>
+                <Text style={[styles.phone, { color: C.textTertiary }]}>{item.phone || ''}</Text>
               </View>
               <TouchableOpacity onPress={() => openChat(item.contact_user_id || item.id)} style={styles.chatBtn}>
                 <Text style={styles.chatBtnIcon}>💬</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.borderLight }]} />}
           showsVerticalScrollIndicator={false}
         />
       )}
