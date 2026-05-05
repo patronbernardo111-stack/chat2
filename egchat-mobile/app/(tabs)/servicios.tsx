@@ -662,6 +662,8 @@ const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: ()
 // ── Pantalla principal ────────────────────────────────────────────
 export default function ServiciosScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const openService = (id: string) => {
     const modalServices = ['taxi', 'electricidad', 'agua', 'recarga'];
