@@ -667,7 +667,7 @@ export default function ServiciosScreen() {
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   const openService = (id: string) => {
-    const modalServices = ['taxi', 'electricidad', 'agua', 'recarga'];
+    const modalServices = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
     if (modalServices.includes(id)) {
       setActiveModal(id);
     } else if (id === 'bancos') {
