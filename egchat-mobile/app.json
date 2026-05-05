@@ -52,8 +52,9 @@
         }
       ]
     ],
+    "platforms": ["ios", "android", "web"],
     "web": {
-      "bundler": "webpack",
+      "bundler": "metro",
       "output": "single"
     },
     "scheme": "egchat",
