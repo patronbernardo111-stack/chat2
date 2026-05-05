@@ -1,6 +1,6 @@
 node_modules/
 .expo/
-dist/
+# dist/ — incluido para deploy en Vercel
 web-build/
 *.jks
 *.p8
