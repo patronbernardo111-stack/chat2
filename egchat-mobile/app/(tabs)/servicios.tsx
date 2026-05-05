@@ -677,6 +677,8 @@ export default function ServiciosScreen() {
       router.push('/ocio' as any);
     } else if (id === 'apuestas') {
       router.push('/apuestas' as any);
+    } else if (id === 'seguros' || id === 'salud' || id === 'impuestos' || id === 'correos') {
+      router.push('/seguros-salud' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
     }
