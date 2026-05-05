@@ -1,0 +1,141 @@
+// EGCHAT Translations — basado en translations.ts de la web
+// Idiomas: ES (Español), FR (Français), EN (English)
+
+export type Lang = 'ES' | 'FR' | 'EN';
+
+export const translations: Record<Lang, Record<string, string>> = {
+  ES: {
+    // Auth
+    login: 'Iniciar sesión',
+    register: 'Crear cuenta',
+    logout: 'Cerrar sesión',
+    phone: 'Teléfono',
+    password: 'Contraseña',
+    name: 'Nombre completo',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    enterPhone: 'Introduce tu teléfono y contraseña',
+    // Chat
+    messages: 'Mensajes',
+    newChat: 'Nuevo chat',
+    typeMessage: 'Escribe un mensaje...',
+    send: 'Enviar',
+    online: 'En línea',
+    // Wallet
+    wallet: 'Monedero',
+    balance: 'Saldo disponible',
+    recharge: 'Recargar',
+    withdraw: 'Retirar',
+    transfer: 'Enviar',
+    transactions: 'Transacciones',
+    // Services
+    services: 'Servicios',
+    taxi: 'Taxi',
+    electricity: 'Electricidad',
+    water: 'Agua',
+    // General
+    back: 'Atrás',
+    cancel: 'Cancelar',
+    save: 'Guardar',
+    confirm: 'Confirmar',
+    error: 'Error',
+    success: 'Éxito',
+    loading: 'Cargando...',
+    noResults: 'Sin resultados',
+    comingSoon: 'Próximamente',
+    settings: 'Ajustes',
+    profile: 'Perfil',
+    contacts: 'Contactos',
+    stories: 'Estados',
+    map: 'Mapa',
+  },
+  FR: {
+    login: 'Se connecter',
+    register: 'Créer un compte',
+    logout: 'Se déconnecter',
+    phone: 'Téléphone',
+    password: 'Mot de passe',
+    name: 'Nom complet',
+    forgotPassword: 'Mot de passe oublié?',
+    enterPhone: 'Entrez votre téléphone et mot de passe',
+    messages: 'Messages',
+    newChat: 'Nouveau chat',
+    typeMessage: 'Écrire un message...',
+    send: 'Envoyer',
+    online: 'En ligne',
+    wallet: 'Portefeuille',
+    balance: 'Solde disponible',
+    recharge: 'Recharger',
+    withdraw: 'Retirer',
+    transfer: 'Envoyer',
+    transactions: 'Transactions',
+    services: 'Services',
+    taxi: 'Taxi',
+    electricity: 'Électricité',
+    water: 'Eau',
+    back: 'Retour',
+    cancel: 'Annuler',
+    save: 'Enregistrer',
+    confirm: 'Confirmer',
+    error: 'Erreur',
+    success: 'Succès',
+    loading: 'Chargement...',
+    noResults: 'Aucun résultat',
+    comingSoon: 'Bientôt disponible',
+    settings: 'Paramètres',
+    profile: 'Profil',
+    contacts: 'Contacts',
+    stories: 'Statuts',
+    map: 'Carte',
+  },
+  EN: {
+    login: 'Sign in',
+    register: 'Create account',
+    logout: 'Sign out',
+    phone: 'Phone',
+    password: 'Password',
+    name: 'Full name',
+    forgotPassword: 'Forgot password?',
+    enterPhone: 'Enter your phone and password',
+    messages: 'Messages',
+    newChat: 'New chat',
+    typeMessage: 'Type a message...',
+    send: 'Send',
+    online: 'Online',
+    wallet: 'Wallet',
+    balance: 'Available balance',
+    recharge: 'Top up',
+    withdraw: 'Withdraw',
+    transfer: 'Send',
+    transactions: 'Transactions',
+    services: 'Services',
+    taxi: 'Taxi',
+    electricity: 'Electricity',
+    water: 'Water',
+    back: 'Back',
+    cancel: 'Cancel',
+    save: 'Save',
+    confirm: 'Confirm',
+    error: 'Error',
+    success: 'Success',
+    loading: 'Loading...',
+    noResults: 'No results',
+    comingSoon: 'Coming soon',
+    settings: 'Settings',
+    profile: 'Profile',
+    contacts: 'Contacts',
+    stories: 'Stories',
+    map: 'Map',
+  },
+};
+
+// Hook de traducción
+import { useState } from 'react';
+
+let currentLang: Lang = 'ES';
+
+export const setLanguage = (lang: Lang) => { currentLang = lang; };
+export const getLanguage = () => currentLang;
+
+export const t = (key: string): string => {
+  return translations[currentLang][key] || translations['ES'][key] || key;
+};

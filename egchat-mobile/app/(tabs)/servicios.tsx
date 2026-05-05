@@ -663,6 +663,8 @@ export default function ServiciosScreen() {
       router.push('/bancos' as any);
     } else if (id === 'cemac') {
       router.push('/cemac' as any);
+    } else if (id === 'supermercado') {
+      router.push('/supermercados' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
     }
