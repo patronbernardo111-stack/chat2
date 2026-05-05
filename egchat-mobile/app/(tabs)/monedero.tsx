@@ -526,25 +526,23 @@ export default function MonederoScreen() {
         </View>
 
         {/* Transacciones */}
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Últimas transacciones</Text>
+        <View style={[s.section, { backgroundColor: C.bgSecondary }]}>
+          <Text style={[s.sectionTitle, { color: C.textPrimary }]}>Últimas transacciones</Text>
           {transactions.length === 0 ? (
             <View style={s.empty}>
               <Text style={s.emptyIcon}>💳</Text>
-              <Text style={s.emptyText}>Sin transacciones aún</Text>
+              <Text style={[s.emptyText, { color: C.textSecondary }]}>Sin transacciones aún</Text>
             </View>
           ) : (
             transactions.slice(0, 20).map((tx: any, i: number) => (
-              <View key={tx.id || i} style={[s.txItem, i < transactions.length - 1 && s.txBorder]}>
-                <View style={[s.txIcon, { backgroundColor: isCredit(tx.type) ? Colors.accentLight : '#FEF2F2' }]}>
+              <View key={tx.id || i} style={[s.txItem, i < transactions.length - 1 && [s.txBorder, { borderBottomColor: C.borderLight }]]}>
+                <View style={[s.txIcon, { backgroundColor: isCredit(tx.type) ? C.accentLight : '#2d1117' }]}>
                   <Text style={s.txEmoji}>{getTxIcon(tx.type)}</Text>
                 </View>
                 <View style={s.txInfo}>
-                  <Text style={s.txLabel}>{getTxLabel(tx)}</Text>
-                  <Text style={s.txDate}>{formatDate(tx.created_at || tx.date)}</Text>
-                  {tx.reference && (
-                    <Text style={s.txRef} numberOfLines={1}>Ref: {tx.reference}</Text>
-                  )}
+                  <Text style={[s.txLabel, { color: C.textPrimary }]}>{getTxLabel(tx)}</Text>
+                  <Text style={[s.txDate, { color: C.textTertiary }]}>{formatDate(tx.created_at || tx.date)}</Text>
+                  {tx.reference && <Text style={[s.txRef, { color: C.textTertiary }]} numberOfLines={1}>Ref: {tx.reference}</Text>}
                 </View>
                 <Text style={[s.txAmount, { color: isCredit(tx.type) ? Colors.accent : '#EF4444' }]}>
                   {isCredit(tx.type) ? '+' : '-'}{fmt(tx.amount)} {currency}

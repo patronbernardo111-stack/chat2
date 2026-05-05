@@ -10,6 +10,8 @@ import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
 } from '../../src/theme';
+import { useThemeContext } from '../../src/theme/ThemeContext';
+import { DarkColors } from '../../src/theme/darkMode';
 
 // ── Tipos de servicios ────────────────────────────────────────────
 const SERVICES = [
