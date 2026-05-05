@@ -1,0 +1,7 @@
+chore: security fixes egchat-mobile
+
+- Remove @expo/webpack-config (deprecated, source of 9 vulns)
+- Add .gitignore to egchat-mobile (excludes .expo cache, node_modules)
+- Add npm overrides for @xmldom/xmldom, tar, uuid
+- Remove .expo/web/cache from git tracking
+- Result: 40 vulns reduced to 18 moderate (all in Expo 52 core)
