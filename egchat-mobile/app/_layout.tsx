@@ -3,11 +3,12 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { authAPI, setUnauthorizedHandler } from '../src/api';
 import { registerForPushNotifications, setupNotificationListeners, clearBadge } from '../src/notifications';
 import { Colors, ThemeProvider, useThemeContext } from '../src/theme';
+import { useWebRTC } from '../src/hooks/useWebRTC';
 
 // StatusBar dinámica según el tema
 function StatusBarController() {
@@ -18,6 +19,8 @@ function StatusBarController() {
 export default function RootLayout() {
   const [checking, setChecking] = useState(true);
   const notifCleanup = useRef<(() => void) | null>(null);
+  const incomingCleanup = useRef<(() => void) | null>(null);
+  const { pollIncoming } = useWebRTC();
 
   useEffect(() => {
     // Interceptor global 401
@@ -30,7 +33,7 @@ export default function RootLayout() {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
           try {
-            await authAPI.me();
+            const me = await authAPI.me();
             router.replace('/(tabs)');
 
             // Registrar push notifications
@@ -50,10 +53,45 @@ export default function RootLayout() {
                     targetName: callData.callerName,
                     callType: callData.callType || 'audio',
                     role: 'callee',
+                    offer: callData.offer ? JSON.stringify(callData.offer) : undefined,
                   }
                 } as any);
               }
             );
+
+            // Polling de llamadas entrantes (fallback cuando push no llega)
+            if (me?.id) {
+              incomingCleanup.current = pollIncoming(
+                me.id,
+                (call) => {
+                  Alert.alert(
+                    `📞 Llamada entrante`,
+                    `${call.callerName || 'Alguien'} te está llamando`,
+                    [
+                      {
+                        text: 'Rechazar',
+                        style: 'destructive',
+                        onPress: () => {},
+                      },
+                      {
+                        text: 'Aceptar',
+                        onPress: () => router.push({
+                          pathname: '/call/[callId]',
+                          params: {
+                            callId: call.callId,
+                            targetName: call.callerName || 'Usuario',
+                            targetAvatar: call.callerAvatar || '',
+                            callType: call.type || 'audio',
+                            role: 'callee',
+                            offer: call.offer ? JSON.stringify(call.offer) : undefined,
+                          },
+                        } as any),
+                      },
+                    ]
+                  );
+                },
+              );
+            }
 
             // Limpiar badge al abrir
             clearBadge();
@@ -79,7 +117,10 @@ export default function RootLayout() {
 
     init();
 
-    return () => { notifCleanup.current?.(); };
+    return () => {
+      notifCleanup.current?.();
+      incomingCleanup.current?.();
+    };
   }, []);
 
   if (checking) {

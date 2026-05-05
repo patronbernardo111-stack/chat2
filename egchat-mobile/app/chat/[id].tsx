@@ -418,10 +418,10 @@ export default function ChatScreen() {
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call-${chatId}-${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller' } } as any)}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
             <Text style={styles.headerBtnIcon}>📞</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call-${chatId}-${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller' } } as any)}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
             <Text style={styles.headerBtnIcon}>📹</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn}><Text style={styles.headerBtnIcon}>⋮</Text></TouchableOpacity>
