@@ -58,6 +58,8 @@ export default function AjustesScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [nameError, setNameError] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const { isDark, mode, setMode } = useThemeContext();
+  const C = isDark ? require('../../src/theme/darkMode').DarkColors : Colors;
 
   // Cargar perfil
   useEffect(() => {
@@ -192,12 +194,12 @@ export default function AjustesScreen() {
     ?.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('') || 'EG';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Ajustes</Text>
+        <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+          <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Ajustes</Text>
         </View>
 
         {/* ── Perfil Card ── */}
@@ -272,6 +274,33 @@ export default function AjustesScreen() {
             </View>
           )}
         </EGCard>
+
+        {/* ── Tema ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>APARIENCIA</Text>
+          <EGCard style={[styles.optionsCard, { backgroundColor: C.bgSecondary }]}>
+            {(['light', 'system', 'dark'] as ThemeMode[]).map((m, i, arr) => (
+              <React.Fragment key={m}>
+                <TouchableOpacity
+                  style={styles.settingsItem}
+                  onPress={() => setMode(m)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.settingsIcon}>
+                    {m === 'light' ? '☀️' : m === 'dark' ? '🌙' : '📱'}
+                  </Text>
+                  <View style={styles.settingsInfo}>
+                    <Text style={[styles.settingsLabel, { color: C.textPrimary }]}>
+                      {m === 'light' ? 'Claro' : m === 'dark' ? 'Oscuro' : 'Sistema'}
+                    </Text>
+                  </View>
+                  {mode === m && <Text style={{ color: Colors.accent, fontSize: 18 }}>✓</Text>}
+                </TouchableOpacity>
+                {i < arr.length - 1 && <View style={styles.divider} />}
+              </React.Fragment>
+            ))}
+          </EGCard>
+        </View>
 
         {/* ── Opciones ── */}
         <View style={styles.section}>
