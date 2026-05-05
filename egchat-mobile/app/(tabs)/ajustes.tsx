@@ -292,7 +292,7 @@ export default function AjustesScreen() {
             <View style={styles.divider} />
             <SettingsItem icon="🛡️" label="Política de privacidad" />
             <View style={styles.divider} />
-            <SettingsItem icon="📷" label="Escanear QR" onPress={() => router.push('/qr-scanner' as any)} />
+            <SettingsItem icon="📷" label="Escanear QR" onPress={() => router.push('/_qr-scanner' as any)} />
           </EGCard>
         </View>
 

@@ -95,7 +95,7 @@ export default function RootLayout() {
           <Stack.Screen name="contacts" options={{ presentation: 'modal' }} />
           <Stack.Screen name="stories" options={{ presentation: 'modal' }} />
           <Stack.Screen name="map" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="qr-scanner" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="_qr-scanner" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="call/[callId]" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
           <Stack.Screen name="bancos" options={{ presentation: 'modal' }} />
           <Stack.Screen name="cemac" options={{ presentation: 'modal' }} />
