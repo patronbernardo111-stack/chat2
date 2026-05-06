@@ -5101,7 +5101,7 @@ const App: React.FC = () => {
               left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), 
               right: 0, 
               bottom: 0,
-              height: '100dvh',
+              height: 'var(--app-height, 100dvh)',
               display: 'flex', 
               flexDirection: 'column', 
               overflow: 'hidden',
@@ -9584,8 +9584,8 @@ const App: React.FC = () => {
     <div
       onClick={unlockAudio}
       style={{
-        minHeight: '100vh',
-        height: '100vh',
+        minHeight: 'var(--app-height, 100vh)',
+        height: 'var(--app-height, 100vh)',
         overflow: 'hidden',
         background: '#f0f2f5',
         position: 'relative',
@@ -9701,7 +9701,7 @@ const App: React.FC = () => {
         flex: device.isMobile ? undefined : 1, 
         overflow: 'hidden', 
         position: 'relative', 
-        height: '100vh',
+        height: 'var(--app-height, 100vh)',
         background: device.isMobile ? '#f0f2f5' : '#fff',
       }}>
       {/* Wallpaper solo se aplica dentro del chat, no aquí */}
