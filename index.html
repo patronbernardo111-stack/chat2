@@ -27,12 +27,6 @@
     <meta name="msapplication-TileColor" content="#f0f2f5" />
 
     <!-- Anti-flash inline: fondo del body antes de que cargue el CSS -->
-    <script>
-      // Inicializar --app-height antes de React para evitar flash de altura incorrecta
-      function _setAppH() { document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px'); }
-      _setAppH();
-      window.addEventListener('resize', _setAppH);
-    </script>
     <style>
       html, body, #root {
         background-color: #f0f2f5 !important;
