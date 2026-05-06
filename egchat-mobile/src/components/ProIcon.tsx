@@ -47,7 +47,6 @@ export const ProIcon: React.FC<ProIconProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'linear-gradient(135deg, #F59E0B, #EF4444)' as any,
     backgroundColor: '#F59E0B',
     alignItems: 'center',
     justifyContent: 'center',
