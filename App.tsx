@@ -757,9 +757,11 @@ const App: React.FC = () => {
       const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       document.documentElement.style.setProperty('--keyboard-offset', `${keyboardHeight}px`);
       document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
-      // El header del chat debe seguir el offsetTop del viewport (iOS hace scroll del viewport)
-      // offsetTop > 0 significa que iOS ha hecho scroll hacia abajo → el header debe bajar también
-      document.documentElement.style.setProperty('--vv-offset-top', `${vv.offsetTop}px`);
+      // El header del chat NO debe seguir el offsetTop cuando el teclado está abierto.
+      // Con teclado abierto (offsetTop > 0) el header se queda en top:0 para no quedar
+      // oculto bajo la barra de estado del sistema.
+      const headerTop = vv.offsetTop > 10 ? 0 : vv.offsetTop;
+      document.documentElement.style.setProperty('--vv-offset-top', `${headerTop}px`);
     };
 
     vv.addEventListener('resize', onResize);
