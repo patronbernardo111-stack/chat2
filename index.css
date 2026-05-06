@@ -26,7 +26,7 @@ body {
   scroll-behavior: smooth;
   touch-action: manipulation;
   height: 100vh;
-  height: 100dvh; /* sobrescribe en browsers que lo soportan */
+  height: var(--app-height, 100dvh); /* más fiable que dvh en iOS Safari */
   /* Evitar el bounce scroll que expone el fondo en iOS */
   overscroll-behavior: none;
 }
@@ -34,7 +34,7 @@ body {
 #root {
   width: 100%;
   height: 100vh;
-  height: 100dvh; /* sobrescribe en browsers que lo soportan */
+  height: var(--app-height, 100dvh); /* más fiable que dvh en iOS Safari */
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;

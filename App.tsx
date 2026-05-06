@@ -757,6 +757,8 @@ const App: React.FC = () => {
       const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       document.documentElement.style.setProperty('--keyboard-offset', `${keyboardHeight}px`);
       document.documentElement.style.setProperty('--vv-height', `${vv.height}px`);
+      // --app-height siempre refleja el innerHeight real (más fiable que 100dvh en iOS Safari)
+      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
       // El header del chat NO debe seguir el offsetTop cuando el teclado está abierto.
       // Con teclado abierto (offsetTop > 0) el header se queda en top:0 para no quedar
       // oculto bajo la barra de estado del sistema.
