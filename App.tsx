@@ -5095,10 +5095,11 @@ const App: React.FC = () => {
             <>
             <div className="chat-view-container" style={{ 
               position: 'fixed', 
-              top: 'var(--vv-offset-top, 0px)',
+              top: 0,
               left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'), 
               right: 0, 
-              bottom: device.isMobile ? 'var(--keyboard-offset, 0px)' : 0,
+              bottom: 0,
+              height: '100dvh',
               display: 'flex', 
               flexDirection: 'column', 
               overflow: 'hidden',
@@ -10443,7 +10444,7 @@ const App: React.FC = () => {
         return (
           <div style={{ 
             position: 'fixed',
-            top: 'var(--vv-offset-top, 0px)',
+            top: 0,
             left: device.isMobile ? 0 : (device.isTablet ? '72px' : '240px'),
             right: 0,
             zIndex: 1102,
