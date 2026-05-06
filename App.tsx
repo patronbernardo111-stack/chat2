@@ -6210,11 +6210,9 @@ const App: React.FC = () => {
               <div style={{
                 flexShrink: 0,
                 background: '#f0f2f5',
-                borderTop: 'none',
+                borderTop: '1px solid #ddd',
                 padding: '8px 8px',
-                // Cuando el teclado está abierto (keyboard-offset > 0), no añadir safe area bottom
-                // porque el keyboard-offset ya lo incluye
-                paddingBottom: '8px',
+                paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
