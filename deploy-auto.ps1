@@ -13,7 +13,9 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 }
 
 # 1. Verificar si hay cambios
+git rm --cached egchat-api-temp 2>$null  # eliminar submódulo roto si vuelve a aparecer
 git add -A
+git reset HEAD egchat-api-temp 2>$null   # asegurarse de no stagear egchat-api-temp
 $diff = git diff --cached --quiet 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Sin cambios, no se hace deploy"

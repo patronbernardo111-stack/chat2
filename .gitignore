@@ -4,3 +4,6 @@ dist/
 
 # Local Netlify folder
 .netlify
+
+# Submódulo roto - no trackear
+egchat-api-temp/
