@@ -73,9 +73,7 @@
         "projectId": "6200ec00-54d7-4ef4-a348-56e80a1452f6"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "owner": "reddington120"
   }
 }
