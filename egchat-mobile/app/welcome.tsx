@@ -3,15 +3,16 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Animated, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, FontSize, FontWeight, Shadow } from '../src/theme';
 import { useThemeContext } from '../src/theme/ThemeContext';
 import { DarkColors } from '../src/theme/darkMode';
 
 const FEATURES = [
-  { icon: '💬', title: 'Chats en tiempo real',  sub: 'Mensajes instantáneos' },
-  { icon: '💳', title: 'Pagos seguros XAF',     sub: 'Transferencias rápidas' },
-  { icon: '🤖', title: 'IA Lia-25',             sub: 'Asistente 24/7' },
+  { icon: '💬', title: 'Chats Tiempo Real',  sub: 'Mensajes instantáneos' },
+  { icon: '💳', title: 'Pagos Seguros XAF',  sub: 'Transferencias rápidas' },
+  { icon: '🤖', title: 'IA Lia-25',          sub: 'Asistente 24/7' },
 ];
 
 const FLAGS = ['🇬🇶', '🇨🇲', '🇬🇦', '🇨🇬', '🇪🇸', '🇫🇷', '🇬🇧', '🇺🇸'];
@@ -35,7 +36,13 @@ export default function WelcomeScreen() {
   const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]}>
+    <LinearGradient
+      colors={['#d4eef7', '#c8eee0', '#d4eef7']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    >
+    <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo */}
         <View style={styles.logoSection}>
@@ -56,15 +63,15 @@ export default function WelcomeScreen() {
         </View>
 
         {/* Features */}
-        <View style={[styles.featuresCard, { backgroundColor: isDark ? C.bgSecondary : 'rgba(255,255,255,0.8)' }]}>
+        <View style={styles.featuresCard}>
           {FEATURES.map((f, i) => (
-            <View key={i} style={styles.featureItem}>
+            <View key={i} style={[styles.featureItem, i < FEATURES.length - 1 && styles.featureItemBorder]}>
               <View style={styles.featureIconBox}>
                 <Text style={styles.featureIcon}>{f.icon}</Text>
               </View>
               <View>
-                <Text style={[styles.featureTitle, { color: C.textPrimary }]}>{f.title}</Text>
-                <Text style={[styles.featureSub, { color: C.textSecondary }]}>{f.sub}</Text>
+                <Text style={styles.featureTitle}>{f.title}</Text>
+                <Text style={styles.featureSub}>{f.sub}</Text>
               </View>
             </View>
           ))}
@@ -77,7 +84,7 @@ export default function WelcomeScreen() {
             onPress={() => router.push('/(auth)/register' as any)}
             activeOpacity={0.85}
           >
-            <Text style={styles.btnPrimaryText}>👤 Crear cuenta</Text>
+            <Text style={styles.btnPrimaryText}>👤  Crear Cuenta</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -85,18 +92,19 @@ export default function WelcomeScreen() {
             onPress={() => router.push('/(auth)/login' as any)}
             activeOpacity={0.85}
           >
-            <Text style={styles.btnSecondaryText}>🔑 Ya tengo cuenta</Text>
+            <Text style={styles.btnSecondaryText}>→  Ya tengo cuenta</Text>
           </TouchableOpacity>
         </View>
 
         <Text style={styles.version}>v1.0.0 · Guinea Ecuatorial</Text>
       </Animated.View>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgPrimary },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { flex: 1, paddingHorizontal: Spacing.screenPadding, justifyContent: 'space-between', paddingVertical: Spacing.xl },
 
   // Logo
@@ -112,32 +120,35 @@ const styles = StyleSheet.create({
   logo: { width: 140, height: 140 },
   flagsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
   flag: { fontSize: 22 },
-  tagline: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: FontWeight.medium },
+  tagline: { fontSize: FontSize.sm, color: '#555', fontWeight: FontWeight.medium },
 
   // Features
   featuresCard: {
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    gap: Spacing.lg,
+    gap: 0,
     ...Shadow.md,
   },
-  featureItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  featureItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: 14 },
+  featureItemBorder: { borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   featureIconBox: {
     width: 44, height: 44,
     borderRadius: 12,
-    backgroundColor: Colors.accentLight,
+    backgroundColor: '#e8f8ee',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#07C160',
   },
   featureIcon: { fontSize: 22 },
-  featureTitle: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-  featureSub: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  featureTitle: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: '#111' },
+  featureSub: { fontSize: FontSize.sm, color: '#888' },
 
   // Buttons
   buttons: { gap: Spacing.md },
   btnPrimary: {
-    backgroundColor: Colors.accent,
+    backgroundColor: '#07C160',
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     alignItems: 'center',
@@ -154,5 +165,5 @@ const styles = StyleSheet.create({
   },
   btnSecondaryText: { color: Colors.textPrimary, fontSize: FontSize.lg, fontWeight: FontWeight.semibold },
 
-  version: { textAlign: 'center', fontSize: FontSize.xs, color: Colors.textTertiary },
+  version: { textAlign: 'center', fontSize: FontSize.xs, color: '#999' },
 });
