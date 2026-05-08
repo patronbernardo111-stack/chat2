@@ -31,12 +31,6 @@ allprojects {
                 }
             }
         }
-        // Fix: Inconsistent JVM Target between Java and Kotlin tasks
-        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                jvmTarget = '17'
-            }
-        }
     }
 }
 
