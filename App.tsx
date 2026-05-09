@@ -13,7 +13,7 @@ import { RecargaMonederoModal, RetiroMonederoModal } from './WalletSystem';
 import { useWallet } from './WalletSystem';
 import { ContactProfileModal } from './ContactProfileModal';
 import { CameraModal } from './CameraModal';
-import { useDevice } from './useDevice';
+import { useSwipeNavigation } from './useSwipeNavigation';
 import { EGChatDesktopWelcome } from './EGChatDesktopWelcome';
 import { UpdateBanner } from './UpdateBanner';
 import { PhotoEditorModal } from './PhotoEditorModal';
@@ -364,6 +364,16 @@ const App: React.FC = () => {
   }, []);
   // Helper: navegar a una vista siempre cierra el men radial
   const navigateTo = (view: string) => { setIsMenuOpen(false); setCurrentView(view); };
+
+  // ── Swipe navigation (gestos Android nativos entre tabs) ──────────────────
+  const MAIN_TABS = ['home', 'Mensajería', 'monedero', 'servicios', 'ajustes'];
+  const { handlers: swipeHandlers } = useSwipeNavigation({
+    tabs: MAIN_TABS,
+    currentTab: currentView,
+    onNavigate: navigateTo,
+    // Deshabilitar swipe cuando hay un chat abierto o un modal visible
+    disabled: !device.isMobile || !!selectedChat || !MAIN_TABS.includes(currentView),
+  });
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [selectedService, setSelectedService] = useState<string>('');
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -9580,6 +9590,7 @@ const App: React.FC = () => {
   return (
     <div
       onClick={unlockAudio}
+      {...(device.isMobile ? swipeHandlers : {})}
       style={{
         minHeight: '100vh',
         height: '100vh',
