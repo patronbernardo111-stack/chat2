@@ -14,6 +14,7 @@ import { useWallet } from './WalletSystem';
 import { ContactProfileModal } from './ContactProfileModal';
 import { CameraModal } from './CameraModal';
 import { useSwipeNavigation } from './useSwipeNavigation';
+import { useDevice } from './useDevice';
 import { EGChatDesktopWelcome } from './EGChatDesktopWelcome';
 import { UpdateBanner } from './UpdateBanner';
 import { PhotoEditorModal } from './PhotoEditorModal';
