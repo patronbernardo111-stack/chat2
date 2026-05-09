@@ -1,120 +1,100 @@
-const CACHE_NAME = 'egchat-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/main.tsx',
-  '/App.tsx',
-  '/MiTaxiView.tsx',
-  '/index.css',
-  '/favicon.svg',
-  '/manifest.json'
-];
+// sw.js — Network-first strategy para assets JS/CSS
+// Esto garantiza que los usuarios siempre reciban el bundle más reciente
+// y no queden atrapados con versiones viejas en caché.
 
-// Install event - cache resources
+const CACHE = 'egchat-v20260101-000000'; // actualizado por vite en cada build
+
+// Install: activar inmediatamente sin esperar a que se cierre la pestaña vieja
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
+  self.skipWaiting();
 });
 
-// Fetch event - serve cached content when offline
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-
-        // Clone the request
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        ).catch(() => {
-          // Offline fallback
-          if (event.request.destination === 'document') {
-            return caches.match('/index.html');
-          }
-        });
-      })
-  );
-});
-
-// Activate event - clean up old caches
+// Activate: limpiar todos los caches viejos y tomar control inmediatamente
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// Background sync for offline actions
-self.addEventListener('sync', event => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(doBackgroundSync());
+// Fetch: network-first para JS/CSS/HTML, cache-first para imágenes/fuentes
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Solo manejar requests del mismo origen
+  if (url.origin !== location.origin) return;
+
+  const isAsset = /\.(js|css|html)(\?.*)?$/.test(url.pathname);
+
+  if (isAsset) {
+    // Network-first: siempre intenta la red primero
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Guardar en caché solo si la respuesta es válida
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback a caché si no hay red
+          return caches.match(request).then(cached => {
+            if (cached) return cached;
+            // Si es HTML y no hay caché, devolver index.html
+            if (request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+          });
+        })
+    );
+  } else {
+    // Cache-first para imágenes, fuentes, SVGs
+    event.respondWith(
+      caches.match(request).then(cached => {
+        if (cached) return cached;
+        return fetch(request).then(response => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE).then(cache => cache.put(request, clone));
+          }
+          return response;
+        });
+      })
+    );
   }
 });
 
-function doBackgroundSync() {
-  // Handle background synchronization
-  return Promise.resolve();
-}
-
 // Push notifications
 self.addEventListener('push', event => {
+  const data = event.data ? event.data.json().catch(() => ({})) : {};
+  const title = data.title || 'EGCHAT';
   const options = {
-    body: event.data ? event.data.text() : 'Nueva notificación de EGCHAT',
+    body: data.body || 'Tienes una nueva notificación',
     icon: '/favicon.svg',
     badge: '/favicon.svg',
     vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    },
+    data: { url: data.url || '/' },
     actions: [
-      {
-        action: 'explore',
-        title: 'Ver',
-        icon: '/favicon.svg'
-      },
-      {
-        action: 'close',
-        title: 'Cerrar',
-        icon: '/favicon.svg'
-      }
-    ]
+      { action: 'open',  title: 'Ver'    },
+      { action: 'close', title: 'Cerrar' },
+    ],
   };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
 
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  if (event.action === 'close') return;
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
-    self.registration.showNotification('EGCHAT', options)
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url === url && 'focus' in c);
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
   );
 });
