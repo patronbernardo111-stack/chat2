@@ -3246,7 +3246,26 @@ const App: React.FC = () => {
                     style={{ background: 'rgba(243,244,246,0.85)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', padding: '6px 10px', color: '#374151', fontSize: '14px', cursor: 'pointer', outline: 'none' }}>
                     Cancelar
                   </button>
-                  <button onClick={() => { setUserProfile({ ...editedProfile }); setIsEditingProfile(false); setEditedProfile(null); }}
+                  <button onClick={async () => {
+                    // 1. Actualizar estado local inmediatamente
+                    setUserProfile({ ...editedProfile });
+                    setIsEditingProfile(false);
+                    setEditedProfile(null);
+                    // 2. Persistir en localStorage
+                    localStorage.setItem('egchat_user_profile', JSON.stringify({ ...editedProfile }));
+                    if (editedProfile.avatarUrl) localStorage.setItem('user_avatar', editedProfile.avatarUrl);
+                    // 3. Guardar en el servidor para que todos los contactos vean los cambios
+                    try {
+                      await authAPI.updateProfile({
+                        full_name: editedProfile.name,
+                        avatar_url: editedProfile.avatarUrl || '',
+                      });
+                      showToast('Perfil actualizado', 'success');
+                    } catch {
+                      // Si falla el servidor, los cambios quedan en local
+                      showToast('Guardado localmente', 'info');
+                    }
+                  }}
                     style={{ background: 'rgba(0,200,160,0.2)', border: '1px solid rgba(0,200,160,0.4)', borderRadius: '8px', padding: '6px 10px', color: '#00c8a0', fontSize: '14px', fontWeight: '600', cursor: 'pointer', outline: 'none' }}>
                     Guardar
                   </button>
