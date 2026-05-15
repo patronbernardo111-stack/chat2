@@ -2497,7 +2497,7 @@ const App: React.FC = () => {
       boxShadow: '0 2px 8px rgba(0,200,160,0.3)',
       overflow: 'hidden',
       // En tablet/desktop no hay status bar — solo en móvil
-      paddingTop: device.isMobile ? 'max(36px, env(safe-area-inset-top, 36px))' : '0',
+      paddingTop: device.isMobile ? 'max(28px, env(safe-area-inset-top, 28px))' : '0',
       // Compositing layer propio para evitar repaints en iOS
       willChange: 'transform',
       transform: 'translateZ(0)',
@@ -10453,7 +10453,7 @@ const App: React.FC = () => {
             right: 0,
             zIndex: 1102,
             display: 'flex', alignItems: 'center', 
-            paddingTop: device.isMobile ? 'calc(max(44px, env(safe-area-inset-top, 44px)) + 8px)' : '10px', 
+            paddingTop: device.isMobile ? 'calc(env(safe-area-inset-top, 44px) + 10px)' : '10px', 
             paddingLeft: '4px', paddingRight: '8px', paddingBottom: '10px', 
             background: 'linear-gradient(135deg, #00b4e6 0%, #0088cc 100%)', 
             flexShrink: 0, 
