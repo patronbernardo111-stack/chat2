@@ -6729,7 +6729,7 @@ const App: React.FC = () => {
             {/* Lista de conversacines ? datos reales del backend */}
             <div
               className="scroll-container"
-              style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, paddingBottom: '100px' }}
+              style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)' }}
             >
               {/* Chats reales del backend */}
               {realChats.length > 0 && realChats
