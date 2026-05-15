@@ -366,15 +366,6 @@ const App: React.FC = () => {
   // Helper: navegar a una vista siempre cierra el men radial
   const navigateTo = (view: string) => { setIsMenuOpen(false); setCurrentView(view); };
 
-  // ── Swipe navigation (gestos Android nativos entre tabs) ──────────────────
-  const MAIN_TABS = ['home', 'Mensajería', 'monedero', 'servicios', 'ajustes'];
-  const { handlers: swipeHandlers } = useSwipeNavigation({
-    tabs: MAIN_TABS,
-    currentTab: currentView,
-    onNavigate: navigateTo,
-    // Deshabilitar swipe cuando hay un chat abierto o un modal visible
-    disabled: !device.isMobile || !!selectedChat || !MAIN_TABS.includes(currentView),
-  });
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [selectedService, setSelectedService] = useState<string>('');
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -441,6 +432,16 @@ const App: React.FC = () => {
     } catch { return _selectedChat; }
   })() : null;
   const setSelectedChat = _setSelectedChat;
+
+  // ── Swipe navigation (gestos Android nativos entre tabs) ──────────────────
+  const MAIN_TABS = ['home', 'Mensajería', 'monedero', 'servicios', 'ajustes'];
+  const { handlers: swipeHandlers } = useSwipeNavigation({
+    tabs: MAIN_TABS,
+    currentTab: currentView,
+    onNavigate: navigateTo,
+    // Deshabilitar swipe cuando hay un chat abierto o un modal visible
+    disabled: !device.isMobile || !!selectedChat || !MAIN_TABS.includes(currentView),
+  });
   const [chatMessages, setChatMessages] = useState<Record<string, Array<{id: string; from: 'me'|'them'; text: string; time: string; type?: 'text'|'audio'|'image'; status?: 'pending'|'delivered'|'read'; audioUrl?: string; imageUrl?: string; fileUrl?: string; fileName?: string; fileSize?: string; fileExt?: string}>>>(() => {
     try { const s = localStorage.getItem('egchat_messages'); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
