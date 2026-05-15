@@ -579,6 +579,11 @@ const App: React.FC = () => {
   const [expandFavoriteContacts, setExpandFavoriteContacts] = useState<boolean>(false);
   const [expandFavoriteGroups, setExpandFavoriteGroups] = useState<boolean>(false);
   const [favoriteContacts, setFavoriteContacts] = useState<any[]>([]);
+  // IDs de contactos/grupos que tienen estados nuevos sin ver
+  // Se sincroniza con localStorage para que EstadosView pueda actualizarlo
+  const [contactsWithNewStory, setContactsWithNewStory] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('egchat_new_stories') || '[]'); } catch { return []; }
+  });
   const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; bank: string; type: string; balance: number; icon: string }>>([
     { id: '1', bank: 'BANGE', type: 'Corriente', balance: 45200, icon: 'banking' },
     { id: '2', bank: 'CCEI Bank', type: 'Ahorros', balance: 80000, icon: 'banking' }
@@ -6508,7 +6513,10 @@ const App: React.FC = () => {
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <Avatar name={contact.name || contact.user?.name || '?'} size={56} showStatus={false} photo={contact.avatar_url || contact.user?.avatar_url} />
+                        <Avatar name={contact.name || contact.user?.name || '?'} size={56} showStatus={false} photo={contact.avatar_url || contact.user?.avatar_url}
+                          hasStory={contactsWithNewStory.includes(contact.id?.toString())}
+                          storySeeen={false}
+                        />
                         <span style={{ 
                           fontSize: '13px', 
                           fontWeight: '600',
@@ -6588,7 +6596,23 @@ const App: React.FC = () => {
                     ) : realChats.filter((c: any) => c.type === 'group' && favoriteGroupIds.includes(c.id?.toString())).slice(0, 6).map((group: any) => (
                       <button
                         key={group.id}
-                        onClick={() => setSelectedChat(group)}
+                        onClick={() => {
+                          const name = group.name || group.title || 'Grupo';
+                          const initials = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
+                          setSelectedChat({
+                            id: group.id,
+                            type: 'group',
+                            title: name,
+                            subtitle: `${group.members?.length || group.participants?.length || 0} miembros`,
+                            time: '',
+                            status: 'online',
+                            initials,
+                            color: '#a855f7',
+                            avatarUrl: group.avatar_url || group.avatarUrl || '',
+                            isGroup: true,
+                          });
+                          setCurrentView('Mensajería');
+                        }}
                         style={{
                           background: 'transparent',
                           border: 'none',
@@ -6607,7 +6631,11 @@ const App: React.FC = () => {
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <Avatar name={group.name || 'Grupo'} size={56} showStatus={false} />
+                        <Avatar name={group.name || 'Grupo'} size={56} showStatus={false}
+                          photo={group.avatar_url || group.avatarUrl}
+                          hasStory={contactsWithNewStory.includes(group.id?.toString())}
+                          storySeeen={false}
+                        />
                         <span style={{ 
                           fontSize: '13px', 
                           fontWeight: '600',

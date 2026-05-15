@@ -332,12 +332,16 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const myColor = currentUser?.color || '#00c8a0';
   const myName = currentUser?.name || 'Mi estado';
 
-  const [stories, setStories] = useState<Story[]>(() =>
-    STORIES.map(s => s.userId === 'me'
+  const [stories, setStories] = useState<Story[]>(() => {
+    const initial = STORIES.map(s => s.userId === 'me'
       ? { ...s, userName: myName, avatar: myAvatar, color: myColor }
       : s
-    )
-  );
+    );
+    // Sincronizar con localStorage para que App.tsx muestre rings en favoritos
+    const newIds = initial.filter(x => !x.seen && x.media.length > 0 && x.userId !== 'me').map(x => x.userId);
+    try { localStorage.setItem('egchat_new_stories', JSON.stringify(newIds)); } catch {}
+    return initial;
+  });
   const [myStoryId, setMyStoryId] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Story | null>(null);
   const [slideIdx, setSlideIdx] = useState(0);
@@ -906,7 +910,13 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
     if (s.userId === 'me') return;
     if (!s.media.length) return;
     setViewing({ ...s, views: s.views + 1 }); setSlideIdx(0); setShowReplies(false);
-    setStories(prev => prev.map(x => x.id === s.id ? { ...x, seen: true, views: x.views + 1 } : x));
+    setStories(prev => {
+      const updated = prev.map(x => x.id === s.id ? { ...x, seen: true, views: x.views + 1 } : x);
+      // Sincronizar con localStorage para que App.tsx pueda mostrar el ring en favoritos
+      const newStoryIds = updated.filter(x => !x.seen && x.media.length > 0 && x.userId !== 'me').map(x => x.userId);
+      try { localStorage.setItem('egchat_new_stories', JSON.stringify(newStoryIds)); } catch {}
+      return updated;
+    });
     // Registrar vista en servidor si tiene ID real
     if (s.id && s.id !== 'me-contact' && !s.id.startsWith('me')) {
       storiesAPI.registerView(s.id).catch(() => {});
