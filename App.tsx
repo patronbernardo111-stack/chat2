@@ -6443,9 +6443,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Seccin: Contactos Favoritos - COLAPSABLE */}
-              <div style={{
-                marginBottom: '8px'
-              }}>
+              <div style={{ marginBottom: expandFavoriteContacts ? '8px' : '2px' }}>
                 <button
                   onClick={() => setExpandFavoriteContacts(!expandFavoriteContacts)}
                   style={{
@@ -6556,9 +6554,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Seccin: Grupos Favoritos - COLAPSABLE */}
-              <div style={{
-                marginBottom: '8px'
-              }}>                <button
+              <div style={{ marginBottom: expandFavoriteGroups ? '8px' : '2px' }}>                <button
                   onClick={() => setExpandFavoriteGroups(!expandFavoriteGroups)}
                   style={{
                     width: '100%',
