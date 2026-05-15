@@ -17,6 +17,7 @@ interface Espacio { id: string; name: string; cover: string; emoji: string; desc
 interface Props {
   onBack: () => void;
   currentUser?: { id?: string; name?: string; avatar?: string; avatarUrl?: string; color?: string };
+  adminGroups?: { id: string; name: string; avatar_url?: string; color?: string }[];
 }
 type CreateMode = 'text' | 'video' | 'clip' | 'live' | 'gallery' | null;
 
@@ -326,7 +327,7 @@ const VideoEditor: React.FC<VideoEditorProps> = ({
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
+export const EstadosView: React.FC<Props> = ({ onBack, currentUser, adminGroups = [] }) => {
   // Inicializar el story "me" con datos reales del usuario si están disponibles
   const myAvatar = currentUser?.avatarUrl ? '' : (currentUser?.name ? currentUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : 'JP');
   const myColor = currentUser?.color || '#00c8a0';
@@ -352,6 +353,9 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const [espacios, setEspacios] = useState<Espacio[]>(ESPACIOS);
   const [activeEspacio, setActiveEspacio] = useState<Espacio | null>(null);
   const [createMode, setCreateMode] = useState<CreateMode>(null);
+  // 'me' = publicar como yo mismo | groupId = publicar como grupo
+  const [publishAs, setPublishAs] = useState<'me' | string>('me');
+  const [showPublishAsPicker, setShowPublishAsPicker] = useState(false);
   const [newText, setNewText] = useState('');
   const [newBg, setNewBg] = useState(BG_OPTIONS[0]);
   const [newEmoji, setNewEmoji] = useState('');
@@ -789,6 +793,45 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
   const publishText = () => {
     if (!newText.trim()) return;
     const newMedia: StoryMedia = { type: 'text' as const, content: newText, bg: newBg, emoji: newEmoji, music: newMusic !== 'Sin musica' ? newMusic : undefined };
+
+    if (publishAs !== 'me') {
+      // Publicar como grupo
+      const group = adminGroups.find(g => g.id === publishAs);
+      if (!group) return;
+      const groupName = group.name;
+      const groupInitials = groupName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+      const groupStory: Story = {
+        id: `group-${group.id}-${Date.now()}`,
+        userId: `group-${group.id}`,
+        userName: `${groupName} (grupo)`,
+        avatar: groupInitials,
+        color: group.color || '#a855f7',
+        media: [newMedia],
+        time: 'ahora',
+        seen: false,
+        views: 0,
+        reactions: [{ emoji: '❤️', count: 0, reacted: false }, { emoji: '🔥', count: 0, reacted: false }],
+        replies: [],
+        publishedAt: Date.now(),
+      };
+      setStories(prev => {
+        const existing = prev.findIndex(s => s.userId === `group-${group.id}`);
+        let updated: Story[];
+        if (existing >= 0) {
+          updated = prev.map((s, i) => i === existing ? { ...s, media: [...s.media, newMedia], time: 'ahora', publishedAt: Date.now() } : s);
+        } else {
+          updated = [...prev, groupStory];
+        }
+        // Sincronizar con localStorage
+        const newIds = updated.filter(x => !x.seen && x.media.length > 0 && x.userId !== 'me').map(x => x.userId);
+        try { localStorage.setItem('egchat_new_stories', JSON.stringify(newIds)); } catch {}
+        return updated;
+      });
+      // Intentar publicar en servidor con tag de grupo
+      storiesAPI.publish([newMedia]).catch(() => {});
+      closeCreate();
+      return;
+    }
     // Publicar en servidor
     storiesAPI.publish([newMedia]).then(res => {
       if (res?.id) setMyStoryId(res.id);
@@ -1805,7 +1848,45 @@ export const EstadosView: React.FC<Props> = ({ onBack, currentUser }) => {
             <span style={{ fontSize: '17px', fontWeight: '700', color: '#111', flex: 1 }}>Nuevo estado</span>
             <button onClick={publishText} style={{ background: '#00c8a0', border: 'none', borderRadius: '20px', padding: '7px 18px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>Publicar</button>
           </div>
-          <div style={{ margin: '16px', height: '200px', borderRadius: '16px', background: newBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px' }}>
+
+          {/* Selector "Publicar como" — solo si hay grupos donde soy admin */}
+          {adminGroups.length > 0 && (
+            <div style={{ padding: '10px 16px 0', position: 'relative' }}>
+              <button onClick={() => setShowPublishAsPicker(p => !p)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '20px', padding: '6px 14px', cursor: 'pointer', outline: 'none' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: publishAs === 'me' ? '#00c8a0' : (adminGroups.find(g => g.id === publishAs)?.color || '#a855f7'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#fff' }}>
+                  {publishAs === 'me' ? (currentUser?.avatar || 'YO') : (adminGroups.find(g => g.id === publishAs)?.name?.slice(0, 2).toUpperCase() || 'GR')}
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                  {publishAs === 'me' ? 'Publicar como yo' : `Publicar como ${adminGroups.find(g => g.id === publishAs)?.name}`}
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {showPublishAsPicker && (
+                <div style={{ position: 'absolute', top: '100%', left: '16px', right: '16px', background: '#fff', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb', zIndex: 100, overflow: 'hidden', marginTop: '4px' }}>
+                  <div onClick={() => { setPublishAs('me'); setShowPublishAsPicker(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', cursor: 'pointer', background: publishAs === 'me' ? '#f0fdf4' : 'transparent', borderBottom: '1px solid #f3f4f6' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#00c8a0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff' }}>{currentUser?.avatar || 'YO'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>{currentUser?.name || 'Yo'}</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280' }}>Mi estado personal</div>
+                    </div>
+                    {publishAs === 'me' && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </div>
+                  {adminGroups.map(g => (
+                    <div key={g.id} onClick={() => { setPublishAs(g.id); setShowPublishAsPicker(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', cursor: 'pointer', background: publishAs === g.id ? '#faf5ff' : 'transparent', borderBottom: '1px solid #f3f4f6' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: g.color || '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', overflow: 'hidden' }}>
+                        {g.avatar_url ? <img src={g.avatar_url} alt={g.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : g.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>{g.name}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280' }}>Grupo · Admin</div>
+                      </div>
+                      {publishAs === g.id && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
             {newEmoji && <div style={{ fontSize: '44px' }}>{newEmoji}</div>}
             <div style={{ fontSize: '18px', fontWeight: '700', color: '#fff', textAlign: 'center', padding: '0 20px', lineHeight: 1.4 }}>{newText || 'Escribe algo...'}</div>
             {newMusic !== 'Sin musica' && <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', background: 'rgba(0,0,0,0.25)', padding: '3px 10px', borderRadius: '12px' }}>🎵 {newMusic}</div>}
