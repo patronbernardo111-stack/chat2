@@ -6558,8 +6558,7 @@ const App: React.FC = () => {
               {/* Seccin: Grupos Favoritos - COLAPSABLE */}
               <div style={{
                 marginBottom: '8px'
-              }}>
-                <button
+              }}>                <button
                   onClick={() => setExpandFavoriteGroups(!expandFavoriteGroups)}
                   style={{
                     width: '100%',
