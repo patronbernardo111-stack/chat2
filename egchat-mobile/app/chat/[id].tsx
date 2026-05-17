@@ -433,6 +433,7 @@ export default function ChatScreen() {
   const [contextVisible, setContextVisible] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -970,17 +971,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
-    // gradiente via LinearGradient
   },
   backBtn: { padding: Spacing.sm },
   backIcon: { fontSize: 28, color: Colors.white, lineHeight: 32 },
   headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   headerText: { flex: 1 },
   headerName: { ...Typography.chatHeaderName, color: '#ffffff' },
-  headerStatus: { ...Typography.onlineStatus, color: 'rgba(255,255,255,0.85)' },
+  headerStatus: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
   headerActions: { flexDirection: 'row', gap: 4 },
   headerBtn: { padding: Spacing.sm },
   headerBtnIcon: { fontSize: 18, color: Colors.white },
+
+  // Chat background — beige estilo WhatsApp
+  chatBg: {
+    flex: 1,
+    backgroundColor: '#e5ddd5',
+    position: 'relative',
+  },
 
   // Messages
   messagesList: { paddingHorizontal: Spacing.sm + 2, paddingVertical: Spacing.sm, gap: 2 },
@@ -996,14 +1003,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.bubblePaddingH,
   },
   ownBubble: {
-    backgroundColor: Colors.bubbleOwn,
+    backgroundColor: '#d9fdd3',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 4,
+    ...Shadow.bubble,
   },
   theirBubble: {
-    backgroundColor: Colors.bubbleOther,
+    backgroundColor: '#ffffff',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 4,
@@ -1044,7 +1052,7 @@ const styles = StyleSheet.create({
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bubbleOther,
+    backgroundColor: '#ffffff',
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -1086,6 +1094,55 @@ const styles = StyleSheet.create({
   emptyChatIcon: { fontSize: 48, marginBottom: Spacing.md },
   emptyChatText: { ...Typography.subtitle, color: Colors.textSecondary },
 
+  // LIA-25 flotante en el chat
+  liaFloat: {
+    position: 'absolute',
+    right: 12,
+    bottom: 120,
+    zIndex: 10,
+    ...Shadow.md,
+  },
+  liaFloatGrad: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  liaFloatIcon: { fontSize: 20 },
+
+  // Panel adjuntos — grid 2 columnas
+  attachPanel: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.xl,
+    backgroundColor: Colors.bgSecondary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    justifyContent: 'flex-start',
+  },
+  attachItem: {
+    width: '22%',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  attachIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachEmoji: { fontSize: 28 },
+  attachLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+
   // Input bar
   inputBar: {
     flexDirection: 'row',
@@ -1093,10 +1150,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgSecondary,
     borderTopWidth: 1,
     borderTopColor: Colors.borderLight,
-    paddingHorizontal: Spacing.chatInputBarPadding + 2,
-    paddingVertical: Spacing.chatInputBarPadding,
-    gap: Spacing.chatInputBarGap,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
   },
+  // Botón + adjuntos
+  attachBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.bgTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  attachBtnIcon: {
+    fontSize: 26,
+    color: Colors.textSecondary,
+    lineHeight: 30,
+    fontWeight: '300',
+  },
+  // Campo texto
   inputWrapper: {
     flex: 1,
     backgroundColor: Colors.bgTertiary,
@@ -1107,10 +1181,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: { fontSize: FontSize.md, color: Colors.textPrimary, maxHeight: 120, padding: 0 },
+  // Emoji
+  emojiBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emojiBtnIcon: { fontSize: 22 },
+  // Micrófono
+  micBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.bgTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Enviar
   sendBtn: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: Colors.border },
   sendBtnIcon: { color: Colors.white, fontSize: 16 },
