@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Shadow.lg,
   },
-  logo: { width: 160, height: 160 },
+  logo: { width: 160, height: 160, borderRadius: 80 },
   flagsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
   flag: { fontSize: 22 },
   tagline: { fontSize: FontSize.sm, color: '#555', fontWeight: FontWeight.medium },

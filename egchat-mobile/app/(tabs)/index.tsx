@@ -161,8 +161,21 @@ export default function HomeScreen() {
   const fabRotate = useRef(new Animated.Value(0)).current;
   const fabOverlayOpacity = useRef(new Animated.Value(0)).current;
   const fabItemAnims = useRef(FAB_SERVICES.map(() => new Animated.Value(0))).current;
+  // Animación LIA — pulso continuo
+  const liaPulse = useRef(new Animated.Value(1)).current;
 
   const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
+
+  // ── Animación LIA pulso ─────────────────────────────────────────
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(liaPulse, { toValue: 1.12, duration: 900, useNativeDriver: true }),
+        Animated.timing(liaPulse, { toValue: 1.0,  duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   // ── Carga de datos ──────────────────────────────────────────────
@@ -480,24 +493,25 @@ export default function HomeScreen() {
       {/* ════════════════════════════════════════════════════════
           LIA-25 — Asistente flotante (círculo derecho)
       ════════════════════════════════════════════════════════ */}
-      <TouchableOpacity
-        style={st.liaBtn}
-        activeOpacity={0.85}
-        onPress={() => router.push('/(tabs)/lia' as any)}
-      >
-        <LinearGradient
-          colors={['#00C8A0', '#00B4E6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={st.liaBtnGradient}
+      <Animated.View style={[st.liaBtn, { transform: [{ scale: liaPulse }] }]}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/(tabs)/lia' as any)}
         >
-          <Image
-            source={require('../../assets/icon.png')}
-            style={st.liaLogoImg}
-            resizeMode="cover"
-          />
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={['#00C8A0', '#00B4E6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={st.liaBtnGradient}
+          >
+            <Image
+              source={require('../../assets/icon.png')}
+              style={st.liaLogoImg}
+              resizeMode="cover"
+            />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* ════════════════════════════════════════════════════════
           FAB + — Botón central flotante
@@ -734,7 +748,7 @@ const st = StyleSheet.create({
   appIconBox: {
     width: 72,
     height: 72,
-    borderRadius: BorderRadius.lg,
+    borderRadius: 36,
     backgroundColor: Colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
