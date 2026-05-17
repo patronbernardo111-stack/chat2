@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { serviciosAPI, taxiAPI, walletAPI, authAPI } from '../../src/api';
 import { EGButton, EGInput, EGCard } from '../../src/components/ui';
+import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,

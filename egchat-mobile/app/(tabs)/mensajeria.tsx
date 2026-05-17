@@ -425,6 +425,33 @@ export default function MensajeriaScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
+      {/* ══════════════════════════════════════════════════════════
+          PANELES DEL HEADER
+      ══════════════════════════════════════════════════════════ */}
+      <NotificationsPanel
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onClearAll={() => setNotifications([])}
+        onNotifPress={(n) => {
+          setNotifications(prev => prev.filter(x => x.id !== n.id));
+          setShowNotifications(false);
+          if (n.chatId) router.push(`/chat/${n.chatId}` as any);
+        }}
+      />
+      <HamburgerMenu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+      />
+      <WeatherModal
+        visible={showWeather}
+        onClose={() => setShowWeather(false)}
+        temp="27°"
+        city="Malabo"
+        condition="cloudy"
+      />
+
     </SafeAreaView>
   );
 }
