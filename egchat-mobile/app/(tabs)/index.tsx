@@ -17,6 +17,7 @@ import {
   Image,
   Platform,
   Dimensions,
+  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -164,6 +165,45 @@ export default function HomeScreen() {
   const fabItemAnims = useRef(FAB_SERVICES.map(() => new Animated.Value(0))).current;
   // Animación LIA — pulso continuo
   const liaPulse = useRef(new Animated.Value(1)).current;
+
+  // ── LIA arrastrable ─────────────────────────────────────────────
+  const { width: SW, height: SH } = Dimensions.get('window');
+  const LIA_SIZE = 60;
+  // Posición inicial: esquina inferior derecha
+  const liaPan = useRef(new Animated.ValueXY({
+    x: SW - LIA_SIZE - Spacing.lg,
+    y: SH - LIA_SIZE - 160,
+  })).current;
+  const liaLastPos = useRef({ x: SW - LIA_SIZE - Spacing.lg, y: SH - LIA_SIZE - 160 });
+  const liaDragging = useRef(false);
+
+  const liaPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 4 || Math.abs(gs.dy) > 4,
+      onPanResponderGrant: () => {
+        liaDragging.current = false;
+        liaPan.setOffset({ x: liaLastPos.current.x, y: liaLastPos.current.y });
+        liaPan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: (_, gs) => {
+        if (Math.abs(gs.dx) > 4 || Math.abs(gs.dy) > 4) liaDragging.current = true;
+        Animated.event(
+          [null, { dx: liaPan.x, dy: liaPan.y }],
+          { useNativeDriver: false }
+        )(_, gs);
+      },
+      onPanResponderRelease: (_, gs) => {
+        liaPan.flattenOffset();
+        // Guardar posición final, con límites de pantalla
+        const newX = Math.max(0, Math.min(SW - LIA_SIZE, liaLastPos.current.x + gs.dx));
+        const newY = Math.max(0, Math.min(SH - LIA_SIZE - 80, liaLastPos.current.y + gs.dy));
+        liaLastPos.current = { x: newX, y: newY };
+        liaPan.setValue({ x: newX, y: newY });
+      },
+    })
+  ).current;
 
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
@@ -509,12 +549,27 @@ export default function HomeScreen() {
       })()}
 
       {/* ════════════════════════════════════════════════════════
-          LIA-25 — Asistente flotante (círculo derecho)
+          LIA-25 — Asistente flotante ARRASTRABLE
+          El usuario puede moverlo a cualquier posición
       ════════════════════════════════════════════════════════ */}
-      <Animated.View style={[st.liaBtn, { transform: [{ scale: liaPulse }] }]}>
+      <Animated.View
+        {...liaPanResponder.panHandlers}
+        style={[
+          st.liaBtn,
+          {
+            transform: [
+              { translateX: liaPan.x },
+              { translateY: liaPan.y },
+              { scale: liaPulse },
+            ],
+          },
+        ]}
+      >
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push('/(tabs)/lia' as any)}
+          onPress={() => {
+            if (!liaDragging.current) router.push('/(tabs)/lia' as any);
+          }}
         >
           <LinearGradient
             colors={['#00C8A0', '#00B4E6']}
@@ -561,6 +616,7 @@ export default function HomeScreen() {
 // ══════════════════════════════════════════════════════════════════
 // ESTILOS
 // ══════════════════════════════════════════════════════════════════
+const LIA_BTN_SIZE = 60;
 const st = StyleSheet.create({
   container: {
     flex: 1,
@@ -817,27 +873,27 @@ const st = StyleSheet.create({
     textShadowRadius: 3,
   },
 
-  // ── LIA-25 flotante ──────────────────────────────────────────────
+  // ── LIA-25 flotante arrastrable ──────────────────────────────────
   liaBtn: {
     position: 'absolute',
-    right: Spacing.lg,
-    bottom: 90,
+    top: 0,
+    left: 0,
     zIndex: 30,
-    borderRadius: 26,
+    borderRadius: LIA_BTN_SIZE / 2,
     overflow: 'hidden',
     ...Shadow.lg,
   },
   liaBtnGradient: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: LIA_BTN_SIZE,
+    height: LIA_BTN_SIZE,
+    borderRadius: LIA_BTN_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   liaLogoImg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: LIA_BTN_SIZE,
+    height: LIA_BTN_SIZE,
+    borderRadius: LIA_BTN_SIZE / 2,
   },
 
   // ── FAB + central ────────────────────────────────────────────────

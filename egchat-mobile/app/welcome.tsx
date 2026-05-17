@@ -24,9 +24,9 @@ export default function WelcomeScreen() {
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   useEffect(() => {
-    // Logo spin
+    // Logo spin — 6 segundos por vuelta (velocidad media)
     Animated.loop(
-      Animated.timing(spinAnim, { toValue: 1, duration: 20000, useNativeDriver: true })
+      Animated.timing(spinAnim, { toValue: 1, duration: 6000, useNativeDriver: true })
     ).start();
 
     // Fade in
@@ -46,12 +46,15 @@ export default function WelcomeScreen() {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo */}
         <View style={styles.logoSection}>
-          <View style={styles.logoBox}>
-            <Animated.Image
-              source={require('../assets/icon.png')}
-              style={[styles.logo, { transform: [{ rotate: spin }] }]}
-              resizeMode="contain"
-            />
+          {/* Círculo exterior decorativo */}
+          <View style={styles.logoRing}>
+            <View style={styles.logoBox}>
+              <Animated.Image
+                source={require('../assets/icon.png')}
+                style={[styles.logo, { transform: [{ rotate: spin }] }]}
+                resizeMode="cover"
+              />
+            </View>
           </View>
 
           {/* Banderas */}
@@ -109,16 +112,31 @@ const styles = StyleSheet.create({
 
   // Logo
   logoSection: { alignItems: 'center', gap: Spacing.md },
+
+  // Anillo exterior decorativo
+  logoRing: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 3,
+    borderColor: 'rgba(0,200,160,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,200,160,0.06)',
+  },
   logoBox: {
-    width: 160, height: 160,
+    width: 160,
+    height: 160,
     borderRadius: 80,
     overflow: 'hidden',
     backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
     ...Shadow.lg,
   },
-  logo: { width: 160, height: 160, borderRadius: 80 },
+  logo: {
+    width: 160,
+    height: 160,
+  },
+
   flagsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
   flag: { fontSize: 22 },
   tagline: { fontSize: FontSize.sm, color: '#555', fontWeight: FontWeight.medium },
