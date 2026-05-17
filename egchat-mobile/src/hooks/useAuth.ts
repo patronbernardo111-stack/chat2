@@ -42,20 +42,29 @@ export const useAuth = () => {
       setError('Rellena todos los campos');
       return false;
     }
+    // Normalizar teléfono: quitar espacios y guiones
+    const cleanPhone = phone.replace(/[\s\-]/g, '');
     setLoading(true);
     try {
-      const res = await authAPI.login(phone, password);
+      const res = await authAPI.login(cleanPhone, password);
+      if (!res?.token && !res?.user) {
+        setError('Respuesta inesperada del servidor.');
+        return false;
+      }
       setState({ user: res.user, isAuthenticated: true, isLoading: false, error: '' });
-      router.replace('/(tabs)'); // → Home Dashboard
+      router.replace('/(tabs)');
       return true;
     } catch (e: any) {
       const msg = e.message || '';
-      if (msg.includes('credenciales') || msg.includes('401') || msg.includes('Credenciales')) {
-        setError('Usuario o contraseña incorrectos.');
-      } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Network')) {
-        setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      console.log('[Login error]', msg);
+      if (msg.includes('credenciales') || msg.includes('401') || msg.includes('Credenciales') || msg.includes('incorrectos') || msg.includes('invalid')) {
+        setError('Teléfono o contraseña incorrectos.');
+      } else if (msg.includes('Sesión expirada')) {
+        setError('Sesión expirada. Inténtalo de nuevo.');
+      } else if (msg.includes('fetch') || msg.includes('network') || msg.includes('Network') || msg.includes('AbortError')) {
+        setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
       } else if (msg.includes('500')) {
-        setError('Error del servidor. Intenta de nuevo en unos minutos.');
+        setError('Error del servidor. Intenta en unos minutos.');
       } else {
         setError(msg || 'Error al iniciar sesión.');
       }
