@@ -18,6 +18,7 @@ import Svg, { Path, Circle, Line, Rect, Polyline } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { chatAPI, storiesAPI, getToken } from '../../src/api';
+import { haptics } from '../../src/hooks/useHaptics';
 import { EGAvatar, OfflineBanner } from '../../src/components/ui';
 import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
 import {

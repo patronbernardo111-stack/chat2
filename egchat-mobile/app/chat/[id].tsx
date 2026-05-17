@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { chatAPI, authAPI } from '../../src/api';
+import { haptics } from '../../src/hooks/useHaptics';
 import { subscribeToChat } from '../../src/supabase';
 import { EGAvatar } from '../../src/components/ui';
 import {
@@ -515,11 +516,11 @@ export default function ChatScreen() {
   const sendMessage = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
-    // Cancelar typing timer
     if (typingTimer.current) clearTimeout(typingTimer.current);
     setText('');
     setReplyTo(null);
     setSending(true);
+    haptics.light(); // feedback táctil al enviar
 
     Animated.sequence([
       Animated.spring(sendScale, { toValue: 0.85, useNativeDriver: true, speed: 50 }),
