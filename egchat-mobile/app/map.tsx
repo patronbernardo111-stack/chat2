@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../src/theme';
+import { Colors, FontSize, FontWeight, Spacing } from '../src/theme';
 
 const PLACES = [
   { id: '1', title: 'Hospital General Malabo', emoji: '🏥', lat: 3.7523, lng: 8.7741 },
@@ -14,18 +13,34 @@ const PLACES = [
   { id: '5', title: 'Puerto de Malabo', emoji: '⚓', lat: 3.7550, lng: 8.7820 },
 ];
 
+// Lazy import de react-native-maps solo en nativo
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_DEFAULT: any = null;
+
+if (Platform.OS !== 'web') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_DEFAULT = maps.PROVIDER_DEFAULT;
+}
+
 export default function MapScreen() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
+      if (Platform.OS === 'web') {
+        setLocation({ latitude: 3.7523, longitude: 8.7741 });
+        setLoading(false);
+        return;
+      }
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       } else {
-        // Malabo por defecto
         setLocation({ latitude: 3.7523, longitude: 8.7741 });
       }
       setLoading(false);
@@ -53,6 +68,12 @@ export default function MapScreen() {
           <ActivityIndicator size="large" color={Colors.accent} />
           <Text style={styles.loadingText}>Obteniendo ubicación...</Text>
         </View>
+      ) : Platform.OS === 'web' ? (
+        // Fallback web — react-native-maps no soporta navegador
+        <View style={styles.center}>
+          <Text style={styles.mapIcon}>🗺️</Text>
+          <Text style={styles.notice}>El mapa interactivo está disponible en la app móvil.</Text>
+        </View>
       ) : (
         <MapView
           style={styles.map}
@@ -73,7 +94,6 @@ export default function MapScreen() {
         </MapView>
       )}
 
-      {/* Leyenda */}
       <View style={styles.legend}>
         {PLACES.map(p => (
           <View key={p.id} style={styles.legendItem}>
@@ -88,8 +108,10 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
   loadingText: { fontSize: FontSize.base, color: Colors.textSecondary },
+  mapIcon: { fontSize: 64 },
+  notice: { fontSize: FontSize.base, color: Colors.textSecondary, textAlign: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.bgSecondary,
