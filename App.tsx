@@ -579,11 +579,6 @@ const App: React.FC = () => {
   const [expandFavoriteContacts, setExpandFavoriteContacts] = useState<boolean>(false);
   const [expandFavoriteGroups, setExpandFavoriteGroups] = useState<boolean>(false);
   const [favoriteContacts, setFavoriteContacts] = useState<any[]>([]);
-  // IDs de contactos/grupos que tienen estados nuevos sin ver
-  // Se sincroniza con localStorage para que EstadosView pueda actualizarlo
-  const [contactsWithNewStory, setContactsWithNewStory] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('egchat_new_stories') || '[]'); } catch { return []; }
-  });
   const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; bank: string; type: string; balance: number; icon: string }>>([
     { id: '1', bank: 'BANGE', type: 'Corriente', balance: 45200, icon: 'banking' },
     { id: '2', bank: 'CCEI Bank', type: 'Ahorros', balance: 80000, icon: 'banking' }
@@ -3246,26 +3241,7 @@ const App: React.FC = () => {
                     style={{ background: 'rgba(243,244,246,0.85)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', padding: '6px 10px', color: '#374151', fontSize: '14px', cursor: 'pointer', outline: 'none' }}>
                     Cancelar
                   </button>
-                  <button onClick={async () => {
-                    // 1. Actualizar estado local inmediatamente
-                    setUserProfile({ ...editedProfile });
-                    setIsEditingProfile(false);
-                    setEditedProfile(null);
-                    // 2. Persistir en localStorage
-                    localStorage.setItem('egchat_user_profile', JSON.stringify({ ...editedProfile }));
-                    if (editedProfile.avatarUrl) localStorage.setItem('user_avatar', editedProfile.avatarUrl);
-                    // 3. Guardar en el servidor para que todos los contactos vean los cambios
-                    try {
-                      await authAPI.updateProfile({
-                        full_name: editedProfile.name,
-                        avatar_url: editedProfile.avatarUrl || '',
-                      });
-                      showToast('Perfil actualizado', 'success');
-                    } catch {
-                      // Si falla el servidor, los cambios quedan en local
-                      showToast('Guardado localmente', 'info');
-                    }
-                  }}
+                  <button onClick={() => { setUserProfile({ ...editedProfile }); setIsEditingProfile(false); setEditedProfile(null); }}
                     style={{ background: 'rgba(0,200,160,0.2)', border: '1px solid rgba(0,200,160,0.4)', borderRadius: '8px', padding: '6px 10px', color: '#00c8a0', fontSize: '14px', fontWeight: '600', cursor: 'pointer', outline: 'none' }}>
                     Guardar
                   </button>
@@ -6443,7 +6419,9 @@ const App: React.FC = () => {
               </div>
 
               {/* Seccin: Contactos Favoritos - COLAPSABLE */}
-              <div style={{ marginBottom: expandFavoriteContacts ? '8px' : '2px' }}>
+              <div style={{
+                marginBottom: '8px'
+              }}>
                 <button
                   onClick={() => setExpandFavoriteContacts(!expandFavoriteContacts)}
                   style={{
@@ -6530,10 +6508,7 @@ const App: React.FC = () => {
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <Avatar name={contact.name || contact.user?.name || '?'} size={56} showStatus={false} photo={contact.avatar_url || contact.user?.avatar_url}
-                          hasStory={contactsWithNewStory.includes(contact.id?.toString())}
-                          storySeeen={false}
-                        />
+                        <Avatar name={contact.name || contact.user?.name || '?'} size={56} showStatus={false} photo={contact.avatar_url || contact.user?.avatar_url} />
                         <span style={{ 
                           fontSize: '13px', 
                           fontWeight: '600',
@@ -6554,7 +6529,10 @@ const App: React.FC = () => {
               </div>
 
               {/* Seccin: Grupos Favoritos - COLAPSABLE */}
-              <div style={{ marginBottom: expandFavoriteGroups ? '8px' : '2px' }}>                <button
+              <div style={{
+                marginBottom: '8px'
+              }}>
+                <button
                   onClick={() => setExpandFavoriteGroups(!expandFavoriteGroups)}
                   style={{
                     width: '100%',
@@ -6610,23 +6588,7 @@ const App: React.FC = () => {
                     ) : realChats.filter((c: any) => c.type === 'group' && favoriteGroupIds.includes(c.id?.toString())).slice(0, 6).map((group: any) => (
                       <button
                         key={group.id}
-                        onClick={() => {
-                          const name = group.name || group.title || 'Grupo';
-                          const initials = name.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase();
-                          setSelectedChat({
-                            id: group.id,
-                            type: 'group',
-                            title: name,
-                            subtitle: `${group.members?.length || group.participants?.length || 0} miembros`,
-                            time: '',
-                            status: 'online',
-                            initials,
-                            color: '#a855f7',
-                            avatarUrl: group.avatar_url || group.avatarUrl || '',
-                            isGroup: true,
-                          });
-                          setCurrentView('Mensajería');
-                        }}
+                        onClick={() => setSelectedChat(group)}
                         style={{
                           background: 'transparent',
                           border: 'none',
@@ -6645,11 +6607,7 @@ const App: React.FC = () => {
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                       >
-                        <Avatar name={group.name || 'Grupo'} size={56} showStatus={false}
-                          photo={group.avatar_url || group.avatarUrl}
-                          hasStory={contactsWithNewStory.includes(group.id?.toString())}
-                          storySeeen={false}
-                        />
+                        <Avatar name={group.name || 'Grupo'} size={56} showStatus={false} />
                         <span style={{ 
                           fontSize: '13px', 
                           fontWeight: '600',
@@ -6729,7 +6687,7 @@ const App: React.FC = () => {
             {/* Lista de conversacines ? datos reales del backend */}
             <div
               className="scroll-container"
-              style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, paddingBottom: 'calc(49px + env(safe-area-inset-bottom, 0px) + 8px)' }}
+              style={{ flex: 1, overflowY: 'scroll', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' as any, paddingBottom: '100px' }}
             >
               {/* Chats reales del backend */}
               {realChats.length > 0 && realChats
@@ -10276,7 +10234,7 @@ const App: React.FC = () => {
       {/* Vistas secundarias - fuera del stacking context del wallpaper */}
       {(currentView === 'estados' || currentView === 'apuestas' || currentView === 'cemac' || currentView === 'mitaxi') && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 600 }}>
-          {currentView === 'estados' && <EstadosView onBack={() => setCurrentView(previousView || 'home')} currentUser={{ id: userProfile.id, name: userProfile.name, avatar: userProfile.avatar, avatarUrl: userProfile.avatarUrl, color: '#00c8a0' }} adminGroups={realChats.filter((c: any) => c.type === 'group' && c.participants?.some((p: any) => (p.user_id?.toString() === currentUserId.current?.toString()) && p.role === 'admin')).map((g: any) => ({ id: g.id?.toString(), name: g.name || g.title || 'Grupo', avatar_url: g.avatar_url || g.avatarUrl || '', color: '#a855f7' }))} />}
+          {currentView === 'estados' && <EstadosView onBack={() => setCurrentView(previousView || 'home')} currentUser={{ id: userProfile.id, name: userProfile.name, avatar: userProfile.avatar, avatarUrl: userProfile.avatarUrl, color: '#00c8a0' }} />}
           {currentView === 'apuestas' && <ApuestasView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} />}
           {currentView === 'cemac' && <CemacView onBack={() => setCurrentView(previousView || 'home')} />}
           {currentView === 'mitaxi' && <MiTaxiView onBack={() => setCurrentView(previousView || 'home')} userBalance={userBalance} onDebit={(a: number) => setUserBalance(prev => prev - a)} userName={userProfile.name} userPhone={userProfile.phone} />}
