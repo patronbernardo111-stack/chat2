@@ -176,7 +176,6 @@ export default function HomeScreen() {
       ])
     ).start();
   }, []);
-  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   // ── Carga de datos ──────────────────────────────────────────────
   const loadData = useCallback(async () => {

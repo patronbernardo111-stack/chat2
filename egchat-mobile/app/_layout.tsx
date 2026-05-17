@@ -3,7 +3,7 @@ import { Stack, router, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { authAPI, setUnauthorizedHandler } from '../src/api';
 import { registerForPushNotifications, setupNotificationListeners, clearBadge } from '../src/notifications';
@@ -41,53 +41,56 @@ export default function RootLayout() {
             const me = await authAPI.me();
             router.replace('/(tabs)'); // → Home Dashboard (index.tsx)
 
-            const pushToken = await registerForPushNotifications();
-            if (pushToken) console.log('✅ Push token:', pushToken.substring(0, 30) + '...');
+            // Notificaciones y llamadas solo en nativo
+            if (Platform.OS !== 'web') {
+              const pushToken = await registerForPushNotifications();
+              if (pushToken) console.log('✅ Push token:', pushToken.substring(0, 30) + '...');
 
-            notifCleanup.current = setupNotificationListeners(
-              (chatId) => router.push(`/chat/${chatId}` as any),
-              (callData) => {
-                router.push({
-                  pathname: '/call/[callId]',
-                  params: {
-                    callId: callData.callId,
-                    targetName: callData.callerName,
-                    callType: callData.callType || 'audio',
-                    role: 'callee',
-                    offer: callData.offer ? JSON.stringify(callData.offer) : undefined,
-                  }
-                } as any);
+              notifCleanup.current = setupNotificationListeners(
+                (chatId) => router.push(`/chat/${chatId}` as any),
+                (callData) => {
+                  router.push({
+                    pathname: '/call/[callId]',
+                    params: {
+                      callId: callData.callId,
+                      targetName: callData.callerName,
+                      callType: callData.callType || 'audio',
+                      role: 'callee',
+                      offer: callData.offer ? JSON.stringify(callData.offer) : undefined,
+                    }
+                  } as any);
+                }
+              );
+
+              if (me?.id) {
+                incomingCleanup.current = pollIncoming(me.id, (call) => {
+                  Alert.alert(`📞 Llamada entrante`, `${call.callerName || 'Alguien'} te está llamando`, [
+                    { text: 'Rechazar', style: 'destructive', onPress: () => {} },
+                    {
+                      text: 'Aceptar',
+                      onPress: () => router.push({
+                        pathname: '/call/[callId]',
+                        params: {
+                          callId: call.callId,
+                          targetName: call.callerName || 'Usuario',
+                          targetAvatar: call.callerAvatar || '',
+                          callType: call.type || 'audio',
+                          role: 'callee',
+                          offer: call.offer ? JSON.stringify(call.offer) : undefined,
+                        },
+                      } as any),
+                    },
+                  ]);
+                });
               }
-            );
 
-            if (me?.id) {
-              incomingCleanup.current = pollIncoming(me.id, (call) => {
-                Alert.alert(`📞 Llamada entrante`, `${call.callerName || 'Alguien'} te está llamando`, [
-                  { text: 'Rechazar', style: 'destructive', onPress: () => {} },
-                  {
-                    text: 'Aceptar',
-                    onPress: () => router.push({
-                      pathname: '/call/[callId]',
-                      params: {
-                        callId: call.callId,
-                        targetName: call.callerName || 'Usuario',
-                        targetAvatar: call.callerAvatar || '',
-                        callType: call.type || 'audio',
-                        role: 'callee',
-                        offer: call.offer ? JSON.stringify(call.offer) : undefined,
-                      },
-                    } as any),
-                  },
-                ]);
-              });
-            }
+              clearBadge();
 
-            clearBadge();
-
-            const lastResponse = await Notifications.getLastNotificationResponseAsync();
-            if (lastResponse) {
-              const data = lastResponse.notification.request.content.data as any;
-              if (data?.chatId) setTimeout(() => router.push(`/chat/${data.chatId}` as any), 500);
+              const lastResponse = await Notifications.getLastNotificationResponseAsync();
+              if (lastResponse) {
+                const data = lastResponse.notification.request.content.data as any;
+                if (data?.chatId) setTimeout(() => router.push(`/chat/${data.chatId}` as any), 500);
+              }
             }
           } catch {
             router.replace('/(auth)/login');
@@ -116,6 +119,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <StatusBarController />
           <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="chat/[id]" />
