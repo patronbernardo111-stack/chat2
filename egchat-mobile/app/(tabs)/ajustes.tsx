@@ -60,6 +60,10 @@ export default function AjustesScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [nameError, setNameError] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const { isDark, mode, setMode } = useThemeContext();
   const C = isDark ? require('../../src/theme/darkMode').DarkColors : Colors;
 

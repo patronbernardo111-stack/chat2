@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, ActivityIndicator, Modal, Pressable, RefreshControl, TextInput, Image,
+  Alert, ActivityIndicator, Modal, Pressable, RefreshControl,
+  TextInput, Image, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { walletAPI } from '../../src/api';
 import {
   Colors, Typography, Spacing, BorderRadius,
@@ -14,19 +16,13 @@ import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
 
 // ── Helpers ───────────────────────────────────────────────────────
-const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 0 });
+const fmt = (n: number) =>
+  n.toLocaleString('es-ES', { minimumFractionDigits: 0 });
 
 const formatDate = (s: string) =>
-  new Date(s).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-
-const getTxIcon = (type: string) => {
-  if (type === 'deposit') return '⬇️';
-  if (type === 'withdraw') return '⬆️';
-  if (type === 'transfer_sent') return '↗️';
-  if (type === 'transfer_received') return '↙️';
-  if (type === 'recharge') return '🎁';
-  return '💳';
-};
+  new Date(s).toLocaleDateString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  });
 
 const isCredit = (type: string) =>
   ['deposit', 'recharge', 'transfer_received'].includes(type);
@@ -34,13 +30,32 @@ const isCredit = (type: string) =>
 const getTxLabel = (tx: any) => {
   if (tx.method) return tx.method;
   const map: Record<string, string> = {
-    deposit: 'Recarga', withdraw: 'Retiro',
-    transfer_sent: 'Transferencia enviada',
-    transfer_received: 'Transferencia recibida',
-    recharge: 'Código de recarga',
+    deposit: 'Recibido',
+    withdraw: 'Enviado',
+    transfer_sent: 'Enviado',
+    transfer_received: 'Recibido',
+    recharge: 'Recarga',
   };
   return map[tx.type] || tx.type;
 };
+
+const getTxDescription = (tx: any) => {
+  if (tx.description) return tx.description;
+  const map: Record<string, string> = {
+    deposit: 'Depósito recibido',
+    withdraw: 'Pago de servicios',
+    transfer_sent: 'Transferencia enviada',
+    transfer_received: `Transferencia recibida${tx.from_name ? ' de ' + tx.from_name : ''}`,
+    recharge: 'Código de recarga',
+  };
+  return map[tx.type] || '';
+};
+
+// ── Cuentas bancarias mock (igual que la web) ─────────────────────
+const BANK_ACCOUNTS = [
+  { id: '1', bank: 'BANGE', type: 'Corriente', balance: 45200, currency: 'XAF', logo: '🏦' },
+  { id: '2', bank: 'CCEI Bank', type: 'Ahorros', balance: 80000, currency: 'XAF', logo: '🏦' },
+];
 
 // ── Sheet modal base ──────────────────────────────────────────────
 const Sheet = ({
@@ -50,11 +65,11 @@ const Sheet = ({
   onClose: () => void; children: React.ReactNode;
 }) => (
   <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-    <Pressable style={s.overlay} onPress={onClose}>
-      <Pressable style={s.sheet} onPress={() => {}}>
-        <View style={s.handle} />
-        <Text style={s.sheetTitle}>{title}</Text>
-        {subtitle ? <Text style={s.sheetSub}>{subtitle}</Text> : null}
+    <Pressable style={sh.overlay} onPress={onClose}>
+      <Pressable style={sh.sheet} onPress={() => {}}>
+        <View style={sh.handle} />
+        <Text style={sh.sheetTitle}>{title}</Text>
+        {subtitle ? <Text style={sh.sheetSub}>{subtitle}</Text> : null}
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
@@ -63,17 +78,17 @@ const Sheet = ({
   </Modal>
 );
 
-// ── Campo de input reutilizable ───────────────────────────────────
+// ── Campo de input ────────────────────────────────────────────────
 const Field = ({
   label, value, onChangeText, placeholder, keyboardType, autoCapitalize,
 }: {
   label: string; value: string; onChangeText: (v: string) => void;
   placeholder?: string; keyboardType?: any; autoCapitalize?: any;
 }) => (
-  <View style={s.fieldWrap}>
-    <Text style={s.fieldLabel}>{label}</Text>
+  <View style={sh.fieldWrap}>
+    <Text style={sh.fieldLabel}>{label}</Text>
     <TextInput
-      style={s.fieldInput}
+      style={sh.fieldInput}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
@@ -84,33 +99,19 @@ const Field = ({
   </View>
 );
 
-// ── Método selector ───────────────────────────────────────────────
-const MethodBtn = ({
-  icon, label, sub, onPress,
-}: { icon: string; label: string; sub: string; onPress: () => void }) => (
-  <TouchableOpacity style={s.methodBtn} onPress={onPress} activeOpacity={0.7}>
-    <Text style={s.methodIcon}>{icon}</Text>
-    <View style={s.methodText}>
-      <Text style={s.methodLabel}>{label}</Text>
-      <Text style={s.methodSub}>{sub}</Text>
-    </View>
-    <Text style={s.methodArrow}>›</Text>
-  </TouchableOpacity>
-);
-
 // ── Montos rápidos ────────────────────────────────────────────────
 const QuickAmounts = ({
   amounts, selected, onSelect,
 }: { amounts: number[]; selected: string; onSelect: (v: string) => void }) => (
-  <View style={s.quickRow}>
+  <View style={sh.quickRow}>
     {amounts.map(a => (
       <TouchableOpacity
         key={a}
-        style={[s.quickBtn, selected === String(a) && s.quickBtnActive]}
+        style={[sh.quickBtn, selected === String(a) && sh.quickBtnActive]}
         onPress={() => onSelect(String(a))}
         activeOpacity={0.7}
       >
-        <Text style={[s.quickBtnText, selected === String(a) && s.quickBtnTextActive]}>
+        <Text style={[sh.quickBtnText, selected === String(a) && sh.quickBtnTextActive]}>
           {fmt(a)}
         </Text>
       </TouchableOpacity>
@@ -118,290 +119,36 @@ const QuickAmounts = ({
   </View>
 );
 
-// ── Modal Recargar ────────────────────────────────────────────────
-type RStep = 'menu' | 'banco' | 'codigo' | 'agente';
-
-const RechargeModal = ({
-  visible, balance, onClose, onSuccess,
-}: {
-  visible: boolean; balance: number;
-  onClose: () => void; onSuccess: () => void;
-}) => {
-  const [step, setStep] = useState<RStep>('menu');
-  const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('');
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const reset = () => { setStep('menu'); setAmount(''); setMethod(''); setCode(''); };
-  const close = () => { reset(); onClose(); };
-
-  const doDeposit = async () => {
-    const n = Number(amount);
-    if (!n || n < 1000) { Alert.alert('Error', 'Importe mínimo 1,000 XAF'); return; }
-    setLoading(true);
-    try {
-      await walletAPI.deposit(n, method || 'Transferencia bancaria', `DEP-${Date.now()}`);
-      close();
-      onSuccess();
-      Alert.alert('✅ Recarga enviada', `${fmt(n)} XAF serán añadidos tras verificación`);
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'No se pudo procesar');
-    } finally { setLoading(false); }
-  };
-
-  const doCode = async () => {
-    const clean = code.replace(/-/g, '');
-    if (clean.length < 12) { Alert.alert('Error', 'Código inválido'); return; }
-    setLoading(true);
-    try {
-      const res = await walletAPI.redeemCode(code);
-      close();
-      onSuccess();
-      Alert.alert('🎁 ¡Código canjeado!', `+${fmt(res.amount || 0)} XAF añadidos`);
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Código inválido o ya usado');
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <Sheet
-      visible={visible}
-      title={step === 'menu' ? 'Recargar saldo' : step === 'banco' ? 'Transferencia bancaria' : step === 'codigo' ? 'Código de recarga' : 'Agente EGCHAT'}
-      subtitle={`Saldo actual: ${fmt(balance)} XAF`}
-      onClose={close}
-    >
-      {step === 'menu' && (
-        <View style={s.sheetBody}>
-          <MethodBtn icon="🏦" label="Transferencia bancaria" sub="BANGE, BGFI, CCEI — 1-2 días" onPress={() => { setMethod('Transferencia bancaria'); setStep('banco'); }} />
-          <MethodBtn icon="🎁" label="Código de recarga" sub="Voucher prepago de 16 dígitos" onPress={() => setStep('codigo')} />
-          <MethodBtn icon="🏪" label="Agente EGCHAT" sub="Depósito en efectivo — inmediato" onPress={() => { setMethod('Agente EGCHAT'); setStep('agente'); }} />
-        </View>
-      )}
-
-      {step === 'banco' && (
-        <View style={s.sheetBody}>
-          <View style={s.infoBox}>
-            {[
-              ['Beneficiario', 'EGCHAT S.A.'],
-              ['Bancos', 'BANGE / CCEI / BGFI'],
-              ['Cuenta', 'GQ-EGCHAT-001-2026'],
-              ['Concepto', 'Recarga + tu teléfono'],
-            ].map(([l, v]) => (
-              <View key={l} style={s.infoRow}>
-                <Text style={s.infoLabel}>{l}</Text>
-                <Text style={s.infoValue}>{v}</Text>
-              </View>
-            ))}
+// ── Modal Recibir ─────────────────────────────────────────────────
+const RecibirModal = ({
+  visible, balance, onClose,
+}: { visible: boolean; balance: number; onClose: () => void }) => (
+  <Sheet visible={visible} title="Recibir dinero" subtitle={`Saldo: ${fmt(balance)} XAF`} onClose={onClose}>
+    <View style={sh.sheetBody}>
+      <View style={sh.infoBox}>
+        <Text style={sh.infoTitle}>Comparte tu número para recibir</Text>
+        {[
+          ['Método', 'Transferencia EGCHAT'],
+          ['Moneda', 'XAF (Franco CFA)'],
+          ['Comisión', 'Sin comisión entre usuarios'],
+        ].map(([l, v]) => (
+          <View key={l} style={sh.infoRow}>
+            <Text style={sh.infoLabel}>{l}</Text>
+            <Text style={sh.infoValue}>{v}</Text>
           </View>
-          <QuickAmounts amounts={[5000, 10000, 25000, 50000]} selected={amount} onSelect={setAmount} />
-          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
-          <TouchableOpacity
-            style={[s.primaryBtn, (!amount || loading) && s.primaryBtnDisabled]}
-            onPress={doDeposit}
-            disabled={!amount || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Confirmar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        ))}
+      </View>
+      <TouchableOpacity style={sh.primaryBtn} onPress={onClose} activeOpacity={0.8}>
+        <Text style={sh.primaryBtnText}>Entendido</Text>
+      </TouchableOpacity>
+    </View>
+  </Sheet>
+);
 
-      {step === 'codigo' && (
-        <View style={s.sheetBody}>
-          <Text style={s.codeHint}>Introduce el código de 16 dígitos del voucher</Text>
-          <TextInput
-            style={s.codeInput}
-            value={code}
-            onChangeText={v => {
-              const clean = v.replace(/[^0-9A-Za-z]/g, '').slice(0, 16);
-              const formatted = clean.replace(/(.{4})/g, '$1-').replace(/-$/, '');
-              setCode(formatted);
-            }}
-            placeholder="XXXX-XXXX-XXXX-XXXX"
-            placeholderTextColor={Colors.textTertiary}
-            autoCapitalize="characters"
-            keyboardType="default"
-          />
-          <TouchableOpacity
-            style={[s.primaryBtn, (code.replace(/-/g, '').length < 12 || loading) && s.primaryBtnDisabled]}
-            onPress={doCode}
-            disabled={code.replace(/-/g, '').length < 12 || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Canjear código</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {step === 'agente' && (
-        <View style={s.sheetBody}>
-          {[
-            { name: 'Agente Centro Malabo', addr: 'Av. de la Independencia', hours: 'L-S 8:00-20:00' },
-            { name: 'Agente Caracolas', addr: 'Barrio Caracolas, Malabo', hours: 'L-D 8:00-21:00' },
-            { name: 'Agente Ela Nguema', addr: 'Ela Nguema, Malabo', hours: 'L-S 8:00-19:00' },
-            { name: 'Agente Bata Centro', addr: 'Centro de Bata', hours: 'L-D 8:00-21:00' },
-          ].map(a => (
-            <View key={a.name} style={s.agentCard}>
-              <Text style={s.agentName}>{a.name}</Text>
-              <Text style={s.agentInfo}>📍 {a.addr}  ·  🕐 {a.hours}</Text>
-            </View>
-          ))}
-          <QuickAmounts amounts={[5000, 10000, 25000, 50000]} selected={amount} onSelect={setAmount} />
-          <Field label="Importe a depositar (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
-          <TouchableOpacity
-            style={[s.primaryBtn, (!amount || loading) && s.primaryBtnDisabled]}
-            onPress={doDeposit}
-            disabled={!amount || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Confirmar depósito — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </Sheet>
-  );
-};
-
-// ── Modal Retirar ─────────────────────────────────────────────────
-type WStep = 'menu' | 'tarjeta' | 'banco' | 'agente';
-
-const WithdrawModal = ({
+// ── Modal Pagar ───────────────────────────────────────────────────
+const PagarModal = ({
   visible, balance, onClose, onSuccess,
-}: {
-  visible: boolean; balance: number;
-  onClose: () => void; onSuccess: () => void;
-}) => {
-  const [step, setStep] = useState<WStep>('menu');
-  const [amount, setAmount] = useState('');
-  const [destination, setDestination] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const reset = () => { setStep('menu'); setAmount(''); setDestination(''); };
-  const close = () => { reset(); onClose(); };
-
-  const doWithdraw = async (method: string) => {
-    const n = Number(amount);
-    if (!n || n < 1000) { Alert.alert('Error', 'Importe mínimo 1,000 XAF'); return; }
-    if (n > balance) { Alert.alert('Error', 'Saldo insuficiente'); return; }
-    if (!destination.trim()) { Alert.alert('Error', 'Introduce el destino'); return; }
-    setLoading(true);
-    try {
-      await walletAPI.withdraw(n, method, destination);
-      close();
-      onSuccess();
-      Alert.alert('✅ Retiro procesado', `${fmt(n)} XAF en camino a tu cuenta`);
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'No se pudo procesar');
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <Sheet
-      visible={visible}
-      title={step === 'menu' ? 'Retirar dinero' : step === 'tarjeta' ? 'Retirar a tarjeta' : step === 'banco' ? 'Transferencia bancaria' : 'Retirar en agente'}
-      subtitle={`Disponible: ${fmt(balance)} XAF`}
-      onClose={close}
-    >
-      {step === 'menu' && (
-        <View style={s.sheetBody}>
-          <MethodBtn icon="💳" label="Retirar a tarjeta" sub="Tarjeta bancaria vinculada — 1-3 días" onPress={() => setStep('tarjeta')} />
-          <MethodBtn icon="🏦" label="Transferencia bancaria" sub="A tu cuenta en GQ — 1-2 días" onPress={() => setStep('banco')} />
-          <MethodBtn icon="🏪" label="Retirar en agente" sub="Efectivo inmediato en agentes EGCHAT" onPress={() => setStep('agente')} />
-        </View>
-      )}
-
-      {step === 'tarjeta' && (
-        <View style={s.sheetBody}>
-          <QuickAmounts amounts={[5000, 10000, 25000, 50000]} selected={amount} onSelect={setAmount} />
-          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
-          <Field label="Número de tarjeta" value={destination} onChangeText={setDestination} placeholder="**** **** **** ****" keyboardType="numeric" />
-          <TouchableOpacity
-            style={[s.primaryBtn, s.withdrawBtn, (!amount || !destination || loading) && s.primaryBtnDisabled]}
-            onPress={() => doWithdraw('Tarjeta bancaria')}
-            disabled={!amount || !destination || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Retirar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {step === 'banco' && (
-        <View style={s.sheetBody}>
-          <QuickAmounts amounts={[5000, 10000, 25000, 50000]} selected={amount} onSelect={setAmount} />
-          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
-          <Field label="Banco" value={destination} onChangeText={setDestination} placeholder="BANGE, BGFI, CCEI..." />
-          <TouchableOpacity
-            style={[s.primaryBtn, s.withdrawBtn, (!amount || !destination || loading) && s.primaryBtnDisabled]}
-            onPress={() => doWithdraw('Transferencia bancaria')}
-            disabled={!amount || !destination || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Retirar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {step === 'agente' && (
-        <View style={s.sheetBody}>
-          <View style={s.infoBox}>
-            <Text style={s.infoLabel}>Presenta tu QR en cualquier agente EGCHAT autorizado para retirar en efectivo de forma inmediata.</Text>
-          </View>
-          <QuickAmounts amounts={[5000, 10000, 25000, 50000]} selected={amount} onSelect={setAmount} />
-          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
-          <Field label="Nombre del agente" value={destination} onChangeText={setDestination} placeholder="Agente Centro Malabo..." />
-          <TouchableOpacity
-            style={[s.primaryBtn, s.withdrawBtn, (!amount || !destination || loading) && s.primaryBtnDisabled]}
-            onPress={() => doWithdraw('Agente EGCHAT')}
-            disabled={!amount || !destination || loading}
-            activeOpacity={0.8}
-          >
-            {loading
-              ? <ActivityIndicator color={Colors.white} />
-              : <Text style={s.primaryBtnText}>Confirmar retiro — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
-          </TouchableOpacity>
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep('menu')}>
-            <Text style={s.backBtnText}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </Sheet>
-  );
-};
-
-// ── Modal Enviar ──────────────────────────────────────────────────
-const SendModal = ({
-  visible, balance, onClose, onSuccess,
-}: {
-  visible: boolean; balance: number;
-  onClose: () => void; onSuccess: () => void;
-}) => {
+}: { visible: boolean; balance: number; onClose: () => void; onSuccess: () => void }) => {
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
   const [concept, setConcept] = useState('');
@@ -426,29 +173,300 @@ const SendModal = ({
   };
 
   return (
-    <Sheet visible={visible} title="Enviar dinero" subtitle={`Disponible: ${fmt(balance)} XAF`} onClose={close}>
-      <View style={s.sheetBody}>
+    <Sheet visible={visible} title="Pagar / Enviar" subtitle={`Disponible: ${fmt(balance)} XAF`} onClose={close}>
+      <View style={sh.sheetBody}>
         <QuickAmounts amounts={[1000, 5000, 10000, 25000]} selected={amount} onSelect={setAmount} />
-        <Field label="Teléfono del destinatario" value={to} onChangeText={setTo} placeholder="+240 222 XXX XXX" keyboardType="phone-pad" />
-        <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="1000" keyboardType="numeric" />
-        <Field label="Concepto (opcional)" value={concept} onChangeText={setConcept} placeholder="Pago de..." />
+        <Field label="Teléfono del destinatario" value={to} onChangeText={setTo}
+          placeholder="+240 222 XXX XXX" keyboardType="phone-pad" />
+        <Field label="Importe (XAF)" value={amount} onChangeText={setAmount}
+          placeholder="1000" keyboardType="numeric" />
+        <Field label="Concepto (opcional)" value={concept} onChangeText={setConcept}
+          placeholder="Pago de..." />
         <TouchableOpacity
-          style={[s.primaryBtn, (!to || !amount || loading) && s.primaryBtnDisabled]}
+          style={[sh.primaryBtn, (!to || !amount || loading) && sh.primaryBtnDisabled]}
           onPress={doSend}
           disabled={!to || !amount || loading}
           activeOpacity={0.8}
         >
           {loading
             ? <ActivityIndicator color={Colors.white} />
-            : <Text style={s.primaryBtnText}>Enviar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+            : <Text style={sh.primaryBtnText}>Enviar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
         </TouchableOpacity>
       </View>
     </Sheet>
   );
 };
 
+// ── Modal Recarga ─────────────────────────────────────────────────
+type RStep = 'menu' | 'banco' | 'codigo' | 'agente';
+
+const RecargaModal = ({
+  visible, balance, onClose, onSuccess,
+}: { visible: boolean; balance: number; onClose: () => void; onSuccess: () => void }) => {
+  const [step, setStep] = useState<RStep>('menu');
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('');
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const reset = () => { setStep('menu'); setAmount(''); setMethod(''); setCode(''); };
+  const close = () => { reset(); onClose(); };
+
+  const doDeposit = async () => {
+    const n = Number(amount);
+    if (!n || n < 1000) { Alert.alert('Error', 'Importe mínimo 1,000 XAF'); return; }
+    setLoading(true);
+    try {
+      await walletAPI.deposit(n, method || 'Transferencia bancaria', `DEP-${Date.now()}`);
+      close(); onSuccess();
+      Alert.alert('✅ Recarga enviada', `${fmt(n)} XAF serán añadidos tras verificación`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'No se pudo procesar');
+    } finally { setLoading(false); }
+  };
+
+  const doCode = async () => {
+    const clean = code.replace(/-/g, '');
+    if (clean.length < 12) { Alert.alert('Error', 'Código inválido'); return; }
+    setLoading(true);
+    try {
+      const res = await walletAPI.redeemCode(code);
+      close(); onSuccess();
+      Alert.alert('🎁 ¡Código canjeado!', `+${fmt(res.amount || 0)} XAF añadidos`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Código inválido o ya usado');
+    } finally { setLoading(false); }
+  };
+
+  const titles: Record<RStep, string> = {
+    menu: 'Recargar saldo',
+    banco: 'Transferencia bancaria',
+    codigo: 'Código de recarga',
+    agente: 'Agente EGCHAT',
+  };
+
+  return (
+    <Sheet
+      visible={visible}
+      title={titles[step]}
+      subtitle={`Saldo actual: ${fmt(balance)} XAF`}
+      onClose={close}
+    >
+      {step === 'menu' && (
+        <View style={sh.sheetBody}>
+          {[
+            { icon: '🏦', label: 'Transferencia bancaria', sub: 'BANGE, BGFI, CCEI — 1-2 días', s: 'banco' as RStep },
+            { icon: '🎁', label: 'Código de recarga', sub: 'Voucher prepago de 16 dígitos', s: 'codigo' as RStep },
+            { icon: '🏪', label: 'Agente EGCHAT', sub: 'Depósito en efectivo — inmediato', s: 'agente' as RStep },
+          ].map(m => (
+            <TouchableOpacity key={m.s} style={sh.methodBtn}
+              onPress={() => { setMethod(m.label); setStep(m.s); }} activeOpacity={0.7}>
+              <Text style={sh.methodIcon}>{m.icon}</Text>
+              <View style={sh.methodText}>
+                <Text style={sh.methodLabel}>{m.label}</Text>
+                <Text style={sh.methodSub}>{m.sub}</Text>
+              </View>
+              <Text style={sh.methodArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {step === 'banco' && (
+        <View style={sh.sheetBody}>
+          <View style={sh.infoBox}>
+            {[['Beneficiario','EGCHAT S.A.'],['Bancos','BANGE / CCEI / BGFI'],
+              ['Cuenta','GQ-EGCHAT-001-2026'],['Concepto','Recarga + tu teléfono']].map(([l,v]) => (
+              <View key={l} style={sh.infoRow}>
+                <Text style={sh.infoLabel}>{l}</Text>
+                <Text style={sh.infoValue}>{v}</Text>
+              </View>
+            ))}
+          </View>
+          <QuickAmounts amounts={[5000,10000,25000,50000]} selected={amount} onSelect={setAmount} />
+          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
+          <TouchableOpacity
+            style={[sh.primaryBtn, (!amount || loading) && sh.primaryBtnDisabled]}
+            onPress={doDeposit} disabled={!amount || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Confirmar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {step === 'codigo' && (
+        <View style={sh.sheetBody}>
+          <Text style={sh.codeHint}>Introduce el código de 16 dígitos del voucher</Text>
+          <TextInput
+            style={sh.codeInput}
+            value={code}
+            onChangeText={v => {
+              const clean = v.replace(/[^0-9A-Za-z]/g, '').slice(0, 16);
+              setCode(clean.replace(/(.{4})/g, '$1-').replace(/-$/, ''));
+            }}
+            placeholder="XXXX-XXXX-XXXX-XXXX"
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="characters"
+          />
+          <TouchableOpacity
+            style={[sh.primaryBtn, (code.replace(/-/g,'').length < 12 || loading) && sh.primaryBtnDisabled]}
+            onPress={doCode} disabled={code.replace(/-/g,'').length < 12 || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Canjear código</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {step === 'agente' && (
+        <View style={sh.sheetBody}>
+          {[
+            { name: 'Agente Centro Malabo', addr: 'Av. de la Independencia', hours: 'L-S 8:00-20:00' },
+            { name: 'Agente Caracolas', addr: 'Barrio Caracolas, Malabo', hours: 'L-D 8:00-21:00' },
+            { name: 'Agente Ela Nguema', addr: 'Ela Nguema, Malabo', hours: 'L-S 8:00-19:00' },
+            { name: 'Agente Bata Centro', addr: 'Centro de Bata', hours: 'L-D 8:00-21:00' },
+          ].map(a => (
+            <View key={a.name} style={sh.agentCard}>
+              <Text style={sh.agentName}>{a.name}</Text>
+              <Text style={sh.agentInfo}>📍 {a.addr}  ·  🕐 {a.hours}</Text>
+            </View>
+          ))}
+          <QuickAmounts amounts={[5000,10000,25000,50000]} selected={amount} onSelect={setAmount} />
+          <Field label="Importe a depositar (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
+          <TouchableOpacity
+            style={[sh.primaryBtn, (!amount || loading) && sh.primaryBtnDisabled]}
+            onPress={doDeposit} disabled={!amount || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Confirmar depósito — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </Sheet>
+  );
+};
+
+// ── Modal Retiro ──────────────────────────────────────────────────
+type WStep = 'menu' | 'tarjeta' | 'banco' | 'agente';
+
+const RetiroModal = ({
+  visible, balance, onClose, onSuccess,
+}: { visible: boolean; balance: number; onClose: () => void; onSuccess: () => void }) => {
+  const [step, setStep] = useState<WStep>('menu');
+  const [amount, setAmount] = useState('');
+  const [destination, setDestination] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const reset = () => { setStep('menu'); setAmount(''); setDestination(''); };
+  const close = () => { reset(); onClose(); };
+
+  const doWithdraw = async (method: string) => {
+    const n = Number(amount);
+    if (!n || n < 1000) { Alert.alert('Error', 'Importe mínimo 1,000 XAF'); return; }
+    if (n > balance) { Alert.alert('Error', 'Saldo insuficiente'); return; }
+    if (!destination.trim()) { Alert.alert('Error', 'Introduce el destino'); return; }
+    setLoading(true);
+    try {
+      await walletAPI.withdraw(n, method, destination);
+      close(); onSuccess();
+      Alert.alert('✅ Retiro procesado', `${fmt(n)} XAF en camino a tu cuenta`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'No se pudo procesar');
+    } finally { setLoading(false); }
+  };
+
+  const titles: Record<WStep, string> = {
+    menu: 'Retirar dinero', tarjeta: 'Retirar a tarjeta',
+    banco: 'Transferencia bancaria', agente: 'Retirar en agente',
+  };
+
+  return (
+    <Sheet visible={visible} title={titles[step]} subtitle={`Disponible: ${fmt(balance)} XAF`} onClose={close}>
+      {step === 'menu' && (
+        <View style={sh.sheetBody}>
+          {[
+            { icon: '💳', label: 'Retirar a tarjeta', sub: 'Tarjeta bancaria vinculada — 1-3 días', s: 'tarjeta' as WStep },
+            { icon: '🏦', label: 'Transferencia bancaria', sub: 'A tu cuenta en GQ — 1-2 días', s: 'banco' as WStep },
+            { icon: '🏪', label: 'Retirar en agente', sub: 'Efectivo inmediato en agentes EGCHAT', s: 'agente' as WStep },
+          ].map(m => (
+            <TouchableOpacity key={m.s} style={sh.methodBtn} onPress={() => setStep(m.s)} activeOpacity={0.7}>
+              <Text style={sh.methodIcon}>{m.icon}</Text>
+              <View style={sh.methodText}>
+                <Text style={sh.methodLabel}>{m.label}</Text>
+                <Text style={sh.methodSub}>{m.sub}</Text>
+              </View>
+              <Text style={sh.methodArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {step === 'tarjeta' && (
+        <View style={sh.sheetBody}>
+          <QuickAmounts amounts={[5000,10000,25000,50000]} selected={amount} onSelect={setAmount} />
+          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
+          <Field label="Número de tarjeta" value={destination} onChangeText={setDestination} placeholder="**** **** **** ****" keyboardType="numeric" />
+          <TouchableOpacity
+            style={[sh.primaryBtn, sh.withdrawBtn, (!amount || !destination || loading) && sh.primaryBtnDisabled]}
+            onPress={() => doWithdraw('Tarjeta bancaria')} disabled={!amount || !destination || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Retirar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {step === 'banco' && (
+        <View style={sh.sheetBody}>
+          <QuickAmounts amounts={[5000,10000,25000,50000]} selected={amount} onSelect={setAmount} />
+          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
+          <Field label="Banco" value={destination} onChangeText={setDestination} placeholder="BANGE, BGFI, CCEI..." />
+          <TouchableOpacity
+            style={[sh.primaryBtn, sh.withdrawBtn, (!amount || !destination || loading) && sh.primaryBtnDisabled]}
+            onPress={() => doWithdraw('Transferencia bancaria')} disabled={!amount || !destination || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Retirar — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {step === 'agente' && (
+        <View style={sh.sheetBody}>
+          <View style={sh.infoBox}>
+            <Text style={sh.infoLabel}>Presenta tu QR en cualquier agente EGCHAT autorizado para retirar en efectivo de forma inmediata.</Text>
+          </View>
+          <QuickAmounts amounts={[5000,10000,25000,50000]} selected={amount} onSelect={setAmount} />
+          <Field label="Importe (XAF)" value={amount} onChangeText={setAmount} placeholder="5000" keyboardType="numeric" />
+          <Field label="Nombre del agente" value={destination} onChangeText={setDestination} placeholder="Agente Centro Malabo..." />
+          <TouchableOpacity
+            style={[sh.primaryBtn, sh.withdrawBtn, (!amount || !destination || loading) && sh.primaryBtnDisabled]}
+            onPress={() => doWithdraw('Agente EGCHAT')} disabled={!amount || !destination || loading} activeOpacity={0.8}>
+            {loading ? <ActivityIndicator color={Colors.white} />
+              : <Text style={sh.primaryBtnText}>Confirmar retiro — {amount ? fmt(Number(amount)) : '0'} XAF</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={sh.backBtn} onPress={() => setStep('menu')}>
+            <Text style={sh.backBtnText}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </Sheet>
+  );
+};
+
 // ══════════════════════════════════════════════════════════════════
-// PANTALLA PRINCIPAL
+// PANTALLA PRINCIPAL — Mi Cartera
 // ══════════════════════════════════════════════════════════════════
 export default function MonederoScreen() {
   const [balance, setBalance] = useState(0);
@@ -456,10 +474,13 @@ export default function MonederoScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [balanceVisible, setBalanceVisible] = useState(false);
 
-  const [showRecharge, setShowRecharge] = useState(false);
-  const [showWithdraw, setShowWithdraw] = useState(false);
-  const [showSend, setShowSend] = useState(false);
+  const [showRecibir, setShowRecibir] = useState(false);
+  const [showPagar, setShowPagar] = useState(false);
+  const [showRecarga, setShowRecarga] = useState(false);
+  const [showRetiro, setShowRetiro] = useState(false);
+
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
@@ -483,58 +504,67 @@ export default function MonederoScreen() {
   if (loading) {
     return (
       <View style={[s.center, { backgroundColor: C.bgPrimary }]}>
-        <ActivityIndicator size="large" color={Colors.accent} />
+        <ActivityIndicator size="large" color={Colors.brand} />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      {/* ── Header gradiente ── */}
+      <LinearGradient
+        colors={['#00C8A0', '#00B4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={s.header}
+      >
+        <View style={s.headerLeft}>
+          <View style={s.logoWrap}>
+            <Image source={require('../../assets/icon.png')} style={s.logoImg} resizeMode="cover" />
+          </View>
+          <Text style={s.logoText}>EG</Text>
+          <Text style={s.logoTextBold}>CHAT</Text>
+        </View>
+        <Text style={s.headerTitle}>Mi Cartera</Text>
+      </LinearGradient>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand} />}
+        contentContainerStyle={{ paddingBottom: 32 }}
       >
-        {/* Header con gradiente igual que la web */}
-        <LinearGradient
-          colors={['#00C8A0', '#00B4E6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={s.header}
-        >
-          <View style={s.headerLogo}>
-            <View style={s.logoWrap}>
-              <Image
-                source={require('../../assets/logo-transparent.png')}
-                style={s.logoImg}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={s.logoText}>EG</Text>
-            <Text style={s.logoText}>CHAT</Text>
-          </View>
-          <Text style={s.headerTitle}>Cartera</Text>
-        </LinearGradient>
+        {/* ── Tarjeta MONEDERO EGCHAT ── */}
+        <View style={s.walletCard}>
+          <Text style={s.walletCardLabel}>MONEDERO EGCHAT</Text>
 
-        {/* Tarjeta de saldo */}
-        <View style={s.balanceCard}>
-          <Text style={s.balanceLabel}>SALDO DISPONIBLE</Text>
-          <View style={s.balanceRow}>
-            <Text style={s.balanceAmount}>{fmt(balance)}</Text>
-            <Text style={s.balanceCurrency}>{currency}</Text>
-          </View>
-          <Text style={s.balanceSub}>Monedero EGCHAT · Guinea Ecuatorial</Text>
+          {/* Saldo oculto / revelar */}
+          <TouchableOpacity
+            style={s.revealBtn}
+            onPress={() => setBalanceVisible(v => !v)}
+            activeOpacity={0.85}
+          >
+            {balanceVisible ? (
+              <Text style={s.revealAmount}>{fmt(balance)} <Text style={s.revealCurrency}>{currency}</Text></Text>
+            ) : (
+              <View style={s.revealHidden}>
+                <Ionicons name="lock-closed-outline" size={16} color="rgba(255,255,255,0.7)" />
+                <Text style={s.revealHiddenText}>Toca para revelar</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <Text style={s.walletSubLabel}>Saldo disponible</Text>
 
-          {/* Acciones */}
-          <View style={s.actions}>
+          {/* Botones de acción */}
+          <View style={s.actionsRow}>
             {[
-              { icon: '⬇️', label: 'Recargar', onPress: () => setShowRecharge(true) },
-              { icon: '⬆️', label: 'Retirar', onPress: () => setShowWithdraw(true) },
-              { icon: '↗️', label: 'Enviar', onPress: () => setShowSend(true) },
-              { icon: '📊', label: 'Historial', onPress: () => {} },
+              { icon: 'arrow-down-circle-outline' as const, label: 'Recibir', onPress: () => setShowRecibir(true) },
+              { icon: 'card-outline' as const, label: 'Pagar', onPress: () => setShowPagar(true) },
+              { icon: 'arrow-up-circle-outline' as const, label: 'Recarga', onPress: () => setShowRecarga(true) },
+              { icon: 'sync-outline' as const, label: 'Retiro', onPress: () => setShowRetiro(true) },
             ].map(a => (
-              <TouchableOpacity key={a.label} style={s.actionBtn} onPress={a.onPress} activeOpacity={0.7}>
-                <View style={s.actionIcon}>
-                  <Text style={s.actionEmoji}>{a.icon}</Text>
+              <TouchableOpacity key={a.label} style={s.actionBtn} onPress={a.onPress} activeOpacity={0.75}>
+                <View style={s.actionIconWrap}>
+                  <Ionicons name={a.icon} size={26} color={Colors.brand} />
                 </View>
                 <Text style={s.actionLabel}>{a.label}</Text>
               </TouchableOpacity>
@@ -542,245 +572,104 @@ export default function MonederoScreen() {
           </View>
         </View>
 
-        {/* Transacciones */}
-        <View style={[s.section, { backgroundColor: C.bgSecondary }]}>
-          <Text style={[s.sectionTitle, { color: C.textPrimary }]}>Últimas transacciones</Text>
+        {/* ── MIS CUENTAS ── */}
+        <View style={s.sectionHeader}>
+          <Text style={[s.sectionTitle, { color: C.textPrimary }]}>MIS CUENTAS</Text>
+          <TouchableOpacity style={s.addBtn} activeOpacity={0.7}>
+            <Ionicons name="add" size={18} color={Colors.brand} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[s.card, { backgroundColor: C.bgSecondary }]}>
+          {BANK_ACCOUNTS.map((acc, i) => (
+            <View key={acc.id}>
+              <View style={s.bankRow}>
+                <View style={s.bankIconWrap}>
+                  <Ionicons name="business-outline" size={22} color={Colors.brand} />
+                </View>
+                <View style={s.bankInfo}>
+                  <Text style={[s.bankName, { color: C.textPrimary }]}>{acc.bank}</Text>
+                  <Text style={[s.bankType, { color: C.textSecondary }]}>{acc.type}</Text>
+                </View>
+                <View style={s.bankBalanceWrap}>
+                  <Text style={[s.bankBalance, { color: C.textPrimary }]}>{fmt(acc.balance)}</Text>
+                  <Text style={[s.bankCurrency, { color: C.textSecondary }]}>{acc.currency}</Text>
+                </View>
+              </View>
+              {i < BANK_ACCOUNTS.length - 1 && (
+                <View style={[s.divider, { backgroundColor: C.borderLight }]} />
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* ── HISTORIAL DE TRANSFERENCIAS ── */}
+        <View style={s.sectionHeader}>
+          <Text style={[s.sectionTitle, { color: C.textPrimary }]}>HISTORIAL DE TRANSFERENCIAS</Text>
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={s.verTodo}>Ver todo →</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[s.card, { backgroundColor: C.bgSecondary }]}>
           {transactions.length === 0 ? (
             <View style={s.empty}>
               <Text style={s.emptyIcon}>💳</Text>
               <Text style={[s.emptyText, { color: C.textSecondary }]}>Sin transacciones aún</Text>
             </View>
           ) : (
-            transactions.slice(0, 20).map((tx: any, i: number) => (
-              <View key={tx.id || i} style={[s.txItem, i < transactions.length - 1 && [s.txBorder, { borderBottomColor: C.borderLight }]]}>
-                <View style={[s.txIcon, { backgroundColor: isCredit(tx.type) ? C.accentLight : '#2d1117' }]}>
-                  <Text style={s.txEmoji}>{getTxIcon(tx.type)}</Text>
+            transactions.slice(0, 10).map((tx: any, i: number) => (
+              <View key={tx.id || i}>
+                <View style={s.txRow}>
+                  {/* Icono dirección */}
+                  <View style={[
+                    s.txIconWrap,
+                    { backgroundColor: isCredit(tx.type) ? '#E8F8EE' : '#FEF2F2' },
+                  ]}>
+                    <Ionicons
+                      name={isCredit(tx.type) ? 'arrow-down' : 'arrow-up'}
+                      size={18}
+                      color={isCredit(tx.type) ? Colors.brand : Colors.error}
+                    />
+                  </View>
+
+                  {/* Info */}
+                  <View style={s.txInfo}>
+                    <View style={s.txLabelRow}>
+                      <Ionicons name="checkmark-circle" size={13} color={Colors.brand} style={{ marginRight: 4 }} />
+                      <Text style={[s.txLabel, { color: C.textPrimary }]}>{getTxLabel(tx)}</Text>
+                    </View>
+                    <Text style={[s.txDesc, { color: C.textSecondary }]}>{getTxDescription(tx)}</Text>
+                    <Text style={[s.txDate, { color: C.textTertiary }]}>
+                      {formatDate(tx.created_at || tx.date || new Date().toISOString())}
+                    </Text>
+                  </View>
+
+                  {/* Monto */}
+                  <View style={s.txAmountWrap}>
+                    <Text style={[
+                      s.txAmount,
+                      { color: isCredit(tx.type) ? Colors.brand : Colors.error },
+                    ]}>
+                      {isCredit(tx.type) ? '+' : '-'}{fmt(tx.amount)}
+                    </Text>
+                    <Text style={[s.txCurrency, { color: C.textSecondary }]}>{currency}</Text>
+                  </View>
                 </View>
-                <View style={s.txInfo}>
-                  <Text style={[s.txLabel, { color: C.textPrimary }]}>{getTxLabel(tx)}</Text>
-                  <Text style={[s.txDate, { color: C.textTertiary }]}>{formatDate(tx.created_at || tx.date)}</Text>
-                  {tx.reference && <Text style={[s.txRef, { color: C.textTertiary }]} numberOfLines={1}>Ref: {tx.reference}</Text>}
-                </View>
-                <Text style={[s.txAmount, { color: isCredit(tx.type) ? Colors.accent : '#EF4444' }]}>
-                  {isCredit(tx.type) ? '+' : '-'}{fmt(tx.amount)} {currency}
-                </Text>
+                {i < Math.min(transactions.length, 10) - 1 && (
+                  <View style={[s.divider, { backgroundColor: C.borderLight }]} />
+                )}
               </View>
             ))
           )}
         </View>
       </ScrollView>
 
-      <RechargeModal
-        visible={showRecharge}
-        balance={balance}
-        onClose={() => setShowRecharge(false)}
-        onSuccess={loadData}
-      />
-      <WithdrawModal
-        visible={showWithdraw}
-        balance={balance}
-        onClose={() => setShowWithdraw(false)}
-        onSuccess={loadData}
-      />
-      <SendModal
-        visible={showSend}
-        balance={balance}
-        onClose={() => setShowSend(false)}
-        onSuccess={loadData}
-      />
+      {/* ── Modales ── */}
+      <RecibirModal visible={showRecibir} balance={balance} onClose={() => setShowRecibir(false)} />
+      <PagarModal visible={showPagar} balance={balance} onClose={() => setShowPagar(false)} onSuccess={loadData} />
+      <RecargaModal visible={showRecarga} balance={balance} onClose={() => setShowRecarga(false)} onSuccess={loadData} />
+      <RetiroModal visible={showRetiro} balance={balance} onClose={() => setShowRetiro(false)} onSuccess={loadData} />
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgPrimary },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.md,
-  },
-  headerLogo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  logoWrap: {
-    width: 32, height: 32, borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
-  },
-  logoImg: { width: 32, height: 32, borderRadius: 16 },
-  logoText: {
-    fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: -0.5,
-  },
-  headerTitle: {
-    fontSize: 18, fontWeight: '700', color: '#fff',
-  },
-
-  balanceCard: {
-    margin: Spacing.screenPadding,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    backgroundColor: Colors.accent,
-    ...Shadow.lg,
-  },
-  balanceLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
-  },
-  balanceRow: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, marginBottom: 4 },
-  balanceAmount: { fontSize: 40, fontWeight: FontWeight.extrabold, color: Colors.white, letterSpacing: -1 },
-  balanceCurrency: { fontSize: FontSize.lg, fontWeight: FontWeight.semibold, color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
-  balanceSub: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.6)', marginBottom: Spacing.xl },
-
-  actions: { flexDirection: 'row', justifyContent: 'space-between' },
-  actionBtn: { alignItems: 'center', gap: Spacing.xs },
-  actionIcon: {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  actionEmoji: { fontSize: 22 },
-  actionLabel: { fontSize: FontSize.xs, color: Colors.white, fontWeight: FontWeight.semibold },
-
-  section: {
-    backgroundColor: Colors.bgSecondary,
-    marginHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    ...Shadow.sm,
-  },
-  sectionTitle: { ...Typography.sectionTitle, color: Colors.textPrimary, marginBottom: Spacing.md },
-
-  empty: { alignItems: 'center', paddingVertical: Spacing['3xl'] },
-  emptyIcon: { fontSize: 40, marginBottom: Spacing.md },
-  emptyText: { ...Typography.subtitle, color: Colors.textSecondary },
-
-  txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, gap: Spacing.md },
-  txBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  txIcon: { width: 44, height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
-  txEmoji: { fontSize: 20 },
-  txInfo: { flex: 1 },
-  txLabel: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
-  txDate: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
-  txRef: { fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: 1 },
-  txAmount: { fontSize: FontSize.base, fontWeight: FontWeight.bold, textAlign: 'right' },
-
-  // Sheet modal
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: Colors.bgSecondary,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    paddingBottom: Spacing['3xl'],
-    maxHeight: '90%',
-  },
-  handle: { width: 36, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  sheetTitle: { ...Typography.headerTitle, color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
-  sheetSub: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg },
-  sheetBody: { paddingTop: Spacing.sm },
-
-  // Method button
-  methodBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-    ...Shadow.sm,
-  },
-  methodIcon: { fontSize: 26, width: 40, textAlign: 'center' },
-  methodText: { flex: 1 },
-  methodLabel: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
-  methodSub: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
-  methodArrow: { fontSize: 22, color: Colors.textTertiary },
-
-  // Quick amounts
-  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
-  quickBtn: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgPrimary,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  quickBtnActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
-  quickBtnText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: FontWeight.semibold },
-  quickBtnTextActive: { color: Colors.accent },
-
-  // Field
-  fieldWrap: { marginBottom: Spacing.md },
-  fieldLabel: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: 6, fontWeight: FontWeight.semibold },
-  fieldInput: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    fontSize: FontSize.base,
-    color: Colors.textPrimary,
-  },
-
-  // Code input
-  codeHint: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg },
-  codeInput: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    letterSpacing: 4,
-    marginBottom: Spacing.lg,
-  },
-
-  // Info box
-  infoBox: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-    borderWidth: 1, borderColor: Colors.borderLight,
-  },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  infoLabel: { fontSize: FontSize.xs, color: Colors.textSecondary },
-  infoValue: { fontSize: FontSize.xs, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-
-  // Agent card
-  agentCard: {
-    backgroundColor: Colors.bgPrimary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.borderLight,
-  },
-  agentName: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
-  agentInfo: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
-
-  // Buttons
-  primaryBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  primaryBtnDisabled: { backgroundColor: Colors.border },
-  primaryBtnText: { color: Colors.white, fontSize: FontSize.base, fontWeight: FontWeight.bold },
-  withdrawBtn: { backgroundColor: '#7C3AED' },
-  backBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
-  backBtnText: { fontSize: FontSize.sm, color: Colors.textSecondary },
-});
