@@ -673,3 +673,269 @@ export default function MonederoScreen() {
     </SafeAreaView>
   );
 }
+
+// ══════════════════════════════════════════════════════════════════
+// ESTILOS — Pantalla principal
+// ══════════════════════════════════════════════════════════════════
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bgPrimary },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  logoWrap: {
+    width: 30, height: 30, borderRadius: 15,
+    overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+  },
+  logoImg: { width: 30, height: 30 },
+  logoText: { fontSize: 17, fontWeight: '700', color: '#fff' },
+  logoTextBold: { fontSize: 17, fontWeight: '900', color: '#fff' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#fff' },
+
+  // Tarjeta monedero
+  walletCard: {
+    margin: 16,
+    borderRadius: 20,
+    padding: 20,
+    backgroundColor: '#0D2B4E',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  walletCardLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+
+  // Revelar saldo
+  revealBtn: {
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  revealHidden: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  revealHiddenText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
+  revealAmount: { fontSize: 28, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  revealCurrency: { fontSize: 16, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+  walletSubLabel: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 20 },
+
+  // Botones de acción
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionBtn: { alignItems: 'center', flex: 1 },
+  actionIconWrap: {
+    width: 56, height: 56,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionLabel: { fontSize: 12, color: '#fff', fontWeight: '600' },
+
+  // Secciones
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  addBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  verTodo: { fontSize: 13, color: Colors.brand, fontWeight: '600' },
+
+  // Card contenedor
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: Colors.bgSecondary,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  divider: { height: 1, backgroundColor: Colors.borderLight, marginHorizontal: 16 },
+
+  // Fila banco
+  bankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  bankIconWrap: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  bankInfo: { flex: 1 },
+  bankName: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  bankType: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  bankBalanceWrap: { alignItems: 'flex-end' },
+  bankBalance: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
+  bankCurrency: { fontSize: 11, color: Colors.textSecondary, marginTop: 1 },
+
+  // Fila transacción
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  txIconWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  txInfo: { flex: 1 },
+  txLabelRow: { flexDirection: 'row', alignItems: 'center' },
+  txLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  txDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  txDate: { fontSize: 11, color: Colors.textTertiary, marginTop: 2 },
+  txAmountWrap: { alignItems: 'flex-end' },
+  txAmount: { fontSize: 15, fontWeight: '800' },
+  txCurrency: { fontSize: 11, color: Colors.textSecondary, marginTop: 1 },
+
+  // Empty state
+  empty: { alignItems: 'center', paddingVertical: 40 },
+  emptyIcon: { fontSize: 36, marginBottom: 10 },
+  emptyText: { fontSize: 14, color: Colors.textSecondary },
+});
+
+// ══════════════════════════════════════════════════════════════════
+// ESTILOS — Sheet modales
+// ══════════════════════════════════════════════════════════════════
+const sh = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: Colors.bgSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 36,
+    maxHeight: '90%',
+  },
+  handle: {
+    width: 36, height: 4, backgroundColor: Colors.border,
+    borderRadius: 2, alignSelf: 'center', marginBottom: 16,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
+  sheetSub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: 16 },
+  sheetBody: { paddingTop: 4 },
+
+  // Info box
+  infoBox: {
+    backgroundColor: '#EFF5FD',
+    borderRadius: 12, padding: 14,
+    marginBottom: 14,
+    borderWidth: 1, borderColor: '#BFDBFE',
+  },
+  infoTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  infoRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#DBEAFE',
+  },
+  infoLabel: { fontSize: 12, color: Colors.textSecondary },
+  infoValue: { fontSize: 12, fontWeight: '700', color: '#1B3A6B' },
+
+  // Method button
+  methodBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.bgPrimary,
+    borderRadius: 14, padding: 14,
+    marginBottom: 8, gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  },
+  methodIcon: { fontSize: 24, width: 36, textAlign: 'center' },
+  methodText: { flex: 1 },
+  methodLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  methodSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  methodArrow: { fontSize: 22, color: Colors.textTertiary },
+
+  // Quick amounts
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  quickBtn: {
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, backgroundColor: Colors.bgPrimary,
+    borderWidth: 1.5, borderColor: Colors.border,
+  },
+  quickBtnActive: { backgroundColor: Colors.accentLight, borderColor: Colors.brand },
+  quickBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  quickBtnTextActive: { color: Colors.brand },
+
+  // Field
+  fieldWrap: { marginBottom: 10 },
+  fieldLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4 },
+  fieldInput: {
+    backgroundColor: Colors.bgPrimary, borderRadius: 10, padding: 12,
+    fontSize: 14, color: Colors.textPrimary,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+
+  // Code input
+  codeHint: { fontSize: 13, color: Colors.textSecondary, marginBottom: 10, textAlign: 'center' },
+  codeInput: {
+    backgroundColor: Colors.bgPrimary, borderRadius: 12, padding: 14,
+    fontSize: 18, fontWeight: '700', color: Colors.textPrimary,
+    borderWidth: 1.5, borderColor: Colors.border,
+    textAlign: 'center', letterSpacing: 2, marginBottom: 14,
+  },
+
+  // Agent card
+  agentCard: {
+    backgroundColor: Colors.bgPrimary, borderRadius: 12, padding: 12,
+    marginBottom: 8, borderWidth: 1, borderColor: Colors.border,
+  },
+  agentName: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  agentInfo: { fontSize: 11, color: Colors.textSecondary, marginTop: 3 },
+
+  // Buttons
+  primaryBtn: {
+    backgroundColor: Colors.brand, borderRadius: 12, padding: 14,
+    alignItems: 'center', marginTop: 8,
+  },
+  primaryBtnDisabled: { backgroundColor: Colors.border },
+  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  withdrawBtn: { backgroundColor: '#EF4444' },
+  backBtn: { alignItems: 'center', marginTop: 12 },
+  backBtnText: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600' },
+});
