@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking, Image,
+  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -663,11 +663,49 @@ const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: ()
 
 // ── APPS destacadas en el dashboard ──────────────────────────────
 const APPS = [
-  { id: 'estados',  icon: '🌀', label: 'Estados',  bg: '#f0f4ff' },
-  { id: 'apuestas', icon: '🃏', label: 'Juegos',   bg: '#fff8f0' },
-  { id: 'cemac',    icon: '🏢', label: 'Cemac',    bg: '#f0fff8' },
-  { id: 'taxi',     icon: '🚕', label: 'MiTaxi',   bg: '#fffbf0' },
+  { id: 'estados',  emoji: '🌀', label: 'Estados',  bg: '#f0f4ff' },
+  { id: 'apuestas', emoji: '🃏', label: 'Juegos',   bg: '#fff8f0' },
+  { id: 'cemac',    emoji: '🏢', label: 'Cemac',    bg: '#f0fff8' },
+  { id: 'taxi',     emoji: '🚕', label: 'MiTaxi',   bg: '#fffbf0' },
 ];
+
+// ── Drawer lateral ────────────────────────────────────────────────
+const DrawerMenu = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Pressable style={drawerStyles.overlay} onPress={onClose}>
+      <Pressable style={drawerStyles.drawer} onPress={() => {}}>
+        <Text style={drawerStyles.title}>Menú</Text>
+        {[
+          { icon: '🤖', label: 'LIA-25 — IA Asistente',  action: () => { onClose(); router.push('/(tabs)/lia' as any); } },
+          { icon: '🗺️', label: 'Mapa de Malabo',          action: () => { onClose(); router.push('/map' as any); } },
+          { icon: '📲', label: 'Escanear QR',             action: () => { onClose(); router.push('/_qr-scanner' as any); } },
+          { icon: '👥', label: 'Contactos',               action: () => { onClose(); router.push('/contacts' as any); } },
+          { icon: '📖', label: 'Estados / Stories',       action: () => { onClose(); router.push('/stories' as any); } },
+          { icon: '⚙️', label: 'Ajustes',                 action: () => { onClose(); router.push('/(tabs)/ajustes' as any); } },
+        ].map(item => (
+          <TouchableOpacity key={item.label} style={drawerStyles.item} onPress={item.action} activeOpacity={0.7}>
+            <Text style={drawerStyles.itemIcon}>{item.icon}</Text>
+            <Text style={drawerStyles.itemLabel}>{item.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </Pressable>
+    </Pressable>
+  </Modal>
+);
+
+const drawerStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end', alignItems: 'flex-end' },
+  drawer: {
+    width: '75%', height: '100%',
+    backgroundColor: Colors.bgSecondary,
+    padding: Spacing.xl, paddingTop: 60,
+    gap: Spacing.xs,
+  },
+  title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.lg },
+  item: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  itemIcon: { fontSize: 22, width: 30, textAlign: 'center' },
+  itemLabel: { fontSize: FontSize.base, color: Colors.textPrimary, fontWeight: FontWeight.semibold },
+});
 
 // ── Pantalla principal ────────────────────────────────────────────
 export default function ServiciosScreen() {
@@ -675,13 +713,29 @@ export default function ServiciosScreen() {
   const [balance, setBalance] = useState<number | null>(null);
   const [showBalance, setShowBalance] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
-  useEffect(() => {
-    walletAPI.getBalance().then(r => setBalance(r.balance)).catch(() => {});
-    authAPI.me().then(u => setUser(u)).catch(() => {});
-  }, []);
+  const loadData = async () => {
+    try {
+      const [bal, me] = await Promise.all([
+        walletAPI.getBalance().catch(() => ({ balance: 0 })),
+        authAPI.me().catch(() => null),
+      ]);
+      setBalance(bal.balance);
+      setUser(me);
+    } catch {}
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const openService = (id: string) => {
     const modalServices = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
@@ -689,11 +743,13 @@ export default function ServiciosScreen() {
       setActiveModal(id);
     } else if (id === 'cemac') {
       router.push('/cemac' as any);
+    } else if (id === 'estados') {
+      router.push('/stories' as any);
     } else if (id === 'restaurantes' || id === 'vuelos' || id === 'gasolineras') {
       router.push('/servicios-diarios' as any);
     } else if (id === 'ocio') {
       router.push('/ocio' as any);
-    } else if (id === 'apuestas' || id === 'estados') {
+    } else if (id === 'apuestas') {
       router.push('/apuestas' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto.');
@@ -709,84 +765,42 @@ export default function ServiciosScreen() {
         end={{ x: 1, y: 0 }}
         style={styles.header}
       >
+        {/* Logo */}
         <View style={styles.headerLeft}>
+          <View style={styles.logoCircle}>
+            <Text style={styles.logoCircleText}>EG</Text>
+          </View>
           <Text style={styles.headerLogo}>EG</Text>
           <Text style={styles.headerLogoAccent}>CHAT</Text>
         </View>
+        {/* Acciones */}
         <View style={styles.headerRight}>
           <View style={styles.weatherChip}>
             <Text style={styles.weatherText}>☁️ 27° Malabo</Text>
           </View>
-          <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/(tabs)/ajustes' as any)}>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={() => router.push('/ajustes/notificaciones' as any)}
+            activeOpacity={0.8}
+          >
             <Text style={styles.headerIconText}>🔔</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/(tabs)/ajustes' as any)}>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={() => setShowDrawer(true)}
+            activeOpacity={0.8}
+          >
             <Text style={styles.headerIconText}>☰</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-
-        {/* ── Card de saldo ── */}
-        <LinearGradient
-          colors={['#1a6b7a', '#0d4a5c']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.balanceCard}
-        >
-          <Text style={styles.balanceLabel}>SALDO DISPONIBLE</Text>
-          <View style={styles.balanceRow}>
-            {showBalance ? (
-              <Text style={styles.balanceAmount}>
-                {balance !== null ? `${balance.toLocaleString()} XAF` : '— XAF'}
-              </Text>
-            ) : (
-              <View style={styles.balanceDots}>
-                {[0,1,2,3].map(i => <View key={i} style={styles.dot} />)}
-              </View>
-            )}
-            <TouchableOpacity onPress={() => setShowBalance(v => !v)} style={styles.eyeBtn}>
-              <Text style={styles.eyeIcon}>{showBalance ? '🙈' : '👁️'}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.balanceActions}>
-            <TouchableOpacity
-              style={styles.balanceBtn}
-              onPress={() => router.push('/(tabs)/monedero' as any)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.balanceBtnText}>♻️  RECARGAR</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.balanceBtn, styles.balanceBtnOutline]}
-              onPress={() => router.push('/(tabs)/monedero' as any)}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.balanceBtnText, styles.balanceBtnTextOutline]}>✈️  ENVIAR</Text>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-
-        {/* ── Cards rápidas ── */}
-        <View style={styles.quickCards}>
-          <TouchableOpacity style={styles.quickCard} activeOpacity={0.8}
-            onPress={() => Alert.alert('ID Digital', `Verificado\n${user?.full_name || ''}\n${user?.phone || ''}`)}>
-            <Text style={styles.quickCardIcon}>🪪</Text>
-            <View>
-              <Text style={styles.quickCardTitle}>ID Digital</Text>
-              <Text style={styles.quickCardSub}>Verificado</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickCard} activeOpacity={0.8}
-            onPress={() => Alert.alert('Noticias', 'Próximamente: noticias de Guinea Ecuatorial')}>
-            <Text style={styles.quickCardIcon}>📰</Text>
-            <View>
-              <Text style={styles.quickCardTitle}>Noticias</Text>
-              <Text style={styles.quickCardSub}>8 nuevas</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00C8A0" colors={['#00C8A0']} />
+        }
+      >
 
         {/* ── APPS ── */}
         <View style={styles.appsSection}>
@@ -800,7 +814,7 @@ export default function ServiciosScreen() {
                 activeOpacity={0.75}
               >
                 <View style={styles.appIconBox}>
-                  <Text style={styles.appEmoji}>{app.icon}</Text>
+                  <Text style={styles.appEmoji}>{app.emoji}</Text>
                 </View>
                 <Text style={[styles.appLabel, { color: C.textPrimary }]}>{app.label}</Text>
               </TouchableOpacity>
@@ -842,7 +856,10 @@ export default function ServiciosScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* Modales */}
+      {/* ── Drawer menú ── */}
+      <DrawerMenu visible={showDrawer} onClose={() => setShowDrawer(false)} />
+
+      {/* ── Modales de servicios ── */}
       <TaxiModal visible={activeModal === 'taxi'} onClose={() => setActiveModal(null)} />
       <UtilityModal visible={activeModal === 'electricidad'} onClose={() => setActiveModal(null)} type="electricidad" />
       <UtilityModal visible={activeModal === 'agua'} onClose={() => setActiveModal(null)} type="agua" />
@@ -867,7 +884,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding, paddingVertical: 12,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 1 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoCircle: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoCircleText: { fontSize: 12, fontWeight: '800', color: '#fff' },
   headerLogo: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   headerLogoAccent: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -944,6 +967,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
     ...Shadow.sm,
   },
+  appImg: { width: 44, height: 44 },
   appEmoji: { fontSize: 30 },
   appLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, textAlign: 'center' },
 

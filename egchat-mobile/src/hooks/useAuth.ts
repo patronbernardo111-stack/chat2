@@ -46,7 +46,7 @@ export const useAuth = () => {
     try {
       const res = await authAPI.login(phone, password);
       setState({ user: res.user, isAuthenticated: true, isLoading: false, error: '' });
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/servicios');
       return true;
     } catch (e: any) {
       const msg = e.message || '';
@@ -74,7 +74,7 @@ export const useAuth = () => {
     try {
       const res = await authAPI.register(data);
       setState({ user: res.user, isAuthenticated: true, isLoading: false, error: '' });
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/servicios');
       return true;
     } catch (e: any) {
       const msg = e.message || '';
@@ -161,8 +161,8 @@ export const useSessionCheck = () => {
       try {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
-          await authAPI.me(); // Valida el token en el servidor
-          router.replace('/(tabs)');
+          await authAPI.me();
+          router.replace('/(tabs)/servicios');
         } else {
           router.replace('/(auth)/login');
         }
