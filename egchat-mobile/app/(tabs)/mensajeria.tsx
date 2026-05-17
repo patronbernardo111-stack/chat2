@@ -1,22 +1,20 @@
 // ══════════════════════════════════════════════════════════════════
-// EGCHAT — Pantalla Mensajería (lista de chats)
-// Movida desde index.tsx para liberar el Home Dashboard
+// EGCHAT — Mensajería (fiel a la versión web)
+// Header: logo + temp + bell + menu
+// Barra búsqueda + botón +
+// Secciones: Contactos Favoritos, Grupos Favoritos
+// Filtros: Individual | Grupos | Dinero
+// Lista de chats con avatar, nombre, último msg, hora, badge
+// FAB refresh + LIA-25 flotante
 // ══════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Platform,
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  TextInput, ActivityIndicator, RefreshControl,
+  ScrollView, Image, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Rect, Polyline } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { chatAPI, storiesAPI, getToken } from '../../src/api';
@@ -28,58 +26,35 @@ import {
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
 
-// ── StoryBubble ───────────────────────────────────────────────────
-const StoryBubble = ({ story, onPress }: { story: any; onPress: () => void }) => (
-  <TouchableOpacity onPress={onPress} style={stylesStory.bubble} activeOpacity={0.8}>
-    <View style={[stylesStory.ring, story.media?.length > 0 && stylesStory.ringActive]}>
-      <EGAvatar src={story.avatar} name={story.userName || 'Estado'} size={48} />
-    </View>
-    <Text style={stylesStory.name} numberOfLines={1}>{story.userName || 'Mi estado'}</Text>
-  </TouchableOpacity>
-);
-
-const stylesStory = StyleSheet.create({
-  bubble: { alignItems: 'center', width: 64, gap: 4 },
-  ring: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  ringActive: { borderColor: Colors.accent, borderWidth: 2.5 },
-  name: { fontSize: FontSize.xs, color: Colors.textSecondary, textAlign: 'center', maxWidth: 60 },
-});
-
+// ── Tipos ─────────────────────────────────────────────────────────
 interface Chat {
   id: string;
   type: 'private' | 'group';
   name?: string;
   avatar_url?: string;
-  participants: Array<{
-    user_id: string;
-    full_name?: string;
-    avatar_url?: string;
-  }>;
-  last_message?: {
-    text?: string;
-    type: string;
-    created_at: string;
-    sender_id: string;
-  };
+  participants: Array<{ user_id: string; full_name?: string; avatar_url?: string }>;
+  last_message?: { text?: string; type: string; created_at: string; sender_id: string };
   unread_count: number;
   updated_at: string;
 }
 
+type FilterType = 'individual' | 'grupos' | 'dinero';
+
+// ── Helpers ───────────────────────────────────────────────────────
 const formatTime = (dateStr: string) => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
+  if (date.toDateString() === now.toDateString())
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-  if (isToday) return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  if (isYesterday) return 'Ayer';
+  if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
   return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 };
 
 const getLastMessageText = (msg?: Chat['last_message']) => {
-  if (!msg) return '';
+  if (!msg) return 'Sin mensajes';
   if (msg.type === 'text') return msg.text || '';
   if (msg.type === 'image') return '📷 Foto';
   if (msg.type === 'video') return '🎥 Video';
@@ -88,34 +63,59 @@ const getLastMessageText = (msg?: Chat['last_message']) => {
   return 'Mensaje';
 };
 
+// ── Iconos SVG ────────────────────────────────────────────────────
+const IconBell = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <Path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </Svg>
+);
+const IconMenu = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+    <Line x1="3" y1="6" x2="21" y2="6"/>
+    <Line x1="3" y1="12" x2="21" y2="12"/>
+    <Line x1="3" y1="18" x2="21" y2="18"/>
+  </Svg>
+);
+const IconSearch = ({ color = Colors.textTertiary }: { color?: string }) => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round">
+    <Circle cx="11" cy="11" r="8"/>
+    <Path d="M21 21l-4.35-4.35"/>
+  </Svg>
+);
+const IconRefresh = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="23 4 23 10 17 10"/>
+    <Path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+  </Svg>
+);
+
 // ── ChatItem ──────────────────────────────────────────────────────
 const ChatItem = React.memo(({ chat, currentUserId, onPress }: {
-  chat: Chat;
-  currentUserId: string;
-  onPress: () => void;
+  chat: Chat; currentUserId: string; onPress: () => void;
 }) => {
   const other = chat.participants.find(p => p.user_id !== currentUserId);
   const chatName = chat.type === 'private'
-    ? other?.full_name || 'Usuario'
-    : chat.name || 'Grupo';
+    ? (other?.full_name || 'Usuario')
+    : (chat.name || 'Grupo');
   const avatarSrc = chat.type === 'private' ? other?.avatar_url : chat.avatar_url;
   const lastMsg = getLastMessageText(chat.last_message);
   const time = formatTime(chat.updated_at);
   const hasUnread = chat.unread_count > 0;
 
   return (
-    <TouchableOpacity onPress={onPress} style={styles.chatItem} activeOpacity={0.7}>
-      <EGAvatar src={avatarSrc} name={chatName} size={48} />
-      <View style={styles.chatInfo}>
-        <View style={styles.chatRow}>
-          <Text style={styles.chatName} numberOfLines={1}>{chatName}</Text>
-          <Text style={[styles.chatTime, hasUnread && styles.chatTimeUnread]}>{time}</Text>
+    <TouchableOpacity onPress={onPress} style={st.chatItem} activeOpacity={0.7}>
+      <EGAvatar src={avatarSrc} name={chatName} size={50} />
+      <View style={st.chatInfo}>
+        <View style={st.chatRow}>
+          <Text style={st.chatName} numberOfLines={1}>{chatName}</Text>
+          {time ? <Text style={[st.chatTime, hasUnread && st.chatTimeUnread]}>{time}</Text> : null}
         </View>
-        <View style={styles.chatRow}>
-          <Text style={styles.chatMsg} numberOfLines={1}>{lastMsg}</Text>
+        <View style={st.chatRow}>
+          <Text style={st.chatMsg} numberOfLines={1}>{lastMsg}</Text>
           {hasUnread && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{chat.unread_count > 99 ? '99+' : chat.unread_count}</Text>
+            <View style={st.badge}>
+              <Text style={st.badgeText}>{chat.unread_count > 99 ? '99+' : chat.unread_count}</Text>
             </View>
           )}
         </View>
@@ -124,258 +124,24 @@ const ChatItem = React.memo(({ chat, currentUserId, onPress }: {
   );
 });
 
-// ── Pantalla principal ────────────────────────────────────────────
-export default function MensajeriaScreen() {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentUserId, setCurrentUserId] = useState('');
-  const [stories, setStories] = useState<any[]>([]);
-  const { isDark } = useThemeContext();
-  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
-
-  const loadChats = useCallback(async () => {
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const data = await chatAPI.getChats();
-      setChats(data || []);
-    } catch (e) {
-      console.error('Error cargando chats:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadChats();
-    import('../../src/api').then(({ getToken }) => {
-      getToken().then((token: string | null) => {
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            setCurrentUserId(payload.id || '');
-          } catch {}
-        }
-      });
-    });
-    storiesAPI.getAll().then((data: any) => {
-      if (Array.isArray(data)) setStories(data.filter((s: any) => s.media?.length > 0).slice(0, 8));
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!currentUserId) return;
-    const { subscribeToUserChats } = require('../../src/supabase');
-    const unsubscribe = subscribeToUserChats(currentUserId, () => { loadChats(); });
-    return unsubscribe;
-  }, [currentUserId]);
-
-  const onRefresh = () => { setRefreshing(true); loadChats(); };
-
-  const filteredChats = searchQuery
-    ? chats.filter(c => {
-        const other = c.participants.find(p => p.user_id !== currentUserId);
-        const name = c.type === 'private' ? other?.full_name : c.name;
-        return name?.toLowerCase().includes(searchQuery.toLowerCase());
-      })
-    : chats;
-
+// ── FavoriteEmpty ─────────────────────────────────────────────────
+const FavoriteSection = ({
+  title, empty, C,
+}: { title: string; empty: string; C: typeof Colors }) => {
+  const [collapsed, setCollapsed] = useState(false);
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
-      <OfflineBanner />
-
-      {/* Header */}
-      {showSearch ? (
-        <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-          <View style={[styles.searchContainer, { backgroundColor: C.bgInput }]}>
-            <TextInput
-              style={[styles.searchInput, { color: C.textPrimary }]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Buscar usuarios..."
-              placeholderTextColor={C.textTertiary}
-              autoFocus
-            />
-            <TouchableOpacity onPress={() => { setShowSearch(false); setSearchQuery(''); }} style={styles.searchClose}>
-              <Text style={[styles.searchCloseText, { color: C.textTertiary }]}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <LinearGradient
-          colors={['#00C8A0', '#00B4E6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.header}
-        >
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>Mensajería</Text>
-          </View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => router.push('/contacts' as any)} style={styles.headerBtn}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
-                <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <Circle cx="9" cy="7" r="4"/>
-                <Path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <Path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </Svg>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.headerBtn}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
-                <Circle cx="11" cy="11" r="8"/>
-                <Path d="M21 21l-4.35-4.35"/>
-              </Svg>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/new-chat' as any)} style={styles.headerBtn}>
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
-                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </Svg>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      )}
-
-      {/* Stories */}
-      {stories.length > 0 && (
-        <View style={[styles.storiesContainer, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-            <StoryBubble story={{ userName: 'Mi estado', media: [] }} onPress={() => router.push('/stories' as any)} />
-            {stories.map((s: any) => (
-              <StoryBubble key={s.id} story={s} onPress={() => router.push('/stories' as any)} />
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Lista de chats */}
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
-      ) : filteredChats.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyIcon}>💬</Text>
-          <Text style={[styles.emptyTitle, { color: C.textPrimary }]}>
-            {searchQuery ? 'Sin resultados' : 'No tienes chats aún'}
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: C.textSecondary }]}>
-            {searchQuery ? 'Prueba con otro nombre' : 'Busca un contacto para empezar'}
-          </Text>
-          {!searchQuery && (
-            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.emptyBtn}>
-              <Text style={styles.emptyBtnText}>Buscar usuarios</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <FlatList
-          data={filteredChats}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <ChatItem
-              chat={item}
-              currentUserId={currentUserId}
-              onPress={() => router.push(`/chat/${item.id}` as any)}
-            />
-          )}
-          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: C.borderLight }]} />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} colors={[Colors.accent]} />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* ── FAB nuevo chat ── */}
+    <View style={st.favSection}>
       <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/new-chat' as any)}
-        activeOpacity={0.85}
+        style={st.favHeader}
+        onPress={() => setCollapsed(v => !v)}
+        activeOpacity={0.7}
       >
-        <LinearGradient
-          colors={['#00C8A0', '#00B4E6']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabGradient}
-        >
-          <Text style={styles.fabIcon}>✏️</Text>
-        </LinearGradient>
+        <Text style={[st.favTitle, { color: C.textTertiary }]}>{title}</Text>
+        <Text style={[st.favToggle, { color: C.textTertiary }]}>{collapsed ? '+' : '−'}</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+      {!collapsed && (
+        <Text style={[st.favEmpty, { color: C.textTertiary }]}>{empty}</Text>
+      )}
+    </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgPrimary },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.listItemPaddingH,
-    paddingVertical: Spacing.md,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  headerActions: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
-  headerBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  searchContainer: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bgInput, borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md, gap: Spacing.sm,
-  },
-  searchInput: { flex: 1, fontSize: FontSize.base, color: Colors.textPrimary, paddingVertical: Spacing.sm },
-  searchClose: { padding: Spacing.xs },
-  searchCloseText: { fontSize: FontSize.base, color: Colors.textTertiary },
-  chatItem: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: Spacing.listItemPaddingV,
-    paddingHorizontal: Spacing.listItemPaddingH,
-    backgroundColor: Colors.bgSecondary,
-    gap: Spacing.listItemGap,
-  },
-  chatInfo: { flex: 1, gap: 3 },
-  chatRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  chatName: { ...Typography.chatName, flex: 1, marginRight: Spacing.sm },
-  chatTime: { ...Typography.timestamp, color: Colors.textTertiary },
-  chatTimeUnread: { color: Colors.accent, fontWeight: FontWeight.semibold },
-  chatMsg: { ...Typography.subtitle, color: Colors.textSecondary, flex: 1, marginRight: Spacing.sm },
-  badge: {
-    backgroundColor: Colors.accent, borderRadius: BorderRadius.badge,
-    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
-  },
-  badgeText: { ...Typography.badge, color: Colors.white },
-  separator: { height: 1, backgroundColor: Colors.borderLight, marginLeft: Spacing.listItemPaddingH + 48 + Spacing.listItemGap },
-  storiesContainer: { backgroundColor: Colors.bgSecondary, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  storiesScroll: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, gap: Spacing.md },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding },
-  emptyIcon: { fontSize: 48, marginBottom: Spacing.md },
-  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.sm, textAlign: 'center' },
-  emptySubtitle: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.xl },
-  emptyBtn: { backgroundColor: Colors.accent, borderRadius: BorderRadius.md, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl },
-  emptyBtnText: { color: Colors.white, fontSize: FontSize.base, fontWeight: FontWeight.semibold },
-
-  // FAB nuevo chat
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    ...Shadow.lg,
-  },
-  fabGradient: {
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  fabIcon: { fontSize: 22 },
-});
+};
