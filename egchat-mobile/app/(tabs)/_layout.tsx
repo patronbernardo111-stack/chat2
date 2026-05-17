@@ -1,13 +1,13 @@
 import { Tabs } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Polyline } from 'react-native-svg';
 import { Colors } from '../../src/theme';
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
 
-// ── Iconos SVG idénticos a la web ────────────────────────────────
-const NavIcon = ({ name, color, size = 26 }: { name: string; color: string; size?: number }) => {
+// ── Iconos SVG ────────────────────────────────────────────────────
+const NavIcon = ({ name, color, size = 24 }: { name: string; color: string; size?: number }) => {
   const s = size;
   switch (name) {
     case 'mensajes':
@@ -27,9 +27,10 @@ const NavIcon = ({ name, color, size = 26 }: { name: string; color: string; size
     case 'services':
       return (
         <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-          <Circle cx="12" cy="12" r="3"/>
-          <Path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
-          <Path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
+          <Rect x="3" y="3" width="7" height="7" rx="1"/>
+          <Rect x="14" y="3" width="7" height="7" rx="1"/>
+          <Rect x="3" y="14" width="7" height="7" rx="1"/>
+          <Rect x="14" y="14" width="7" height="7" rx="1"/>
         </Svg>
       );
     case 'ajustes':
@@ -39,96 +40,22 @@ const NavIcon = ({ name, color, size = 26 }: { name: string; color: string; size
           <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </Svg>
       );
-    case 'lia':
-      return (
-        <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="M12 2a10 10 0 1 0 10 10"/>
-          <Path d="M12 8v4l3 3"/>
-          <Circle cx="18" cy="5" r="3"/>
-        </Svg>
-      );
     default:
       return null;
   }
 };
 
-// ── Tab bar con gradiente idéntico a la web ───────────────────────
-const GradientTabBar = ({ state, descriptors, navigation }: any) => {
-  const navItems = [
-    { name: 'index',    icon: 'mensajes', label: 'Mensajería' },
-    { name: 'monedero', icon: 'wallet',   label: 'Cartera'    },
-    { name: 'servicios',icon: 'services', label: 'Servicios'  },
-    { name: 'lia',      icon: 'lia',      label: 'Lia-25'     },
-    { name: 'ajustes',  icon: 'ajustes',  label: 'Ajustes'    },
-  ];
-
-  return (
-    <LinearGradient
-      colors={['#00C8A0', '#00B4E6']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-around',
-        paddingTop: 6,
-        paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-        minHeight: 49,
-        borderTopWidth: 0.5,
-        borderTopColor: 'rgba(255,255,255,0.25)',
-      }}
-    >
-      {navItems.map((item, index) => {
-        const route = state.routes[index];
-        const isFocused = state.index === index;
-        const iconColor = isFocused ? '#ffffff' : 'rgba(255,255,255,0.65)';
-        const labelColor = isFocused ? '#ffffff' : 'rgba(255,255,255,0.65)';
-        const fontWeight = isFocused ? '600' : '400';
-
-        const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        return (
-          <View
-            key={item.name}
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 }}
-            onTouchEnd={onPress}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-          >
-            <NavIcon name={item.icon} color={iconColor} size={26} />
-            <View>
-              {/* Label */}
-              <View>
-                {/* Using Text via import below */}
-              </View>
-            </View>
-          </View>
-        );
-      })}
-    </LinearGradient>
-  );
-};
-
 export default function TabsLayout() {
   const { isDark } = useThemeContext();
-  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.brand,
+          height: Platform.OS === 'ios' ? 80 : 58,
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 80 : 60,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-          paddingTop: 6,
+          elevation: 0,
         },
         tabBarBackground: () => (
           <LinearGradient
@@ -139,62 +66,58 @@ export default function TabsLayout() {
           />
         ),
         tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.65)',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.55)',
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
-          letterSpacing: 0.2,
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
         },
         tabBarIconStyle: {
-          marginTop: 2,
+          marginTop: 4,
         },
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color }) => (
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              <Polyline points="9 22 9 12 15 12 15 22"/>
-            </Svg>
-          ),
-        }}
-      />
+      {/* Tab 1 — Mensajería (pantalla principal) */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Mensajería',
-          tabBarIcon: ({ color }) => <NavIcon name="mensajes" color={color} size={26} />,
+          tabBarIcon: ({ color }) => <NavIcon name="mensajes" color={color} size={24} />,
         }}
       />
+
+      {/* Tab 2 — Cartera */}
       <Tabs.Screen
         name="monedero"
         options={{
           title: 'Cartera',
-          tabBarIcon: ({ color }) => <NavIcon name="wallet" color={color} size={26} />,
+          tabBarIcon: ({ color }) => <NavIcon name="wallet" color={color} size={24} />,
         }}
       />
+
+      {/* Tab 3 — Servicios (dashboard principal) */}
       <Tabs.Screen
         name="servicios"
         options={{
           title: 'Servicios',
-          tabBarIcon: ({ color }) => <NavIcon name="services" color={color} size={26} />,
+          tabBarIcon: ({ color }) => <NavIcon name="services" color={color} size={24} />,
         }}
       />
-      <Tabs.Screen
-        name="lia"
-        options={{
-          title: 'Lia-25',
-          tabBarIcon: ({ color }) => <NavIcon name="lia" color={color} size={26} />,
-        }}
-      />
+
+      {/* Tab 4 — Ajustes */}
       <Tabs.Screen
         name="ajustes"
         options={{
           title: 'Ajustes',
-          tabBarIcon: ({ color }) => <NavIcon name="ajustes" color={color} size={26} />,
+          tabBarIcon: ({ color }) => <NavIcon name="ajustes" color={color} size={24} />,
+        }}
+      />
+
+      {/* Pantallas ocultas del tab bar */}
+      <Tabs.Screen
+        name="lia"
+        options={{
+          href: null, // oculto del tab bar, accesible desde el menú
         }}
       />
     </Tabs>
