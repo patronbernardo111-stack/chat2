@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle, Rect, Line, Polyline } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
 import { router } from 'expo-router';
 import { walletAPI, authAPI } from '../../src/api';
 import { EGAvatar } from '../../src/components/ui';
