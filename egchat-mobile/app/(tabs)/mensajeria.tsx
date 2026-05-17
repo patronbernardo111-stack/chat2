@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { chatAPI, storiesAPI, getToken } from '../../src/api';
 import { EGAvatar, OfflineBanner } from '../../src/components/ui';
+import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
@@ -156,6 +157,10 @@ export default function MensajeriaScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
   const [filter, setFilter] = useState<FilterType>('individual');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
@@ -238,17 +243,24 @@ export default function MensajeriaScreen() {
 
         {/* Acciones */}
         <View style={st.headerRight}>
-          <TouchableOpacity style={st.headerPill} activeOpacity={0.8}>
+          <TouchableOpacity style={st.headerPill} activeOpacity={0.8} onPress={() => setShowWeather(true)}>
             <Text style={st.headerPillText}>☁️ 27° Malabo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={st.headerIconBtn} activeOpacity={0.8}>
-            <IconBell />
-            <View style={st.notifDot} />
           </TouchableOpacity>
           <TouchableOpacity
             style={st.headerIconBtn}
             activeOpacity={0.8}
-            onPress={() => router.push('/(tabs)/ajustes' as any)}
+            onPress={() => {
+              setShowNotifications(true);
+              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            }}
+          >
+            <IconBell />
+            {notifications.some(n => !n.read) && <View style={st.notifDot} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={st.headerIconBtn}
+            activeOpacity={0.8}
+            onPress={() => setShowMenu(true)}
           >
             <IconMenu />
           </TouchableOpacity>

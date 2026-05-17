@@ -24,6 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
 import { router } from 'expo-router';
 import { walletAPI, authAPI } from '../../src/api';
+import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
 import {
   Colors, Spacing, BorderRadius, FontSize, FontWeight, Shadow,
 } from '../../src/theme';
@@ -158,6 +159,15 @@ export default function HomeScreen() {
   const [fabOpen, setFabOpen] = useState(false);
   const [temp] = useState('27°');
   const [city] = useState('Malabo');
+
+  // ── Estados de los paneles del header ───────────────────────────
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([
+    { id: '1', type: 'message',  title: '💬 Bienvenido a EGCHAT', body: 'Tu cuenta está activa y lista para usar', time: 'Ahora', read: false },
+    { id: '2', type: 'system',   title: '🔒 Cifrado E2E activado', body: 'Todos tus mensajes están cifrados', time: 'Hoy', read: false },
+  ]);
 
   // Animaciones FAB — una por cada servicio
   const fabRotate = useRef(new Animated.Value(0)).current;
@@ -327,22 +337,28 @@ export default function HomeScreen() {
         {/* Acciones derechas */}
         <View style={st.headerRight}>
           {/* Temperatura */}
-          <TouchableOpacity style={st.headerPill} activeOpacity={0.8}>
+          <TouchableOpacity style={st.headerPill} activeOpacity={0.8} onPress={() => setShowWeather(true)}>
             <Text style={st.headerPillText}>☁️ {temp} {city}</Text>
           </TouchableOpacity>
 
           {/* Campanita */}
-          <TouchableOpacity style={st.headerIconBtn} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={st.headerIconBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              setShowNotifications(true);
+              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            }}
+          >
             <IconBell color="#fff" size={20} />
-            {/* Badge notificaciones */}
-            <View style={st.notifBadge} />
+            {notifications.some(n => !n.read) && <View style={st.notifBadge} />}
           </TouchableOpacity>
 
           {/* Tres barras */}
           <TouchableOpacity
             style={st.headerIconBtn}
             activeOpacity={0.8}
-            onPress={() => router.push('/(tabs)/ajustes' as any)}
+            onPress={() => setShowMenu(true)}
           >
             <IconMenu color="#fff" size={20} />
           </TouchableOpacity>
@@ -609,6 +625,34 @@ export default function HomeScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
+      {/* ════════════════════════════════════════════════════════
+          PANELES DEL HEADER
+      ════════════════════════════════════════════════════════ */}
+      <NotificationsPanel
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onClearAll={() => setNotifications([])}
+        onNotifPress={(n) => {
+          setNotifications(prev => prev.filter(x => x.id !== n.id));
+          setShowNotifications(false);
+          if (n.chatId) router.push(`/chat/${n.chatId}` as any);
+        }}
+      />
+      <HamburgerMenu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        user={user}
+      />
+      <WeatherModal
+        visible={showWeather}
+        onClose={() => setShowWeather(false)}
+        temp={temp}
+        city={city}
+        condition="cloudy"
+      />
+
     </SafeAreaView>
   );
 }
@@ -653,11 +697,14 @@ const st = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: '#00C8A0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoImg: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    transform: [{ scale: 1.6 }],
   },
   logoText: {
     fontSize: 20,
@@ -894,6 +941,7 @@ const st = StyleSheet.create({
     width: LIA_BTN_SIZE,
     height: LIA_BTN_SIZE,
     borderRadius: LIA_BTN_SIZE / 2,
+    transform: [{ scale: 1.5 }],
   },
 
   // ── FAB + central ────────────────────────────────────────────────
