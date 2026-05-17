@@ -242,9 +242,6 @@ const np = StyleSheet.create({
 // MENÚ HAMBURGUESA — Drawer lateral desde la derecha
 // Fiel a la imagen: avatar grande, iconos SVG morados, subtítulos
 // ══════════════════════════════════════════════════════════════════
-import { useRef, useEffect } from 'react';
-import { Animated, Dimensions } from 'react-native';
-
 const SCREEN_W = Dimensions.get('window').width;
 const DRAWER_W = Math.min(SCREEN_W * 0.82, 340);
 const ICON_COLOR = '#5B4FCF'; // morado de la imagen

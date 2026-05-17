@@ -16,37 +16,79 @@ import {
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
 
-// ── Tipos de servicios ────────────────────────────────────────────
-const SERVICES = [
-  { id: 'taxi',          icon: '🚕', label: 'MiTaxi',          sub: 'Pedir taxi',          color: '#F59E0B', bg: '#FFFBEB' },
-  { id: 'electricidad',  icon: '⚡', label: 'Electricidad',     sub: 'SEGESA',              color: '#EAB308', bg: '#FEFCE8' },
-  { id: 'agua',          icon: '💧', label: 'Agua',             sub: 'SNGE',                color: '#0EA5E9', bg: '#F0F9FF' },
-  { id: 'internet',      icon: '🌐', label: 'Internet',         sub: 'Proveedores',         color: '#6366F1', bg: '#EEF2FF' },
-  { id: 'recarga',       icon: '📱', label: 'Recarga',          sub: 'Telefonía móvil',     color: '#8B5CF6', bg: '#F5F3FF' },
-  { id: 'tv',            icon: '📺', label: 'Canales TV',       sub: 'Suscripciones',       color: '#EF4444', bg: '#FFF1F2' },
-  { id: 'bancos',        icon: '🏦', label: 'Bancos',           sub: 'BANGE, BGFI, CCEI',   color: '#1E3A5F', bg: '#EFF6FF' },
-  { id: 'salud',         icon: '🏥', label: 'Salud',            sub: 'Hospitales',          color: '#DC2626', bg: '#FFF1F2' },
-  { id: 'impuestos',     icon: '📋', label: 'Impuestos',        sub: 'DGI',                 color: '#374151', bg: '#F9FAFB' },
-  { id: 'correos',       icon: '📮', label: 'Correos',          sub: 'Envíos',              color: '#C0392B', bg: '#FFF5F5' },
-  { id: 'seguros',       icon: '🛡️', label: 'Seguros',          sub: 'Vida, auto...',       color: '#065F46', bg: '#F0FDF4' },
-  { id: 'supermercado',  icon: '🛒', label: 'Supermercado',     sub: 'Compras online',      color: '#00c8a0', bg: '#F0FDF9' },
-  { id: 'restaurantes',  icon: '🍽️', label: 'Restaurantes',     sub: 'Reservas',            color: '#C47D2A', bg: '#FEF3C7' },
-  { id: 'vuelos',        icon: '✈️', label: 'Vuelos',           sub: 'Ceiba, Iberia...',    color: '#1B3A6B', bg: '#EFF6FF' },
-  { id: 'gasolineras',   icon: '⛽', label: 'Gasolineras',      sub: 'GEPetrol, Total',     color: '#C0392B', bg: '#FFF5F5' },
-  { id: 'cemac',         icon: '🌍', label: 'Zona CEMAC',       sub: '6 países',            color: '#00b96b', bg: '#F0FDF4' },
-  { id: 'ocio',          icon: '🎭', label: 'Ocio',             sub: 'Hoteles, cine...',    color: '#EC4899', bg: '#FDF2F8' },
-  { id: 'apuestas',      icon: '🎰', label: 'Apuestas',         sub: 'Juegos y loterías',   color: '#F59E0B', bg: '#FFFBEB' },
+// ── Secciones de servicios (igual que la versión web) ─────────────
+const SERVICE_SECTIONS = [
+  {
+    id: 'basicos',
+    title: 'Básicos',
+    services: [
+      { id: 'recarga',      icon: '📱', label: 'Recarga',     sub: 'Telefonía móvil',  color: '#8B5CF6', bg: '#F5F3FF' },
+      { id: 'internet',     icon: '🌐', label: 'Internet',    sub: 'Proveedores',      color: '#6366F1', bg: '#EEF2FF' },
+      { id: 'tv',           icon: '📺', label: 'Canales',     sub: 'TV y satélite',    color: '#EF4444', bg: '#FFF1F2' },
+    ],
+  },
+  {
+    id: 'financieros',
+    title: 'Servicios Financieros',
+    services: [
+      { id: 'bancos',       icon: '🏦', label: 'Bancos',      sub: 'BANGE, BGFI...',   color: '#1E3A5F', bg: '#EFF6FF' },
+      { id: 'seguros',      icon: '🛡️', label: 'Seguros',     sub: 'Vida, auto...',    color: '#065F46', bg: '#F0FDF4' },
+      { id: 'facturas',     icon: '🧾', label: 'Facturas',    sub: 'Pagar facturas',   color: '#D97706', bg: '#FFFBEB' },
+      { id: 'inversion',    icon: '📈', label: 'Inversión',   sub: 'Fondos y bolsa',   color: '#7C3AED', bg: '#F5F3FF' },
+      { id: 'tarjetas',     icon: '💳', label: 'Tarjetas',    sub: 'Débito y crédito', color: '#0369A1', bg: '#F0F9FF' },
+      { id: 'historial',    icon: '🕐', label: 'Historial',   sub: 'Movimientos',      color: '#374151', bg: '#F9FAFB' },
+    ],
+  },
+  {
+    id: 'publicos',
+    title: 'Servicios Públicos',
+    services: [
+      { id: 'electricidad', icon: '⚡', label: 'Electrici...', sub: 'SEGESA',           color: '#EAB308', bg: '#FEFCE8' },
+      { id: 'agua',         icon: '💧', label: 'Agua',         sub: 'SNGE',             color: '#0EA5E9', bg: '#F0F9FF' },
+      { id: 'salud',        icon: '🏥', label: 'Salud',        sub: 'Hospitales',       color: '#DC2626', bg: '#FFF1F2' },
+      { id: 'educacion',    icon: '🎓', label: 'Educación',    sub: 'Colegios, UNGE',   color: '#7C3AED', bg: '#F5F3FF' },
+      { id: 'correos',      icon: '📮', label: 'Correos',      sub: 'Envíos',           color: '#C0392B', bg: '#FFF5F5' },
+      { id: 'impuestos',    icon: '📋', label: 'Impuestos',    sub: 'DGI',              color: '#374151', bg: '#F9FAFB' },
+    ],
+  },
+  {
+    id: 'diarios',
+    title: 'Servicios Diarios',
+    services: [
+      { id: 'supermercado', icon: '🛒', label: 'Superm...',    sub: 'Compras online',   color: '#00c8a0', bg: '#F0FDF9' },
+      { id: 'comida',       icon: '💵', label: 'Comida',       sub: 'Delivery',         color: '#EF4444', bg: '#FFF1F2' },
+      { id: 'restaurantes', icon: '☕', label: 'Restaur...',   sub: 'Reservas',         color: '#C47D2A', bg: '#FEF3C7' },
+      { id: 'hotel',        icon: '🏨', label: 'Hotel',        sub: 'Reservas',         color: '#6366F1', bg: '#EEF2FF' },
+      { id: 'vuelos',       icon: '✈️', label: 'Vuelos',       sub: 'Ceiba, Iberia...',  color: '#1B3A6B', bg: '#EFF6FF' },
+      { id: 'gasolineras',  icon: '⛽', label: 'Gasolinera',   sub: 'GEPetrol, Total',  color: '#C0392B', bg: '#FFF5F5' },
+      { id: 'tienda',       icon: '🛍️', label: 'Tienda',       sub: 'Compras',          color: '#059669', bg: '#F0FDF4' },
+      { id: 'lavanderia',   icon: '🫧', label: 'Lavande...',   sub: 'Lavandería',       color: '#0EA5E9', bg: '#F0F9FF' },
+      { id: 'belleza',      icon: '❤️', label: 'Belleza',      sub: 'Salones y spas',   color: '#EC4899', bg: '#FDF2F8' },
+      { id: 'noticias',     icon: '📰', label: 'Noticias',     sub: 'Prensa local',     color: '#374151', bg: '#F9FAFB' },
+    ],
+  },
+  {
+    id: 'herramientas',
+    title: 'Herramientas',
+    services: [
+      { id: 'id_digital',   icon: '🪪', label: 'ID Digital',  sub: 'Identidad',        color: '#6366F1', bg: '#EEF2FF' },
+      { id: 'lia',          icon: '🤖', label: 'Lia-25',       sub: 'IA Asistente',     color: '#00c8a0', bg: '#F0FDF9' },
+      { id: 'actividad',    icon: '🕐', label: 'Actividad',    sub: 'Historial',        color: '#374151', bg: '#F9FAFB' },
+      { id: 'emergencias',  icon: '⚠️', label: 'Emerge...',    sub: 'Números de ayuda', color: '#EF4444', bg: '#FFF1F2' },
+      { id: 'ajustes',      icon: '⚙️', label: 'Ajustes',      sub: 'Configuración',    color: '#374151', bg: '#F9FAFB' },
+    ],
+  },
 ];
 
 // ── Tipos de taxi ─────────────────────────────────────────────────
 const RIDE_TYPES = [
-  { id: 'moto',   label: 'Moto',    sub: '1 pasajero',  price: 500,  eta: '2 min', color: '#F97316' },
-  { id: 'taxi',   label: 'Taxi',    sub: '4 pasajeros', price: 1000, eta: '4 min', color: '#EAB308' },
-  { id: 'suv',    label: 'Confort', sub: 'SUV 4 plazas',price: 2000, eta: '5 min', color: '#6366F1' },
-  { id: 'vip',    label: 'VIP',     sub: 'Premium',     price: 3500, eta: '7 min', color: '#7C3AED' },
+  { id: 'moto',  label: 'Moto',    sub: '1 pasajero',   price: 500,  eta: '2 min', color: '#F97316' },
+  { id: 'taxi',  label: 'Taxi',    sub: '4 pasajeros',  price: 1000, eta: '4 min', color: '#EAB308' },
+  { id: 'suv',   label: 'Confort', sub: 'SUV 4 plazas', price: 2000, eta: '5 min', color: '#6366F1' },
+  { id: 'vip',   label: 'VIP',     sub: 'Premium',      price: 3500, eta: '7 min', color: '#7C3AED' },
 ];
 
-// ── Modal genérico ────────────────────────────────────────────────
+// ── Modal genérico (bottom sheet) ─────────────────────────────────
 const ServiceModal = ({
   visible, title, onClose, children,
 }: {
@@ -57,7 +99,7 @@ const ServiceModal = ({
       <Pressable style={styles.sheet} onPress={() => {}}>
         <View style={styles.handle} />
         <Text style={styles.sheetTitle}>{title}</Text>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
       </Pressable>
@@ -75,21 +117,10 @@ const TaxiModal = ({ visible, onClose }: { visible: boolean; onClose: () => void
 
   const requestRide = async () => {
     if (!origin.trim() || !dest.trim()) { Alert.alert('Error', 'Introduce origen y destino'); return; }
-    setLoading(true);
-    setStep('searching');
-    try {
-      await taxiAPI.requestRide(
-        { address: origin },
-        { address: dest },
-        selectedRide.id
-      );
-      setTimeout(() => { setStep('matched'); setLoading(false); }, 3000);
-    } catch {
-      // Simular búsqueda aunque la API falle
-      setTimeout(() => { setStep('matched'); setLoading(false); }, 3000);
-    }
+    setLoading(true); setStep('searching');
+    try { await taxiAPI.requestRide({ address: origin }, { address: dest }, selectedRide.id); } catch {}
+    setTimeout(() => { setStep('matched'); setLoading(false); }, 3000);
   };
-
   const reset = () => { setStep('form'); setOrigin(''); setDest(''); setLoading(false); onClose(); };
 
   return (
@@ -98,15 +129,11 @@ const TaxiModal = ({ visible, onClose }: { visible: boolean; onClose: () => void
         <View>
           <EGInput label="Origen" value={origin} onChangeText={setOrigin} placeholder="¿Dónde estás?" />
           <EGInput label="Destino" value={dest} onChangeText={setDest} placeholder="¿A dónde vas?" />
-
           <Text style={styles.sectionLabel}>Tipo de vehículo</Text>
           {RIDE_TYPES.map(r => (
-            <TouchableOpacity
-              key={r.id}
-              onPress={() => setSelectedRide(r)}
+            <TouchableOpacity key={r.id} onPress={() => setSelectedRide(r)}
               style={[styles.rideOption, selectedRide.id === r.id && { borderColor: r.color, borderWidth: 2 }]}
-              activeOpacity={0.7}
-            >
+              activeOpacity={0.7}>
               <View style={[styles.rideIconBox, { backgroundColor: r.color + '18' }]}>
                 <Text style={styles.rideEmoji}>🚗</Text>
               </View>
@@ -117,11 +144,9 @@ const TaxiModal = ({ visible, onClose }: { visible: boolean; onClose: () => void
               <Text style={[styles.ridePrice, { color: r.color }]}>{r.price.toLocaleString()} XAF</Text>
             </TouchableOpacity>
           ))}
-
           <EGButton title="Pedir taxi" onPress={requestRide} style={styles.actionBtn} />
         </View>
       )}
-
       {step === 'searching' && (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.accent} />
@@ -129,13 +154,10 @@ const TaxiModal = ({ visible, onClose }: { visible: boolean; onClose: () => void
           <Text style={styles.searchingSub}>Esto puede tardar unos segundos</Text>
         </View>
       )}
-
       {step === 'matched' && (
         <View>
           <View style={styles.driverCard}>
-            <View style={styles.driverAvatar}>
-              <Text style={styles.driverInitials}>CN</Text>
-            </View>
+            <View style={styles.driverAvatar}><Text style={styles.driverInitials}>CN</Text></View>
             <View style={styles.driverInfo}>
               <Text style={styles.driverName}>Carlos Nguema</Text>
               <Text style={styles.driverSub}>⭐ 4.9 · Toyota Corolla · GE-1234</Text>
@@ -151,16 +173,11 @@ const TaxiModal = ({ visible, onClose }: { visible: boolean; onClose: () => void
 };
 
 // ── Modal Electricidad / Agua ─────────────────────────────────────
-const UtilityModal = ({
-  visible, onClose, type,
-}: {
-  visible: boolean; onClose: () => void; type: 'electricidad' | 'agua';
-}) => {
+const UtilityModal = ({ visible, onClose, type }: { visible: boolean; onClose: () => void; type: 'electricidad' | 'agua' }) => {
   const [contrato, setContrato] = useState('');
   const [factura, setFactura] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [paying, setPaying] = useState(false);
-
   const title = type === 'electricidad' ? '⚡ SEGESA - Electricidad' : '💧 SNGE - Agua';
 
   const consultar = async () => {
@@ -171,62 +188,36 @@ const UtilityModal = ({
         ? await serviciosAPI.consultarFacturaElec(contrato)
         : await serviciosAPI.consultarFacturaAgua(contrato);
       setFactura(res);
-    } catch {
-      // Datos de ejemplo si la API falla
-      setFactura({ contrato, importe: 15000, periodo: 'Mayo 2026', estado: 'pendiente' });
-    } finally { setLoading(false); }
+    } catch { setFactura({ contrato, importe: 15000, periodo: 'Mayo 2026', estado: 'pendiente' }); }
+    finally { setLoading(false); }
   };
 
   const pagar = async () => {
     if (!factura) return;
     setPaying(true);
     try {
-      if (type === 'electricidad') {
-        await serviciosAPI.pagarElectricidad(contrato, factura.importe, 'monedero');
-      } else {
-        await serviciosAPI.pagarAgua(contrato, factura.importe, 'monedero');
-      }
+      if (type === 'electricidad') await serviciosAPI.pagarElectricidad(contrato, factura.importe, 'monedero');
+      else await serviciosAPI.pagarAgua(contrato, factura.importe, 'monedero');
       Alert.alert('✅', 'Pago realizado correctamente');
       setFactura(null); setContrato(''); onClose();
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'No se pudo procesar el pago');
-    } finally { setPaying(false); }
+    } catch (e: any) { Alert.alert('Error', e.message || 'No se pudo procesar el pago'); }
+    finally { setPaying(false); }
   };
 
   return (
     <ServiceModal visible={visible} title={title} onClose={() => { setFactura(null); setContrato(''); onClose(); }}>
-      <EGInput
-        label="Número de contrato"
-        value={contrato}
-        onChangeText={setContrato}
-        placeholder="Ej: 123456789"
-        keyboardType="numeric"
-      />
+      <EGInput label="Número de contrato" value={contrato} onChangeText={setContrato} placeholder="Ej: 123456789" keyboardType="numeric" />
       <EGButton title={loading ? 'Consultando...' : 'Consultar factura'} onPress={consultar} loading={loading} />
-
       {factura && (
         <EGCard style={styles.facturaCard}>
           <Text style={styles.facturaTitle}>Factura encontrada</Text>
-          <View style={styles.facturaRow}>
-            <Text style={styles.facturaLabel}>Contrato</Text>
-            <Text style={styles.facturaValue}>{factura.contrato}</Text>
-          </View>
-          <View style={styles.facturaRow}>
-            <Text style={styles.facturaLabel}>Período</Text>
-            <Text style={styles.facturaValue}>{factura.periodo || 'Mayo 2026'}</Text>
-          </View>
-          <View style={styles.facturaRow}>
-            <Text style={styles.facturaLabel}>Importe</Text>
-            <Text style={[styles.facturaValue, { color: Colors.accent, fontWeight: FontWeight.bold }]}>
-              {(factura.importe || 15000).toLocaleString()} XAF
-            </Text>
-          </View>
-          <EGButton
-            title={paying ? 'Pagando...' : `Pagar ${(factura.importe || 15000).toLocaleString()} XAF`}
-            onPress={pagar}
-            loading={paying}
-            style={styles.actionBtn}
-          />
+          {[['Contrato', factura.contrato], ['Período', factura.periodo || 'Mayo 2026'], ['Importe', `${(factura.importe || 15000).toLocaleString()} XAF`]].map(([l, v]) => (
+            <View key={l} style={styles.facturaRow}>
+              <Text style={styles.facturaLabel}>{l}</Text>
+              <Text style={[styles.facturaValue, l === 'Importe' && { color: Colors.accent, fontWeight: FontWeight.bold }]}>{v}</Text>
+            </View>
+          ))}
+          <EGButton title={paying ? 'Pagando...' : `Pagar ${(factura.importe || 15000).toLocaleString()} XAF`} onPress={pagar} loading={paying} style={styles.actionBtn} />
         </EGCard>
       )}
     </ServiceModal>
@@ -239,7 +230,6 @@ const RecargaModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
   const [amount, setAmount] = useState('');
   const [operator, setOperator] = useState('GETESA');
   const [loading, setLoading] = useState(false);
-
   const OPERATORS = ['GETESA', 'GECOMSA', 'MUNI', 'Orange GE'];
   const AMOUNTS = [500, 1000, 2000, 5000];
 
@@ -247,13 +237,11 @@ const RecargaModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
     if (!phone || !amount) { Alert.alert('Error', 'Rellena todos los campos'); return; }
     setLoading(true);
     try {
-      // Usar walletAPI para debitar y registrar la recarga
       await walletAPI.withdraw(Number(amount), 'recarga_movil', phone);
       Alert.alert('✅', `Recarga de ${Number(amount).toLocaleString()} XAF enviada a ${phone}`);
       setPhone(''); setAmount(''); onClose();
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'No se pudo procesar la recarga');
-    } finally { setLoading(false); }
+    } catch (e: any) { Alert.alert('Error', e.message || 'No se pudo procesar la recarga'); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -261,33 +249,22 @@ const RecargaModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
       <Text style={styles.sectionLabel}>Operador</Text>
       <View style={styles.operatorRow}>
         {OPERATORS.map(op => (
-          <TouchableOpacity
-            key={op}
-            onPress={() => setOperator(op)}
-            style={[styles.operatorChip, operator === op && styles.operatorChipActive]}
-          >
+          <TouchableOpacity key={op} onPress={() => setOperator(op)}
+            style={[styles.operatorChip, operator === op && styles.operatorChipActive]}>
             <Text style={[styles.operatorText, operator === op && styles.operatorTextActive]}>{op}</Text>
           </TouchableOpacity>
         ))}
       </View>
-
       <EGInput label="Número de teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+240 222 XXX XXX" />
-
       <Text style={styles.sectionLabel}>Importe</Text>
       <View style={styles.amountRow}>
         {AMOUNTS.map(a => (
-          <TouchableOpacity
-            key={a}
-            onPress={() => setAmount(String(a))}
-            style={[styles.amountChip, amount === String(a) && styles.amountChipActive]}
-          >
-            <Text style={[styles.amountText, amount === String(a) && styles.amountTextActive]}>
-              {a.toLocaleString()}
-            </Text>
+          <TouchableOpacity key={a} onPress={() => setAmount(String(a))}
+            style={[styles.amountChip, amount === String(a) && styles.amountChipActive]}>
+            <Text style={[styles.amountText, amount === String(a) && styles.amountTextActive]}>{a.toLocaleString()}</Text>
           </TouchableOpacity>
         ))}
       </View>
-
       <EGInput label="O introduce otro importe (XAF)" value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="1500" />
       <EGButton title={loading ? 'Procesando...' : 'Recargar'} onPress={recargar} loading={loading} style={styles.actionBtn} />
     </ServiceModal>
@@ -296,28 +273,25 @@ const RecargaModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
 
 // ── Modal Internet ────────────────────────────────────────────────
 const INTERNET_PROVIDERS = [
-  { name: 'GETESA',     cat: 'Telecom / Internet',    color: '#003082', plans: ['Hogar 10Mbps — 15,000 XAF/mes', 'Fibra 100Mbps — 30,000 XAF/mes', 'Empresa 500Mbps — 80,000 XAF/mes'] },
+  { name: 'GETESA',     cat: 'Telecom / Internet',     color: '#003082', plans: ['Hogar 10Mbps — 15,000 XAF/mes', 'Fibra 100Mbps — 30,000 XAF/mes', 'Empresa 500Mbps — 80,000 XAF/mes'] },
   { name: 'GECOMSA',    cat: 'Operador Móvil / Datos', color: '#0066CC', plans: ['Datos Diario 1GB — 500 XAF', 'Mensual 10GB — 8,000 XAF', 'Ilimitado — 20,000 XAF/mes'] },
   { name: 'Conexxia',   cat: 'Internet Empresarial',   color: '#8B5CF6', plans: ['Empresarial — 120,000 XAF/mes', 'VPN Corporativa — 50,000 XAF/mes'] },
   { name: 'Guineanet',  cat: 'Proveedor Internet',     color: '#10B981', plans: ['Residencial 20Mbps — 12,000 XAF/mes', 'Inalámbrico 50Mbps — 18,000 XAF/mes'] },
   { name: 'Fenix',      cat: 'Tecnología / Internet',  color: '#F97316', plans: ['Fibra Residencial — 22,000 XAF/mes', 'Empresarial — 95,000 XAF/mes'] },
   { name: 'IPX EG',     cat: 'Conectividad',           color: '#6366F1', plans: ['Internet Dedicado 1Gbps — 200,000 XAF/mes'] },
   { name: 'Officetech', cat: 'Tecnología / TI',        color: '#0EA5E9', plans: ['Internet + Soporte TI — 60,000 XAF/mes'] },
-  { name: 'GITGE',      cat: 'Infraestructura Telecom', color: '#1E293B', plans: ['Backbone Nacional — Consultar'] },
-  { name: 'ORTEL GE',   cat: 'Supervisión Telecom',    color: '#DC2626', plans: ['Soporte Sectorial — Consultar'] },
 ];
 
 const InternetModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   const [selected, setSelected] = useState<typeof INTERNET_PROVIDERS[0] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const contract = async (plan: string) => {
+  const contract = (plan: string) => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       Alert.alert('✅ Solicitud enviada', `Tu solicitud para "${plan}" ha sido registrada. Un agente te contactará pronto.`);
-      setSelected(null);
-      onClose();
+      setSelected(null); onClose();
     }, 1500);
   };
 
@@ -358,13 +332,13 @@ const InternetModal = ({ visible, onClose }: { visible: boolean; onClose: () => 
 
 // ── Modal Canales TV ──────────────────────────────────────────────
 const TV_CHANNELS = [
-  { name: 'Canal Sol',    cat: 'TV Local',    color: '#0A2463', plans: ['Sol Básico — 3,000 XAF/mes', 'Sol Plus — 6,000 XAF/mes', 'Sol Anual — 60,000 XAF/año'] },
-  { name: 'Canal+',       cat: 'TV Premium',  color: '#0A0A0A', plans: ['Séries — 18,000 XAF/mes', 'Sport — 22,000 XAF/mes', 'Canal+ Tout — 38,000 XAF/mes'] },
-  { name: 'Canal Sat',    cat: 'TV Satélite', color: '#1E3A5F', plans: ['Sat Básico 50ch — 8,000 XAF/mes', 'Sat Familiar 80ch — 14,000 XAF/mes', 'Sat Premium 150ch — 25,000 XAF/mes'] },
-  { name: 'Sony Sat',     cat: 'TV Satélite', color: '#1A1A1A', plans: ['Sony Sat Básico — 10,000 XAF/mes', 'Sony Sat Plus — 18,000 XAF/mes'] },
-  { name: 'Guinea Vista', cat: 'TV Local',    color: '#B45309', plans: ['Info — 2,000 XAF/mes', 'Plus — 4,500 XAF/mes'] },
+  { name: 'Canal Sol',    cat: 'TV Local',         color: '#0A2463', plans: ['Sol Básico — 3,000 XAF/mes', 'Sol Plus — 6,000 XAF/mes', 'Sol Anual — 60,000 XAF/año'] },
+  { name: 'Canal+',       cat: 'TV Premium',       color: '#0A0A0A', plans: ['Séries — 18,000 XAF/mes', 'Sport — 22,000 XAF/mes', 'Canal+ Tout — 38,000 XAF/mes'] },
+  { name: 'Canal Sat',    cat: 'TV Satélite',      color: '#1E3A5F', plans: ['Sat Básico 50ch — 8,000 XAF/mes', 'Sat Familiar 80ch — 14,000 XAF/mes', 'Sat Premium 150ch — 25,000 XAF/mes'] },
+  { name: 'Sony Sat',     cat: 'TV Satélite',      color: '#1A1A1A', plans: ['Sony Sat Básico — 10,000 XAF/mes', 'Sony Sat Plus — 18,000 XAF/mes'] },
+  { name: 'Guinea Vista', cat: 'TV Local',         color: '#B45309', plans: ['Info — 2,000 XAF/mes', 'Plus — 4,500 XAF/mes'] },
   { name: 'Cachu y Hnos', cat: 'Entretenimiento', color: '#1B4332', plans: ['Básico — 2,500 XAF/mes', 'Premium — 5,000 XAF/mes'] },
-  { name: 'Kuryebe',      cat: 'TV Digital',  color: '#7C3AED', plans: ['Básico — 2,000 XAF/mes', 'Plus — 4,000 XAF/mes'] },
+  { name: 'Kuryebe',      cat: 'TV Digital',       color: '#7C3AED', plans: ['Básico — 2,000 XAF/mes', 'Plus — 4,000 XAF/mes'] },
 ];
 
 const CanalesTVModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
@@ -372,8 +346,7 @@ const CanalesTVModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
 
   const subscribe = (plan: string) => {
     Alert.alert('✅ Suscripción', `Suscripción a "${plan}" procesada correctamente.`);
-    setSelected(null);
-    onClose();
+    setSelected(null); onClose();
   };
 
   return (
@@ -412,11 +385,11 @@ const CanalesTVModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
 
 // ── Modal Bancos ──────────────────────────────────────────────────
 const BANKS = [
-  { name: 'BANGE',    full: 'Banco Nacional de Guinea Ecuatorial', color: '#003082', phone: '+240 333 09 00 00', services: ['Cuenta corriente', 'Tarjeta débito/crédito', 'Transferencias', 'Préstamos'] },
-  { name: 'BGFI',     full: 'BGFI Bank Guinea Ecuatorial',         color: '#1E3A5F', phone: '+240 333 09 11 11', services: ['Banca personal', 'Banca empresarial', 'Inversiones', 'Seguros'] },
-  { name: 'CCEI',     full: 'CCEI Bank Guinea Ecuatorial',         color: '#0066CC', phone: '+240 333 09 22 22', services: ['Cuenta de ahorro', 'Microcréditos', 'Transferencias CEMAC', 'Domiciliaciones'] },
-  { name: 'Ecobank',  full: 'Ecobank Guinea Ecuatorial',           color: '#00A651', phone: '+240 333 09 33 33', services: ['Banca digital', 'Xpress Account', 'Transferencias África', 'Divisas'] },
-  { name: 'Société Générale', full: 'Société Générale GQ',        color: '#E30613', phone: '+240 333 09 44 44', services: ['Banca personal', 'Banca privada', 'Financiación', 'Seguros'] },
+  { name: 'BANGE',            full: 'Banco Nacional de Guinea Ecuatorial', color: '#003082', phone: '+240 333 09 00 00', services: ['Cuenta corriente', 'Tarjeta débito/crédito', 'Transferencias', 'Préstamos'] },
+  { name: 'BGFI',             full: 'BGFI Bank Guinea Ecuatorial',         color: '#1E3A5F', phone: '+240 333 09 11 11', services: ['Banca personal', 'Banca empresarial', 'Inversiones', 'Seguros'] },
+  { name: 'CCEI',             full: 'CCEI Bank Guinea Ecuatorial',         color: '#0066CC', phone: '+240 333 09 22 22', services: ['Cuenta de ahorro', 'Microcréditos', 'Transferencias CEMAC', 'Domiciliaciones'] },
+  { name: 'Ecobank',          full: 'Ecobank Guinea Ecuatorial',           color: '#00A651', phone: '+240 333 09 33 33', services: ['Banca digital', 'Xpress Account', 'Transferencias África', 'Divisas'] },
+  { name: 'Société Générale', full: 'Société Générale GQ',                color: '#E30613', phone: '+240 333 09 44 44', services: ['Banca personal', 'Banca privada', 'Financiación', 'Seguros'] },
 ];
 
 const BancosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
@@ -462,6 +435,174 @@ const BancosModal = ({ visible, onClose }: { visible: boolean; onClose: () => vo
   );
 };
 
+// ── Modal Seguros ─────────────────────────────────────────────────
+const INSURANCE_TYPES = [
+  { icon: '🚗', name: 'Seguro de Auto',     desc: 'Cobertura total o terceros para tu vehículo',       price: 'Desde 25,000 XAF/año' },
+  { icon: '🏠', name: 'Seguro de Hogar',    desc: 'Protección para tu vivienda y contenido',           price: 'Desde 15,000 XAF/año' },
+  { icon: '❤️', name: 'Seguro de Vida',     desc: 'Protección para ti y tu familia',                   price: 'Desde 10,000 XAF/mes' },
+  { icon: '🏥', name: 'Seguro Médico',      desc: 'Cobertura sanitaria completa',                      price: 'Desde 20,000 XAF/mes' },
+  { icon: '✈️', name: 'Seguro de Viaje',    desc: 'Cobertura para viajes nacionales e internacionales', price: 'Desde 5,000 XAF/viaje' },
+  { icon: '💼', name: 'Seguro Empresarial', desc: 'Protección para tu negocio y empleados',            price: 'Consultar' },
+];
+
+const SegurosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🛡️ Seguros" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Tipos de seguro disponibles</Text>
+    {INSURANCE_TYPES.map(ins => (
+      <TouchableOpacity key={ins.name} style={styles.planCard}
+        onPress={() => Alert.alert('Solicitar seguro', `Un agente te contactará para el "${ins.name}".\n\nPrecio: ${ins.price}`)}
+        activeOpacity={0.7}>
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{ins.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{ins.name}</Text>
+            <Text style={styles.providerCat}>{ins.desc}</Text>
+            <Text style={[styles.providerCat, { color: Colors.accent, fontWeight: FontWeight.semibold }]}>{ins.price}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Facturas ────────────────────────────────────────────────
+const FacturasModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [contrato, setContrato] = useState('');
+  const [tipo, setTipo] = useState<'electricidad' | 'agua' | 'internet'>('electricidad');
+  const [factura, setFactura] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const TIPOS = [
+    { id: 'electricidad', label: '⚡ Luz' },
+    { id: 'agua',         label: '💧 Agua' },
+    { id: 'internet',     label: '🌐 Internet' },
+  ] as const;
+
+  const consultar = async () => {
+    if (!contrato.trim()) { Alert.alert('Error', 'Introduce el número de contrato'); return; }
+    setLoading(true);
+    setTimeout(() => {
+      setFactura({ contrato, importe: tipo === 'electricidad' ? 15000 : tipo === 'agua' ? 8000 : 20000, periodo: 'Mayo 2026', estado: 'pendiente' });
+      setLoading(false);
+    }, 1200);
+  };
+
+  return (
+    <ServiceModal visible={visible} title="🧾 Facturas" onClose={() => { setFactura(null); setContrato(''); onClose(); }}>
+      <Text style={styles.sectionLabel}>Tipo de servicio</Text>
+      <View style={styles.operatorRow}>
+        {TIPOS.map(t => (
+          <TouchableOpacity key={t.id} onPress={() => { setTipo(t.id); setFactura(null); }}
+            style={[styles.operatorChip, tipo === t.id && styles.operatorChipActive]}>
+            <Text style={[styles.operatorText, tipo === t.id && styles.operatorTextActive]}>{t.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <EGInput label="Número de contrato" value={contrato} onChangeText={setContrato} placeholder="Ej: 123456789" keyboardType="numeric" />
+      <EGButton title={loading ? 'Consultando...' : 'Consultar factura'} onPress={consultar} loading={loading} />
+      {factura && (
+        <EGCard style={styles.facturaCard}>
+          <Text style={styles.facturaTitle}>Factura encontrada</Text>
+          {[['Contrato', factura.contrato], ['Período', factura.periodo], ['Importe', `${factura.importe.toLocaleString()} XAF`]].map(([l, v]) => (
+            <View key={l} style={styles.facturaRow}>
+              <Text style={styles.facturaLabel}>{l}</Text>
+              <Text style={[styles.facturaValue, l === 'Importe' && { color: Colors.accent, fontWeight: FontWeight.bold }]}>{v}</Text>
+            </View>
+          ))}
+          <EGButton title={`Pagar ${factura.importe.toLocaleString()} XAF`}
+            onPress={() => { Alert.alert('✅', 'Pago realizado correctamente'); setFactura(null); setContrato(''); onClose(); }}
+            style={styles.actionBtn} />
+        </EGCard>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Inversión ───────────────────────────────────────────────
+const INVESTMENTS = [
+  { icon: '📈', name: 'Fondos de inversión', desc: 'Diversifica tu cartera con fondos locales', return: '+8-12% anual' },
+  { icon: '🏠', name: 'Inversión inmobiliaria', desc: 'Propiedades en Malabo y Bata', return: '+15% anual' },
+  { icon: '🌍', name: 'Bonos CEMAC', desc: 'Deuda pública de la zona CEMAC', return: '+5-7% anual' },
+  { icon: '💰', name: 'Depósito a plazo fijo', desc: 'Ahorro garantizado en bancos locales', return: '+3-5% anual' },
+  { icon: '⛽', name: 'Sector energético', desc: 'Participación en proyectos de GEPetrol', return: 'Consultar' },
+];
+
+const InversionModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="📈 Inversión" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Oportunidades de inversión</Text>
+    {INVESTMENTS.map(inv => (
+      <TouchableOpacity key={inv.name} style={styles.planCard}
+        onPress={() => Alert.alert(inv.name, `${inv.desc}\n\nRetorno estimado: ${inv.return}\n\nUn asesor financiero te contactará.`)}
+        activeOpacity={0.7}>
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{inv.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{inv.name}</Text>
+            <Text style={styles.providerCat}>{inv.desc}</Text>
+            <Text style={[styles.providerCat, { color: '#22c55e', fontWeight: FontWeight.semibold }]}>{inv.return}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Tarjetas ────────────────────────────────────────────────
+const TarjetasModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="💳 Tarjetas" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Gestión de tarjetas</Text>
+    {[
+      { icon: '💳', name: 'Tarjeta de débito EGCHAT', desc: 'Vinculada a tu monedero digital', action: 'Solicitar' },
+      { icon: '💎', name: 'Tarjeta de crédito', desc: 'Crédito hasta 500,000 XAF', action: 'Solicitar' },
+      { icon: '🔒', name: 'Bloquear tarjeta', desc: 'Bloquea temporalmente tu tarjeta', action: 'Gestionar' },
+      { icon: '📊', name: 'Límites de gasto', desc: 'Configura tus límites diarios', action: 'Configurar' },
+      { icon: '🌍', name: 'Pagos internacionales', desc: 'Activa pagos fuera de Guinea Ecuatorial', action: 'Activar' },
+    ].map(item => (
+      <TouchableOpacity key={item.name} style={styles.planCard}
+        onPress={() => Alert.alert(item.name, item.desc)}
+        activeOpacity={0.7}>
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{item.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{item.name}</Text>
+            <Text style={styles.providerCat}>{item.desc}</Text>
+          </View>
+          <Text style={styles.planAction}>{item.action} →</Text>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Historial ───────────────────────────────────────────────
+const HistorialModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const MOCK_HISTORY = [
+    { icon: '⚡', desc: 'Pago SEGESA',         amount: '-15,000 XAF', date: '15 May 2026', color: '#EAB308' },
+    { icon: '📱', desc: 'Recarga GETESA',       amount: '-2,000 XAF',  date: '14 May 2026', color: '#8B5CF6' },
+    { icon: '💧', desc: 'Pago SNGE Agua',       amount: '-8,000 XAF',  date: '12 May 2026', color: '#0EA5E9' },
+    { icon: '🚕', desc: 'MiTaxi - Centro',      amount: '-1,000 XAF',  date: '10 May 2026', color: '#F59E0B' },
+    { icon: '💰', desc: 'Recarga monedero',     amount: '+50,000 XAF', date: '08 May 2026', color: '#22c55e' },
+    { icon: '🌐', desc: 'Internet GECOMSA',     amount: '-8,000 XAF',  date: '05 May 2026', color: '#6366F1' },
+  ];
+
+  return (
+    <ServiceModal visible={visible} title="🕐 Historial" onClose={onClose}>
+      <Text style={styles.sectionLabel}>Últimas transacciones</Text>
+      {MOCK_HISTORY.map((h, i) => (
+        <View key={i} style={[styles.providerCard, { justifyContent: 'space-between' }]}>
+          <View style={[styles.rideIconBox, { backgroundColor: h.color + '20', width: 40, height: 40 }]}>
+            <Text style={{ fontSize: 18 }}>{h.icon}</Text>
+          </View>
+          <View style={styles.providerInfo}>
+            <Text style={styles.providerName}>{h.desc}</Text>
+            <Text style={styles.providerCat}>{h.date}</Text>
+          </View>
+          <Text style={[styles.providerName, { color: h.amount.startsWith('+') ? '#22c55e' : Colors.textPrimary }]}>{h.amount}</Text>
+        </View>
+      ))}
+    </ServiceModal>
+  );
+};
+
 // ── Modal Salud ───────────────────────────────────────────────────
 const HEALTH_CENTERS = [
   { name: 'Hospital General de Malabo', type: 'Hospital público', phone: '+240 333 09 50 00', services: ['Urgencias 24h', 'Cirugía', 'Maternidad', 'Pediatría', 'Laboratorio'] },
@@ -473,7 +614,6 @@ const HEALTH_CENTERS = [
 
 const SaludModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   const [selected, setSelected] = useState<typeof HEALTH_CENTERS[0] | null>(null);
-
   return (
     <ServiceModal visible={visible} title="🏥 Salud" onClose={() => { setSelected(null); onClose(); }}>
       {!selected ? (
@@ -514,34 +654,32 @@ const SaludModal = ({ visible, onClose }: { visible: boolean; onClose: () => voi
   );
 };
 
-// ── Modal Seguros ─────────────────────────────────────────────────
-const INSURANCE_TYPES = [
-  { icon: '🚗', name: 'Seguro de Auto',    desc: 'Cobertura total o terceros para tu vehículo', price: 'Desde 25,000 XAF/año' },
-  { icon: '🏠', name: 'Seguro de Hogar',   desc: 'Protección para tu vivienda y contenido',     price: 'Desde 15,000 XAF/año' },
-  { icon: '❤️', name: 'Seguro de Vida',    desc: 'Protección para ti y tu familia',             price: 'Desde 10,000 XAF/mes' },
-  { icon: '🏥', name: 'Seguro Médico',     desc: 'Cobertura sanitaria completa',                price: 'Desde 20,000 XAF/mes' },
-  { icon: '✈️', name: 'Seguro de Viaje',   desc: 'Cobertura para viajes nacionales e internacionales', price: 'Desde 5,000 XAF/viaje' },
-  { icon: '💼', name: 'Seguro Empresarial',desc: 'Protección para tu negocio y empleados',      price: 'Consultar' },
+// ── Modal Educación ───────────────────────────────────────────────
+const EDUCATION = [
+  { icon: '🏫', name: 'Colegios públicos',       desc: 'Red de colegios del Estado',                  phone: '+240 333 09 60 00' },
+  { icon: '🏛️', name: 'UNGE',                    desc: 'Universidad Nacional de Guinea Ecuatorial',   phone: '+240 333 09 61 00' },
+  { icon: '📚', name: 'Biblioteca Nacional',      desc: 'Recursos educativos y culturales',            phone: '+240 333 09 62 00' },
+  { icon: '🎓', name: 'Becas y ayudas',           desc: 'Programas de becas del Ministerio',           phone: '+240 333 09 63 00' },
+  { icon: '💻', name: 'Formación profesional',    desc: 'Centros de FP y capacitación técnica',        phone: '+240 333 09 64 00' },
+  { icon: '🌍', name: 'Educación internacional',  desc: 'Convenios con universidades extranjeras',     phone: '+240 333 09 65 00' },
 ];
 
-const SegurosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
-  <ServiceModal visible={visible} title="🛡️ Seguros" onClose={onClose}>
-    <Text style={styles.sectionLabel}>Tipos de seguro disponibles</Text>
-    {INSURANCE_TYPES.map(ins => (
-      <TouchableOpacity
-        key={ins.name}
-        style={styles.planCard}
-        onPress={() => Alert.alert('Solicitar seguro', `Un agente te contactará para el "${ins.name}".\n\nPrecio: ${ins.price}`)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.insuranceRow}>
-          <Text style={styles.insuranceIcon}>{ins.icon}</Text>
-          <View style={styles.insuranceInfo}>
-            <Text style={styles.providerName}>{ins.name}</Text>
-            <Text style={styles.providerCat}>{ins.desc}</Text>
-            <Text style={[styles.providerCat, { color: Colors.accent, fontWeight: FontWeight.semibold }]}>{ins.price}</Text>
-          </View>
+const EducacionModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🎓 Educación" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Centros y servicios educativos</Text>
+    {EDUCATION.map(e => (
+      <TouchableOpacity key={e.name} style={styles.providerCard}
+        onPress={() => Alert.alert(e.name, e.desc + '\n\nTeléfono: ' + e.phone, [
+          { text: 'Cerrar', style: 'cancel' },
+          { text: '📞 Llamar', onPress: () => Linking.openURL(`tel:${e.phone}`) },
+        ])}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{e.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{e.name}</Text>
+          <Text style={styles.providerCat}>{e.desc}</Text>
         </View>
+        <Text style={styles.providerArrow}>›</Text>
       </TouchableOpacity>
     ))}
   </ServiceModal>
@@ -587,23 +725,20 @@ const ImpuestosModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
 
 // ── Modal Correos ─────────────────────────────────────────────────
 const POSTAL_SERVICES = [
-  { icon: '📦', name: 'Envío nacional',       desc: 'Paquetes dentro de Guinea Ecuatorial', price: 'Desde 2,000 XAF' },
-  { icon: '✈️', name: 'Envío internacional',  desc: 'Paquetes al extranjero',               price: 'Desde 15,000 XAF' },
-  { icon: '📬', name: 'Apartado postal',       desc: 'Alquiler de apartado en Correos GQ',  price: '5,000 XAF/año' },
-  { icon: '🔍', name: 'Seguimiento de envío',  desc: 'Rastrea tu paquete en tiempo real',   price: 'Gratis' },
-  { icon: '🏢', name: 'Oficinas de Correos',   desc: 'Malabo, Bata, Ebebiyín, Mongomo',     price: 'L-V 8:00-17:00' },
+  { icon: '📦', name: 'Envío nacional',      desc: 'Paquetes dentro de Guinea Ecuatorial', price: 'Desde 2,000 XAF' },
+  { icon: '✈️', name: 'Envío internacional', desc: 'Paquetes al extranjero',               price: 'Desde 15,000 XAF' },
+  { icon: '📬', name: 'Apartado postal',      desc: 'Alquiler de apartado en Correos GQ',  price: '5,000 XAF/año' },
+  { icon: '🔍', name: 'Seguimiento de envío', desc: 'Rastrea tu paquete en tiempo real',   price: 'Gratis' },
+  { icon: '🏢', name: 'Oficinas de Correos',  desc: 'Malabo, Bata, Ebebiyín, Mongomo',     price: 'L-V 8:00-17:00' },
 ];
 
 const CorreosModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
   <ServiceModal visible={visible} title="📮 Correos GQ" onClose={onClose}>
     <Text style={styles.sectionLabel}>Servicios postales</Text>
     {POSTAL_SERVICES.map(ps => (
-      <TouchableOpacity
-        key={ps.name}
-        style={styles.planCard}
+      <TouchableOpacity key={ps.name} style={styles.planCard}
         onPress={() => Alert.alert(ps.name, `${ps.desc}\n\nPrecio: ${ps.price}`)}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         <View style={styles.insuranceRow}>
           <Text style={styles.insuranceIcon}>{ps.icon}</Text>
           <View style={styles.insuranceInfo}>
@@ -622,26 +757,21 @@ const CorreosModal = ({ visible, onClose }: { visible: boolean; onClose: () => v
 
 // ── Modal Supermercado ────────────────────────────────────────────
 const SUPERMARKETS = [
-  { name: 'Supermarket Malabo',  area: 'Centro Malabo',    phone: '+240 222 30 10 01', hours: 'L-D 8:00-21:00' },
-  { name: 'Hipermarket Caracolas',area: 'Caracolas, Malabo',phone: '+240 222 30 10 02', hours: 'L-D 8:00-22:00' },
-  { name: 'Supermercado Bata',   area: 'Centro Bata',      phone: '+240 222 30 10 03', hours: 'L-S 8:00-20:00' },
-  { name: 'Tienda Nguema',       area: 'Ela Nguema',       phone: '+240 222 30 10 04', hours: 'L-D 7:00-21:00' },
-  { name: 'Mercado Central',     area: 'Malabo',           phone: '+240 222 30 10 05', hours: 'L-S 6:00-18:00' },
+  { name: 'Supermarket Malabo',   area: 'Centro Malabo',     phone: '+240 222 30 10 01', hours: 'L-D 8:00-21:00' },
+  { name: 'Hipermarket Caracolas',area: 'Caracolas, Malabo', phone: '+240 222 30 10 02', hours: 'L-D 8:00-22:00' },
+  { name: 'Supermercado Bata',    area: 'Centro Bata',       phone: '+240 222 30 10 03', hours: 'L-S 8:00-20:00' },
+  { name: 'Tienda Nguema',        area: 'Ela Nguema',        phone: '+240 222 30 10 04', hours: 'L-D 7:00-21:00' },
+  { name: 'Mercado Central',      area: 'Malabo',            phone: '+240 222 30 10 05', hours: 'L-S 6:00-18:00' },
 ];
-
-const CATEGORIES = ['🥩 Carnicería', '🥦 Verduras', '🥛 Lácteos', '🍞 Panadería', '🧴 Higiene', '🍷 Bebidas', '🧹 Limpieza', '🐟 Pescadería'];
+const SM_CATEGORIES = ['🥩 Carnicería', '🥦 Verduras', '🥛 Lácteos', '🍞 Panadería', '🧴 Higiene', '🍷 Bebidas', '🧹 Limpieza', '🐟 Pescadería'];
 
 const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
   <ServiceModal visible={visible} title="🛒 Supermercados" onClose={onClose}>
     <Text style={styles.sectionLabel}>Categorías</Text>
     <View style={styles.categoryGrid}>
-      {CATEGORIES.map(cat => (
-        <TouchableOpacity
-          key={cat}
-          style={styles.categoryChip}
-          onPress={() => Alert.alert('Próximamente', 'Compra online disponible pronto')}
-          activeOpacity={0.7}
-        >
+      {SM_CATEGORIES.map(cat => (
+        <TouchableOpacity key={cat} style={styles.categoryChip}
+          onPress={() => Alert.alert('Próximamente', 'Compra online disponible pronto')} activeOpacity={0.7}>
           <Text style={styles.categoryText}>{cat}</Text>
         </TouchableOpacity>
       ))}
@@ -662,13 +792,353 @@ const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: ()
   </ServiceModal>
 );
 
-// ── APPS destacadas en el dashboard ──────────────────────────────
-const APPS = [
-  { id: 'estados',  emoji: '🌀', label: 'Estados',  bg: '#f0f4ff' },
-  { id: 'apuestas', emoji: '🃏', label: 'Juegos',   bg: '#fff8f0' },
-  { id: 'cemac',    emoji: '🏢', label: 'Cemac',    bg: '#f0fff8' },
-  { id: 'taxi',     emoji: '🚕', label: 'MiTaxi',   bg: '#fffbf0' },
+// ── Modal Comida / Delivery ───────────────────────────────────────
+const FOOD_DELIVERY = [
+  { icon: '🍗', name: 'Pollo Asado Malabo',   desc: 'Pollo, brochetas, ensaladas',      phone: '+240 222 30 40 01', time: '25-35 min' },
+  { icon: '🍕', name: 'Pizzería Caracolas',    desc: 'Pizzas, pastas, ensaladas',        phone: '+240 222 30 40 02', time: '30-45 min' },
+  { icon: '🥗', name: 'Ensaladas & Wraps',     desc: 'Comida saludable y ligera',        phone: '+240 222 30 40 03', time: '20-30 min' },
+  { icon: '🍔', name: 'Burger House GQ',       desc: 'Hamburguesas y sándwiches',        phone: '+240 222 30 40 04', time: '25-40 min' },
+  { icon: '🐟', name: 'Mariscos del Puerto',   desc: 'Pescado fresco, mariscos',         phone: '+240 222 30 40 05', time: '35-50 min' },
+  { icon: '🍱', name: 'Cocina Local Nguema',   desc: 'Platos típicos guineanos',         phone: '+240 222 30 40 06', time: '20-35 min' },
 ];
+
+const ComidaModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="💵 Comida - Delivery" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Restaurantes con delivery</Text>
+    {FOOD_DELIVERY.map(f => (
+      <TouchableOpacity key={f.name} style={styles.providerCard}
+        onPress={() => Alert.alert(f.name, `${f.desc}\n\n⏱ Tiempo estimado: ${f.time}`, [
+          { text: 'Cerrar', style: 'cancel' },
+          { text: '📞 Pedir', onPress: () => Linking.openURL(`tel:${f.phone}`) },
+        ])}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{f.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{f.name}</Text>
+          <Text style={styles.providerCat}>{f.desc}</Text>
+        </View>
+        <Text style={[styles.providerCat, { color: Colors.accent }]}>⏱ {f.time}</Text>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Restaurantes ────────────────────────────────────────────
+const RESTAURANTS = [
+  { icon: '🍽️', name: 'La Bahía',             desc: 'Cocina internacional · Centro Malabo', phone: '+240 222 30 22 01', price: 'Desde 8,000 XAF' },
+  { icon: '🍽️', name: 'El Rincón Guineano',   desc: 'Cocina local · Ela Nguema',           phone: '+240 222 30 22 02', price: 'Desde 5,000 XAF' },
+  { icon: '🍕', name: 'Pizzería Malabo',       desc: 'Italiana · Caracolas',                phone: '+240 222 30 22 03', price: 'Desde 4,000 XAF' },
+  { icon: '🦞', name: 'Marisquería del Puerto',desc: 'Mariscos · Puerto Malabo',            phone: '+240 222 30 22 04', price: 'Desde 10,000 XAF' },
+  { icon: '☕', name: 'Café Central',          desc: 'Cafetería · Centro',                  phone: '+240 222 30 22 05', price: 'Desde 1,500 XAF' },
+];
+
+const RestaurantesModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="☕ Restaurantes" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Restaurantes disponibles</Text>
+    {RESTAURANTS.map(r => (
+      <TouchableOpacity key={r.name} style={styles.providerCard}
+        onPress={() => Alert.alert(r.name, `${r.desc}\n\n💰 ${r.price}`, [
+          { text: 'Cerrar', style: 'cancel' },
+          { text: '📞 Reservar', onPress: () => Linking.openURL(`tel:${r.phone}`) },
+        ])}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{r.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{r.name}</Text>
+          <Text style={styles.providerCat}>{r.desc}</Text>
+        </View>
+        <Text style={[styles.providerCat, { color: Colors.accent }]}>{r.price}</Text>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Hotel ───────────────────────────────────────────────────
+const HOTELS = [
+  { name: 'Hotel Bahía',      stars: '⭐⭐⭐⭐',  price: '45,000 XAF/noche', phone: '+240 222 30 20 01', amenities: ['WiFi', 'Piscina', 'Restaurante', 'AC'] },
+  { name: 'Hotel Impala',     stars: '⭐⭐⭐',    price: '30,000 XAF/noche', phone: '+240 222 30 20 02', amenities: ['WiFi', 'Restaurante', 'AC'] },
+  { name: 'Sofitel Malabo',   stars: '⭐⭐⭐⭐⭐', price: '120,000 XAF/noche',phone: '+240 222 30 20 03', amenities: ['WiFi', 'Piscina', 'Spa', 'Gimnasio', 'Restaurante'] },
+  { name: 'Hotel Ureca',      stars: '⭐⭐⭐',    price: '25,000 XAF/noche', phone: '+240 222 30 20 04', amenities: ['WiFi', 'AC', 'Desayuno incluido'] },
+  { name: 'Aparthotel Bata',  stars: '⭐⭐⭐',    price: '28,000 XAF/noche', phone: '+240 222 30 20 05', amenities: ['WiFi', 'Cocina', 'AC'] },
+];
+
+const HotelModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const [selected, setSelected] = useState<typeof HOTELS[0] | null>(null);
+  return (
+    <ServiceModal visible={visible} title="🏨 Hoteles" onClose={() => { setSelected(null); onClose(); }}>
+      {!selected ? (
+        <View>
+          <Text style={styles.sectionLabel}>Hoteles disponibles</Text>
+          {HOTELS.map(h => (
+            <TouchableOpacity key={h.name} style={styles.providerCard} onPress={() => setSelected(h)} activeOpacity={0.7}>
+              <Text style={styles.providerDotEmoji}>🏨</Text>
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerName}>{h.name}</Text>
+                <Text style={styles.providerCat}>{h.stars}  ·  {h.price}</Text>
+              </View>
+              <Text style={styles.providerArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.backRow}>
+            <Text style={styles.backText}>← {selected.name}</Text>
+          </TouchableOpacity>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>{selected.stars}  {selected.price}</Text>
+            <Text style={styles.sectionLabel}>Servicios incluidos</Text>
+            {selected.amenities.map(a => (
+              <View key={a} style={styles.serviceRow}>
+                <Text style={styles.serviceRowDot}>●</Text>
+                <Text style={styles.serviceRowText}>{a}</Text>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.callBtn} onPress={() => Linking.openURL(`tel:${selected.phone}`)}>
+              <Text style={styles.callBtnText}>📞 Reservar: {selected.phone}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Gasolineras ─────────────────────────────────────────────
+const GAS_STATIONS = [
+  { name: 'GEPetrol Centro',    area: 'Av. de la Independencia · 24h', phone: '+240 222 30 30 01', price: '650 XAF/L' },
+  { name: 'GEPetrol Caracolas', area: 'Barrio Caracolas · 6:00-22:00', phone: '+240 222 30 30 02', price: '650 XAF/L' },
+  { name: 'Total Malabo',       area: 'Carretera del Aeropuerto · 24h', phone: '+240 222 30 30 03', price: '660 XAF/L' },
+  { name: 'GEPetrol Bata',      area: 'Centro Bata · 6:00-22:00',      phone: '+240 222 30 30 04', price: '650 XAF/L' },
+];
+
+const GasolinerasModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="⛽ Gasolineras" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Gasolineras cercanas</Text>
+    {GAS_STATIONS.map(g => (
+      <View key={g.name} style={styles.providerCard}>
+        <Text style={styles.providerDotEmoji}>⛽</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{g.name}</Text>
+          <Text style={styles.providerCat}>{g.area}</Text>
+        </View>
+        <Text style={[styles.providerName, { color: Colors.accent }]}>{g.price}</Text>
+      </View>
+    ))}
+    <TouchableOpacity style={[styles.callBtn, { marginTop: Spacing.md }]}
+      onPress={() => Alert.alert('GEPetrol', 'Servicio de atención al cliente\n+240 333 09 80 00')}>
+      <Text style={styles.callBtnText}>📞 Atención al cliente GEPetrol</Text>
+    </TouchableOpacity>
+  </ServiceModal>
+);
+
+// ── Modal Tienda ──────────────────────────────────────────────────
+const STORES = [
+  { icon: '👗', name: 'Moda y ropa',        desc: 'Tiendas de ropa y accesorios en Malabo' },
+  { icon: '📱', name: 'Electrónica',         desc: 'Móviles, tablets y accesorios' },
+  { icon: '🏠', name: 'Hogar y decoración',  desc: 'Muebles, decoración y electrodomésticos' },
+  { icon: '💄', name: 'Belleza y cosmética', desc: 'Productos de belleza y cuidado personal' },
+  { icon: '📚', name: 'Libros y papelería',  desc: 'Libros, material escolar y oficina' },
+  { icon: '🎁', name: 'Regalos',             desc: 'Ideas y tiendas de regalos' },
+];
+
+const TiendaModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🛍️ Tienda" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Categorías de tiendas</Text>
+    {STORES.map(s => (
+      <TouchableOpacity key={s.name} style={styles.planCard}
+        onPress={() => Alert.alert('Próximamente', `La sección "${s.name}" estará disponible pronto.`)}
+        activeOpacity={0.7}>
+        <View style={styles.insuranceRow}>
+          <Text style={styles.insuranceIcon}>{s.icon}</Text>
+          <View style={styles.insuranceInfo}>
+            <Text style={styles.providerName}>{s.name}</Text>
+            <Text style={styles.providerCat}>{s.desc}</Text>
+          </View>
+          <Text style={styles.planAction}>Ver →</Text>
+        </View>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Lavandería ──────────────────────────────────────────────
+const LAUNDRY = [
+  { name: 'Lavandería Express Malabo', area: 'Centro Malabo',  phone: '+240 222 30 50 01', price: 'Desde 3,000 XAF/kg', hours: 'L-S 8:00-20:00' },
+  { name: 'Clean & Go',               area: 'Caracolas',       phone: '+240 222 30 50 02', price: 'Desde 2,500 XAF/kg', hours: 'L-D 7:00-21:00' },
+  { name: 'Lavandería Bata',          area: 'Centro Bata',     phone: '+240 222 30 50 03', price: 'Desde 2,000 XAF/kg', hours: 'L-S 8:00-19:00' },
+];
+
+const LavanderiaModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🫧 Lavandería" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Lavanderías disponibles</Text>
+    {LAUNDRY.map(l => (
+      <View key={l.name} style={styles.providerCard}>
+        <Text style={styles.providerDotEmoji}>🫧</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{l.name}</Text>
+          <Text style={styles.providerCat}>📍 {l.area}  ·  🕐 {l.hours}</Text>
+          <Text style={[styles.providerCat, { color: Colors.accent }]}>{l.price}</Text>
+        </View>
+        <TouchableOpacity onPress={() => Linking.openURL(`tel:${l.phone}`)}>
+          <Text style={styles.callIcon}>📞</Text>
+        </TouchableOpacity>
+      </View>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Belleza ─────────────────────────────────────────────────
+const BEAUTY = [
+  { icon: '💇', name: 'Salón Glamour Malabo',  desc: 'Peluquería y estética femenina',  phone: '+240 222 30 60 01' },
+  { icon: '💈', name: 'Barbería El Estilo',    desc: 'Cortes y arreglos masculinos',    phone: '+240 222 30 60 02' },
+  { icon: '💅', name: 'Nail Studio GQ',        desc: 'Manicura, pedicura y nail art',   phone: '+240 222 30 60 03' },
+  { icon: '🧖', name: 'Spa Relax Center',      desc: 'Masajes y tratamientos corporales',phone: '+240 222 30 60 04' },
+  { icon: '🌿', name: 'Centro de Estética',    desc: 'Tratamientos faciales y corporales',phone: '+240 222 30 60 05' },
+];
+
+const BellezaModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="❤️ Belleza" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Salones y centros de belleza</Text>
+    {BEAUTY.map(b => (
+      <TouchableOpacity key={b.name} style={styles.providerCard}
+        onPress={() => Alert.alert(b.name, b.desc, [
+          { text: 'Cerrar', style: 'cancel' },
+          { text: '📞 Llamar', onPress: () => Linking.openURL(`tel:${b.phone}`) },
+        ])}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{b.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{b.name}</Text>
+          <Text style={styles.providerCat}>{b.desc}</Text>
+        </View>
+        <Text style={styles.providerArrow}>›</Text>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal Noticias ────────────────────────────────────────────────
+const NEWS_SOURCES = [
+  { icon: '📰', name: 'La Gaceta de Guinea',   desc: 'Diario oficial y noticias nacionales', url: 'https://lagacetadeguinea.com' },
+  { icon: '📡', name: 'TVGE Noticias',          desc: 'Televisión de Guinea Ecuatorial',      url: 'https://tvge.gq' },
+  { icon: '🌍', name: 'Noticias CEMAC',         desc: 'Noticias de la región CEMAC',          url: 'https://cemac.int' },
+  { icon: '📻', name: 'Radio Nacional GQ',      desc: 'Radio pública de Guinea Ecuatorial',   url: '' },
+  { icon: '💼', name: 'Economía GQ',            desc: 'Noticias económicas y empresariales',  url: '' },
+];
+
+const NoticiasModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="📰 Noticias" onClose={onClose}>
+    <Text style={styles.sectionLabel}>Fuentes de noticias</Text>
+    {NEWS_SOURCES.map(n => (
+      <TouchableOpacity key={n.name} style={styles.providerCard}
+        onPress={() => n.url ? Linking.openURL(n.url) : Alert.alert(n.name, n.desc)}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{n.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{n.name}</Text>
+          <Text style={styles.providerCat}>{n.desc}</Text>
+        </View>
+        <Text style={styles.providerArrow}>{n.url ? '🔗' : '›'}</Text>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
+
+// ── Modal ID Digital ──────────────────────────────────────────────
+const IdDigitalModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="🪪 ID Digital" onClose={onClose}>
+    <View style={[styles.infoCard, { alignItems: 'center', marginBottom: Spacing.md }]}>
+      <Text style={{ fontSize: 60, marginBottom: Spacing.md }}>🪪</Text>
+      <Text style={[styles.infoCardTitle, { textAlign: 'center' }]}>Identidad Digital EGCHAT</Text>
+      <Text style={[styles.providerCat, { textAlign: 'center', marginTop: Spacing.sm }]}>
+        Tu identidad digital verificada en Guinea Ecuatorial
+      </Text>
+    </View>
+    {[
+      { icon: '✅', label: 'DNI verificado',        desc: 'Documento de identidad vinculado' },
+      { icon: '📱', label: 'Número verificado',     desc: 'Teléfono confirmado por SMS' },
+      { icon: '🔒', label: 'Cuenta segura',         desc: 'Autenticación de dos factores activa' },
+      { icon: '🌍', label: 'Zona CEMAC',            desc: 'Válido en los 6 países CEMAC' },
+    ].map(item => (
+      <View key={item.label} style={styles.providerCard}>
+        <Text style={styles.providerDotEmoji}>{item.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{item.label}</Text>
+          <Text style={styles.providerCat}>{item.desc}</Text>
+        </View>
+      </View>
+    ))}
+    <TouchableOpacity style={[styles.callBtn, { marginTop: Spacing.md }]}
+      onPress={() => Alert.alert('ID Digital', 'Función de verificación de identidad próximamente disponible.')}>
+      <Text style={styles.callBtnText}>🪪 Verificar mi identidad</Text>
+    </TouchableOpacity>
+  </ServiceModal>
+);
+
+// ── Modal Actividad ───────────────────────────────────────────────
+const ActividadModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
+  const ACTIVITY = [
+    { icon: '💬', desc: 'Mensaje enviado a Juan',       time: 'Hace 5 min',   type: 'chat' },
+    { icon: '⚡', desc: 'Factura SEGESA consultada',    time: 'Hace 1 hora',  type: 'service' },
+    { icon: '🚕', desc: 'Taxi solicitado - Centro',     time: 'Hace 3 horas', type: 'taxi' },
+    { icon: '📱', desc: 'Recarga 2,000 XAF - GETESA',  time: 'Ayer 14:30',   type: 'recarga' },
+    { icon: '🏦', desc: 'Consulta BANGE',               time: 'Ayer 10:15',   type: 'banco' },
+    { icon: '🌐', desc: 'Plan internet contratado',     time: 'Hace 2 días',  type: 'internet' },
+  ];
+  return (
+    <ServiceModal visible={visible} title="🕐 Actividad reciente" onClose={onClose}>
+      <Text style={styles.sectionLabel}>Últimas acciones</Text>
+      {ACTIVITY.map((a, i) => (
+        <View key={i} style={styles.providerCard}>
+          <Text style={styles.providerDotEmoji}>{a.icon}</Text>
+          <View style={styles.providerInfo}>
+            <Text style={styles.providerName}>{a.desc}</Text>
+            <Text style={styles.providerCat}>{a.time}</Text>
+          </View>
+        </View>
+      ))}
+    </ServiceModal>
+  );
+};
+
+// ── Modal Emergencias ─────────────────────────────────────────────
+const EMERGENCY_NUMBERS = [
+  { icon: '🚒', name: 'Bomberos',              number: '115',              color: '#EF4444' },
+  { icon: '🚑', name: 'Ambulancia / SAMU',     number: '116',              color: '#DC2626' },
+  { icon: '👮', name: 'Policía Nacional',       number: '114',              color: '#1E3A5F' },
+  { icon: '🏥', name: 'Hospital General',       number: '+240 333 09 50 00', color: '#DC2626' },
+  { icon: '⚡', name: 'Averías SEGESA',         number: '+240 333 09 70 00', color: '#EAB308' },
+  { icon: '💧', name: 'Averías SNGE',           number: '+240 333 09 71 00', color: '#0EA5E9' },
+  { icon: '🛡️', name: 'Guardia Civil',          number: '112',              color: '#374151' },
+  { icon: '🌊', name: 'Protección Civil',       number: '+240 333 09 72 00', color: '#0369A1' },
+];
+
+const EmergenciasModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
+  <ServiceModal visible={visible} title="⚠️ Emergencias" onClose={onClose}>
+    <View style={{ backgroundColor: '#FEF2F2', borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: '#FECACA' }}>
+      <Text style={{ fontSize: FontSize.sm, color: '#991B1B', textAlign: 'center', fontWeight: FontWeight.semibold }}>
+        ⚠️ En caso de emergencia real, llama directamente al número correspondiente
+      </Text>
+    </View>
+    <Text style={styles.sectionLabel}>Números de emergencia</Text>
+    {EMERGENCY_NUMBERS.map(e => (
+      <TouchableOpacity key={e.name} style={[styles.providerCard, { borderLeftWidth: 3, borderLeftColor: e.color }]}
+        onPress={() => Alert.alert(e.name, `Número: ${e.number}`, [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: '📞 Llamar ahora', style: 'destructive', onPress: () => Linking.openURL(`tel:${e.number}`) },
+        ])}
+        activeOpacity={0.7}>
+        <Text style={styles.providerDotEmoji}>{e.icon}</Text>
+        <View style={styles.providerInfo}>
+          <Text style={styles.providerName}>{e.name}</Text>
+          <Text style={[styles.providerCat, { color: e.color, fontWeight: FontWeight.bold }]}>{e.number}</Text>
+        </View>
+        <Text style={styles.callIcon}>📞</Text>
+      </TouchableOpacity>
+    ))}
+  </ServiceModal>
+);
 
 // ── Drawer lateral ────────────────────────────────────────────────
 const DrawerMenu = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => (
@@ -699,8 +1169,7 @@ const drawerStyles = StyleSheet.create({
   drawer: {
     width: '75%', height: '100%',
     backgroundColor: Colors.bgSecondary,
-    padding: Spacing.xl, paddingTop: 60,
-    gap: Spacing.xs,
+    padding: Spacing.xl, paddingTop: 60, gap: Spacing.xs,
   },
   title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.lg },
   item: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
@@ -711,8 +1180,6 @@ const drawerStyles = StyleSheet.create({
 // ── Pantalla principal ────────────────────────────────────────────
 export default function ServiciosScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [balance, setBalance] = useState<number | null>(null);
-  const [showBalance, setShowBalance] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -725,11 +1192,7 @@ export default function ServiciosScreen() {
 
   const loadData = async () => {
     try {
-      const [bal, me] = await Promise.all([
-        walletAPI.getBalance().catch(() => ({ balance: 0 })),
-        authAPI.me().catch(() => null),
-      ]);
-      setBalance(bal.balance);
+      const me = await authAPI.me().catch(() => null);
       setUser(me);
     } catch {}
   };
@@ -742,20 +1205,29 @@ export default function ServiciosScreen() {
     setRefreshing(false);
   };
 
+  // Servicios que abren modal inline
+  const MODAL_SERVICES = [
+    'taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv',
+    'bancos', 'seguros', 'facturas', 'inversion', 'tarjetas', 'historial',
+    'salud', 'educacion', 'impuestos', 'correos',
+    'supermercado', 'comida', 'restaurantes', 'hotel', 'gasolineras',
+    'tienda', 'lavanderia', 'belleza', 'noticias',
+    'id_digital', 'actividad', 'emergencias',
+  ];
+
   const openService = (id: string) => {
-    const modalServices = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
-    if (modalServices.includes(id)) {
+    if (MODAL_SERVICES.includes(id)) {
       setActiveModal(id);
     } else if (id === 'cemac') {
       router.push('/cemac' as any);
-    } else if (id === 'estados') {
-      router.push('/stories' as any);
-    } else if (id === 'restaurantes' || id === 'vuelos' || id === 'gasolineras') {
-      router.push('/servicios-diarios' as any);
     } else if (id === 'ocio') {
       router.push('/ocio' as any);
     } else if (id === 'apuestas') {
       router.push('/apuestas' as any);
+    } else if (id === 'lia') {
+      router.push('/(tabs)/lia' as any);
+    } else if (id === 'ajustes') {
+      router.push('/(tabs)/ajustes' as any);
     } else {
       Alert.alert('Próximamente', 'Este servicio estará disponible pronto.');
     }
@@ -766,11 +1238,9 @@ export default function ServiciosScreen() {
       {/* ── Header con gradiente ── */}
       <LinearGradient
         colors={['#00C8A0', '#00B4E6']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={styles.header}
       >
-        {/* Logo */}
         <View style={styles.headerLeft}>
           <View style={styles.logoCircle}>
             <Image
@@ -782,31 +1252,21 @@ export default function ServiciosScreen() {
           <Text style={styles.headerLogo}>EG</Text>
           <Text style={styles.headerLogoAccent}>CHAT</Text>
         </View>
-        {/* Acciones */}
         <View style={styles.headerRight}>
           <View style={styles.weatherChip}>
             <TouchableOpacity onPress={() => setShowWeather(true)} activeOpacity={0.8}>
               <Text style={styles.weatherText}>☁️ 27° Malabo</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.headerIconBtn}
-            onPress={() => {
-              setShowNotifications(true);
-              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            }}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.headerIconBtn}
+            onPress={() => { setShowNotifications(true); setNotifications(prev => prev.map(n => ({ ...n, read: true }))); }}
+            activeOpacity={0.8}>
             <Text style={styles.headerIconText}>🔔</Text>
             {notifications.some(n => !n.read) && (
               <View style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerIconBtn}
-            onPress={() => setShowMenu(true)}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => setShowMenu(true)} activeOpacity={0.8}>
             <Text style={styles.headerIconText}>☰</Text>
           </TouchableOpacity>
         </View>
@@ -814,66 +1274,53 @@ export default function ServiciosScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00C8A0" colors={['#00C8A0']} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00C8A0" colors={['#00C8A0']} />}
       >
-
-        {/* ── APPS ── */}
-        <View style={styles.appsSection}>
-          <Text style={styles.appsTitle}>APPS</Text>
-          <View style={styles.appsGrid}>
-            {APPS.map(app => (
-              <TouchableOpacity
-                key={app.id}
-                style={[styles.appItem, { backgroundColor: isDark ? C.bgSecondary : app.bg }]}
-                onPress={() => openService(app.id)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.appIconBox}>
-                  <Text style={styles.appEmoji}>{app.emoji}</Text>
-                </View>
-                <Text style={[styles.appLabel, { color: C.textPrimary }]}>{app.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {/* ── Título de la pantalla ── */}
+        <View style={styles.pageHeader}>
+          <Text style={[styles.pageTitle, { color: C.textPrimary }]}>Servicios</Text>
         </View>
 
-        {/* ── Todos los servicios ── */}
-        <View style={styles.allServicesSection}>
-          <Text style={styles.appsTitle}>TODOS LOS SERVICIOS</Text>
-          <View style={styles.grid}>
-            {SERVICES.map(s => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.serviceItem, { backgroundColor: isDark ? C.bgSecondary : Colors.bgSecondary, borderColor: C.borderLight }]}
-                onPress={() => openService(s.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
-                  <Text style={styles.serviceEmoji}>{s.icon}</Text>
-                </View>
-                <Text style={[styles.serviceLabel, { color: C.textPrimary }]}>{s.label}</Text>
-                <Text style={[styles.serviceSub, { color: C.textTertiary }]}>{s.sub}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        {/* ── Secciones de servicios ── */}
+        {SERVICE_SECTIONS.map(section => (
+          <View key={section.id} style={styles.sectionWrapper}>
+            {/* Cabecera de sección */}
+            <View style={[styles.sectionHeader, { borderBottomColor: C.borderLight }]}>
+              <Text style={[styles.sectionTitle, { color: C.textSecondary }]}>{section.title}</Text>
+            </View>
 
+            {/* Grid de servicios de la sección */}
+            <View style={[styles.sectionCard, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}>
+              <View style={styles.grid}>
+                {section.services.map(s => (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={styles.serviceItem}
+                    onPress={() => openService(s.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
+                      <Text style={styles.serviceEmoji}>{s.icon}</Text>
+                    </View>
+                    <Text style={[styles.serviceLabel, { color: C.textPrimary }]} numberOfLines={1}>{s.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        ))}
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* ── FAB nuevo chat ── */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/new-chat' as any)}
-        activeOpacity={0.85}
-      >
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/new-chat' as any)} activeOpacity={0.85}>
         <LinearGradient colors={['#00C8A0', '#00B4E6']} style={styles.fabGradient}>
           <Text style={styles.fabIcon}>+</Text>
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* ── Drawer menú (legacy) ── */}
+      {/* ── Drawer menú ── */}
       <DrawerMenu visible={showDrawer} onClose={() => setShowDrawer(false)} />
 
       {/* ── Paneles del header ── */}
@@ -889,32 +1336,38 @@ export default function ServiciosScreen() {
           if (n.chatId) router.push(`/chat/${n.chatId}` as any);
         }}
       />
-      <HamburgerMenu
-        visible={showMenu}
-        onClose={() => setShowMenu(false)}
-        user={user}
-      />
-      <WeatherModal
-        visible={showWeather}
-        onClose={() => setShowWeather(false)}
-        temp="27°"
-        city="Malabo"
-        condition="cloudy"
-      />
+      <HamburgerMenu visible={showMenu} onClose={() => setShowMenu(false)} user={user} />
+      <WeatherModal visible={showWeather} onClose={() => setShowWeather(false)} temp="27°" city="Malabo" condition="cloudy" />
 
       {/* ── Modales de servicios ── */}
-      <TaxiModal visible={activeModal === 'taxi'} onClose={() => setActiveModal(null)} />
-      <UtilityModal visible={activeModal === 'electricidad'} onClose={() => setActiveModal(null)} type="electricidad" />
-      <UtilityModal visible={activeModal === 'agua'} onClose={() => setActiveModal(null)} type="agua" />
-      <RecargaModal visible={activeModal === 'recarga'} onClose={() => setActiveModal(null)} />
-      <InternetModal visible={activeModal === 'internet'} onClose={() => setActiveModal(null)} />
-      <CanalesTVModal visible={activeModal === 'tv'} onClose={() => setActiveModal(null)} />
-      <BancosModal visible={activeModal === 'bancos'} onClose={() => setActiveModal(null)} />
-      <SaludModal visible={activeModal === 'salud'} onClose={() => setActiveModal(null)} />
-      <SegurosModal visible={activeModal === 'seguros'} onClose={() => setActiveModal(null)} />
-      <ImpuestosModal visible={activeModal === 'impuestos'} onClose={() => setActiveModal(null)} />
-      <CorreosModal visible={activeModal === 'correos'} onClose={() => setActiveModal(null)} />
-      <SupermercadoModal visible={activeModal === 'supermercado'} onClose={() => setActiveModal(null)} />
+      <TaxiModal          visible={activeModal === 'taxi'}          onClose={() => setActiveModal(null)} />
+      <UtilityModal       visible={activeModal === 'electricidad'}  onClose={() => setActiveModal(null)} type="electricidad" />
+      <UtilityModal       visible={activeModal === 'agua'}          onClose={() => setActiveModal(null)} type="agua" />
+      <RecargaModal       visible={activeModal === 'recarga'}       onClose={() => setActiveModal(null)} />
+      <InternetModal      visible={activeModal === 'internet'}      onClose={() => setActiveModal(null)} />
+      <CanalesTVModal     visible={activeModal === 'tv'}            onClose={() => setActiveModal(null)} />
+      <BancosModal        visible={activeModal === 'bancos'}        onClose={() => setActiveModal(null)} />
+      <SegurosModal       visible={activeModal === 'seguros'}       onClose={() => setActiveModal(null)} />
+      <FacturasModal      visible={activeModal === 'facturas'}      onClose={() => setActiveModal(null)} />
+      <InversionModal     visible={activeModal === 'inversion'}     onClose={() => setActiveModal(null)} />
+      <TarjetasModal      visible={activeModal === 'tarjetas'}      onClose={() => setActiveModal(null)} />
+      <HistorialModal     visible={activeModal === 'historial'}     onClose={() => setActiveModal(null)} />
+      <SaludModal         visible={activeModal === 'salud'}         onClose={() => setActiveModal(null)} />
+      <EducacionModal     visible={activeModal === 'educacion'}     onClose={() => setActiveModal(null)} />
+      <ImpuestosModal     visible={activeModal === 'impuestos'}     onClose={() => setActiveModal(null)} />
+      <CorreosModal       visible={activeModal === 'correos'}       onClose={() => setActiveModal(null)} />
+      <SupermercadoModal  visible={activeModal === 'supermercado'}  onClose={() => setActiveModal(null)} />
+      <ComidaModal        visible={activeModal === 'comida'}        onClose={() => setActiveModal(null)} />
+      <RestaurantesModal  visible={activeModal === 'restaurantes'}  onClose={() => setActiveModal(null)} />
+      <HotelModal         visible={activeModal === 'hotel'}         onClose={() => setActiveModal(null)} />
+      <GasolinerasModal   visible={activeModal === 'gasolineras'}   onClose={() => setActiveModal(null)} />
+      <TiendaModal        visible={activeModal === 'tienda'}        onClose={() => setActiveModal(null)} />
+      <LavanderiaModal    visible={activeModal === 'lavanderia'}    onClose={() => setActiveModal(null)} />
+      <BellezaModal       visible={activeModal === 'belleza'}       onClose={() => setActiveModal(null)} />
+      <NoticiasModal      visible={activeModal === 'noticias'}      onClose={() => setActiveModal(null)} />
+      <IdDigitalModal     visible={activeModal === 'id_digital'}    onClose={() => setActiveModal(null)} />
+      <ActividadModal     visible={activeModal === 'actividad'}     onClose={() => setActiveModal(null)} />
+      <EmergenciasModal   visible={activeModal === 'emergencias'}   onClose={() => setActiveModal(null)} />
     </SafeAreaView>
   );
 }
@@ -922,7 +1375,7 @@ export default function ServiciosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
 
-  // Header gradiente
+  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding, paddingVertical: 12,
@@ -930,10 +1383,8 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoCircle: {
     width: 34, height: 34, borderRadius: 17,
-    overflow: 'hidden',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+    overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
   },
-  logoCircleText: { fontSize: 12, fontWeight: '800', color: '#fff' },
   headerLogo: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   headerLogoAccent: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -949,103 +1400,64 @@ const styles = StyleSheet.create({
   },
   headerIconText: { fontSize: 16, color: '#fff' },
 
-  // Balance card
-  balanceCard: {
-    margin: Spacing.screenPadding,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    ...Shadow.md,
+  // Título de página
+  pageHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
-  balanceLabel: {
-    fontSize: FontSize.xs, fontWeight: FontWeight.bold,
-    color: 'rgba(255,255,255,0.7)', letterSpacing: 1, marginBottom: 10,
+  pageTitle: {
+    fontSize: 22, fontWeight: '800', color: Colors.textPrimary,
   },
-  balanceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
-  balanceAmount: { fontSize: 28, fontWeight: '800', color: '#fff', flex: 1 },
-  balanceDots: { flexDirection: 'row', gap: 8, flex: 1, alignItems: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.6)' },
-  eyeBtn: { padding: 4 },
-  eyeIcon: { fontSize: 18 },
-  balanceActions: { flexDirection: 'row', gap: Spacing.md },
-  balanceBtn: {
-    flex: 1, backgroundColor: '#fff',
-    borderRadius: BorderRadius.lg, paddingVertical: 12,
-    alignItems: 'center',
-  },
-  balanceBtnOutline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#fff' },
-  balanceBtnText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#0d4a5c' },
-  balanceBtnTextOutline: { color: '#fff' },
 
-  // Quick cards
-  quickCards: {
-    flexDirection: 'row', gap: Spacing.md,
-    paddingHorizontal: Spacing.screenPadding, marginBottom: Spacing.md,
+  // Secciones
+  sectionWrapper: { marginBottom: Spacing.sm },
+  sectionHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
   },
-  quickCard: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.bgSecondary, borderRadius: BorderRadius.lg,
-    padding: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight,
-    ...Shadow.sm,
+  sectionTitle: {
+    fontSize: FontSize.sm, fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary, letterSpacing: 0.2,
   },
-  quickCardIcon: { fontSize: 24 },
-  quickCardTitle: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-  quickCardSub: { fontSize: FontSize.xs, color: Colors.textTertiary },
+  sectionCard: {
+    backgroundColor: Colors.bgSecondary,
+    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+  },
 
-  // APPS section
-  appsSection: { paddingHorizontal: Spacing.screenPadding, marginBottom: Spacing.md },
-  appsTitle: {
-    fontSize: FontSize.xs, fontWeight: FontWeight.bold,
-    color: Colors.textTertiary, letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
-  },
-  appsGrid: { flexDirection: 'row', gap: Spacing.md },
-  appItem: {
-    flex: 1, alignItems: 'center', gap: 6,
-    borderRadius: BorderRadius.xl, padding: Spacing.md,
-    borderWidth: 1, borderColor: Colors.borderLight,
-    ...Shadow.sm,
-  },
-  appIconBox: {
-    width: 60, height: 60, borderRadius: 16,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    ...Shadow.sm,
-  },
-  appImg: { width: 44, height: 44 },
-  appEmoji: { fontSize: 30 },
-  appLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, textAlign: 'center' },
-
-  // All services
-  allServicesSection: { paddingHorizontal: Spacing.screenPadding, marginBottom: 100 },
+  // Grid de servicios (4 columnas como la web)
   grid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
+    flexDirection: 'row', flexWrap: 'wrap',
   },
   serviceItem: {
-    width: '30%',
-    backgroundColor: Colors.bgSecondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    width: '25%',
     alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: 4,
     gap: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadow.sm,
   },
   serviceIconBox: {
-    width: 52, height: 52, borderRadius: BorderRadius.md,
+    width: 56, height: 56, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F0F9FF',
   },
   serviceEmoji: { fontSize: 26 },
   serviceLabel: {
-    fontSize: FontSize.xs + 1, fontWeight: FontWeight.bold,
+    fontSize: 11, fontWeight: '600',
     color: Colors.textPrimary, textAlign: 'center',
+    lineHeight: 14,
   },
-  serviceSub: { fontSize: FontSize.xs, color: Colors.textTertiary, textAlign: 'center' },
 
   // FAB
   fab: {
     position: 'absolute', bottom: 24, alignSelf: 'center',
-    width: 60, height: 60, borderRadius: 30,
-    ...Shadow.lg,
+    width: 60, height: 60, borderRadius: 30, ...Shadow.lg,
   },
   fabGradient: {
     width: 60, height: 60, borderRadius: 30,
@@ -1053,12 +1465,12 @@ const styles = StyleSheet.create({
   },
   fabIcon: { fontSize: 30, color: '#fff', lineHeight: 34 },
 
-  // Modal
+  // Modal bottom sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: Colors.bgSecondary,
     borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
-    padding: Spacing.xl, paddingBottom: Spacing['3xl'], maxHeight: '85%',
+    padding: Spacing.xl, paddingBottom: Spacing['3xl'], maxHeight: '88%',
   },
   handle: {
     width: 36, height: 4, backgroundColor: Colors.border,
@@ -1069,11 +1481,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl, textAlign: 'center',
   },
 
-  // Taxi
+  // Etiquetas de sección dentro de modales
   sectionLabel: {
     ...Typography.fieldLabel, color: Colors.textTertiary,
     marginBottom: Spacing.sm, marginTop: Spacing.md,
   },
+
+  // Taxi
   rideOption: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md,
@@ -1102,11 +1516,15 @@ const styles = StyleSheet.create({
   driverSub: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   etaText: { fontSize: FontSize.base, color: Colors.textPrimary, textAlign: 'center', marginBottom: Spacing.sm },
   fareText: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.accent, textAlign: 'center', marginBottom: Spacing.md },
+
+  // Facturas
   facturaCard: { marginTop: Spacing.lg, padding: Spacing.lg },
   facturaTitle: { ...Typography.chatHeaderName, color: Colors.textPrimary, marginBottom: Spacing.md },
   facturaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
   facturaLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
   facturaValue: { fontSize: FontSize.base, color: Colors.textPrimary },
+
+  // Recarga
   operatorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
   operatorChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, backgroundColor: Colors.bgTertiary, borderWidth: 1, borderColor: Colors.border },
   operatorChipActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
@@ -1117,6 +1535,8 @@ const styles = StyleSheet.create({
   amountChipActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
   amountText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
   amountTextActive: { color: Colors.accent },
+
+  // Proveedores / listas
   providerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight },
   providerDot: { width: 12, height: 12, borderRadius: 6 },
   providerDotEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
@@ -1124,22 +1544,34 @@ const styles = StyleSheet.create({
   providerName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   providerCat: { fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: 2 },
   providerArrow: { fontSize: 22, color: Colors.textTertiary },
+
+  // Planes
   planCard: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.borderLight, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planText: { flex: 1, fontSize: FontSize.sm, color: Colors.textPrimary, fontWeight: FontWeight.semibold },
   planAction: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.bold },
+
+  // Navegación dentro de modales
   backRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   backText: { fontSize: FontSize.base, color: Colors.accent, fontWeight: FontWeight.semibold },
+
+  // Info card
   infoCard: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight },
   infoCardTitle: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.md },
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs },
   serviceRowDot: { fontSize: 8, color: Colors.accent },
   serviceRowText: { fontSize: FontSize.sm, color: Colors.textPrimary },
+
+  // Botones de llamada
   callBtn: { backgroundColor: Colors.accentLight, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.md },
   callBtnText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.semibold },
   callIcon: { fontSize: 22 },
+
+  // Seguros / items con icono
   insuranceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, flex: 1 },
   insuranceIcon: { fontSize: 26, width: 32, textAlign: 'center' },
   insuranceInfo: { flex: 1 },
+
+  // Supermercado categorías
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
   categoryChip: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderWidth: 1, borderColor: Colors.borderLight },
   categoryText: { fontSize: FontSize.sm, color: Colors.textPrimary },
