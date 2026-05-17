@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import QRCode from 'react-native-qrcode-svg';
 import { authAPI, getToken } from '../../src/api';
 import { EGButton, EGInput, EGCard, EGAvatar } from '../../src/components/ui';
+import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,

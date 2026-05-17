@@ -716,6 +716,10 @@ export default function ServiciosScreen() {
   const [user, setUser] = useState<any>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
@@ -781,18 +785,26 @@ export default function ServiciosScreen() {
         {/* Acciones */}
         <View style={styles.headerRight}>
           <View style={styles.weatherChip}>
-            <Text style={styles.weatherText}>☁️ 27° Malabo</Text>
+            <TouchableOpacity onPress={() => setShowWeather(true)} activeOpacity={0.8}>
+              <Text style={styles.weatherText}>☁️ 27° Malabo</Text>
+            </TouchableOpacity>
           </View>
           <TouchableOpacity
             style={styles.headerIconBtn}
-            onPress={() => router.push('/ajustes/notificaciones' as any)}
+            onPress={() => {
+              setShowNotifications(true);
+              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            }}
             activeOpacity={0.8}
           >
             <Text style={styles.headerIconText}>🔔</Text>
+            {notifications.some(n => !n.read) && (
+              <View style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerIconBtn}
-            onPress={() => setShowDrawer(true)}
+            onPress={() => setShowMenu(true)}
             activeOpacity={0.8}
           >
             <Text style={styles.headerIconText}>☰</Text>
@@ -861,8 +873,34 @@ export default function ServiciosScreen() {
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* ── Drawer menú ── */}
+      {/* ── Drawer menú (legacy) ── */}
       <DrawerMenu visible={showDrawer} onClose={() => setShowDrawer(false)} />
+
+      {/* ── Paneles del header ── */}
+      <NotificationsPanel
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onClearAll={() => setNotifications([])}
+        onNotifPress={(n) => {
+          setNotifications(prev => prev.filter(x => x.id !== n.id));
+          setShowNotifications(false);
+          if (n.chatId) router.push(`/chat/${n.chatId}` as any);
+        }}
+      />
+      <HamburgerMenu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        user={user}
+      />
+      <WeatherModal
+        visible={showWeather}
+        onClose={() => setShowWeather(false)}
+        temp="27°"
+        city="Malabo"
+        condition="cloudy"
+      />
 
       {/* ── Modales de servicios ── */}
       <TaxiModal visible={activeModal === 'taxi'} onClose={() => setActiveModal(null)} />

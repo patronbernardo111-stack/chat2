@@ -325,9 +325,9 @@ export default function HomeScreen() {
         <View style={st.headerLogo}>
           <View style={st.logoImgWrap}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/logo-transparent.png')}
               style={st.logoImg}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
           <Text style={st.logoText}>EG</Text>
