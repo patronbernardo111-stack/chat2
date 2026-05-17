@@ -3,10 +3,10 @@
 // Panel de Notificaciones + Menú hamburguesa + Modal Clima
 // Fiel a la versión web
 // ══════════════════════════════════════════════════════════════════
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Modal, Pressable, Alert, Image,
+  Modal, Pressable, Alert, Image, Animated, Dimensions,
 } from 'react-native';
 import Svg, { Path, Circle, Line, Rect, Polyline, Polygon } from 'react-native-svg';
 import { router } from 'expo-router';
@@ -239,8 +239,44 @@ const np = StyleSheet.create({
 });
 
 // ══════════════════════════════════════════════════════════════════
-// MENÚ HAMBURGUESA
+// MENÚ HAMBURGUESA — Drawer lateral desde la derecha
+// Fiel a la imagen: avatar grande, iconos SVG morados, subtítulos
 // ══════════════════════════════════════════════════════════════════
+import { useRef, useEffect } from 'react';
+import { Animated, Dimensions } from 'react-native';
+
+const SCREEN_W = Dimensions.get('window').width;
+const DRAWER_W = Math.min(SCREEN_W * 0.82, 340);
+const ICON_COLOR = '#5B4FCF'; // morado de la imagen
+
+// ── Iconos SVG del menú ───────────────────────────────────────────
+const MenuIcon = ({ name }: { name: string }) => {
+  const c = name === 'salir' ? '#EF4444' : ICON_COLOR;
+  const s = { width: 22, height: 22 };
+  switch (name) {
+    case 'perfil':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><Circle cx="12" cy="7" r="4"/></Svg>;
+    case 'nuevo-contacto':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Line x1="12" y1="5" x2="12" y2="19"/><Line x1="5" y1="12" x2="19" y2="12"/></Svg>;
+    case 'crear-grupo':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><Circle cx="9" cy="7" r="4"/><Path d="M23 21v-2a4 4 0 0 0-3-3.87"/><Path d="M16 3.13a4 4 0 0 1 0 7.75"/></Svg>;
+    case 'contactos':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Rect x="5" y="2" width="14" height="20" rx="2"/><Line x1="9" y1="7" x2="15" y2="7"/><Line x1="9" y1="11" x2="15" y2="11"/><Line x1="9" y1="15" x2="13" y2="15"/></Svg>;
+    case 'mensajes-arch':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Polyline points="21 8 21 21 3 21 3 8"/><Rect x="1" y="3" width="22" height="5"/><Line x1="10" y1="12" x2="14" y2="12"/></Svg>;
+    case 'notificaciones':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><Path d="M13.73 21a2 2 0 0 1-3.46 0"/></Svg>;
+    case 'privacidad':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Rect x="3" y="11" width="18" height="11" rx="2"/><Path d="M7 11V7a5 5 0 0 1 10 0v4"/></Svg>;
+    case 'ajustes':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Circle cx="12" cy="12" r="3"/><Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Svg>;
+    case 'salir':
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8} strokeLinecap="round"><Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><Polyline points="16 17 21 12 16 7"/><Line x1="21" y1="12" x2="9" y2="12"/></Svg>;
+    default:
+      return <Svg {...s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={1.8}><Circle cx="12" cy="12" r="10"/></Svg>;
+  }
+};
+
 export const HamburgerMenu = ({
   visible,
   onClose,
@@ -250,75 +286,76 @@ export const HamburgerMenu = ({
   onClose: () => void;
   user?: { full_name?: string; avatar_url?: string; phone?: string } | null;
 }) => {
-  const initials = user?.full_name
-    ?.split(' ').filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('') || 'EG';
+  const slideAnim = useRef(new Animated.Value(DRAWER_W)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
 
-  const items = [
-    { id: 'perfil',         icon: '👤', label: 'Mi Perfil',           sub: 'Ver y editar tu perfil',    color: Colors.textPrimary },
-    { id: 'nuevo-contacto', icon: '➕', label: 'Nuevo contacto',       sub: 'Añadir a tu lista',         color: Colors.textPrimary },
-    { id: 'crear-grupo',    icon: '👥', label: 'Crear grupo',          sub: 'Nuevo grupo de chat',       color: Colors.textPrimary },
-    { id: 'contactos',      icon: '📋', label: 'Mis contactos',        sub: 'Ver todos tus contactos',   color: Colors.textPrimary },
-    { id: 'mensajes-arch',  icon: '📦', label: 'Mensajes archivados',  sub: 'Chats archivados',          color: Colors.textPrimary },
-    { id: 'notificaciones', icon: '🔔', label: 'Notificaciones',       sub: 'Gestionar alertas',         color: Colors.textPrimary },
-    { id: 'privacidad',     icon: '🔒', label: 'Privacidad',           sub: 'Configurar privacidad',     color: Colors.textPrimary },
-    { id: 'ajustes',        icon: '⚙️', label: 'Ajustes',              sub: 'Configuración de la app',   color: Colors.textPrimary },
-    { id: 'ayuda',          icon: '❓', label: 'Ayuda y soporte',      sub: 'Centro de ayuda',           color: Colors.textPrimary },
-    { id: 'salir',          icon: '🚪', label: 'Cerrar sesión',        sub: 'Salir de tu cuenta',        color: '#EF4444' },
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, { toValue: 0,        duration: 260, useNativeDriver: true }),
+        Animated.timing(fadeAnim,  { toValue: 1,        duration: 220, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, { toValue: DRAWER_W, duration: 220, useNativeDriver: true }),
+        Animated.timing(fadeAnim,  { toValue: 0,        duration: 180, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const initials = user?.full_name
+    ?.split(' ').filter(Boolean).map((w: string) => w[0].toUpperCase()).slice(0, 2).join('') || 'EG';
+
+  const items: Array<{ id: string; label: string; sub: string }> = [
+    { id: 'perfil',         label: 'Mi Perfil',           sub: 'Ver y editar tu perfil'    },
+    { id: 'nuevo-contacto', label: 'Nuevo contacto',       sub: 'Añadir a tu lista'         },
+    { id: 'crear-grupo',    label: 'Crear grupo',          sub: 'Nuevo grupo de chat'       },
+    { id: 'contactos',      label: 'Mis contactos',        sub: 'Ver todos tus contactos'   },
+    { id: 'mensajes-arch',  label: 'Mensajes archivados',  sub: 'Chats archivados'          },
+    { id: 'notificaciones', label: 'Notificaciones',       sub: 'Gestionar alertas'         },
+    { id: 'privacidad',     label: 'Privacidad',           sub: 'Configurar privacidad'     },
+    { id: 'ajustes',        label: 'Ajustes',              sub: 'Configuración de la app'   },
+    { id: 'salir',          label: 'Cerrar sesión',        sub: 'Salir de tu cuenta'        },
   ];
 
   const handlePress = (id: string) => {
     onClose();
     setTimeout(() => {
       switch (id) {
-        case 'perfil':
-          router.push('/(tabs)/ajustes' as any);
-          break;
-        case 'nuevo-contacto':
-          router.push('/contacts' as any);
-          break;
-        case 'crear-grupo':
-          router.push('/new-chat' as any);
-          break;
-        case 'contactos':
-          router.push('/contacts' as any);
-          break;
-        case 'mensajes-arch':
-          router.push('/(tabs)/mensajeria' as any);
-          break;
-        case 'notificaciones':
-          router.push('/(tabs)/ajustes' as any);
-          break;
-        case 'privacidad':
-          router.push('/(tabs)/ajustes' as any);
-          break;
-        case 'ajustes':
-          router.push('/(tabs)/ajustes' as any);
-          break;
-        case 'ayuda':
-          router.push('/(tabs)/ajustes' as any);
-          break;
+        case 'perfil':         router.push('/(tabs)/ajustes' as any); break;
+        case 'nuevo-contacto': router.push('/contacts' as any); break;
+        case 'crear-grupo':    router.push('/new-chat' as any); break;
+        case 'contactos':      router.push('/contacts' as any); break;
+        case 'mensajes-arch':  router.push('/(tabs)/mensajeria' as any); break;
+        case 'notificaciones': router.push('/(tabs)/ajustes' as any); break;
+        case 'privacidad':     router.push('/(tabs)/ajustes' as any); break;
+        case 'ajustes':        router.push('/(tabs)/ajustes' as any); break;
         case 'salir':
           Alert.alert('Cerrar sesión', '¿Estás seguro de que quieres salir?', [
             { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Cerrar sesión',
-              style: 'destructive',
-              onPress: async () => {
-                await authAPI.logout();
-                router.replace('/(auth)/login' as any);
-              },
-            },
+            { text: 'Cerrar sesión', style: 'destructive', onPress: async () => {
+              await authAPI.logout();
+              router.replace('/(auth)/login' as any);
+            }},
           ]);
           break;
       }
-    }, 180);
+    }, 200);
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={hm.overlay} onPress={onClose}>
-        <Pressable style={hm.panel} onPress={() => {}}>
-          {/* Header usuario */}
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <View style={hm.root}>
+        {/* Overlay oscuro */}
+        <Animated.View style={[hm.overlay, { opacity: fadeAnim }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
+
+        {/* Panel deslizante */}
+        <Animated.View style={[hm.panel, { transform: [{ translateX: slideAnim }] }]}>
+          {/* ── Header usuario ── */}
           <View style={hm.userHeader}>
             {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={hm.avatar} />
@@ -333,78 +370,101 @@ export const HamburgerMenu = ({
             </View>
           </View>
 
-          {/* Items */}
-          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+          {/* ── Items ── */}
+          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
             {items.map((item, i) => (
               <TouchableOpacity
                 key={item.id}
-                style={[hm.item, i === items.length - 1 && { borderBottomWidth: 0 }]}
+                style={[hm.item, i < items.length - 1 && hm.itemBorder]}
                 onPress={() => handlePress(item.id)}
-                activeOpacity={0.7}
+                activeOpacity={0.65}
               >
-                <Text style={hm.itemIcon}>{item.icon}</Text>
+                <View style={hm.iconWrap}>
+                  <MenuIcon name={item.id} />
+                </View>
                 <View style={hm.itemText}>
-                  <Text style={[hm.itemLabel, { color: item.color }]}>{item.label}</Text>
+                  <Text style={[hm.itemLabel, item.id === 'salir' && { color: '#EF4444' }]}>
+                    {item.label}
+                  </Text>
                   <Text style={hm.itemSub}>{item.sub}</Text>
                 </View>
               </TouchableOpacity>
             ))}
+            <View style={{ height: 24 }} />
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
 
 const hm = StyleSheet.create({
-  overlay: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: 60,
-    paddingRight: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   panel: {
-    width: 240,
-    backgroundColor: 'rgba(255,255,255,0.97)',
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadow.lg,
+    width: DRAWER_W,
+    height: '100%',
+    backgroundColor: '#F7F8FA',
+    shadowColor: '#000',
+    shadowOffset: { width: -6, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 24,
   },
+  // Header usuario
   userHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    backgroundColor: Colors.bgSecondary,
+    borderBottomColor: '#F0F2F5',
   },
-  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatar: { width: 52, height: 52, borderRadius: 26 },
   avatarFallback: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 52, height: 52, borderRadius: 26,
     backgroundColor: Colors.brand,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: 13, fontWeight: FontWeight.bold, color: '#fff' },
+  avatarText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   userInfo: { flex: 1, minWidth: 0 },
-  userName: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
-  userStatus: { fontSize: 10, color: Colors.brand, fontWeight: FontWeight.semibold, marginTop: 1 },
+  userName: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  userStatus: { fontSize: 13, color: Colors.brand, fontWeight: '600', marginTop: 2 },
+
+  // Items
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.borderLight,
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
   },
-  itemIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  itemBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#F0F2F5',
+  },
+  iconWrap: {
+    width: 40, height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F3F0FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   itemText: { flex: 1 },
-  itemLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.medium, color: Colors.textPrimary, lineHeight: 18 },
-  itemSub: { fontSize: 10, color: Colors.textTertiary, marginTop: 1 },
+  itemLabel: { fontSize: 15, fontWeight: '700', color: '#111827', lineHeight: 20 },
+  itemSub: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
 });
 
 // ══════════════════════════════════════════════════════════════════
