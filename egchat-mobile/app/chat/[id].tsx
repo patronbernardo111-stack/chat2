@@ -2,12 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated, Modal, Pressable, Alert, Dimensions, ScrollView,
+  Animated, Modal, Pressable, Alert, Dimensions, ScrollView, Image,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.72;
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { chatAPI, authAPI } from '../../src/api';
@@ -19,6 +16,9 @@ import {
 } from '../../src/theme';
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.72;
 
 // ── Tipos ─────────────────────────────────────────────────────────
 interface Message {
@@ -90,22 +90,35 @@ const TypingIndicator = () => {
 };
 
 // ── ChatDrawer ────────────────────────────────────────────────────
+import Svg, { Path, Circle, Line, Polyline, Polygon, Rect } from 'react-native-svg';
+
 interface DrawerItem {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   onPress: () => void;
   color?: string;
   danger?: boolean;
+  section?: 'main' | 'config' | 'actions' | 'danger';
 }
 
 const ChatDrawer = ({
   visible,
   onClose,
+  chatName,
+  chatAvatar,
+  chatInitials,
+  isGroup,
+  isOnline,
   items,
   isDark = false,
 }: {
   visible: boolean;
   onClose: () => void;
+  chatName: string;
+  chatAvatar?: string;
+  chatInitials?: string;
+  isGroup?: boolean;
+  isOnline?: boolean;
   items: DrawerItem[];
   isDark?: boolean;
 }) => {
@@ -115,91 +128,87 @@ const ChatDrawer = ({
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 260,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: DRAWER_WIDTH,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
+        Animated.timing(slideAnim, { toValue: DRAWER_WIDTH, duration: 200, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
       ]).start();
     }
   }, [visible]);
 
-  if (!visible && slideAnim.__getValue() >= DRAWER_WIDTH) return null;
+  const sections: Array<DrawerItem['section']> = ['main', 'config', 'actions', 'danger'];
+  const grouped = sections.map(s => items.filter(i => i.section === s)).filter(g => g.length > 0);
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={drawerStyles.root}>
-        {/* Overlay oscuro */}
+        {/* Overlay */}
         <Animated.View style={[drawerStyles.overlay, { opacity: fadeAnim }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         </Animated.View>
 
-        {/* Panel deslizante */}
-        <Animated.View
-          style={[
-            drawerStyles.panel,
-            isDark && { backgroundColor: '#1e1e1e' },
-            { transform: [{ translateX: slideAnim }] },
-          ]}
-        >
-          {/* Cabecera del drawer */}
-          <View style={drawerStyles.header}>
-            <View style={[drawerStyles.headerBar, isDark && { backgroundColor: '#3a3a3a' }]} />
+        {/* Panel */}
+        <Animated.View style={[drawerStyles.panel, isDark && { backgroundColor: '#1a1a1a' }, { transform: [{ translateX: slideAnim }] }]}>
+
+          {/* Header con gradiente simulado */}
+          <View style={drawerStyles.drawerHeader}>
+            {/* Avatar */}
+            <View style={drawerStyles.drawerAvatar}>
+              {chatAvatar ? (
+                <Image source={{ uri: chatAvatar }} style={drawerStyles.drawerAvatarImg} />
+              ) : (
+                <Text style={drawerStyles.drawerAvatarText}>
+                  {chatInitials || chatName?.slice(0, 2).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            {/* Info */}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={drawerStyles.drawerHeaderName} numberOfLines={1}>{chatName}</Text>
+              <Text style={drawerStyles.drawerHeaderSub}>
+                {isGroup ? '👥 Grupo' : isOnline ? '● En línea' : '○ Desconectado'}
+              </Text>
+            </View>
+            {/* Botón cerrar */}
+            <TouchableOpacity onPress={onClose} style={drawerStyles.drawerCloseBtn} activeOpacity={0.7}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" stroke="#fff" strokeWidth={2.5}>
+                <Line x1="18" y1="6" x2="6" y2="18" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" />
+                <Line x1="6" y1="6" x2="18" y2="18" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" />
+              </Svg>
+            </TouchableOpacity>
           </View>
 
-          {/* Lista de opciones */}
-          <ScrollView
-            style={drawerStyles.scroll}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {items.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  drawerStyles.item,
-                  isDark && { borderBottomColor: '#2a2a2a' },
-                  index === items.length - 1 && drawerStyles.itemLast,
-                ]}
-                onPress={() => {
-                  onClose();
-                  setTimeout(item.onPress, 200);
-                }}
-                activeOpacity={0.65}
-              >
-                <View style={drawerStyles.iconWrap}>
-                  <Text style={drawerStyles.icon}>{item.icon}</Text>
-                </View>
-                <Text
-                  style={[
-                    drawerStyles.label,
-                    isDark && { color: '#f0f0f0' },
-                    item.danger && drawerStyles.labelDanger,
-                    item.color ? { color: item.color } : null,
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
+          {/* Opciones */}
+          <ScrollView style={drawerStyles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
+            {grouped.map((group, gi) => (
+              <View key={gi} style={[drawerStyles.section, isDark && { borderBottomColor: '#2a2a2a' }]}>
+                {group.map((item, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[
+                      drawerStyles.item,
+                      isDark && { borderBottomColor: '#2a2a2a' },
+                      i === group.length - 1 && drawerStyles.itemLast,
+                    ]}
+                    onPress={() => { onClose(); setTimeout(item.onPress, 180); }}
+                    activeOpacity={0.6}
+                  >
+                    <View style={drawerStyles.iconWrap}>{item.icon}</View>
+                    <Text style={[
+                      drawerStyles.label,
+                      isDark && { color: '#e8e8e8' },
+                      item.color ? { color: item.color } : null,
+                    ]}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))}
+            <View style={{ height: 24 }} />
           </ScrollView>
         </Animated.View>
       </View>
@@ -215,60 +224,98 @@ const drawerStyles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   panel: {
     width: DRAWER_WIDTH,
     backgroundColor: '#ffffff',
     shadowColor: '#000',
-    shadowOffset: { width: -3, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 16,
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 20,
   },
-  header: {
-    height: 20,
+  // Header gradiente azul
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingTop: Platform.OS === 'ios' ? 52 : 16,
+    backgroundColor: '#00b4e6',
+  },
+  drawerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
+    overflow: 'hidden',
+    flexShrink: 0,
   },
-  headerBar: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e0e0e0',
+  drawerAvatarImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  drawerAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  drawerHeaderName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  drawerHeaderSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 1,
+  },
+  drawerCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   scroll: {
     flex: 1,
-    marginTop: 6,
+  },
+  section: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f2f5',
+    paddingVertical: 4,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 20,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
-    gap: 14,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    gap: 10,
   },
   itemLast: {
     borderBottomWidth: 0,
   },
   iconWrap: {
-    width: 28,
+    width: 20,
     alignItems: 'center',
-  },
-  icon: {
-    fontSize: 17,
+    flexShrink: 0,
   },
   label: {
-    fontSize: 14.5,
-    color: '#1a1a1a',
-    fontWeight: '400',
-    letterSpacing: 0.1,
-  },
-  labelDanger: {
-    color: '#e53935',
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
+    flex: 1,
   },
 });
 
@@ -565,103 +612,128 @@ export default function ChatScreen() {
     : 'En línea';
 
   // ── Items del drawer ──────────────────────────────────────────
+  const IC = '#374151'; // color base
   const drawerItems: DrawerItem[] = [
+    // ── Sección principal ──
     {
-      icon: '👤',
+      section: 'main',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round"/><Circle cx="12" cy="7" r="4"/></Svg>,
       label: 'Ver perfil',
+      color: IC,
       onPress: () => Alert.alert('Ver perfil', 'Próximamente'),
     },
     {
-      icon: '🔍',
+      section: 'main',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Circle cx="11" cy="11" r="8"/><Path d="M21 21l-4.35-4.35" strokeLinecap="round"/></Svg>,
       label: 'Buscar en el chat',
+      color: IC,
       onPress: () => Alert.alert('Buscar', 'Próximamente'),
     },
     {
-      icon: '⭐',
+      section: 'main',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Svg>,
       label: 'Mensajes destacados',
+      color: IC,
       onPress: () => Alert.alert('Destacados', 'Próximamente'),
     },
     {
-      icon: '📌',
+      section: 'main',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round"/><Line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round"/><Circle cx="12" cy="12" r="10"/></Svg>,
       label: 'Fijar chat',
+      color: IC,
       onPress: () => Alert.alert('Fijar chat', 'Próximamente'),
     },
+    // ── Sección configuración ──
     {
-      icon: '🔔',
+      section: 'config',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round"/><Path d="M13.73 21a2 2 0 0 1-3.46 0" strokeLinecap="round"/></Svg>,
       label: 'Silenciar',
+      color: IC,
       onPress: () => Alert.alert('Silenciar', 'Próximamente'),
     },
     {
-      icon: '🖼️',
+      section: 'config',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Rect x="3" y="3" width="18" height="18" rx="2"/><Line x1="3" y1="9" x2="21" y2="9" strokeLinecap="round"/><Line x1="9" y1="21" x2="9" y2="9" strokeLinecap="round"/></Svg>,
       label: 'Fondo de pantalla',
-      onPress: () => Alert.alert('Fondo', 'Próximamente'),
+      color: IC,
+      onPress: () => Alert.alert('Fondo de pantalla', 'Próximamente'),
     },
     {
-      icon: '🔒',
+      section: 'config',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#00c8a0" strokeWidth={1.8}><Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round"/></Svg>,
       label: 'Cifrado E2E',
-      onPress: () => Alert.alert('Cifrado E2E', 'Este chat está cifrado de extremo a extremo.'),
-      color: '#00a884',
+      color: '#00c8a0',
+      onPress: () => Alert.alert('🔒 Cifrado E2E', 'Este chat está cifrado de extremo a extremo.'),
     },
+    // ── Sección acciones ──
     {
-      icon: '💸',
+      section: 'actions',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Line x1="22" y1="2" x2="11" y2="13" strokeLinecap="round"/><Polygon points="22 2 15 22 11 13 2 9 22 2"/></Svg>,
       label: 'Enviar dinero',
+      color: IC,
       onPress: () => router.push('/(tabs)/monedero' as any),
     },
     {
-      icon: '👥',
+      section: 'actions',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Circle cx="18" cy="5" r="3"/><Circle cx="6" cy="12" r="3"/><Circle cx="18" cy="19" r="3"/><Line x1="8.59" y1="13.51" x2="15.42" y2="17.49" strokeLinecap="round"/><Line x1="15.41" y1="6.51" x2="8.59" y2="10.49" strokeLinecap="round"/></Svg>,
       label: 'Compartir contacto',
+      color: IC,
       onPress: () => Alert.alert('Compartir contacto', 'Próximamente'),
     },
     {
-      icon: '💬',
+      section: 'actions',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round"/></Svg>,
       label: 'Crear grupo con este contacto',
+      color: IC,
       onPress: () => Alert.alert('Crear grupo', 'Próximamente'),
     },
     {
-      icon: '📤',
+      section: 'actions',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={IC} strokeWidth={1.8}><Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round"/><Polyline points="7 10 12 15 17 10"/><Line x1="12" y1="15" x2="12" y2="3" strokeLinecap="round"/></Svg>,
       label: 'Exportar chat',
+      color: IC,
       onPress: () => Alert.alert('Exportar chat', 'Próximamente'),
     },
+    // ── Sección peligrosa ──
     {
-      icon: '🗑️',
+      section: 'danger',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth={1.8}><Polyline points="3 6 5 6 21 6"/><Path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" strokeLinecap="round"/><Path d="M10 11v6" strokeLinecap="round"/><Path d="M14 11v6" strokeLinecap="round"/></Svg>,
       label: 'Vaciar chat',
+      color: '#F59E0B',
       onPress: () =>
         Alert.alert('Vaciar chat', '¿Eliminar todos los mensajes?', [
           { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Vaciar',
-            style: 'destructive',
-            onPress: () => setMessages([]),
-          },
+          { text: 'Vaciar', style: 'destructive', onPress: () => setMessages([]) },
         ]),
-      color: '#e67e22',
-      danger: false,
     },
     {
-      icon: '⚠️',
+      section: 'danger',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={1.8}><Path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" strokeLinecap="round"/><Line x1="12" y1="9" x2="12" y2="13" strokeLinecap="round"/><Line x1="12" y1="17" x2="12.01" y2="17" strokeLinecap="round"/></Svg>,
       label: 'Reportar',
-      onPress: () => Alert.alert('Reportar', 'Próximamente'),
-      danger: true,
+      color: '#EF4444',
+      onPress: () => Alert.alert('Reportar', `"${chatName}" reportado.`),
     },
     {
-      icon: '🚫',
+      section: 'danger',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={1.8}><Circle cx="12" cy="12" r="10"/><Line x1="4.93" y1="4.93" x2="19.07" y2="19.07" strokeLinecap="round"/></Svg>,
       label: 'Bloquear',
+      color: '#EF4444',
       onPress: () =>
         Alert.alert('Bloquear', `¿Bloquear a ${chatName}?`, [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Bloquear', style: 'destructive', onPress: () => router.back() },
         ]),
-      danger: true,
     },
     {
-      icon: '🗑️',
+      section: 'danger',
+      icon: <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={1.8}><Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeLinecap="round"/><Circle cx="9" cy="7" r="4"/><Line x1="23" y1="11" x2="17" y2="11" strokeLinecap="round"/></Svg>,
       label: 'Eliminar contacto',
+      color: '#EF4444',
       onPress: () =>
         Alert.alert('Eliminar contacto', `¿Eliminar a ${chatName}?`, [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Eliminar', style: 'destructive', onPress: () => router.back() },
         ]),
-      danger: true,
     },
   ];
 
@@ -765,6 +837,11 @@ export default function ChatScreen() {
       <ChatDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
+        chatName={chatName}
+        chatAvatar={chatAvatar}
+        chatInitials={chatName?.slice(0, 2).toUpperCase()}
+        isGroup={isGroup}
+        isOnline={chatSubtitle === 'En línea'}
         items={drawerItems}
         isDark={isDark}
       />
