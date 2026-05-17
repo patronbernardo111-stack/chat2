@@ -46,7 +46,7 @@ export const useAuth = () => {
     try {
       const res = await authAPI.login(phone, password);
       setState({ user: res.user, isAuthenticated: true, isLoading: false, error: '' });
-      router.replace('/(tabs)/servicios');
+      router.replace('/(tabs)'); // → Home Dashboard
       return true;
     } catch (e: any) {
       const msg = e.message || '';
@@ -74,7 +74,7 @@ export const useAuth = () => {
     try {
       const res = await authAPI.register(data);
       setState({ user: res.user, isAuthenticated: true, isLoading: false, error: '' });
-      router.replace('/(tabs)/servicios');
+      router.replace('/(tabs)'); // → Home Dashboard
       return true;
     } catch (e: any) {
       const msg = e.message || '';
@@ -162,7 +162,7 @@ export const useSessionCheck = () => {
         const isAuth = await authAPI.isAuthenticated();
         if (isAuth) {
           await authAPI.me();
-          router.replace('/(tabs)/servicios');
+          router.replace('/(tabs)'); // → Home Dashboard
         } else {
           router.replace('/(auth)/login');
         }

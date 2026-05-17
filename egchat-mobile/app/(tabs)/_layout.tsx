@@ -77,9 +77,9 @@ export default function TabsLayout() {
         },
       }}
     >
-      {/* Tab 1 — Mensajería (pantalla principal) */}
+      {/* Tab 1 — Mensajería */}
       <Tabs.Screen
-        name="index"
+        name="mensajeria"
         options={{
           title: 'Mensajería',
           tabBarIcon: ({ color }) => <NavIcon name="mensajes" color={color} size={24} />,
@@ -95,7 +95,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 3 — Servicios (dashboard principal) */}
+      {/* Tab 3 — Servicios */}
       <Tabs.Screen
         name="servicios"
         options={{
@@ -115,9 +115,15 @@ export default function TabsLayout() {
 
       {/* Pantallas ocultas del tab bar */}
       <Tabs.Screen
+        name="index"
+        options={{
+          href: null, // Home Dashboard — accesible tras login, no en tab bar
+        }}
+      />
+      <Tabs.Screen
         name="lia"
         options={{
-          href: null, // oculto del tab bar, accesible desde el menú
+          href: null, // LIA-25 — accesible desde botón flotante
         }}
       />
     </Tabs>

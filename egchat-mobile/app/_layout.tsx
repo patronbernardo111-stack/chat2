@@ -39,7 +39,7 @@ export default function RootLayout() {
         if (isAuth) {
           try {
             const me = await authAPI.me();
-            router.replace('/(tabs)/servicios');
+            router.replace('/(tabs)'); // → Home Dashboard (index.tsx)
 
             const pushToken = await registerForPushNotifications();
             if (pushToken) console.log('✅ Push token:', pushToken.substring(0, 30) + '...');
