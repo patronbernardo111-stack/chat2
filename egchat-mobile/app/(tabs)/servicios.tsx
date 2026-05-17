@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking,
+  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { serviciosAPI, taxiAPI, walletAPI } from '../../src/api';
+import { serviciosAPI, taxiAPI, walletAPI, authAPI } from '../../src/api';
 import { EGButton, EGInput, EGCard } from '../../src/components/ui';
 import {
   Colors, Typography, Spacing, BorderRadius,
@@ -660,59 +661,186 @@ const SupermercadoModal = ({ visible, onClose }: { visible: boolean; onClose: ()
   </ServiceModal>
 );
 
+// ── APPS destacadas en el dashboard ──────────────────────────────
+const APPS = [
+  { id: 'estados',  icon: '🌀', label: 'Estados',  bg: '#f0f4ff' },
+  { id: 'apuestas', icon: '🃏', label: 'Juegos',   bg: '#fff8f0' },
+  { id: 'cemac',    icon: '🏢', label: 'Cemac',    bg: '#f0fff8' },
+  { id: 'taxi',     icon: '🚕', label: 'MiTaxi',   bg: '#fffbf0' },
+];
+
 // ── Pantalla principal ────────────────────────────────────────────
 export default function ServiciosScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [showBalance, setShowBalance] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
+
+  useEffect(() => {
+    walletAPI.getBalance().then(r => setBalance(r.balance)).catch(() => {});
+    authAPI.me().then(u => setUser(u)).catch(() => {});
+  }, []);
 
   const openService = (id: string) => {
     const modalServices = ['taxi', 'electricidad', 'agua', 'recarga', 'internet', 'tv', 'bancos', 'salud', 'seguros', 'impuestos', 'correos', 'supermercado'];
     if (modalServices.includes(id)) {
       setActiveModal(id);
-    } else if (id === 'bancos') {
-      setActiveModal('bancos');
     } else if (id === 'cemac') {
       router.push('/cemac' as any);
-    } else if (id === 'supermercado') {
-      setActiveModal('supermercado');
     } else if (id === 'restaurantes' || id === 'vuelos' || id === 'gasolineras') {
       router.push('/servicios-diarios' as any);
     } else if (id === 'ocio') {
       router.push('/ocio' as any);
-    } else if (id === 'apuestas') {
+    } else if (id === 'apuestas' || id === 'estados') {
       router.push('/apuestas' as any);
-    } else if (id === 'seguros' || id === 'salud' || id === 'impuestos' || id === 'correos') {
-      setActiveModal(id);
     } else {
-      Alert.alert('Próximamente', 'Este servicio estará disponible pronto en la app móvil.');
+      Alert.alert('Próximamente', 'Este servicio estará disponible pronto.');
     }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Servicios</Text>
-        <Text style={[styles.headerSub, { color: C.textTertiary }]}>Guinea Ecuatorial</Text>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.grid}>
-        {SERVICES.map(s => (
-          <TouchableOpacity
-            key={s.id}
-            style={[styles.serviceItem, { backgroundColor: C.bgSecondary, borderColor: C.borderLight }]}
-            onPress={() => openService(s.id)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
-              <Text style={styles.serviceEmoji}>{s.icon}</Text>
-            </View>
-            <Text style={[styles.serviceLabel, { color: C.textPrimary }]}>{s.label}</Text>
-            <Text style={[styles.serviceSub, { color: C.textTertiary }]}>{s.sub}</Text>
+      {/* ── Header con gradiente ── */}
+      <LinearGradient
+        colors={['#00C8A0', '#00B4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerLogo}>EG</Text>
+          <Text style={styles.headerLogoAccent}>CHAT</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.weatherChip}>
+            <Text style={styles.weatherText}>☁️ 27° Malabo</Text>
+          </View>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/(tabs)/ajustes' as any)}>
+            <Text style={styles.headerIconText}>🔔</Text>
           </TouchableOpacity>
-        ))}
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => router.push('/(tabs)/ajustes' as any)}>
+            <Text style={styles.headerIconText}>☰</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+
+        {/* ── Card de saldo ── */}
+        <LinearGradient
+          colors={['#1a6b7a', '#0d4a5c']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.balanceCard}
+        >
+          <Text style={styles.balanceLabel}>SALDO DISPONIBLE</Text>
+          <View style={styles.balanceRow}>
+            {showBalance ? (
+              <Text style={styles.balanceAmount}>
+                {balance !== null ? `${balance.toLocaleString()} XAF` : '— XAF'}
+              </Text>
+            ) : (
+              <View style={styles.balanceDots}>
+                {[0,1,2,3].map(i => <View key={i} style={styles.dot} />)}
+              </View>
+            )}
+            <TouchableOpacity onPress={() => setShowBalance(v => !v)} style={styles.eyeBtn}>
+              <Text style={styles.eyeIcon}>{showBalance ? '🙈' : '👁️'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.balanceActions}>
+            <TouchableOpacity
+              style={styles.balanceBtn}
+              onPress={() => router.push('/(tabs)/monedero' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.balanceBtnText}>♻️  RECARGAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.balanceBtn, styles.balanceBtnOutline]}
+              onPress={() => router.push('/(tabs)/monedero' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.balanceBtnText, styles.balanceBtnTextOutline]}>✈️  ENVIAR</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* ── Cards rápidas ── */}
+        <View style={styles.quickCards}>
+          <TouchableOpacity style={styles.quickCard} activeOpacity={0.8}
+            onPress={() => Alert.alert('ID Digital', `Verificado\n${user?.full_name || ''}\n${user?.phone || ''}`)}>
+            <Text style={styles.quickCardIcon}>🪪</Text>
+            <View>
+              <Text style={styles.quickCardTitle}>ID Digital</Text>
+              <Text style={styles.quickCardSub}>Verificado</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickCard} activeOpacity={0.8}
+            onPress={() => Alert.alert('Noticias', 'Próximamente: noticias de Guinea Ecuatorial')}>
+            <Text style={styles.quickCardIcon}>📰</Text>
+            <View>
+              <Text style={styles.quickCardTitle}>Noticias</Text>
+              <Text style={styles.quickCardSub}>8 nuevas</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── APPS ── */}
+        <View style={styles.appsSection}>
+          <Text style={styles.appsTitle}>APPS</Text>
+          <View style={styles.appsGrid}>
+            {APPS.map(app => (
+              <TouchableOpacity
+                key={app.id}
+                style={[styles.appItem, { backgroundColor: isDark ? C.bgSecondary : app.bg }]}
+                onPress={() => openService(app.id)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.appIconBox}>
+                  <Text style={styles.appEmoji}>{app.icon}</Text>
+                </View>
+                <Text style={[styles.appLabel, { color: C.textPrimary }]}>{app.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ── Todos los servicios ── */}
+        <View style={styles.allServicesSection}>
+          <Text style={styles.appsTitle}>TODOS LOS SERVICIOS</Text>
+          <View style={styles.grid}>
+            {SERVICES.map(s => (
+              <TouchableOpacity
+                key={s.id}
+                style={[styles.serviceItem, { backgroundColor: isDark ? C.bgSecondary : Colors.bgSecondary, borderColor: C.borderLight }]}
+                onPress={() => openService(s.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
+                  <Text style={styles.serviceEmoji}>{s.icon}</Text>
+                </View>
+                <Text style={[styles.serviceLabel, { color: C.textPrimary }]}>{s.label}</Text>
+                <Text style={[styles.serviceSub, { color: C.textTertiary }]}>{s.sub}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
       </ScrollView>
+
+      {/* ── FAB nuevo chat ── */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/new-chat' as any)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient colors={['#00C8A0', '#00B4E6']} style={styles.fabGradient}>
+          <Text style={styles.fabIcon}>+</Text>
+        </LinearGradient>
+      </TouchableOpacity>
 
       {/* Modales */}
       <TaxiModal visible={activeModal === 'taxi'} onClose={() => setActiveModal(null)} />
@@ -734,23 +862,95 @@ export default function ServiciosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bgPrimary },
 
-  // Header
+  // Header gradiente
   header: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screenPadding, paddingVertical: 12,
   },
-  headerTitle: { ...Typography.headerTitle, color: Colors.textPrimary },
-  headerSub: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
+  headerLeft: { flexDirection: 'row', alignItems: 'baseline', gap: 1 },
+  headerLogo: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  headerLogoAccent: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  weatherChip: {
+    backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  weatherText: { color: '#fff', fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  headerIconBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerIconText: { fontSize: 16, color: '#fff' },
 
-  // Grid
+  // Balance card
+  balanceCard: {
+    margin: Spacing.screenPadding,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    ...Shadow.md,
+  },
+  balanceLabel: {
+    fontSize: FontSize.xs, fontWeight: FontWeight.bold,
+    color: 'rgba(255,255,255,0.7)', letterSpacing: 1, marginBottom: 10,
+  },
+  balanceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
+  balanceAmount: { fontSize: 28, fontWeight: '800', color: '#fff', flex: 1 },
+  balanceDots: { flexDirection: 'row', gap: 8, flex: 1, alignItems: 'center' },
+  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.6)' },
+  eyeBtn: { padding: 4 },
+  eyeIcon: { fontSize: 18 },
+  balanceActions: { flexDirection: 'row', gap: Spacing.md },
+  balanceBtn: {
+    flex: 1, backgroundColor: '#fff',
+    borderRadius: BorderRadius.lg, paddingVertical: 12,
+    alignItems: 'center',
+  },
+  balanceBtnOutline: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#fff' },
+  balanceBtnText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#0d4a5c' },
+  balanceBtnTextOutline: { color: '#fff' },
+
+  // Quick cards
+  quickCards: {
+    flexDirection: 'row', gap: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding, marginBottom: Spacing.md,
+  },
+  quickCard: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.bgSecondary, borderRadius: BorderRadius.lg,
+    padding: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight,
+    ...Shadow.sm,
+  },
+  quickCardIcon: { fontSize: 24 },
+  quickCardTitle: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.textPrimary },
+  quickCardSub: { fontSize: FontSize.xs, color: Colors.textTertiary },
+
+  // APPS section
+  appsSection: { paddingHorizontal: Spacing.screenPadding, marginBottom: Spacing.md },
+  appsTitle: {
+    fontSize: FontSize.xs, fontWeight: FontWeight.bold,
+    color: Colors.textTertiary, letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
+  },
+  appsGrid: { flexDirection: 'row', gap: Spacing.md },
+  appItem: {
+    flex: 1, alignItems: 'center', gap: 6,
+    borderRadius: BorderRadius.xl, padding: Spacing.md,
+    borderWidth: 1, borderColor: Colors.borderLight,
+    ...Shadow.sm,
+  },
+  appIconBox: {
+    width: 60, height: 60, borderRadius: 16,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    ...Shadow.sm,
+  },
+  appEmoji: { fontSize: 30 },
+  appLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, textAlign: 'center' },
+
+  // All services
+  allServicesSection: { paddingHorizontal: Spacing.screenPadding, marginBottom: 100 },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: Spacing.md,
-    gap: Spacing.sm,
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
   },
   serviceItem: {
     width: '30%',
@@ -764,214 +964,116 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   serviceIconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 52, height: 52, borderRadius: BorderRadius.md,
+    alignItems: 'center', justifyContent: 'center',
   },
   serviceEmoji: { fontSize: 26 },
   serviceLabel: {
-    fontSize: FontSize.xs + 1,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-    textAlign: 'center',
+    fontSize: FontSize.xs + 1, fontWeight: FontWeight.bold,
+    color: Colors.textPrimary, textAlign: 'center',
   },
-  serviceSub: {
-    fontSize: FontSize.xs,
-    color: Colors.textTertiary,
-    textAlign: 'center',
+  serviceSub: { fontSize: FontSize.xs, color: Colors.textTertiary, textAlign: 'center' },
+
+  // FAB
+  fab: {
+    position: 'absolute', bottom: 24, alignSelf: 'center',
+    width: 60, height: 60, borderRadius: 30,
+    ...Shadow.lg,
   },
+  fabGradient: {
+    width: 60, height: 60, borderRadius: 30,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fabIcon: { fontSize: 30, color: '#fff', lineHeight: 34 },
 
   // Modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: Colors.bgSecondary,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    paddingBottom: Spacing['3xl'],
-    maxHeight: '85%',
+    borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl, paddingBottom: Spacing['3xl'], maxHeight: '85%',
   },
   handle: {
-    width: 36, height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: Spacing.lg,
+    width: 36, height: 4, backgroundColor: Colors.border,
+    borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg,
   },
   sheetTitle: {
-    ...Typography.headerTitle,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xl,
-    textAlign: 'center',
+    ...Typography.headerTitle, color: Colors.textPrimary,
+    marginBottom: Spacing.xl, textAlign: 'center',
   },
 
   // Taxi
   sectionLabel: {
-    ...Typography.fieldLabel,
-    color: Colors.textTertiary,
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.md,
+    ...Typography.fieldLabel, color: Colors.textTertiary,
+    marginBottom: Spacing.sm, marginTop: Spacing.md,
   },
   rideOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    gap: Spacing.md,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md,
+    padding: Spacing.md, marginBottom: Spacing.sm,
+    borderWidth: 1.5, borderColor: Colors.border, gap: Spacing.md,
   },
-  rideIconBox: {
-    width: 44, height: 44,
-    borderRadius: BorderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  rideIconBox: { width: 44, height: 44, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center' },
   rideEmoji: { fontSize: 22 },
   rideInfo: { flex: 1 },
   rideLabel: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   rideSub: { fontSize: FontSize.sm, color: Colors.textTertiary },
   ridePrice: { fontSize: FontSize.base, fontWeight: FontWeight.bold },
   actionBtn: { marginTop: Spacing.md },
-
-  // Searching
   centerContent: { alignItems: 'center', paddingVertical: Spacing['3xl'], gap: Spacing.md },
   searchingText: { ...Typography.chatHeaderName, color: Colors.textPrimary },
   searchingSub: { ...Typography.subtitle, color: Colors.textSecondary },
-
-  // Driver matched
   driverCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.lg,
+    padding: Spacing.lg, gap: Spacing.md, marginBottom: Spacing.md,
   },
-  driverAvatar: {
-    width: 52, height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  driverAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
   driverInitials: { color: Colors.white, fontSize: FontSize.lg, fontWeight: FontWeight.bold },
   driverInfo: { flex: 1 },
   driverName: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   driverSub: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 },
   etaText: { fontSize: FontSize.base, color: Colors.textPrimary, textAlign: 'center', marginBottom: Spacing.sm },
   fareText: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.accent, textAlign: 'center', marginBottom: Spacing.md },
-
-  // Factura
   facturaCard: { marginTop: Spacing.lg, padding: Spacing.lg },
   facturaTitle: { ...Typography.chatHeaderName, color: Colors.textPrimary, marginBottom: Spacing.md },
   facturaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
   facturaLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
   facturaValue: { fontSize: FontSize.base, color: Colors.textPrimary },
-
-  // Recarga
   operatorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
-  operatorChip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgTertiary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
+  operatorChip: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, backgroundColor: Colors.bgTertiary, borderWidth: 1, borderColor: Colors.border },
   operatorChipActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
   operatorText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
   operatorTextActive: { color: Colors.accent },
   amountRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-  amountChip: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.bgTertiary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
+  amountChip: { flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, backgroundColor: Colors.bgTertiary, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   amountChipActive: { backgroundColor: Colors.accentLight, borderColor: Colors.accent },
   amountText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.textSecondary },
   amountTextActive: { color: Colors.accent },
-
-  // Provider list
-  providerCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-    borderWidth: 1, borderColor: Colors.borderLight,
-  },
+  providerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight },
   providerDot: { width: 12, height: 12, borderRadius: 6 },
   providerDotEmoji: { fontSize: 22, width: 28, textAlign: 'center' },
   providerInfo: { flex: 1 },
   providerName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   providerCat: { fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: 2 },
   providerArrow: { fontSize: 22, color: Colors.textTertiary },
-
-  // Plan card
-  planCard: {
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.borderLight,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
+  planCard: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.borderLight, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planText: { flex: 1, fontSize: FontSize.sm, color: Colors.textPrimary, fontWeight: FontWeight.semibold },
   planAction: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.bold },
-
-  // Back row
   backRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   backText: { fontSize: FontSize.base, color: Colors.accent, fontWeight: FontWeight.semibold },
-
-  // Info card
-  infoCard: {
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    borderWidth: 1, borderColor: Colors.borderLight,
-  },
+  infoCard: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.borderLight },
   infoCardTitle: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.md },
-
-  // Service row
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs },
   serviceRowDot: { fontSize: 8, color: Colors.accent },
   serviceRowText: { fontSize: FontSize.sm, color: Colors.textPrimary },
-
-  // Call button
-  callBtn: {
-    backgroundColor: Colors.accentLight,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
-    marginTop: Spacing.md,
-  },
+  callBtn: { backgroundColor: Colors.accentLight, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.md },
   callBtnText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.semibold },
   callIcon: { fontSize: 22 },
-
-  // Insurance
   insuranceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, flex: 1 },
   insuranceIcon: { fontSize: 26, width: 32, textAlign: 'center' },
   insuranceInfo: { flex: 1 },
-
-  // Category grid
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md },
-  categoryChip: {
-    backgroundColor: Colors.bgTertiary,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.borderLight,
-  },
+  categoryChip: { backgroundColor: Colors.bgTertiary, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderWidth: 1, borderColor: Colors.borderLight },
   categoryText: { fontSize: FontSize.sm, color: Colors.textPrimary },
 });
