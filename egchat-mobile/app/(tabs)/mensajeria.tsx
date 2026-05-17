@@ -7,11 +7,11 @@
 // Lista de chats con avatar, nombre, último msg, hora, badge
 // FAB refresh + LIA-25 flotante
 // ══════════════════════════════════════════════════════════════════
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, RefreshControl,
-  ScrollView, Image, Platform,
+  ScrollView, Image, Platform, Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Line, Rect, Polyline } from 'react-native-svg';
@@ -164,6 +164,19 @@ export default function MensajeriaScreen() {
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
+  // ── Rotación continua del logo ──────────────────────────────────
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 8000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
   // ── Carga ───────────────────────────────────────────────────────
   const loadChats = useCallback(async () => {
     try {
@@ -230,13 +243,13 @@ export default function MensajeriaScreen() {
       >
         {/* Logo */}
         <View style={st.headerLogo}>
-          <View style={st.logoWrap}>
+          <Animated.View style={[st.logoWrap, { transform: [{ rotate: spin }] }]}>
             <Image
               source={require('../../assets/logo-transparent.png')}
               style={st.logoImg}
               resizeMode="contain"
             />
-          </View>
+          </Animated.View>
           <Text style={st.logoText}>EG</Text>
           <Text style={st.logoText}>CHAT</Text>
         </View>
@@ -475,8 +488,10 @@ const st = StyleSheet.create({
     width: 34, height: 34, borderRadius: 17,
     overflow: 'hidden',
     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  logoImg: { width: 34, height: 34, borderRadius: 17 },
+  logoImg: { width: 30, height: 30 },
   logoText: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   headerPill: {
@@ -656,15 +671,15 @@ const st = StyleSheet.create({
     position: 'absolute',
     bottom: 80,
     right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     zIndex: 20,
     ...Shadow.lg,
   },
   liaBtnGrad: {
-    width: 48, height: 48, borderRadius: 24,
+    width: 26, height: 26, borderRadius: 13,
     alignItems: 'center', justifyContent: 'center',
   },
-  liaIcon: { fontSize: 22 },
+  liaIcon: { fontSize: 12 },
 });
