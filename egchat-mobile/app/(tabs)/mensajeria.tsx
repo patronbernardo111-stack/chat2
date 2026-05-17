@@ -290,6 +290,22 @@ export default function MensajeriaScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* ── FAB nuevo chat ── */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/new-chat' as any)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={['#00C8A0', '#00B4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabGradient}
+        >
+          <Text style={styles.fabIcon}>✏️</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -346,4 +362,20 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.xl },
   emptyBtn: { backgroundColor: Colors.accent, borderRadius: BorderRadius.md, paddingVertical: Spacing.sm + 2, paddingHorizontal: Spacing.xl },
   emptyBtnText: { color: Colors.white, fontSize: FontSize.base, fontWeight: FontWeight.semibold },
+
+  // FAB nuevo chat
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    ...Shadow.lg,
+  },
+  fabGradient: {
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  fabIcon: { fontSize: 22 },
 });

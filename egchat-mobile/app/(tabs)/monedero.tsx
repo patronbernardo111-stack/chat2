@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, ActivityIndicator, Modal, Pressable, RefreshControl, TextInput,
+  Alert, ActivityIndicator, Modal, Pressable, RefreshControl, TextInput, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { walletAPI } from '../../src/api';
 import {
   Colors, Typography, Spacing, BorderRadius,
@@ -493,10 +494,26 @@ export default function MonederoScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
       >
-        {/* Header */}
-        <View style={[s.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-          <Text style={[s.headerTitle, { color: C.textPrimary }]}>Monedero</Text>
-        </View>
+        {/* Header con gradiente igual que la web */}
+        <LinearGradient
+          colors={['#00C8A0', '#00B4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={s.header}
+        >
+          <View style={s.headerLogo}>
+            <View style={s.logoWrap}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={s.logoImg}
+                resizeMode="cover"
+              />
+            </View>
+            <Text style={s.logoText}>EG</Text>
+            <Text style={s.logoText}>CHAT</Text>
+          </View>
+          <Text style={s.headerTitle}>Cartera</Text>
+        </LinearGradient>
 
         {/* Tarjeta de saldo */}
         <View style={s.balanceCard}>
@@ -580,13 +597,29 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bgPrimary },
 
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
   },
-  headerTitle: { ...Typography.headerTitle, color: Colors.textPrimary },
+  headerLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  logoWrap: {
+    width: 32, height: 32, borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+  },
+  logoImg: { width: 32, height: 32, borderRadius: 16 },
+  logoText: {
+    fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: -0.5,
+  },
+  headerTitle: {
+    fontSize: 18, fontWeight: '700', color: '#fff',
+  },
 
   balanceCard: {
     margin: Spacing.screenPadding,

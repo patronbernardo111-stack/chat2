@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking, RefreshControl,
+  Alert, Modal, Pressable, TextInput, ActivityIndicator, Linking, RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -768,7 +768,11 @@ export default function ServiciosScreen() {
         {/* Logo */}
         <View style={styles.headerLeft}>
           <View style={styles.logoCircle}>
-            <Text style={styles.logoCircleText}>EG</Text>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={{ width: 34, height: 34, borderRadius: 17 }}
+              resizeMode="cover"
+            />
           </View>
           <Text style={styles.headerLogo}>EG</Text>
           <Text style={styles.headerLogoAccent}>CHAT</Text>
@@ -887,8 +891,8 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoCircle: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
   },
   logoCircleText: { fontSize: 12, fontWeight: '800', color: '#fff' },
   headerLogo: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },

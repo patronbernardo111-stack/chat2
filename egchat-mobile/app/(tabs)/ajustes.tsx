@@ -4,6 +4,7 @@ import {
   Alert, Image, ActivityIndicator, Modal, Pressable, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import QRCode from 'react-native-qrcode-svg';
@@ -197,10 +198,26 @@ export default function AjustesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* ── Header ── */}
-        <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-          <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Ajustes</Text>
-        </View>
+        {/* ── Header con gradiente ── */}
+        <LinearGradient
+          colors={['#00C8A0', '#00B4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
+          <View style={styles.headerLogo}>
+            <View style={styles.logoWrap}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImg}
+                resizeMode="cover"
+              />
+            </View>
+            <Text style={styles.logoText}>EG</Text>
+            <Text style={styles.logoText}>CHAT</Text>
+          </View>
+          <Text style={styles.headerTitle}>Ajustes</Text>
+        </LinearGradient>
 
         {/* ── Perfil Card ── */}
         <EGCard style={styles.profileCard}>
@@ -382,13 +399,29 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
   },
-  headerTitle: { ...Typography.headerTitle, color: Colors.textPrimary },
+  headerLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  logoWrap: {
+    width: 32, height: 32, borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+  },
+  logoImg: { width: 32, height: 32, borderRadius: 16 },
+  logoText: {
+    fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: -0.5,
+  },
+  headerTitle: {
+    fontSize: 18, fontWeight: '700', color: '#fff',
+  },
 
   // Profile card
   profileCard: {
