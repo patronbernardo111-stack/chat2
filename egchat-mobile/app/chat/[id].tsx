@@ -89,6 +89,184 @@ const TypingIndicator = () => {
   );
 };
 
+// ── ChatDrawer ────────────────────────────────────────────────────
+interface DrawerItem {
+  icon: string;
+  label: string;
+  onPress: () => void;
+  color?: string;
+  danger?: boolean;
+}
+
+const ChatDrawer = ({
+  visible,
+  onClose,
+  items,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  items: DrawerItem[];
+}) => {
+  const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: DRAWER_WIDTH,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible && slideAnim.__getValue() >= DRAWER_WIDTH) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <View style={drawerStyles.root}>
+        {/* Overlay oscuro */}
+        <Animated.View style={[drawerStyles.overlay, { opacity: fadeAnim }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
+
+        {/* Panel deslizante */}
+        <Animated.View
+          style={[
+            drawerStyles.panel,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
+          {/* Cabecera del drawer */}
+          <View style={drawerStyles.header}>
+            <View style={drawerStyles.headerBar} />
+          </View>
+
+          {/* Lista de opciones */}
+          <ScrollView
+            style={drawerStyles.scroll}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {items.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  drawerStyles.item,
+                  index === items.length - 1 && drawerStyles.itemLast,
+                ]}
+                onPress={() => {
+                  onClose();
+                  setTimeout(item.onPress, 200);
+                }}
+                activeOpacity={0.65}
+              >
+                <View style={drawerStyles.iconWrap}>
+                  <Text style={drawerStyles.icon}>{item.icon}</Text>
+                </View>
+                <Text
+                  style={[
+                    drawerStyles.label,
+                    item.danger && drawerStyles.labelDanger,
+                    item.color ? { color: item.color } : null,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
+const drawerStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  panel: {
+    width: DRAWER_WIDTH,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: -3, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  header: {
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
+  },
+  headerBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e0e0e0',
+  },
+  scroll: {
+    flex: 1,
+    marginTop: 6,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#f0f0f0',
+    gap: 14,
+  },
+  itemLast: {
+    borderBottomWidth: 0,
+  },
+  iconWrap: {
+    width: 28,
+    alignItems: 'center',
+  },
+  icon: {
+    fontSize: 17,
+  },
+  label: {
+    fontSize: 14.5,
+    color: '#1a1a1a',
+    fontWeight: '400',
+    letterSpacing: 0.1,
+  },
+  labelDanger: {
+    color: '#e53935',
+  },
+});
+
 // ── ContextMenu ───────────────────────────────────────────────────
 const ContextMenu = ({
   visible, message, isOwn, onClose, onCopy, onReply, onDelete, onDeleteForMe,
@@ -201,6 +379,7 @@ export default function ChatScreen() {
   const [contextMsg, setContextMsg] = useState<Message | null>(null);
   const [contextVisible, setContextVisible] = useState(false);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const sendScale = useRef(new Animated.Value(1)).current;
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
