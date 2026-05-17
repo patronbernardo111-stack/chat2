@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated,
+  Animated, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { liaAPI } from '../../src/api';
 import {
@@ -171,24 +173,31 @@ export default function LiaScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>🤖</Text>
-          <View style={[styles.onlineDot, { borderColor: C.bgSecondary }]} />
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={[styles.headerName, { color: C.textPrimary }]}>Lia-25</Text>
-          <Text style={styles.headerStatus}>
-            {loading ? '● Escribiendo...' : '● Asistente inteligente'}
-          </Text>
+      {/* ── Header con gradiente EGCHAT ── */}
+      <LinearGradient
+        colors={['#00C8A0', '#00B4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <View style={styles.headerLeft}>
+          <View style={styles.liaAvatarWrap}>
+            <Text style={styles.liaAvatarEmoji}>🧠</Text>
+            <View style={styles.onlineDot} />
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName}>Lia-25</Text>
+            <Text style={styles.headerStatus}>
+              {loading ? '● Escribiendo...' : '● Asistente inteligente'}
+            </Text>
+          </View>
         </View>
         {speaking && (
-          <TouchableOpacity onPress={stopSpeaking} style={styles.speakBtn}>
+          <TouchableOpacity onPress={stopSpeaking} style={styles.speakBtn} activeOpacity={0.8}>
             <Text style={styles.speakBtnText}>🔊 Parar</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </LinearGradient>
 
       {/* ── Mensajes ── */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -284,36 +293,29 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.listItemPaddingH,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
   },
-  headerAvatar: { position: 'relative' },
-  headerAvatarText: { fontSize: 32 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  liaAvatarWrap: { position: 'relative' },
+  liaAvatarEmoji: { fontSize: 32 },
   onlineDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.accent,
-    borderWidth: 2,
-    borderColor: Colors.bgSecondary,
+    position: 'absolute', bottom: 0, right: 0,
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: '#fff',
+    borderWidth: 2, borderColor: Colors.brand,
   },
   headerInfo: { flex: 1 },
-  headerName: { ...Typography.chatHeaderName, color: Colors.textPrimary },
-  headerStatus: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.medium },
+  headerName: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
+  headerStatus: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.8)', fontWeight: FontWeight.medium },
   speakBtn: {
-    backgroundColor: Colors.accentLight,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
   },
-  speakBtnText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: FontWeight.semibold },
+  speakBtnText: { fontSize: FontSize.sm, color: '#fff', fontWeight: FontWeight.semibold },
 
   // Messages
   list: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: Spacing.lg },
