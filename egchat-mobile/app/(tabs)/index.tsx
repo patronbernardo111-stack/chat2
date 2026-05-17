@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
-  Platform,
   Dimensions,
   PanResponder,
 } from 'react-native';
@@ -729,8 +728,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    paddingTop: Platform.OS === 'android' ? Spacing.md : Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   headerLogo: {
     flexDirection: 'row',
