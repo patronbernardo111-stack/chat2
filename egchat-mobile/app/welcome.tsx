@@ -52,8 +52,11 @@ export default function WelcomeScreen() {
             <View style={styles.logoBox}>
               <Animated.Image
                 source={require('../assets/icon.png')}
-                style={[styles.logo, { transform: [{ rotate: spin }] }]}
-                resizeMode="cover"
+                style={[
+                  styles.logo,
+                  { transform: [{ scale: 1.6 }, { rotate: spin }] },
+                ]}
+                resizeMode="contain"
               />
             </View>
           </View>
@@ -136,10 +139,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Imagen más grande que el contenedor para llenar sin espacios blancos
+  // Imagen base — el scale va en el JSX junto con el rotate animado
   logo: {
-    width: 200,
-    height: 200,
+    width: 156,
+    height: 156,
   },
 
   flagsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
