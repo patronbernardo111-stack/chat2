@@ -559,6 +559,107 @@ export default function ChatScreen() {
     ? `${chat?.participants?.length || 0} miembros`
     : 'En línea';
 
+  // ── Items del drawer ──────────────────────────────────────────
+  const drawerItems: DrawerItem[] = [
+    {
+      icon: '👤',
+      label: 'Ver perfil',
+      onPress: () => Alert.alert('Ver perfil', 'Próximamente'),
+    },
+    {
+      icon: '🔍',
+      label: 'Buscar en el chat',
+      onPress: () => Alert.alert('Buscar', 'Próximamente'),
+    },
+    {
+      icon: '⭐',
+      label: 'Mensajes destacados',
+      onPress: () => Alert.alert('Destacados', 'Próximamente'),
+    },
+    {
+      icon: '📌',
+      label: 'Fijar chat',
+      onPress: () => Alert.alert('Fijar chat', 'Próximamente'),
+    },
+    {
+      icon: '🔔',
+      label: 'Silenciar',
+      onPress: () => Alert.alert('Silenciar', 'Próximamente'),
+    },
+    {
+      icon: '🖼️',
+      label: 'Fondo de pantalla',
+      onPress: () => Alert.alert('Fondo', 'Próximamente'),
+    },
+    {
+      icon: '🔒',
+      label: 'Cifrado E2E',
+      onPress: () => Alert.alert('Cifrado E2E', 'Este chat está cifrado de extremo a extremo.'),
+      color: '#00a884',
+    },
+    {
+      icon: '💸',
+      label: 'Enviar dinero',
+      onPress: () => router.push('/(tabs)/monedero' as any),
+    },
+    {
+      icon: '👥',
+      label: 'Compartir contacto',
+      onPress: () => Alert.alert('Compartir contacto', 'Próximamente'),
+    },
+    {
+      icon: '💬',
+      label: 'Crear grupo con este contacto',
+      onPress: () => Alert.alert('Crear grupo', 'Próximamente'),
+    },
+    {
+      icon: '📤',
+      label: 'Exportar chat',
+      onPress: () => Alert.alert('Exportar chat', 'Próximamente'),
+    },
+    {
+      icon: '🗑️',
+      label: 'Vaciar chat',
+      onPress: () =>
+        Alert.alert('Vaciar chat', '¿Eliminar todos los mensajes?', [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Vaciar',
+            style: 'destructive',
+            onPress: () => setMessages([]),
+          },
+        ]),
+      color: '#e67e22',
+      danger: false,
+    },
+    {
+      icon: '⚠️',
+      label: 'Reportar',
+      onPress: () => Alert.alert('Reportar', 'Próximamente'),
+      danger: true,
+    },
+    {
+      icon: '🚫',
+      label: 'Bloquear',
+      onPress: () =>
+        Alert.alert('Bloquear', `¿Bloquear a ${chatName}?`, [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Bloquear', style: 'destructive', onPress: () => router.back() },
+        ]),
+      danger: true,
+    },
+    {
+      icon: '🗑️',
+      label: 'Eliminar contacto',
+      onPress: () =>
+        Alert.alert('Eliminar contacto', `¿Eliminar a ${chatName}?`, [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Eliminar', style: 'destructive', onPress: () => router.back() },
+        ]),
+      danger: true,
+    },
+  ];
+
   const renderItem = ({ item, index }: { item: Message; index: number }) => {
     const isOwn = item.sender_id === currentUserId;
     const prevMsg = index > 0 ? messages[index - 1] : null;
