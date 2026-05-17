@@ -145,3 +145,487 @@ const FavoriteSection = ({
     </View>
   );
 };
+
+// ══════════════════════════════════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
+export default function MensajeriaScreen() {
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentUserId, setCurrentUserId] = useState('');
+  const [filter, setFilter] = useState<FilterType>('individual');
+  const { isDark } = useThemeContext();
+  const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
+
+  // ── Carga ───────────────────────────────────────────────────────
+  const loadChats = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const data = await chatAPI.getChats();
+      setChats(data || []);
+    } catch {}
+    finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  useEffect(() => {
+    loadChats();
+    // Obtener userId del token
+    getToken().then((token: string | null) => {
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setCurrentUserId(payload.id || '');
+        } catch {}
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    const { subscribeToUserChats } = require('../../src/supabase');
+    const unsub = subscribeToUserChats(currentUserId, loadChats);
+    return unsub;
+  }, [currentUserId]);
+
+  const onRefresh = () => { setRefreshing(true); loadChats(); };
+
+  // ── Filtrado ────────────────────────────────────────────────────
+  const filtered = chats.filter(c => {
+    // Filtro de búsqueda
+    if (searchQuery) {
+      const other = c.participants.find(p => p.user_id !== currentUserId);
+      const name = c.type === 'private' ? other?.full_name : c.name;
+      if (!name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    }
+    // Filtro de tab
+    if (filter === 'individual') return c.type === 'private';
+    if (filter === 'grupos') return c.type === 'group';
+    if (filter === 'dinero') {
+      const txt = c.last_message?.text || '';
+      return txt.includes('XAF') || txt.includes('💸') || txt.includes('Transferencia');
+    }
+    return true;
+  });
+
+  return (
+    <SafeAreaView style={[st.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+      <OfflineBanner />
+
+      {/* ══════════════════════════════════════════════════════════
+          HEADER — Logo + Temp + Bell + Menu (igual que Home)
+      ══════════════════════════════════════════════════════════ */}
+      <LinearGradient
+        colors={['#00C8A0', '#00B4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={st.header}
+      >
+        {/* Logo */}
+        <View style={st.headerLogo}>
+          <View style={st.logoWrap}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={st.logoImg}
+              resizeMode="cover"
+            />
+          </View>
+          <Text style={st.logoText}>EG</Text>
+          <Text style={st.logoText}>CHAT</Text>
+        </View>
+
+        {/* Acciones */}
+        <View style={st.headerRight}>
+          <TouchableOpacity style={st.headerPill} activeOpacity={0.8}>
+            <Text style={st.headerPillText}>☁️ 27° Malabo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={st.headerIconBtn} activeOpacity={0.8}>
+            <IconBell />
+            <View style={st.notifDot} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={st.headerIconBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push('/(tabs)/ajustes' as any)}
+          >
+            <IconMenu />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* ══════════════════════════════════════════════════════════
+          BARRA BÚSQUEDA + BOTÓN +
+      ══════════════════════════════════════════════════════════ */}
+      <View style={[st.searchBar, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+        <View style={[st.searchInput, { backgroundColor: C.bgTertiary, borderColor: C.border }]}>
+          <IconSearch color={C.textTertiary} />
+          <TextInput
+            style={[st.searchText, { color: C.textPrimary }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Buscar..."
+            placeholderTextColor={C.textTertiary}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={st.searchClear}>
+              <Text style={{ color: C.textTertiary, fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* Botón + nuevo chat */}
+        <TouchableOpacity
+          style={st.newChatBtn}
+          onPress={() => router.push('/new-chat' as any)}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={['#00C8A0', '#00B4E6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={st.newChatBtnGrad}
+          >
+            <Text style={st.newChatBtnIcon}>+</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand} colors={[Colors.brand]} />
+        }
+        stickyHeaderIndices={[2]} // los filtros se quedan fijos al hacer scroll
+      >
+        {/* ══════════════════════════════════════════════════════
+            CONTACTOS FAVORITOS
+        ══════════════════════════════════════════════════════ */}
+        <FavoriteSection
+          title="CONTACTOS FAVORITOS"
+          empty="No tienes contactos favoritos aún"
+          C={C}
+        />
+
+        {/* ══════════════════════════════════════════════════════
+            GRUPOS FAVORITOS
+        ══════════════════════════════════════════════════════ */}
+        <FavoriteSection
+          title="GRUPOS FAVORITOS"
+          empty="No tienes grupos favoritos aún"
+          C={C}
+        />
+
+        {/* ══════════════════════════════════════════════════════
+            FILTROS — Individual | Grupos | Dinero (sticky)
+        ══════════════════════════════════════════════════════ */}
+        <View style={[st.filtersWrap, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.filtersRow}>
+            {([
+              { id: 'individual', label: 'Individual', icon: '👤' },
+              { id: 'grupos',     label: 'Grupos',     icon: '👥' },
+              { id: 'dinero',     label: 'Dinero',     icon: '💵' },
+            ] as { id: FilterType; label: string; icon: string }[]).map(f => (
+              <TouchableOpacity
+                key={f.id}
+                style={[st.filterChip, filter === f.id && st.filterChipActive]}
+                onPress={() => setFilter(f.id)}
+                activeOpacity={0.75}
+              >
+                <Text style={[st.filterText, filter === f.id && st.filterTextActive]}>
+                  {f.icon} {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* ══════════════════════════════════════════════════════
+            LISTA DE CHATS
+        ══════════════════════════════════════════════════════ */}
+        {loading ? (
+          <View style={st.center}>
+            <ActivityIndicator size="large" color={Colors.brand} />
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={st.center}>
+            <Text style={st.emptyIcon}>💬</Text>
+            <Text style={[st.emptyTitle, { color: C.textPrimary }]}>
+              {searchQuery ? 'Sin resultados' : 'No tienes chats aún'}
+            </Text>
+            <Text style={[st.emptySub, { color: C.textSecondary }]}>
+              {searchQuery ? 'Prueba con otro nombre' : 'Toca + para empezar una conversación'}
+            </Text>
+          </View>
+        ) : (
+          <View>
+            {filtered.map((item, i) => (
+              <View key={item.id}>
+                <ChatItem
+                  chat={item}
+                  currentUserId={currentUserId}
+                  onPress={() => router.push(`/chat/${item.id}` as any)}
+                />
+                {i < filtered.length - 1 && (
+                  <View style={[st.separator, { backgroundColor: C.borderLight }]} />
+                )}
+              </View>
+            ))}
+            <View style={{ height: 100 }} />
+          </View>
+        )}
+      </ScrollView>
+
+      {/* ══════════════════════════════════════════════════════════
+          FAB REFRESH — botón circular verde abajo derecha
+      ══════════════════════════════════════════════════════════ */}
+      <TouchableOpacity
+        style={st.fabRefresh}
+        onPress={onRefresh}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={['#00C8A0', '#00B4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={st.fabGradient}
+        >
+          <IconRefresh />
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {/* ══════════════════════════════════════════════════════════
+          LIA-25 — asistente flotante (igual que Home)
+      ══════════════════════════════════════════════════════════ */}
+      <TouchableOpacity
+        style={st.liaBtn}
+        onPress={() => router.push('/(tabs)/lia' as any)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={['#e91e8c', '#9c27b0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={st.liaBtnGrad}
+        >
+          <Text style={st.liaIcon}>🧠</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+    </SafeAreaView>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ESTILOS
+// ══════════════════════════════════════════════════════════════════
+const st = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bgPrimary },
+
+  // ── Header ──────────────────────────────────────────────────────
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  headerLogo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  logoWrap: {
+    width: 34, height: 34, borderRadius: 17,
+    overflow: 'hidden',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)',
+  },
+  logoImg: { width: 34, height: 34, borderRadius: 17 },
+  logoText: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  headerPill: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 20, paddingHorizontal: Spacing.md, paddingVertical: 6,
+  },
+  headerPillText: { color: '#fff', fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
+  headerIconBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  notifDot: {
+    position: 'absolute', top: 7, right: 7,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#FF4444',
+    borderWidth: 1.5, borderColor: Colors.brand,
+  },
+
+  // ── Barra búsqueda ───────────────────────────────────────────────
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  searchInput: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.bgTertiary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 7,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchText: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    padding: 0,
+  },
+  searchClear: { padding: 2 },
+  newChatBtn: {
+    width: 44, height: 44, borderRadius: 10,
+    ...Shadow.sm,
+  },
+  newChatBtnGrad: {
+    width: 44, height: 44, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  newChatBtnIcon: {
+    fontSize: 26, color: '#fff', fontWeight: '300', lineHeight: 30,
+  },
+
+  // ── Secciones favoritos ──────────────────────────────────────────
+  favSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  favHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  favTitle: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.textTertiary,
+    letterSpacing: 0.8,
+  },
+  favToggle: {
+    fontSize: 18,
+    color: Colors.textTertiary,
+    fontWeight: '300',
+  },
+  favEmpty: {
+    fontSize: FontSize.sm,
+    color: Colors.textTertiary,
+    paddingVertical: Spacing.sm,
+  },
+
+  // ── Filtros ──────────────────────────────────────────────────────
+  filtersWrap: {
+    backgroundColor: Colors.bgSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    paddingVertical: Spacing.sm,
+  },
+  filtersRow: {
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    backgroundColor: Colors.bgSecondary,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.brand,
+    borderColor: Colors.brand,
+  },
+  filterText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  filterTextActive: {
+    color: '#fff',
+  },
+
+  // ── Chat item ────────────────────────────────────────────────────
+  chatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.listItemPaddingV,
+    paddingHorizontal: Spacing.listItemPaddingH,
+    backgroundColor: Colors.bgSecondary,
+    gap: Spacing.listItemGap,
+  },
+  chatInfo: { flex: 1, gap: 3 },
+  chatRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  chatName: { ...Typography.chatName, flex: 1, marginRight: Spacing.sm },
+  chatTime: { ...Typography.timestamp, color: Colors.textTertiary },
+  chatTimeUnread: { color: Colors.accent, fontWeight: FontWeight.semibold },
+  chatMsg: { ...Typography.subtitle, color: Colors.textSecondary, flex: 1, marginRight: Spacing.sm },
+  badge: {
+    backgroundColor: Colors.accent, borderRadius: BorderRadius.badge,
+    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
+  },
+  badgeText: { ...Typography.badge, color: Colors.white },
+  separator: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginLeft: Spacing.listItemPaddingH + 50 + Spacing.listItemGap,
+  },
+
+  // ── Empty state ──────────────────────────────────────────────────
+  center: { alignItems: 'center', justifyContent: 'center', padding: Spacing.screenPadding, paddingTop: 60 },
+  emptyIcon: { fontSize: 48, marginBottom: Spacing.md },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary, marginBottom: Spacing.sm, textAlign: 'center' },
+  emptySub: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center' },
+
+  // ── FAB Refresh ──────────────────────────────────────────────────
+  fabRefresh: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    zIndex: 20,
+    ...Shadow.lg,
+  },
+  fabGradient: {
+    width: 52, height: 52, borderRadius: 26,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  // ── LIA-25 flotante ──────────────────────────────────────────────
+  liaBtn: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    zIndex: 20,
+    ...Shadow.lg,
+  },
+  liaBtnGrad: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  liaIcon: { fontSize: 22 },
+});
