@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
-  Animated, Modal, Pressable, Alert,
+  Animated, Modal, Pressable, Alert, Dimensions, ScrollView,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.72;
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { chatAPI, authAPI } from '../../src/api';
