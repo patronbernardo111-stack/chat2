@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  Modal,
   Pressable,
   ActivityIndicator,
   RefreshControl,
@@ -23,7 +22,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
 import { router } from 'expo-router';
 import { walletAPI, authAPI } from '../../src/api';
-import { EGAvatar } from '../../src/components/ui';
 import {
   Colors, Spacing, BorderRadius, FontSize, FontWeight, Shadow,
 } from '../../src/theme';
@@ -144,22 +142,6 @@ const AppIcon = ({ icon, label, onPress }: { icon: string; label: string; onPres
   </TouchableOpacity>
 );
 
-// ── Componente FAB Service Item ───────────────────────────────────
-const FabItem = ({
-  icon, label, onPress, anim,
-}: {
-  icon: string; label: string; onPress: () => void; anim: Animated.Value;
-}) => (
-  <Animated.View style={{ opacity: anim, transform: [{ scale: anim }] }}>
-    <TouchableOpacity style={st.fabItem} onPress={onPress} activeOpacity={0.75}>
-      <View style={st.fabItemIcon}>
-        <Text style={st.fabItemEmoji}>{icon}</Text>
-      </View>
-      <Text style={st.fabItemLabel} numberOfLines={1}>{label}</Text>
-    </TouchableOpacity>
-  </Animated.View>
-);
-
 // ══════════════════════════════════════════════════════════════════
 // PANTALLA PRINCIPAL — HomeScreen
 // ══════════════════════════════════════════════════════════════════
@@ -175,7 +157,7 @@ export default function HomeScreen() {
   const [temp] = useState('27°');
   const [city] = useState('Malabo');
 
-  // Animaciones FAB
+  // Animaciones FAB — una por cada servicio
   const fabRotate = useRef(new Animated.Value(0)).current;
   const fabOverlayOpacity = useRef(new Animated.Value(0)).current;
   const fabItemAnims = useRef(FAB_SERVICES.map(() => new Animated.Value(0))).current;
@@ -276,10 +258,14 @@ export default function HomeScreen() {
         end={{ x: 1, y: 0 }}
         style={st.header}
       >
-        {/* Logo */}
+        {/* Logo real de la app */}
         <View style={st.headerLogo}>
-          <View style={st.logoCircle}>
-            <Text style={st.logoCircleText}>EG</Text>
+          <View style={st.logoImgWrap}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={st.logoImg}
+              resizeMode="cover"
+            />
           </View>
           <Text style={st.logoText}>EG</Text>
           <Text style={st.logoTextBold}>CHAT</Text>
@@ -438,27 +424,58 @@ export default function HomeScreen() {
       )}
 
       {/* ════════════════════════════════════════════════════════
-          FAB MENU — grid de servicios expandido
+          FAB RADIAL — iconos en círculo alrededor del botón +
+          8 ítems en arco superior (180°), resto en scroll
       ════════════════════════════════════════════════════════ */}
-      {fabOpen && (
-        <View style={st.fabMenuContainer} pointerEvents="box-none">
-          <ScrollView
-            style={st.fabMenuScroll}
-            contentContainerStyle={st.fabMenuGrid}
-            showsVerticalScrollIndicator={false}
+      {fabOpen && FAB_SERVICES.map((svc, i) => {
+        // Distribuimos los ítems en arco de 200° centrado arriba del FAB
+        // Ángulo: de -260° a -60° (arco superior de 200°)
+        const total = FAB_SERVICES.length;
+        const startAngle = -260; // grados
+        const endAngle   = -60;
+        const step = (endAngle - startAngle) / (total - 1);
+        const angleDeg = startAngle + step * i;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const RADIUS = 115; // px desde el centro del FAB
+
+        // translateX/Y animados: van de 0 → posición final
+        const tx = fabItemAnims[i].interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.cos(angleRad) * RADIUS],
+        });
+        const ty = fabItemAnims[i].interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.sin(angleRad) * RADIUS],
+        });
+
+        return (
+          <Animated.View
+            key={svc.id}
+            style={[
+              st.fabRadialItem,
+              {
+                opacity: fabItemAnims[i],
+                transform: [{ translateX: tx }, { translateY: ty }],
+              },
+            ]}
+            pointerEvents="box-none"
           >
-            {FAB_SERVICES.map((svc, i) => (
-              <FabItem
-                key={svc.id}
-                icon={svc.icon}
-                label={svc.label}
-                anim={fabItemAnims[i]}
-                onPress={() => navigateFab(svc.route)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      )}
+            <TouchableOpacity
+              style={st.fabRadialBtn}
+              onPress={() => navigateFab(svc.route)}
+              activeOpacity={0.8}
+            >
+              <Text style={st.fabRadialEmoji}>{svc.icon}</Text>
+            </TouchableOpacity>
+            <Animated.Text
+              style={[st.fabRadialLabel, { opacity: fabItemAnims[i] }]}
+              numberOfLines={1}
+            >
+              {svc.label}
+            </Animated.Text>
+          </Animated.View>
+        );
+      })}
 
       {/* ════════════════════════════════════════════════════════
           LIA-25 — Asistente flotante (círculo derecho)
@@ -474,9 +491,11 @@ export default function HomeScreen() {
           end={{ x: 1, y: 1 }}
           style={st.liaBtnGradient}
         >
-          <View style={st.liaLogoCircle}>
-            <Text style={st.liaLogoText}>EG</Text>
-          </View>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={st.liaLogoImg}
+            resizeMode="cover"
+          />
         </LinearGradient>
       </TouchableOpacity>
 
@@ -538,21 +557,19 @@ const st = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  logoCircle: {
+  // ── Logo header ──────────────────────────────────────────────────
+  logoImgWrap: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.6)',
   },
-  logoCircleText: {
-    fontSize: 11,
-    fontWeight: FontWeight.extrabold,
-    color: '#fff',
-    letterSpacing: -0.5,
+  logoImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   logoText: {
     fontSize: 20,
@@ -741,46 +758,43 @@ const st = StyleSheet.create({
     flex: 1,
   },
 
-  // ── FAB menu grid ────────────────────────────────────────────────
-  fabMenuContainer: {
+  // ── FAB radial items ─────────────────────────────────────────────
+  // Cada ítem se posiciona absolutamente centrado sobre el FAB
+  // y se desplaza con translateX/Y animado
+  fabRadialItem: {
     position: 'absolute',
-    bottom: 90,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-    paddingHorizontal: Spacing.lg,
-  },
-  fabMenuScroll: {
-    maxHeight: 380,
-  },
-  fabMenuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    justifyContent: 'center',
-    paddingBottom: Spacing.md,
-  },
-  fabItem: {
-    width: 72,
+    // Centrado sobre el FAB (60px de diámetro → 30px de radio)
+    bottom: 68 + 30 - 28,   // centro FAB - mitad del botón radial
+    alignSelf: 'center',
     alignItems: 'center',
-    gap: 6,
-  },
-  fabItemIcon: {
+    zIndex: 25,
     width: 56,
-    height: 56,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    marginLeft: -28,        // centrar horizontalmente
+  },
+  fabRadialBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.96)',
     alignItems: 'center',
     justifyContent: 'center',
     ...Shadow.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,160,0.2)',
   },
-  fabItemEmoji: { fontSize: 26 },
-  fabItemLabel: {
-    fontSize: 10,
-    fontWeight: FontWeight.semibold,
+  fabRadialEmoji: {
+    fontSize: 24,
+  },
+  fabRadialLabel: {
+    fontSize: 9,
+    fontWeight: FontWeight.bold,
     color: '#ffffff',
     textAlign: 'center',
-    maxWidth: 72,
+    marginTop: 3,
+    maxWidth: 64,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 
   // ── LIA-25 flotante ──────────────────────────────────────────────
@@ -797,22 +811,12 @@ const st = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 3,
   },
-  liaLogoCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.6)',
-  },
-  liaLogoText: {
-    fontSize: 11,
-    fontWeight: FontWeight.extrabold,
-    color: '#fff',
-    letterSpacing: -0.5,
+  liaLogoImg: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
   },
 
   // ── FAB + central ────────────────────────────────────────────────
