@@ -19,7 +19,7 @@ import {
   Dimensions,
   PanResponder,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Rect, Line, Polyline, Polygon } from 'react-native-svg';
 import { router } from 'expo-router';
@@ -263,6 +263,7 @@ export default function HomeScreen() {
 
   const { isDark } = useThemeContext();
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
+  const insets = useSafeAreaInsets();
 
   // ── Animación LIA pulso ─────────────────────────────────────────
   useEffect(() => {
@@ -356,7 +357,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={[st.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
+    <SafeAreaView style={[st.container, { backgroundColor: C.bgPrimary }]} edges={['bottom', 'left', 'right']}>
 
       {/* ════════════════════════════════════════════════════════
           HEADER — Logo + Temperatura + Campanita + Menú
@@ -365,7 +366,7 @@ export default function HomeScreen() {
         colors={['#00C8A0', '#00B4E6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={st.header}
+        style={[st.header, { paddingTop: insets.top + Spacing.sm }]}
       >
         {/* Logo real de la app */}
         <View style={st.headerLogo}>

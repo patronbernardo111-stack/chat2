@@ -9,6 +9,7 @@ import { authAPI, setUnauthorizedHandler } from '../src/api';
 import { registerForPushNotifications, setupNotificationListeners, clearBadge } from '../src/notifications';
 import { Colors, ThemeProvider, useThemeContext } from '../src/theme';
 import { useWebRTC } from '../src/hooks/useWebRTC';
+import { FloatingHomeButton } from '../src/components/FloatingHomeButton';
 
 function StatusBarController() {
   const { isDark } = useThemeContext();
@@ -139,6 +140,9 @@ export default function RootLayout() {
             <Stack.Screen name="new-chat" options={{ presentation: 'modal' }} />
             <Stack.Screen name="welcome" />
           </Stack>
+
+          {/* ── Botón Home flotante draggable (igual que la versión web) ── */}
+          <FloatingHomeButton />
           {/* Spinner superpuesto mientras se verifica la sesión */}
           {checking && (
             <View style={styles.overlay}>
