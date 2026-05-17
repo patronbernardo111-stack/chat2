@@ -16,6 +16,7 @@ import {
 } from '../../src/theme';
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
+import Svg, { Path, Circle, Line, Polyline, Polygon, Rect } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.72;
@@ -90,7 +91,6 @@ const TypingIndicator = () => {
 };
 
 // ── ChatDrawer ────────────────────────────────────────────────────
-import Svg, { Path, Circle, Line, Polyline, Polygon, Rect } from 'react-native-svg';
 
 interface DrawerItem {
   icon: React.ReactNode;
