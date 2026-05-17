@@ -436,21 +436,21 @@ export default function HomeScreen() {
       )}
 
       {/* ════════════════════════════════════════════════════════
-          FAB RADIAL — iconos en círculo alrededor del botón +
-          8 ítems en arco superior (180°), resto en scroll
+          FAB RADIAL — 360° completos, 2 anillos
+          Anillo 1 (10 ítems, radio 110): índices 0-9
+          Anillo 2 (10 ítems, radio 195): índices 10-19
       ════════════════════════════════════════════════════════ */}
       {fabOpen && FAB_SERVICES.map((svc, i) => {
-        // Distribuimos los ítems en arco de 200° centrado arriba del FAB
-        // Ángulo: de -260° a -60° (arco superior de 200°)
-        const total = FAB_SERVICES.length;
-        const startAngle = -260; // grados
-        const endAngle   = -60;
-        const step = (endAngle - startAngle) / (total - 1);
-        const angleDeg = startAngle + step * i;
-        const angleRad = (angleDeg * Math.PI) / 180;
-        const RADIUS = 115; // px desde el centro del FAB
+        const RING1 = 10;
+        const isRing2 = i >= RING1;
+        const ringIdx = isRing2 ? i - RING1 : i;
+        const ringTotal = RING1;
+        const RADIUS = isRing2 ? 195 : 110;
 
-        // translateX/Y animados: van de 0 → posición final
+        // 360° distribuidos uniformemente, empezando desde arriba (-90°)
+        const angleDeg = -90 + (360 / ringTotal) * ringIdx;
+        const angleRad = (angleDeg * Math.PI) / 180;
+
         const tx = fabItemAnims[i].interpolate({
           inputRange: [0, 1],
           outputRange: [0, Math.cos(angleRad) * RADIUS],
@@ -772,31 +772,28 @@ const st = StyleSheet.create({
   },
 
   // ── FAB radial items ─────────────────────────────────────────────
-  // Cada ítem se posiciona absolutamente centrado sobre el FAB
-  // y se desplaza con translateX/Y animado
   fabRadialItem: {
     position: 'absolute',
-    // Centrado sobre el FAB (60px de diámetro → 30px de radio)
-    bottom: 68 + 30 - 28,   // centro FAB - mitad del botón radial
+    bottom: 68 + 30 - 26,   // centro del FAB
     alignSelf: 'center',
     alignItems: 'center',
     zIndex: 25,
-    width: 56,
-    marginLeft: -28,        // centrar horizontalmente
+    width: 52,
+    marginLeft: -26,
   },
   fabRadialBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadow.md,
-    borderWidth: 1,
-    borderColor: 'rgba(0,200,160,0.2)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,200,160,0.6)',
+    overflow: 'hidden',
   },
   fabRadialEmoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
   fabRadialLabel: {
     fontSize: 9,
@@ -805,7 +802,7 @@ const st = StyleSheet.create({
     textAlign: 'center',
     marginTop: 3,
     maxWidth: 64,
-    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -816,6 +813,8 @@ const st = StyleSheet.create({
     right: Spacing.lg,
     bottom: 90,
     zIndex: 30,
+    borderRadius: 26,
+    overflow: 'hidden',
     ...Shadow.lg,
   },
   liaBtnGradient: {
@@ -824,12 +823,11 @@ const st = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 3,
   },
   liaLogoImg: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
   },
 
   // ── FAB + central ────────────────────────────────────────────────
@@ -838,6 +836,8 @@ const st = StyleSheet.create({
     bottom: 68,
     alignSelf: 'center',
     zIndex: 30,
+    borderRadius: 30,
+    overflow: 'hidden',
     ...Shadow.lg,
   },
   fabGradient: {
