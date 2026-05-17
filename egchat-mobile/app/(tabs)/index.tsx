@@ -16,6 +16,7 @@ import {
   RefreshControl,
   Image,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -436,58 +437,76 @@ export default function HomeScreen() {
       )}
 
       {/* ════════════════════════════════════════════════════════
-          FAB RADIAL — 360° completos, 2 anillos
-          Anillo 1 (10 ítems, radio 110): índices 0-9
-          Anillo 2 (10 ítems, radio 195): índices 10-19
+          FAB RADIAL — 360° completos, 2 anillos concéntricos
+          Posicionamiento absoluto desde el centro del FAB
       ════════════════════════════════════════════════════════ */}
-      {fabOpen && FAB_SERVICES.map((svc, i) => {
-        const RING1 = 10;
-        const isRing2 = i >= RING1;
-        const ringIdx = isRing2 ? i - RING1 : i;
-        const ringTotal = RING1;
-        const RADIUS = isRing2 ? 195 : 110;
+      {fabOpen && (() => {
+        const { width: SW } = Dimensions.get('window');
+        // Centro del FAB en coordenadas de pantalla
+        const FAB_CX = SW / 2;          // centro horizontal
+        const FAB_BOTTOM = 68 + 30;     // bottom del centro del FAB (bottom:68 + radio:30)
+        const ITEM_SIZE = 48;
+        const ITEM_HALF = ITEM_SIZE / 2;
+        const RING1_COUNT = 10;
+        const RING2_COUNT = FAB_SERVICES.length - RING1_COUNT;
+        const R1 = 110;
+        const R2 = 200;
 
-        // 360° distribuidos uniformemente, empezando desde arriba (-90°)
-        const angleDeg = -90 + (360 / ringTotal) * ringIdx;
-        const angleRad = (angleDeg * Math.PI) / 180;
+        return FAB_SERVICES.map((svc, i) => {
+          const isRing2 = i >= RING1_COUNT;
+          const ringIdx = isRing2 ? i - RING1_COUNT : i;
+          const ringCount = isRing2 ? RING2_COUNT : RING1_COUNT;
+          const R = isRing2 ? R2 : R1;
 
-        const tx = fabItemAnims[i].interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, Math.cos(angleRad) * RADIUS],
-        });
-        const ty = fabItemAnims[i].interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, Math.sin(angleRad) * RADIUS],
-        });
+          // 360° uniformes, empezando desde arriba (-90°)
+          const angleDeg = -90 + (360 / ringCount) * ringIdx;
+          const angleRad = (angleDeg * Math.PI) / 180;
 
-        return (
-          <Animated.View
-            key={svc.id}
-            style={[
-              st.fabRadialItem,
-              {
+          // Posición final del centro del ítem
+          const finalX = FAB_CX + Math.cos(angleRad) * R - ITEM_HALF;
+          const finalY = FAB_BOTTOM + Math.sin(angleRad) * R * -1 - ITEM_HALF;
+
+          // Animar desde el centro del FAB hacia la posición final
+          const animLeft = fabItemAnims[i].interpolate({
+            inputRange: [0, 1],
+            outputRange: [FAB_CX - ITEM_HALF, finalX],
+          });
+          const animBottom = fabItemAnims[i].interpolate({
+            inputRange: [0, 1],
+            outputRange: [FAB_BOTTOM - ITEM_HALF, finalY],
+          });
+
+          return (
+            <Animated.View
+              key={svc.id}
+              style={{
+                position: 'absolute',
+                left: animLeft,
+                bottom: animBottom,
+                width: ITEM_SIZE,
+                alignItems: 'center',
+                zIndex: 25,
                 opacity: fabItemAnims[i],
-                transform: [{ translateX: tx }, { translateY: ty }],
-              },
-            ]}
-            pointerEvents="box-none"
-          >
-            <TouchableOpacity
-              style={st.fabRadialBtn}
-              onPress={() => navigateFab(svc.route)}
-              activeOpacity={0.8}
+              }}
+              pointerEvents="box-none"
             >
-              <Text style={st.fabRadialEmoji}>{svc.icon}</Text>
-            </TouchableOpacity>
-            <Animated.Text
-              style={[st.fabRadialLabel, { opacity: fabItemAnims[i] }]}
-              numberOfLines={1}
-            >
-              {svc.label}
-            </Animated.Text>
-          </Animated.View>
-        );
-      })}
+              <TouchableOpacity
+                style={st.fabRadialBtn}
+                onPress={() => navigateFab(svc.route)}
+                activeOpacity={0.8}
+              >
+                <Text style={st.fabRadialEmoji}>{svc.icon}</Text>
+              </TouchableOpacity>
+              <Animated.Text
+                style={[st.fabRadialLabel, { opacity: fabItemAnims[i] }]}
+                numberOfLines={1}
+              >
+                {svc.label}
+              </Animated.Text>
+            </Animated.View>
+          );
+        });
+      })()}
 
       {/* ════════════════════════════════════════════════════════
           LIA-25 — Asistente flotante (círculo derecho)
@@ -772,15 +791,6 @@ const st = StyleSheet.create({
   },
 
   // ── FAB radial items ─────────────────────────────────────────────
-  fabRadialItem: {
-    position: 'absolute',
-    bottom: 68 + 30 - 26,   // centro del FAB
-    alignSelf: 'center',
-    alignItems: 'center',
-    zIndex: 25,
-    width: 52,
-    marginLeft: -26,
-  },
   fabRadialBtn: {
     width: 48,
     height: 48,
