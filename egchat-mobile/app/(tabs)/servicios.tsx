@@ -1314,13 +1314,6 @@ export default function ServiciosScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ── FAB nuevo chat ── */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/new-chat' as any)} activeOpacity={0.85}>
-        <LinearGradient colors={['#00C8A0', '#00B4E6']} style={styles.fabGradient}>
-          <Text style={styles.fabIcon}>+</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-
       {/* ── Drawer menú ── */}
       <DrawerMenu visible={showDrawer} onClose={() => setShowDrawer(false)} />
 
@@ -1454,17 +1447,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary, textAlign: 'center',
     lineHeight: 14,
   },
-
-  // FAB
-  fab: {
-    position: 'absolute', bottom: 24, alignSelf: 'center',
-    width: 60, height: 60, borderRadius: 30, ...Shadow.lg,
-  },
-  fabGradient: {
-    width: 60, height: 60, borderRadius: 30,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  fabIcon: { fontSize: 30, color: '#fff', lineHeight: 34 },
 
   // Modal bottom sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
