@@ -24,9 +24,9 @@ export default function WelcomeScreen() {
   const C = isDark ? DarkColors as unknown as typeof Colors : Colors;
 
   useEffect(() => {
-    // Logo spin — 6 segundos por vuelta (velocidad media)
+    // Logo spin — 10 segundos por vuelta (velocidad agradable)
     Animated.loop(
-      Animated.timing(spinAnim, { toValue: 1, duration: 6000, useNativeDriver: true })
+      Animated.timing(spinAnim, { toValue: 1, duration: 10000, useNativeDriver: true })
     ).start();
 
     // Fade in
@@ -46,8 +46,9 @@ export default function WelcomeScreen() {
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo */}
         <View style={styles.logoSection}>
-          {/* Círculo exterior decorativo */}
+          {/* Anillo exterior giratorio */}
           <View style={styles.logoRing}>
+            {/* El círculo recorta la imagen */}
             <View style={styles.logoBox}>
               <Animated.Image
                 source={require('../assets/icon.png')}
@@ -119,22 +120,26 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     borderWidth: 3,
-    borderColor: 'rgba(0,200,160,0.4)',
+    borderColor: 'rgba(0,200,160,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,200,160,0.06)',
-  },
-  logoBox: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    overflow: 'hidden',
-    backgroundColor: Colors.white,
+    backgroundColor: 'rgba(0,200,160,0.08)',
     ...Shadow.lg,
   },
+  // Círculo que recorta la imagen — overflow hidden es clave
+  logoBox: {
+    width: 156,
+    height: 156,
+    borderRadius: 78,
+    overflow: 'hidden',
+    backgroundColor: '#00C8A0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Imagen más grande que el contenedor para llenar sin espacios blancos
   logo: {
-    width: 160,
-    height: 160,
+    width: 200,
+    height: 200,
   },
 
   flagsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },

@@ -783,23 +783,28 @@ export default function ChatScreen() {
           <EGAvatar src={chatAvatar} name={chatName} size={38} />
           <View style={styles.headerText}>
             <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
-            <Text style={styles.headerStatus}>{chatSubtitle}</Text>
+            <Text style={styles.headerStatus}>
+              {isTyping ? '● Escribiendo...' : `● ${chatSubtitle}`}
+            </Text>
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
+          {/* Llamada de voz */}
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
               <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
             </Svg>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
+          {/* Videollamada */}
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
               <Polygon points="23 7 16 12 23 17 23 7"/>
               <Rect x="1" y="5" width="15" height="14" rx="2"/>
             </Svg>
           </TouchableOpacity>
+          {/* Menú tres puntos */}
           <TouchableOpacity style={styles.headerBtn} onPress={() => setDrawerVisible(true)}>
-            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round">
               <Circle cx="12" cy="5" r="1" fill="#fff"/>
               <Circle cx="12" cy="12" r="1" fill="#fff"/>
               <Circle cx="12" cy="19" r="1" fill="#fff"/>
@@ -808,30 +813,88 @@ export default function ChatScreen() {
         </View>
       </LinearGradient>
 
-      {/* ── Mensajes ── */}
+      {/* ── Mensajes + Input ── */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.1}
-          ListHeaderComponent={loadingMore ? <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} /> : null}
-          ListFooterComponent={isTyping ? <TypingIndicator /> : null}
-          ListEmptyComponent={
-            <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatIcon}>💬</Text>
-              <Text style={[styles.emptyChatText, { color: C.textSecondary }]}>Empieza la conversación</Text>
-            </View>
-          }
-        />
+        {/* Fondo beige estilo WhatsApp */}
+        <View style={styles.chatBg}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={item => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.1}
+            ListHeaderComponent={loadingMore ? <ActivityIndicator size="small" color={Colors.accent} style={{ marginVertical: 8 }} /> : null}
+            ListFooterComponent={isTyping ? <TypingIndicator /> : null}
+            ListEmptyComponent={
+              <View style={styles.emptyChat}>
+                <Text style={styles.emptyChatIcon}>💬</Text>
+                <Text style={styles.emptyChatText}>Empieza la conversación</Text>
+              </View>
+            }
+          />
+
+          {/* LIA-25 flotante */}
+          <TouchableOpacity
+            style={styles.liaFloat}
+            onPress={() => router.push('/(tabs)/lia' as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={['#e91e8c', '#9c27b0']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.liaFloatGrad}
+            >
+              <Text style={styles.liaFloatIcon}>🧠</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Reply preview */}
         {replyTo && <ReplyPreview text={replyTo.text || 'Mensaje'} onCancel={() => setReplyTo(null)} />}
-        {/* ── Input ── */}
+
+        {/* Panel adjuntos — se muestra encima del input */}
+        {showAttach && (
+          <View style={[styles.attachPanel, { backgroundColor: C.bgSecondary }]}>
+            {[
+              { icon: '🖼️', label: 'Foto',          color: '#e3f2fd', onPress: () => { setShowAttach(false); Alert.alert('Foto', 'Próximamente'); } },
+              { icon: '🎥', label: 'Video',         color: '#fff8e1', onPress: () => { setShowAttach(false); Alert.alert('Video', 'Próximamente'); } },
+              { icon: '📎', label: 'Archivo',       color: '#e0f7fa', onPress: () => { setShowAttach(false); Alert.alert('Archivo', 'Próximamente'); } },
+              { icon: '👤', label: 'Contacto',      color: '#fce4ec', onPress: () => { setShowAttach(false); Alert.alert('Contacto', 'Próximamente'); } },
+              { icon: '📍', label: 'Ubicación',     color: '#fce4ec', onPress: () => { setShowAttach(false); Alert.alert('Ubicación', 'Próximamente'); } },
+              { icon: '💸', label: 'Enviar dinero', color: '#e8f5e9', onPress: () => { setShowAttach(false); router.push('/(tabs)/monedero' as any); } },
+            ].map(item => (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.attachItem}
+                onPress={item.onPress}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.attachIconBox, { backgroundColor: item.color }]}>
+                  <Text style={styles.attachEmoji}>{item.icon}</Text>
+                </View>
+                <Text style={[styles.attachLabel, { color: C.textSecondary }]}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* ── Input bar ── */}
         <View style={[styles.inputBar, { backgroundColor: C.bgSecondary, borderTopColor: C.borderLight }]}>
+          {/* Botón + adjuntos */}
+          <TouchableOpacity
+            style={styles.attachBtn}
+            onPress={() => setShowAttach(v => !v)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.attachBtnIcon, showAttach && { color: Colors.accent }]}>+</Text>
+          </TouchableOpacity>
+
+          {/* Campo de texto */}
           <View style={[styles.inputWrapper, { backgroundColor: C.bgTertiary }]}>
             <TextInput
               style={[styles.input, { color: C.textPrimary }]}
@@ -841,16 +904,45 @@ export default function ChatScreen() {
               placeholderTextColor={C.textTertiary}
               multiline
               maxLength={4000}
-              onSubmitEditing={Platform.OS === 'ios' ? undefined : sendMessage}
             />
           </View>
-          <Animated.View style={{ transform: [{ scale: sendScale }] }}>
-            <TouchableOpacity onPress={sendMessage} disabled={!text.trim() || sending} style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]} activeOpacity={0.8}>
-              {sending ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.sendBtnIcon}>➤</Text>}
+
+          {/* Emoji */}
+          <TouchableOpacity style={styles.emojiBtn} activeOpacity={0.8}>
+            <Text style={styles.emojiBtnIcon}>🙂</Text>
+          </TouchableOpacity>
+
+          {/* Enviar o micrófono */}
+          {text.trim() ? (
+            <Animated.View style={{ transform: [{ scale: sendScale }] }}>
+              <TouchableOpacity
+                onPress={sendMessage}
+                disabled={sending}
+                style={styles.sendBtn}
+                activeOpacity={0.8}
+              >
+                {sending
+                  ? <ActivityIndicator size="small" color={Colors.white} />
+                  : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <Line x1="22" y1="2" x2="11" y2="13"/>
+                      <Polygon points="22 2 15 22 11 13 2 9 22 2" fill="#fff" stroke="#fff"/>
+                    </Svg>
+                }
+              </TouchableOpacity>
+            </Animated.View>
+          ) : (
+            <TouchableOpacity style={styles.micBtn} activeOpacity={0.8}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={Colors.textSecondary} strokeWidth={1.8} strokeLinecap="round">
+                <Path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <Path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <Line x1="12" y1="19" x2="12" y2="23"/>
+                <Line x1="8" y1="23" x2="16" y2="23"/>
+              </Svg>
             </TouchableOpacity>
-          </Animated.View>
+          )}
         </View>
       </KeyboardAvoidingView>
+
       <ContextMenu visible={contextVisible} message={contextMsg} isOwn={contextMsg?.sender_id === currentUserId} onClose={() => setContextVisible(false)} onCopy={handleCopy} onReply={handleReply} onDelete={handleDelete} onDeleteForMe={handleDeleteForMe} />
       <ChatDrawer
         visible={drawerVisible}
