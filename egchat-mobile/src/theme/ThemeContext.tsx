@@ -1,28 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useColorScheme, Platform } from 'react-native';
+import { useColorScheme } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { Colors } from './colors';
 import { DarkColors, ThemeMode } from './darkMode';
 
 const THEME_KEY = 'egchat_theme_mode';
-
-// Wrapper de almacenamiento compatible con web y nativo
-const storage = {
-  getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
-    }
-    const SecureStore = await import('expo-secure-store');
-    return SecureStore.getItemAsync(key);
-  },
-  setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
-      return;
-    }
-    const SecureStore = await import('expo-secure-store');
-    return SecureStore.setItemAsync(key, value);
-  },
-};
 
 interface ThemeContextValue {
   isDark: boolean;

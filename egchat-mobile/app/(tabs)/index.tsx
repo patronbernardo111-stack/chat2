@@ -9,7 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle, Line, Polyline, Polygon, Rect } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { chatAPI, storiesAPI, getToken } from '../../src/api';
@@ -229,9 +232,9 @@ export default function MensajesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.bgPrimary }]} edges={['top']}>
       <OfflineBanner />
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
-        {showSearch ? (
+      {/* ── Header con gradiente idéntico a la web ── */}
+      {showSearch ? (
+        <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
           <View style={[styles.searchContainer, { backgroundColor: C.bgInput }]}>
             <TextInput
               style={[styles.searchInput, { color: C.textPrimary }]}
@@ -245,23 +248,47 @@ export default function MensajesScreen() {
               <Text style={[styles.searchCloseText, { color: C.textTertiary }]}>✕</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <>
-            <Text style={[styles.headerTitle, { color: C.textPrimary }]}>Mensajes</Text>
-            <View style={styles.headerActions}>
-              <TouchableOpacity onPress={() => router.push('/contacts' as any)} style={[styles.headerBtn, { backgroundColor: C.bgTertiary }]}>
-                <Text style={styles.headerBtnIcon}>👥</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowSearch(true)} style={[styles.headerBtn, { backgroundColor: C.bgTertiary }]}>
-                <Text style={styles.headerBtnIcon}>🔍</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/new-chat' as any)} style={[styles.headerBtn, styles.headerBtnAccent]}>
-                <Text style={styles.headerBtnIconWhite}>✏️</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
+        </View>
+      ) : (
+        <LinearGradient
+          colors={['#00C8A0', '#00B4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
+          {/* Logo + título */}
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitleGradient}>EG</Text>
+            <Text style={styles.headerTitleGradient2}>CHAT</Text>
+          </View>
+          {/* Acciones */}
+          <View style={styles.headerActions}>
+            {/* Contactos */}
+            <TouchableOpacity onPress={() => router.push('/contacts' as any)} style={styles.headerBtnGradient}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+                <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <Circle cx="9" cy="7" r="4"/>
+                <Path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <Path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </Svg>
+            </TouchableOpacity>
+            {/* Buscar */}
+            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.headerBtnGradient}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+                <Circle cx="11" cy="11" r="8"/>
+                <Path d="M21 21l-4.35-4.35"/>
+              </Svg>
+            </TouchableOpacity>
+            {/* Nuevo chat */}
+            <TouchableOpacity onPress={() => router.push('/new-chat' as any)} style={styles.headerBtnGradient}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </Svg>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      )}
 
       {/* ── Stories ── */}
       {stories.length > 0 && (
@@ -330,9 +357,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.listItemPaddingH,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    // gradiente aplicado via LinearGradient
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 1,
+  },
+  headerTitleGradient: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+  headerTitleGradient2: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -0.5,
   },
   headerTitle: {
     ...Typography.headerTitle,
@@ -341,6 +383,15 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
+    alignItems: 'center',
+  },
+  headerBtnGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerBtn: {
     width: 36,

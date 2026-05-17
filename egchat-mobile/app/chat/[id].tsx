@@ -5,6 +5,7 @@ import {
   Animated, Modal, Pressable, Alert, Dimensions, ScrollView, Image,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { chatAPI, authAPI } from '../../src/api';
@@ -765,30 +766,47 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.bgTertiary }]} edges={['top']}>
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: C.bgSecondary, borderBottomColor: C.borderLight }]}>
+      {/* ── Header con gradiente ── */}
+      <LinearGradient
+        colors={['#00C8A0', '#00B4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backIcon, { color: C.textPrimary }]}>‹</Text>
+          <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round">
+            <Line x1="19" y1="12" x2="5" y2="12" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"/>
+            <Polyline points="12 19 5 12 12 5" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"/>
+          </Svg>
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerInfo} activeOpacity={0.7}>
-          <EGAvatar src={chatAvatar} name={chatName} size={40} />
+          <EGAvatar src={chatAvatar} name={chatName} size={38} />
           <View style={styles.headerText}>
-            <Text style={[styles.headerName, { color: C.textPrimary }]} numberOfLines={1}>{chatName}</Text>
+            <Text style={styles.headerName} numberOfLines={1}>{chatName}</Text>
             <Text style={styles.headerStatus}>{chatSubtitle}</Text>
           </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'audio', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
-            <Text style={styles.headerBtnIcon}>📞</Text>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+              <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.82a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </Svg>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
-            <Text style={styles.headerBtnIcon}>📹</Text>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+              <Polygon points="23 7 16 12 23 17 23 7"/>
+              <Rect x="1" y="5" width="15" height="14" rx="2"/>
+            </Svg>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} onPress={() => setDrawerVisible(true)}>
-            <Text style={styles.headerBtnIcon}>⋮</Text>
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round">
+              <Circle cx="12" cy="5" r="1" fill="#fff"/>
+              <Circle cx="12" cy="12" r="1" fill="#fff"/>
+              <Circle cx="12" cy="19" r="1" fill="#fff"/>
+            </Svg>
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* ── Mensajes ── */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -857,22 +875,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
+    // gradiente via LinearGradient
   },
   backBtn: { padding: Spacing.sm },
-  backIcon: { fontSize: 28, color: Colors.textPrimary, lineHeight: 32 },
+  backIcon: { fontSize: 28, color: Colors.white, lineHeight: 32 },
   headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   headerText: { flex: 1 },
-  headerName: { ...Typography.chatHeaderName, color: Colors.textPrimary },
-  headerStatus: { ...Typography.onlineStatus, color: Colors.accent },
+  headerName: { ...Typography.chatHeaderName, color: '#ffffff' },
+  headerStatus: { ...Typography.onlineStatus, color: 'rgba(255,255,255,0.85)' },
   headerActions: { flexDirection: 'row', gap: 4 },
   headerBtn: { padding: Spacing.sm },
-  headerBtnIcon: { fontSize: 18 },
+  headerBtnIcon: { fontSize: 18, color: Colors.white },
 
   // Messages
   messagesList: { paddingHorizontal: Spacing.sm + 2, paddingVertical: Spacing.sm, gap: 2 },
