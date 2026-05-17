@@ -102,10 +102,12 @@ const ChatDrawer = ({
   visible,
   onClose,
   items,
+  isDark = false,
 }: {
   visible: boolean;
   onClose: () => void;
   items: DrawerItem[];
+  isDark?: boolean;
 }) => {
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -154,12 +156,13 @@ const ChatDrawer = ({
         <Animated.View
           style={[
             drawerStyles.panel,
+            isDark && { backgroundColor: '#1e1e1e' },
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
           {/* Cabecera del drawer */}
           <View style={drawerStyles.header}>
-            <View style={drawerStyles.headerBar} />
+            <View style={[drawerStyles.headerBar, isDark && { backgroundColor: '#3a3a3a' }]} />
           </View>
 
           {/* Lista de opciones */}
@@ -173,6 +176,7 @@ const ChatDrawer = ({
                 key={index}
                 style={[
                   drawerStyles.item,
+                  isDark && { borderBottomColor: '#2a2a2a' },
                   index === items.length - 1 && drawerStyles.itemLast,
                 ]}
                 onPress={() => {
@@ -187,6 +191,7 @@ const ChatDrawer = ({
                 <Text
                   style={[
                     drawerStyles.label,
+                    isDark && { color: '#f0f0f0' },
                     item.danger && drawerStyles.labelDanger,
                     item.color ? { color: item.color } : null,
                   ]}
@@ -707,7 +712,9 @@ export default function ChatScreen() {
           <TouchableOpacity style={styles.headerBtn} onPress={() => router.push({ pathname: '/call/[callId]', params: { callId: `call_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, targetName: chatName, targetAvatar: chatAvatar || '', callType: 'video', role: 'caller', targetUserId: otherParticipant?.user_id || '' } } as any)}>
             <Text style={styles.headerBtnIcon}>📹</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}><Text style={styles.headerBtnIcon}>⋮</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => setDrawerVisible(true)}>
+            <Text style={styles.headerBtnIcon}>⋮</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -755,6 +762,12 @@ export default function ChatScreen() {
         </View>
       </KeyboardAvoidingView>
       <ContextMenu visible={contextVisible} message={contextMsg} isOwn={contextMsg?.sender_id === currentUserId} onClose={() => setContextVisible(false)} onCopy={handleCopy} onReply={handleReply} onDelete={handleDelete} onDeleteForMe={handleDeleteForMe} />
+      <ChatDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        items={drawerItems}
+        isDark={isDark}
+      />
     </SafeAreaView>
   );
 }
