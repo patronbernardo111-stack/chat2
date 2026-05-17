@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { serviciosAPI, taxiAPI, walletAPI, authAPI } from '../../src/api';
 import { EGButton, EGInput, EGCard } from '../../src/components/ui';
 import { NotificationsPanel, HamburgerMenu, WeatherModal, AppNotification } from '../../src/components/HeaderPanels';
+import { ServiceIcon } from '../../src/components/ServiceIcon';
 import {
   Colors, Typography, Spacing, BorderRadius,
   FontSize, FontWeight, Shadow,
@@ -16,66 +17,66 @@ import {
 import { useThemeContext } from '../../src/theme/ThemeContext';
 import { DarkColors } from '../../src/theme/darkMode';
 
-// ── Secciones de servicios (igual que la versión web) ─────────────
+// ── Secciones de servicios — iconos y colores idénticos a la web ──
 const SERVICE_SECTIONS = [
   {
     id: 'basicos',
     title: 'Básicos',
     services: [
-      { id: 'recarga',      icon: '📱', label: 'Recarga',     sub: 'Telefonía móvil',  color: '#8B5CF6', bg: '#F5F3FF' },
-      { id: 'internet',     icon: '🌐', label: 'Internet',    sub: 'Proveedores',      color: '#6366F1', bg: '#EEF2FF' },
-      { id: 'tv',           icon: '📺', label: 'Canales',     sub: 'TV y satélite',    color: '#EF4444', bg: '#FFF1F2' },
+      { id: 'recarga',      svgIcon: 'recharge',      label: 'Recarga Tel.',  color: '#07C160' },
+      { id: 'internet',     svgIcon: 'world',         label: 'Internet',      color: '#1485EE' },
+      { id: 'tv',           svgIcon: 'services',      label: 'Canales',       color: '#8B5CF6' },
     ],
   },
   {
     id: 'financieros',
     title: 'Servicios Financieros',
     services: [
-      { id: 'bancos',       icon: '🏦', label: 'Bancos',      sub: 'BANGE, BGFI...',   color: '#1E3A5F', bg: '#EFF6FF' },
-      { id: 'seguros',      icon: '🛡️', label: 'Seguros',     sub: 'Vida, auto...',    color: '#065F46', bg: '#F0FDF4' },
-      { id: 'facturas',     icon: '🧾', label: 'Facturas',    sub: 'Pagar facturas',   color: '#D97706', bg: '#FFFBEB' },
-      { id: 'inversion',    icon: '📈', label: 'Inversión',   sub: 'Fondos y bolsa',   color: '#7C3AED', bg: '#F5F3FF' },
-      { id: 'tarjetas',     icon: '💳', label: 'Tarjetas',    sub: 'Débito y crédito', color: '#0369A1', bg: '#F0F9FF' },
-      { id: 'historial',    icon: '🕐', label: 'Historial',   sub: 'Movimientos',      color: '#374151', bg: '#F9FAFB' },
+      { id: 'bancos',       svgIcon: 'banking',       label: 'Bancos',        color: '#1485EE' },
+      { id: 'seguros',      svgIcon: 'seguros',       label: 'Seguros',       color: '#2E9E6B' },
+      { id: 'facturas',     svgIcon: 'factura',       label: 'Facturas',      color: '#C47D2A' },
+      { id: 'inversion',    svgIcon: 'invest',        label: 'Inversión',     color: '#6B5BD6' },
+      { id: 'tarjetas',     svgIcon: 'tarjeta',       label: 'Tarjetas',      color: '#C0392B' },
+      { id: 'historial',    svgIcon: 'historial',     label: 'Historial',     color: '#5A7090' },
     ],
   },
   {
     id: 'publicos',
     title: 'Servicios Públicos',
     services: [
-      { id: 'electricidad', icon: '⚡', label: 'Electrici...', sub: 'SEGESA',           color: '#EAB308', bg: '#FEFCE8' },
-      { id: 'agua',         icon: '💧', label: 'Agua',         sub: 'SNGE',             color: '#0EA5E9', bg: '#F0F9FF' },
-      { id: 'salud',        icon: '🏥', label: 'Salud',        sub: 'Hospitales',       color: '#DC2626', bg: '#FFF1F2' },
-      { id: 'educacion',    icon: '🎓', label: 'Educación',    sub: 'Colegios, UNGE',   color: '#7C3AED', bg: '#F5F3FF' },
-      { id: 'correos',      icon: '📮', label: 'Correos',      sub: 'Envíos',           color: '#C0392B', bg: '#FFF5F5' },
-      { id: 'impuestos',    icon: '📋', label: 'Impuestos',    sub: 'DGI',              color: '#374151', bg: '#F9FAFB' },
+      { id: 'electricidad', svgIcon: 'electricidad',  label: 'Electricidad',  color: '#C47D2A' },
+      { id: 'agua',         svgIcon: 'rain',          label: 'Agua',          color: '#1485EE' },
+      { id: 'salud',        svgIcon: 'salud',         label: 'Salud',         color: '#C0392B' },
+      { id: 'educacion',    svgIcon: 'edu',           label: 'Educación',     color: '#6B5BD6' },
+      { id: 'correos',      svgIcon: 'mensajes',      label: 'Correos',       color: '#C47D2A' },
+      { id: 'impuestos',    svgIcon: 'gobierno',      label: 'Impuestos',     color: '#C0392B' },
     ],
   },
   {
     id: 'diarios',
     title: 'Servicios Diarios',
     services: [
-      { id: 'supermercado', icon: '🛒', label: 'Superm...',    sub: 'Compras online',   color: '#00c8a0', bg: '#F0FDF9' },
-      { id: 'comida',       icon: '💵', label: 'Comida',       sub: 'Delivery',         color: '#EF4444', bg: '#FFF1F2' },
-      { id: 'restaurantes', icon: '☕', label: 'Restaur...',   sub: 'Reservas',         color: '#C47D2A', bg: '#FEF3C7' },
-      { id: 'hotel',        icon: '🏨', label: 'Hotel',        sub: 'Reservas',         color: '#6366F1', bg: '#EEF2FF' },
-      { id: 'vuelos',       icon: '✈️', label: 'Vuelos',       sub: 'Ceiba, Iberia...',  color: '#1B3A6B', bg: '#EFF6FF' },
-      { id: 'gasolineras',  icon: '⛽', label: 'Gasolinera',   sub: 'GEPetrol, Total',  color: '#C0392B', bg: '#FFF5F5' },
-      { id: 'tienda',       icon: '🛍️', label: 'Tienda',       sub: 'Compras',          color: '#059669', bg: '#F0FDF4' },
-      { id: 'lavanderia',   icon: '🫧', label: 'Lavande...',   sub: 'Lavandería',       color: '#0EA5E9', bg: '#F0F9FF' },
-      { id: 'belleza',      icon: '❤️', label: 'Belleza',      sub: 'Salones y spas',   color: '#EC4899', bg: '#FDF2F8' },
-      { id: 'noticias',     icon: '📰', label: 'Noticias',     sub: 'Prensa local',     color: '#374151', bg: '#F9FAFB' },
+      { id: 'supermercado', svgIcon: 'comercio',      label: 'Supermercado',  color: '#2E9E6B' },
+      { id: 'comida',       svgIcon: 'money',         label: 'Comida',        color: '#C0392B' },
+      { id: 'restaurantes', svgIcon: 'restaurante',   label: 'Restaurante',   color: '#C47D2A' },
+      { id: 'hotel',        svgIcon: 'hotel',         label: 'Hotel',         color: '#1485EE' },
+      { id: 'vuelos',       svgIcon: 'vuelos',        label: 'Vuelos',        color: '#6B5BD6' },
+      { id: 'gasolineras',  svgIcon: 'gasolinera',    label: 'Gasolinera',    color: '#C47D2A' },
+      { id: 'tienda',       svgIcon: 'tienda',        label: 'Tienda',        color: '#2E9E6B' },
+      { id: 'lavanderia',   svgIcon: 'lavanderia',    label: 'Lavandería',    color: '#1485EE' },
+      { id: 'belleza',      svgIcon: 'belleza',       label: 'Belleza',       color: '#C0392B' },
+      { id: 'noticias',     svgIcon: 'noticias',      label: 'Noticias',      color: '#6B5BD6' },
     ],
   },
   {
     id: 'herramientas',
     title: 'Herramientas',
     services: [
-      { id: 'id_digital',   icon: '🪪', label: 'ID Digital',  sub: 'Identidad',        color: '#6366F1', bg: '#EEF2FF' },
-      { id: 'lia',          icon: '🤖', label: 'Lia-25',       sub: 'IA Asistente',     color: '#00c8a0', bg: '#F0FDF9' },
-      { id: 'actividad',    icon: '🕐', label: 'Actividad',    sub: 'Historial',        color: '#374151', bg: '#F9FAFB' },
-      { id: 'emergencias',  icon: '⚠️', label: 'Emerge...',    sub: 'Números de ayuda', color: '#EF4444', bg: '#FFF1F2' },
-      { id: 'ajustes',      icon: '⚙️', label: 'Ajustes',      sub: 'Configuración',    color: '#374151', bg: '#F9FAFB' },
+      { id: 'id_digital',   svgIcon: 'id-card',       label: 'ID Digital',    color: '#6B5BD6' },
+      { id: 'lia',          svgIcon: 'ai',            label: 'Lia-25',        color: '#1485EE' },
+      { id: 'actividad',    svgIcon: 'historial',     label: 'Actividad',     color: '#0E7FA8' },
+      { id: 'emergencias',  svgIcon: 'emergencia',    label: 'Emergencia',    color: '#C0392B' },
+      { id: 'ajustes',      svgIcon: 'ajustes',       label: 'Ajustes',       color: '#5A7090' },
     ],
   },
 ];
@@ -1299,8 +1300,8 @@ export default function ServiciosScreen() {
                     onPress={() => openService(s.id)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.serviceIconBox, { backgroundColor: isDark ? C.bgTertiary : s.bg }]}>
-                      <Text style={styles.serviceEmoji}>{s.icon}</Text>
+                    <View style={styles.serviceIconBox}>
+                      <ServiceIcon name={s.svgIcon} size={26} color={s.color} />
                     </View>
                     <Text style={[styles.serviceLabel, { color: C.textPrimary }]} numberOfLines={1}>{s.label}</Text>
                   </TouchableOpacity>
@@ -1443,9 +1444,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   serviceIconBox: {
-    width: 56, height: 56, borderRadius: 14,
+    width: 48, height: 48, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: 'transparent',
   },
   serviceEmoji: { fontSize: 26 },
   serviceLabel: {
