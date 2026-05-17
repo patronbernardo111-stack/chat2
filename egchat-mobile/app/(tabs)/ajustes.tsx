@@ -209,9 +209,9 @@ export default function AjustesScreen() {
           <View style={styles.headerLogo}>
             <View style={styles.logoWrap}>
               <Image
-                source={require('../../assets/icon.png')}
+                source={require('../../assets/logo-transparent.png')}
                 style={styles.logoImg}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             </View>
             <Text style={styles.logoText}>EG</Text>

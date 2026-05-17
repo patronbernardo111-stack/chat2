@@ -504,9 +504,9 @@ export default function MonederoScreen() {
           <View style={s.headerLogo}>
             <View style={s.logoWrap}>
               <Image
-                source={require('../../assets/icon.png')}
+                source={require('../../assets/logo-transparent.png')}
                 style={s.logoImg}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             </View>
             <Text style={s.logoText}>EG</Text>

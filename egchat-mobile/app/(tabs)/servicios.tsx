@@ -774,9 +774,9 @@ export default function ServiciosScreen() {
         <View style={styles.headerLeft}>
           <View style={styles.logoCircle}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/logo-transparent.png')}
               style={{ width: 34, height: 34, borderRadius: 17 }}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
           <Text style={styles.headerLogo}>EG</Text>

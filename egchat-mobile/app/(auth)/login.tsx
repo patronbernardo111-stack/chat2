@@ -80,7 +80,7 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <View style={styles.logoBox}>
               <Animated.Image
-                source={require('../../assets/icon.png')}
+                source={require('../../assets/logo-transparent.png')}
                 style={[styles.logoImg, { transform: [{ rotate: spin }] }]}
                 resizeMode="contain"
               />

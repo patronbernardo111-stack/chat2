@@ -594,9 +594,9 @@ export default function HomeScreen() {
             style={st.liaBtnGradient}
           >
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/logo-transparent.png')}
               style={st.liaLogoImg}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </LinearGradient>
         </TouchableOpacity>

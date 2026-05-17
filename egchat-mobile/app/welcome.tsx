@@ -51,7 +51,7 @@ export default function WelcomeScreen() {
             {/* El círculo recorta la imagen */}
             <View style={styles.logoBox}>
               <Animated.Image
-                source={require('../assets/icon.png')}
+                source={require('../assets/logo-transparent.png')}
                 style={[
                   styles.logo,
                   { transform: [{ scale: 1.6 }, { rotate: spin }] },

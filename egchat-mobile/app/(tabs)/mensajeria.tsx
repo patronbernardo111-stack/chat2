@@ -232,9 +232,9 @@ export default function MensajeriaScreen() {
         <View style={st.headerLogo}>
           <View style={st.logoWrap}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/logo-transparent.png')}
               style={st.logoImg}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
           <Text style={st.logoText}>EG</Text>
