@@ -100,46 +100,92 @@ const IconClose = ({ color = '#fff', size = 22 }: { color?: string; size?: numbe
 
 // ── APPS principales (grid visible en home) ───────────────────────
 const HOME_APPS = [
-  { id: 'estados',  icon: '🌀', label: 'Estados',  route: '/stories'   },
-  { id: 'juegos',   icon: '🎮', label: 'Juegos',   route: '/apuestas'  },
-  { id: 'cemac',    icon: '🌍', label: 'Cemac',    route: '/cemac'     },
-  { id: 'mitaxi',   icon: '🚕', label: 'MiTaxi',   route: '/mitaxi'    },
+  { id: 'estados',  label: 'Estados',  route: '/stories',  color: '#00B4E6' },
+  { id: 'apuestas', label: 'Juegos',   route: '/apuestas', color: '#8b5cf6' },
+  { id: 'cemac',    label: 'Cemac',    route: '/cemac',    color: '#00C8A0' },
+  { id: 'mitaxi',   label: 'MiTaxi',   route: '/mitaxi',   color: '#f59e0b' },
 ];
 
-// ── TODOS los servicios del FAB + (igual que la versión web) ──────
+// ── Iconos SVG para APPS y FAB — idénticos a la versión web ──────
+const SvgIcon = ({ id, color = '#00C8A0', size = 24 }: { id: string; color?: string; size?: number }) => {
+  const s = size;
+  switch (id) {
+    case 'estados':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Circle cx="12" cy="12" r="4"/><Circle cx="12" cy="12" r="9" strokeDasharray="2.5 2" strokeWidth="1.5"/></Svg>;
+    case 'apuestas':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Rect x="2" y="2" width="20" height="20" rx="4"/><Circle cx="8" cy="8" r="1.2" fill={color} stroke="none"/><Circle cx="16" cy="8" r="1.2" fill={color} stroke="none"/><Circle cx="8" cy="16" r="1.2" fill={color} stroke="none"/><Circle cx="16" cy="16" r="1.2" fill={color} stroke="none"/><Circle cx="12" cy="12" r="1.2" fill={color} stroke="none"/></Svg>;
+    case 'cemac':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><Polyline points="9 22 9 12 15 12 15 22"/></Svg>;
+    case 'mitaxi':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-3h10l2 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><Circle cx="7.5" cy="17" r="2.5"/><Circle cx="16.5" cy="17" r="2.5"/><Path d="M7 9h10"/></Svg>;
+    case 'mensajes':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><Line x1="9" y1="10" x2="15" y2="10"/><Line x1="9" y1="14" x2="13" y2="14"/></Svg>;
+    case 'cartera':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M19 7H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/><Rect x="16" y="11" width="2" height="2" fill={color} stroke="none"/></Svg>;
+    case 'electricidad':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Svg>;
+    case 'agua':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 2C6 8 4 12 4 15a8 8 0 0 0 16 0c0-3-2-7-8-13z"/></Svg>;
+    case 'internet':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Circle cx="12" cy="12" r="10"/><Line x1="2" y1="12" x2="22" y2="12"/><Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></Svg>;
+    case 'recarga':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Rect x="5" y="2" width="14" height="20" rx="2"/><Line x1="12" y1="18" x2="12.01" y2="18"/></Svg>;
+    case 'tv':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Rect x="2" y="7" width="20" height="15" rx="2"/><Polyline points="17 2 12 7 7 2"/></Svg>;
+    case 'bancos':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Line x1="3" y1="22" x2="21" y2="22"/><Line x1="6" y1="18" x2="6" y2="11"/><Line x1="10" y1="18" x2="10" y2="11"/><Line x1="14" y1="18" x2="14" y2="11"/><Line x1="18" y1="18" x2="18" y2="11"/><Polygon points="12 2 20 7 4 7"/></Svg>;
+    case 'salud':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 0 1 2-2h3"/><Path d="M19 3H9a2 2 0 0 0-2 2v3h14V5a2 2 0 0 0-2-2z"/><Line x1="14" y1="11" x2="14" y2="17"/><Line x1="11" y1="14" x2="17" y2="14"/></Svg>;
+    case 'impuestos':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><Polyline points="14 2 14 8 20 8"/><Line x1="16" y1="13" x2="8" y2="13"/><Line x1="16" y1="17" x2="8" y2="17"/></Svg>;
+    case 'correos':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><Polyline points="22,6 12,13 2,6"/></Svg>;
+    case 'seguros':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><Polyline points="9 12 11 14 15 10"/></Svg>;
+    case 'super':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Circle cx="9" cy="21" r="1"/><Circle cx="20" cy="21" r="1"/><Path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></Svg>;
+    case 'restaurantes':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M18 8h1a4 4 0 0 1 0 8h-1"/><Path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><Line x1="6" y1="1" x2="6" y2="4"/><Line x1="10" y1="1" x2="10" y2="4"/><Line x1="14" y1="1" x2="14" y2="4"/></Svg>;
+    case 'vuelos':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></Svg>;
+    case 'gasolineras':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><Path d="M17 22V11l4-4v15"/><Line x1="3" y1="22" x2="21" y2="22"/><Line x1="7" y1="10" x2="11" y2="10"/></Svg>;
+    case 'ocio':
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Svg>;
+    default:
+      return <Svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Circle cx="12" cy="12" r="10"/></Svg>;
+  }
+};
+
+// ── TODOS los servicios del FAB + ─────────────────────────────────
 const FAB_SERVICES = [
-  // Fila 1
-  { id: 'mensajes',     icon: '💬', label: 'Mensajes',     route: '/mensajeria'        },
-  { id: 'cartera',      icon: '💳', label: 'Cartera',      route: '/(tabs)/monedero'   },
-  { id: 'taxi',         icon: '🚕', label: 'MiTaxi',       route: '/mitaxi'            },
-  { id: 'electricidad', icon: '⚡', label: 'Electricidad', route: '/(tabs)/servicios'  },
-  // Fila 2
-  { id: 'agua',         icon: '💧', label: 'Agua',         route: '/(tabs)/servicios'  },
-  { id: 'internet',     icon: '🌐', label: 'Internet',     route: '/(tabs)/servicios'  },
-  { id: 'recarga',      icon: '📱', label: 'Recarga',      route: '/(tabs)/servicios'  },
-  { id: 'tv',           icon: '📺', label: 'Canales TV',   route: '/(tabs)/servicios'  },
-  // Fila 3
-  { id: 'bancos',       icon: '🏦', label: 'Bancos',       route: '/bancos'            },
-  { id: 'salud',        icon: '🏥', label: 'Salud',        route: '/seguros-salud'     },
-  { id: 'impuestos',    icon: '📋', label: 'Impuestos',    route: '/(tabs)/servicios'  },
-  { id: 'correos',      icon: '📮', label: 'Correos',      route: '/(tabs)/servicios'  },
-  // Fila 4
-  { id: 'seguros',      icon: '🛡️', label: 'Seguros',      route: '/seguros-salud'     },
-  { id: 'super',        icon: '🛒', label: 'Supermercado', route: '/supermercados'     },
-  { id: 'restaurantes', icon: '🍽️', label: 'Restaurantes', route: '/(tabs)/servicios'  },
-  { id: 'vuelos',       icon: '✈️', label: 'Vuelos',       route: '/(tabs)/servicios'  },
-  // Fila 5
-  { id: 'gasolineras',  icon: '⛽', label: 'Gasolineras',  route: '/(tabs)/servicios'  },
-  { id: 'cemac',        icon: '🌍', label: 'Zona CEMAC',   route: '/cemac'             },
-  { id: 'ocio',         icon: '🎭', label: 'Ocio',         route: '/ocio'              },
-  { id: 'apuestas',     icon: '🎰', label: 'Apuestas',     route: '/apuestas'          },
+  { id: 'mensajes',     label: 'Mensajes',     route: '/mensajeria',       color: '#00B4E6' },
+  { id: 'cartera',      label: 'Cartera',      route: '/(tabs)/monedero',  color: '#00C8A0' },
+  { id: 'mitaxi',       label: 'MiTaxi',       route: '/mitaxi',           color: '#f59e0b' },
+  { id: 'electricidad', label: 'Electricidad', route: '/(tabs)/servicios', color: '#eab308' },
+  { id: 'agua',         label: 'Agua',         route: '/(tabs)/servicios', color: '#3b82f6' },
+  { id: 'internet',     label: 'Internet',     route: '/(tabs)/servicios', color: '#8b5cf6' },
+  { id: 'recarga',      label: 'Recarga',      route: '/(tabs)/servicios', color: '#06b6d4' },
+  { id: 'tv',           label: 'Canales TV',   route: '/(tabs)/servicios', color: '#ec4899' },
+  { id: 'bancos',       label: 'Bancos',       route: '/bancos',           color: '#1d4ed8' },
+  { id: 'salud',        label: 'Salud',        route: '/seguros-salud',    color: '#ef4444' },
+  { id: 'impuestos',    label: 'Impuestos',    route: '/(tabs)/servicios', color: '#64748b' },
+  { id: 'correos',      label: 'Correos',      route: '/(tabs)/servicios', color: '#f97316' },
+  { id: 'seguros',      label: 'Seguros',      route: '/seguros-salud',    color: '#10b981' },
+  { id: 'super',        label: 'Supermercado', route: '/supermercados',    color: '#84cc16' },
+  { id: 'restaurantes', label: 'Restaurantes', route: '/(tabs)/servicios', color: '#f43f5e' },
+  { id: 'vuelos',       label: 'Vuelos',       route: '/(tabs)/servicios', color: '#0ea5e9' },
+  { id: 'gasolineras',  label: 'Gasolineras',  route: '/(tabs)/servicios', color: '#d97706' },
+  { id: 'cemac',        label: 'Zona CEMAC',   route: '/cemac',            color: '#00C8A0' },
+  { id: 'ocio',         label: 'Ocio',         route: '/ocio',             color: '#a855f7' },
+  { id: 'apuestas',     label: 'Apuestas',     route: '/apuestas',         color: '#6366f1' },
 ];
 
 // ── Componente AppIcon (grid home) ────────────────────────────────
-const AppIcon = ({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) => (
+const AppIcon = ({ id, label, color, onPress }: { id: string; label: string; color: string; onPress: () => void }) => (
   <TouchableOpacity style={st.appItem} onPress={onPress} activeOpacity={0.75}>
-    <View style={st.appIconBox}>
-      <Text style={st.appEmoji}>{icon}</Text>
+    <View style={[st.appIconBox, { borderColor: color + '30' }]}>
+      <SvgIcon id={id} color={color} size={32} />
     </View>
     <Text style={st.appLabel}>{label}</Text>
   </TouchableOpacity>
@@ -468,8 +514,9 @@ export default function HomeScreen() {
             {HOME_APPS.map(app => (
               <AppIcon
                 key={app.id}
-                icon={app.icon}
+                id={app.id}
                 label={app.label}
+                color={app.color}
                 onPress={() => router.push(app.route as any)}
               />
             ))}
@@ -547,11 +594,11 @@ export default function HomeScreen() {
               pointerEvents="box-none"
             >
               <TouchableOpacity
-                style={st.fabRadialBtn}
+                style={[st.fabRadialBtn, { borderColor: svc.color + '80' }]}
                 onPress={() => navigateFab(svc.route)}
                 activeOpacity={0.8}
               >
-                <Text style={st.fabRadialEmoji}>{svc.icon}</Text>
+                <SvgIcon id={svc.id} color={svc.color} size={22} />
               </TouchableOpacity>
               <Animated.Text
                 style={[st.fabRadialLabel, { opacity: fabItemAnims[i] }]}
@@ -873,9 +920,10 @@ const st = StyleSheet.create({
     backgroundColor: Colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,200,160,0.2)',
     ...Shadow.md,
   },
-  appEmoji: { fontSize: 32 },
   appLabel: {
     fontSize: FontSize.xs,
     fontWeight: FontWeight.semibold,
