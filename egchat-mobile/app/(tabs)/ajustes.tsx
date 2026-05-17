@@ -213,15 +213,37 @@ export default function AjustesScreen() {
           <View style={styles.headerLogo}>
             <View style={styles.logoWrap}>
               <Image
-                source={require('../../assets/logo-transparent.png')}
+                source={require('../../assets/icon.png')}
                 style={styles.logoImg}
-                resizeMode="contain"
+                resizeMode="cover"
               />
             </View>
             <Text style={styles.logoText}>EG</Text>
             <Text style={styles.logoText}>CHAT</Text>
           </View>
-          <Text style={styles.headerTitle}>Ajustes</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => setShowWeather(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>☁️ 27°</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => {
+                setShowNotifications(true);
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 16 }}>🔔</Text>
+              {notifications.some(n => !n.read) && (
+                <View style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Ajustes</Text>
+          </View>
         </LinearGradient>
 
         {/* ── Perfil Card ── */}
@@ -394,6 +416,32 @@ export default function AjustesScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ── Paneles del header ── */}
+      <NotificationsPanel
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onClearAll={() => setNotifications([])}
+        onNotifPress={(n) => {
+          setNotifications(prev => prev.filter(x => x.id !== n.id));
+          setShowNotifications(false);
+          if (n.chatId) router.push(`/chat/${n.chatId}` as any);
+        }}
+      />
+      <HamburgerMenu
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        user={user ? { full_name: user.full_name, avatar_url: user.avatar_url, phone: user.phone } : null}
+      />
+      <WeatherModal
+        visible={showWeather}
+        onClose={() => setShowWeather(false)}
+        temp="27°"
+        city="Malabo"
+        condition="cloudy"
+      />
     </SafeAreaView>
   );
 }
@@ -426,6 +474,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18, fontWeight: '700', color: '#fff',
+  },
+  headerIconBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center', justifyContent: 'center',
   },
 
   // Profile card
