@@ -3270,10 +3270,91 @@ app.get('/api/noticias/:id', auth, async (req, res) => {
 });
 
 app.post('/api/user/avatar', auth, async (req, res) => {
-  res.json({
-    message: 'Avatar recibido',
-    avatar_url: `https://egchat-api.onrender.com/static/avatars/${req.user.id}-${Date.now()}.jpg`
-  });
+  try {
+    const rawContentType = req.headers['content-type'] || '';
+    if (!rawContentType.includes('multipart/form-data')) {
+      return res.status(400).json({ message: 'Se requiere multipart/form-data' });
+    }
+
+    const busboy = require('busboy');
+    const bb = busboy({
+      headers: req.headers,
+      limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+    });
+
+    const fileData = await new Promise((resolve, reject) => {
+      let fileBuffer = null;
+      let fileMime = 'image/jpeg';
+      let fileOrigName = `avatar_${Date.now()}.jpg`;
+      let fileTooLarge = false;
+
+      bb.on('file', (_fieldname, file, info) => {
+        const { filename, mimeType } = info;
+        fileOrigName = filename || fileOrigName;
+        fileMime = mimeType || fileMime;
+        const chunks = [];
+        file.on('data', d => chunks.push(d));
+        file.on('limit', () => { fileTooLarge = true; });
+        file.on('end', () => { fileBuffer = Buffer.concat(chunks); });
+      });
+      bb.on('close', () => resolve({ buffer: fileBuffer, mime: fileMime, name: fileOrigName, tooLarge: fileTooLarge }));
+      bb.on('error', reject);
+      req.pipe(bb);
+    });
+
+    if (fileData.tooLarge) return res.status(413).json({ message: 'La imagen supera 8MB' });
+    if (!fileData.buffer || fileData.buffer.length === 0) {
+      return res.status(400).json({ message: 'Avatar vacío o no recibido' });
+    }
+    if (!String(fileData.mime).startsWith('image/')) {
+      return res.status(400).json({ message: 'El avatar debe ser una imagen' });
+    }
+
+    const extFromMime = fileData.mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const extFromName = fileData.name.includes('.') ? fileData.name.split('.').pop().toLowerCase() : extFromMime;
+    const ext = ['jpg', 'jpeg', 'png', 'webp'].includes(extFromName) ? extFromName.replace('jpeg', 'jpg') : extFromMime;
+    const storagePath = `avatars/${req.user.id}/avatar_${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('chat-files')
+      .upload(storagePath, fileData.buffer, {
+        contentType: fileData.mime,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Avatar upload error:', uploadError.message);
+      return res.status(500).json({ message: 'Error al subir avatar: ' + uploadError.message });
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('chat-files')
+      .getPublicUrl(storagePath);
+
+    const avatarUrl = urlData?.publicUrl || '';
+    if (!avatarUrl) return res.status(500).json({ message: 'No se pudo generar URL del avatar' });
+
+    const { data: user, error: updateError } = await supabase
+      .from('users')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', req.user.id)
+      .select('id, phone, full_name, avatar_url')
+      .single();
+
+    if (updateError) {
+      console.error('Avatar profile update error:', updateError.message);
+      return res.status(500).json({ message: 'Avatar subido, pero no se pudo actualizar perfil' });
+    }
+
+    res.json({
+      message: 'Avatar actualizado',
+      avatar_url: avatarUrl,
+      user,
+    });
+  } catch (e) {
+    console.error('Avatar upload endpoint error:', e);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 app.post('/lia/analyze', auth, async (_req, res) => {
