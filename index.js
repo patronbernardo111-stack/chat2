@@ -261,6 +261,18 @@ app.get('/debug', (req, res) => res.json({
 
 
 
+
+// TEMP BCRYPT TEST
+app.get('/debug/bcrypt-test', async (req, res) => {
+  const phone = req.query.phone || '+240555570323';
+  const password = req.query.pass || '509871';
+  const { data, error } = await supabase.from('users').select('id, phone, password_hash').eq('phone', phone).maybeSingle();
+  if (!data) return res.json({ found: false, error: error && error.message });
+  const bcrypt = require('bcryptjs');
+  const ok = await bcrypt.compare(password, data.password_hash);
+  res.json({ found: true, phone: data.phone, hash_prefix: data.password_hash.substring(0,20), password_matches: ok });
+});
+
 // TEMP DIAG
 app.get('/debug/user-check', async (req, res) => {
   const phone = req.query.phone || '+240555570323';
