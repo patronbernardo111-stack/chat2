@@ -225,7 +225,29 @@ app.get('/', (req, res) => res.json({
   status: 'active'
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', async (req, res) => {
+  // Verificar conexión a Supabase
+  let dbStatus = 'unknown';
+  let dbError = null;
+  try {
+    const { error } = await supabase.from('users').select('id').limit(1);
+    if (error) {
+      dbStatus = 'error';
+      dbError = error.message;
+    } else {
+      dbStatus = 'ok';
+    }
+  } catch (e) {
+    dbStatus = 'error';
+    dbError = e.message;
+  }
+  res.json({
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
+    db: dbStatus,
+    db_error: dbError,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // jwt-debug eliminado por seguridad — expone información del secret
 
@@ -364,7 +386,17 @@ app.post('/api/auth/login', async (req, res) => {
     const { data: user, error } = await supabase
       .from('users').select('id, phone, full_name, avatar_url, password_hash, app_version').eq('phone', phone).maybeSingle();
 
-    if (error || !user) return res.status(401).json({ message: 'Credenciales incorrectas' });
+    // Distinguir error de BD vs usuario no encontrado
+    if (error) {
+      console.error('Login DB error:', error.message, error.code);
+      // Error de conexión/autenticación con Supabase
+      if (error.message?.includes('JWT') || error.message?.includes('Invalid API key') || error.code === 'PGRST301') {
+        return res.status(503).json({ message: 'Servicio temporalmente no disponible. Intenta de nuevo en unos minutos.' });
+      }
+      return res.status(503).json({ message: 'Error de conexión con la base de datos. Intenta de nuevo.' });
+    }
+
+    if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
