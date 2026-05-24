@@ -1247,16 +1247,19 @@ app.get('/api/contacts', auth, async (req, res) => {
 
     const usersMap = (users || []).reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
 
+    // EGRESS FIX: helper to strip base64 avatars from list responses
+    const safeAvatar = (url) => (url && url.startsWith('data:') ? null : (url || ''));
+
     const formattedContacts = contacts.map(contact => ({
       id: contact.id,
       contact_user_id: contact.contact_user_id,
       name: contact.nickname || usersMap[contact.contact_user_id]?.full_name || 'Sin nombre',
       phone: usersMap[contact.contact_user_id]?.phone || '',
-      avatar_url: usersMap[contact.contact_user_id]?.avatar_url || '',
+      avatar_url: safeAvatar(usersMap[contact.contact_user_id]?.avatar_url),
       is_blocked: contact.is_blocked,
       is_favorite: contact.is_favorite,
       created_at: contact.created_at,
-      user: usersMap[contact.contact_user_id] || null
+      user: usersMap[contact.contact_user_id] ? { ...usersMap[contact.contact_user_id], avatar_url: safeAvatar(usersMap[contact.contact_user_id]?.avatar_url) } : null
     }));
 
     res.json(formattedContacts);
