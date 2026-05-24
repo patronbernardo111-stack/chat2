@@ -1231,9 +1231,10 @@ app.get('/api/contacts', auth, async (req, res) => {
   try {
     const { data: contacts, error } = await supabase
       .from('contacts')
-      .select('*')
+      .select('id, contact_user_id, nickname, is_blocked, is_favorite, created_at')
       .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500); // EGRESS FIX: cap contacts list, select only needed columns
 
     if (error) throw error;
     if (!contacts || contacts.length === 0) return res.json([]);
@@ -3643,6 +3644,8 @@ setTimeout(seedDefaultSpaces, 3000);
 
 // GET /api/spaces — listar todos los espacios con estado de seguimiento del usuario
 app.get('/api/spaces', auth, async (req, res) => {
+  // EGRESS FIX: spaces change rarely, cache for 60 seconds
+  res.setHeader('Cache-Control', 'private, max-age=60');
   try {
     const userId = req.user.id;
     const { data: spaces, error } = await supabase
@@ -3863,6 +3866,8 @@ const ensureStoriesTable = async () => {
 ensureStoriesTable();
 
 app.get('/api/stories', auth, async (req, res) => {
+  // EGRESS FIX: allow short client-side caching to reduce repeated fetches
+  res.setHeader('Cache-Control', 'private, max-age=30');
   try {
     const userId = req.user.id;
     const now = new Date().toISOString();
