@@ -429,74 +429,34 @@ app.post('/api/auth/check-phone', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
-    if (!phone || !password)
-      return res.status(400).json({ message: 'phone y password son requeridos' });
+    if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
 
-    // Normalizar telefono: buscar con y sin "+" para compatibilidad
-    const phoneVariants = [phone];
-    if (phone.startsWith('+')) {
-      phoneVariants.push(phone.slice(1)); // sin +
-    } else {
-      phoneVariants.push('+' + phone); // con +
-    }
-    console.log('Login attempt for phone variants:', phoneVariants);
+    // Buscar usuario probando con y sin prefijo +
+    const variants = [phone];
+    if (phone.startsWith('+')) variants.push(phone.slice(1));
+    else variants.push('+' + phone);
 
     let user = null;
-    let dbError = null;
-    for (const variant of phoneVariants) {
-      const { data, error } = await supabase
-        .from('users').select('id, phone, full_name, avatar_url, password_hash, app_version').eq('phone', variant).maybeSingle();
-      if (error) { dbError = error; continue; }
-      if (data) { user = data; break; }
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, avatar_url, password_hash, app_version')
+        .eq('phone', v)
+        .maybeSingle();
+      if (result.data) { user = result.data; break; }
     }
 
-    if (dbError && !user) {
-      console.error('Login DB error:', dbError.message);
-      return res.status(401).json({ message: 'Credenciales incorrectas' });
-    }
-
-    if (!user) {
-      console.log('User not found for phone:', phone);
-      return res.status(401).json({ message: 'Credenciales incorrectas' });
-    }
+    if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
-    // Actualizar ultimo acceso
-    try {
-      await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id);
-    } catch {}
+    try { await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id); } catch {}
 
     const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
+    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
   } catch (e) {
-    console.error('Login error:', e);
-    res.status(500).json({ message: e.message });
-  }
-});
-
-
-
-// LOGIN ALTERNATIVO para diagnostico
-app.post('/api/auth/login2', async (req, res) => {
-  try {
-    const { phone, password } = req.body;
-    if (!phone || !password) return res.status(400).json({ message: 'Faltan datos' });
-    const bcrypt = require('bcryptjs');
-    const phoneVariants = [phone, phone.startsWith('+') ? phone.slice(1) : '+' + phone];
-    let user = null;
-    for (const v of phoneVariants) {
-      const { data } = await supabase.from('users').select('id, phone, full_name, avatar_url, password_hash, app_version').eq('phone', v).maybeSingle();
-      if (data) { user = data; break; }
-    }
-    if (!user) return res.status(401).json({ message: 'Usuario no encontrado', tried: phoneVariants });
-    const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ message: 'Contrasena incorrecta', hash_prefix: user.password_hash.substring(0,15) });
-    const token = require('jsonwebtoken').sign({ id: user.id, phone: user.phone }, process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret', { expiresIn: '30d' });
-    res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url } });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
+    console.error('Login error:', e.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
