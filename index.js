@@ -507,6 +507,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 // Obtener todos los chats del usuario
 app.get('/api/chats', auth, async (req, res) => {
+  // EGRESS FIX: allow client-side caching for 10 seconds to reduce repeated fetches
+  res.setHeader('Cache-Control', 'private, max-age=10');
   try {
     // Buscar chats donde el usuario es participante
     const { data: participations, error: pErr } = await supabase
@@ -525,9 +527,10 @@ app.get('/api/chats', auth, async (req, res) => {
 
     const { data: chats } = await supabase
       .from('chats')
-      .select('*')
+      .select('id, type, name, avatar_url, description, created_by, updated_at')
       .in('id', chatIds)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(100); // EGRESS FIX: cap at 100 chats, select only needed columns
 
     if (!chats) return res.json([]);
 
@@ -535,10 +538,12 @@ app.get('/api/chats', auth, async (req, res) => {
       supabase.from('chat_participants')
         .select('chat_id, user_id, users(id, phone, full_name, avatar_url)')
         .in('chat_id', chatIds),
+      // EGRESS FIX: limit to 1 message per chat (last message preview only)
       supabase.from('messages')
         .select('id, text, type, created_at, sender_id, chat_id')
         .in('chat_id', chatIds)
         .order('created_at', { ascending: false })
+        .limit(chatIds.length * 1)  // 1 message per chat max
     ]);
 
     const participantsByChat = (participants || []).reduce((acc, part) => {
@@ -557,7 +562,8 @@ app.get('/api/chats', auth, async (req, res) => {
       id: chat.id,
       type: chat.type || 'private',
       name: chat.name,
-      avatar_url: chat.avatar_url || null,
+      // EGRESS FIX: strip base64 avatars from list view — client should use /api/chats/:id for full data
+      avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
       description: chat.description || null,
       created_by: chat.created_by || null,
       participants: participantsByChat[chat.id] || [],
@@ -3638,8 +3644,9 @@ app.get('/api/spaces', auth, async (req, res) => {
     const userId = req.user.id;
     const { data: spaces, error } = await supabase
       .from('spaces')
-      .select('*')
-      .order('followers_count', { ascending: false });
+      .select('id, name, description, type, cover, emoji, followers_count, owner_id, created_at')
+      .order('followers_count', { ascending: false })
+      .limit(50); // EGRESS FIX: cap at 50 spaces, select only needed columns
     if (error) return res.json([]);
 
     // Qué espacios sigue el usuario
@@ -3860,10 +3867,11 @@ app.get('/api/stories', auth, async (req, res) => {
     // 1. Mis propios estados
     const { data: mine } = await supabase
       .from('stories')
-      .select('*')
+      .select('id, user_id, media, type, views, reactions, created_at, expires_at')
       .eq('user_id', userId)
       .gt('expires_at', now)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(10); // EGRESS FIX: max 10 own stories
 
     // 2. IDs de contactos (tabla contacts)
     const { data: contacts } = await supabase
@@ -3899,10 +3907,11 @@ app.get('/api/stories', auth, async (req, res) => {
     if (contactIds.size > 0) {
       const { data } = await supabase
         .from('stories')
-        .select('*')
+        .select('id, user_id, media, type, views, reactions, created_at, expires_at')
         .in('user_id', Array.from(contactIds))
         .gt('expires_at', now)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // EGRESS FIX: max 50 contact stories, select only needed columns
       contactStories = data || [];
     }
 
