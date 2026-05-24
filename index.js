@@ -260,6 +260,27 @@ app.get('/debug', (req, res) => res.json({
 }));
 
 
+
+// TEMP DIAG
+app.get('/debug/user-check', async (req, res) => {
+  const phone = req.query.phone || '+240555570323';
+  const variants = [phone, phone.startsWith('+') ? phone.slice(1) : '+' + phone];
+  const results = [];
+  for (const v of variants) {
+    const { data, error } = await supabase.from('users').select('id, phone, full_name, password_hash').eq('phone', v).maybeSingle();
+    results.push({
+      searched: v,
+      found: !!data,
+      error: error && error.message,
+      id: data && data.id,
+      name: data && data.full_name,
+      hash_prefix: data && data.password_hash && data.password_hash.substring(0, 20),
+      hash_valid: data && data.password_hash && data.password_hash.startsWith('$2')
+    });
+  }
+  res.json(results);
+});
+
 // Diagnostico de login - verifica si la tabla users es accesible con filtros
 app.get('/debug/login-test', async (req, res) => {
   try {
