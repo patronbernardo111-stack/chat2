@@ -477,6 +477,29 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 
+
+// LOGIN ALTERNATIVO para diagnostico
+app.post('/api/auth/login2', async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) return res.status(400).json({ message: 'Faltan datos' });
+    const bcrypt = require('bcryptjs');
+    const phoneVariants = [phone, phone.startsWith('+') ? phone.slice(1) : '+' + phone];
+    let user = null;
+    for (const v of phoneVariants) {
+      const { data } = await supabase.from('users').select('id, phone, full_name, avatar_url, password_hash, app_version').eq('phone', v).maybeSingle();
+      if (data) { user = data; break; }
+    }
+    if (!user) return res.status(401).json({ message: 'Usuario no encontrado', tried: phoneVariants });
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ message: 'Contrasena incorrecta', hash_prefix: user.password_hash.substring(0,15) });
+    const token = require('jsonwebtoken').sign({ id: user.id, phone: user.phone }, process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret', { expiresIn: '30d' });
+    res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url } });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 app.get('/api/auth/me', auth, async (req, res) => {
   const { data: user } = await supabase
     .from('users').select('id, phone, full_name, avatar_url, created_at').eq('id', req.user.id).single();
