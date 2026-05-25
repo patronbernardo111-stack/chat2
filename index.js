@@ -426,6 +426,43 @@ app.post('/api/auth/check-phone', async (req, res) => {
   }
 });
 
+
+// LOGIN DEBUG - ver exactamente donde falla
+app.post('/api/auth/login-debug', async (req, res) => {
+  const steps = [];
+  try {
+    const { phone, password } = req.body;
+    steps.push({ step: 1, msg: 'Received', phone, hasPassword: !!password });
+
+    const variants = [phone];
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
+    steps.push({ step: 2, msg: 'Variants', variants });
+
+    let user = null;
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, password_hash')
+        .eq('phone', v)
+        .maybeSingle();
+      steps.push({ step: 3, variant: v, found: !!result.data, error: result.error && result.error.message });
+      if (result.data) { user = result.data; break; }
+    }
+
+    if (!user) return res.json({ success: false, steps, reason: 'user_not_found' });
+    steps.push({ step: 4, msg: 'User found', id: user.id, hash_prefix: user.password_hash && user.password_hash.substring(0,15) });
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    steps.push({ step: 5, msg: 'bcrypt.compare result', ok });
+
+    if (!ok) return res.json({ success: false, steps, reason: 'wrong_password' });
+
+    return res.json({ success: true, steps, user: { id: user.id, phone: user.phone, name: user.full_name } });
+  } catch (e) {
+    return res.json({ success: false, steps, error: e.message });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
