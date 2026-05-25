@@ -498,8 +498,44 @@ const handleLogin = async (req, res) => {
   }
 };
 
-app.post('/api/auth/login', handleLogin);
-app.post('/api/auth/login-v2', handleLogin); // ruta alternativa por si la principal tiene cache
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
+
+    const variants = [phone];
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
+
+    let user = null;
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, password_hash')
+        .eq('phone', v)
+        .maybeSingle();
+      if (result.data) { user = result.data; break; }
+    }
+
+    if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
+
+    // Obtener datos completos del usuario
+    const { data: fullUser } = await supabase.from('users')
+      .select('id, phone, full_name, avatar_url, app_version')
+      .eq('id', user.id).single();
+
+    try { await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id); } catch {}
+
+    const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: (fullUser || user).full_name, avatar_url: (fullUser || user).avatar_url, app_version: APP_VERSION } });
+  } catch (e) {
+    console.error('Login error:', e.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+app.post('/api/auth/login-v2', handleLogin);
 
 app.get('/api/auth/me', auth, async (req, res) => {
   const { data: user } = await supabase
