@@ -465,13 +465,14 @@ app.post('/api/auth/login-debug', async (req, res) => {
 
 // Handler compartido para login (usado por /api/auth/login y /api/auth/login-v2)
 const handleLogin = async (req, res) => {
+  const steps = [];
   try {
     const { phone, password } = req.body;
     if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
 
     const variants = [phone];
-    if (phone.startsWith('+')) variants.push(phone.slice(1));
-    else variants.push('+' + phone);
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
 
     let user = null;
     for (const v of variants) {
