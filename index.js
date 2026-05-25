@@ -252,8 +252,8 @@ app.get('/health', async (req, res) => {
 // jwt-debug eliminado por seguridad � expone informaci�n del secret
 
 app.get('/debug', (req, res) => res.json({
-  supabase_url: process.env.SUPABASE_URL ? '✅ set' : '❌ missing',
-  supabase_key: process.env.SUPABASE_SERVICE_KEY ? '✅ set' : '❌ missing',
+  supabase_url: process.env.SUPABASE_URL || '❌ missing',
+  supabase_key: process.env.SUPABASE_SERVICE_KEY ? '✅ set (' + process.env.SUPABASE_SERVICE_KEY.substring(0,20) + '...)' : '❌ missing',
   jwt_secret: process.env.JWT_SECRET ? '✅ set' : '❌ missing',
   node_env: process.env.NODE_ENV || 'not set',
   port: PORT
