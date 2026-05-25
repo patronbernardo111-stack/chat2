@@ -463,12 +463,12 @@ app.post('/api/auth/login-debug', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+// Handler compartido para login (usado por /api/auth/login y /api/auth/login-v2)
+const handleLogin = async (req, res) => {
   try {
     const { phone, password } = req.body;
     if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
 
-    // Buscar usuario probando con y sin prefijo +
     const variants = [phone];
     if (phone.startsWith('+')) variants.push(phone.slice(1));
     else variants.push('+' + phone);
@@ -495,7 +495,10 @@ app.post('/api/auth/login', async (req, res) => {
     console.error('Login error:', e.message);
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
-});
+};
+
+app.post('/api/auth/login', handleLogin);
+app.post('/api/auth/login-v2', handleLogin); // ruta alternativa por si la principal tiene cache
 
 app.get('/api/auth/me', auth, async (req, res) => {
   const { data: user } = await supabase
