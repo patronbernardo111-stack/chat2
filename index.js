@@ -1,4 +1,4 @@
-﻿// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
+// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
 try { 
   const dotenv = require('dotenv');
   dotenv.config();
@@ -15,7 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF
 const JWT_SECRET_FALLBACK = 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
 console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback');
 
-// -- Deep Links � archivos .well-known ----------------------------------------
+// -- Deep Links ? archivos .well-known ----------------------------------------
 // Deben servirse con Content-Type correcto para que Android/iOS los validen
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -47,15 +47,19 @@ app.get('/.well-known/apple-app-site-association', (req, res) => {
   });
 });
 
-// Verificar token con m�ltiples secrets para compatibilidad
+// Verificar token con m?ltiples secrets para compatibilidad
 const verifyToken = (token) => {
   const secrets = [JWT_SECRET, JWT_SECRET_FALLBACK].filter((s, i, arr) => arr.indexOf(s) === i);
   for (const secret of secrets) {
     try { return jwt.verify(token, secret); } catch {}
   }
-  throw new Error('Token inv�lido o expirado');
+  throw new Error('Token inv?lido o expirado');
 };
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.3';
+// Versi�n actual de la APK Android � actualizar aqu� cuando haya nueva APK
+const APK_VERSION = '2.5.3';
+const APK_VERSION_CODE = 6;
+const APK_DOWNLOAD_URL = process.env.APK_DOWNLOAD_URL || 'https://egchat-v2.vercel.app/egchat-latest.apk';
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
@@ -72,13 +76,17 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permitir sin origin (Electron file://, apps m�viles, Postman)
+    // Permitir sin origin (Electron file://, Postman, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     // Permitir cualquier localhost en desarrollo
     if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+    // Permitir https://localhost — Capacitor Android usa androidScheme:'https'
+    if (/^https:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
     // Permitir cualquier subdominio de vercel.app (egchat-v2, egchat-app, etc.)
     if (/^https:\/\/egchat.*\.vercel\.app$/.test(origin)) return callback(null, true);
+    // Permitir capacitor:// e ionic:// (esquemas nativos alternativos)
+    if (/^(capacitor|ionic):\/\//.test(origin)) return callback(null, true);
     return callback(new Error('CORS policy: origin not allowed'));
   },
   credentials: true,
@@ -99,7 +107,7 @@ const parseBearerToken = (header) => {
 };
 
 const auth = (req, res, next) => {
-  // Intentar obtener token de m�ltiples fuentes
+  // Intentar obtener token de m?ltiples fuentes
   const authHeader = parseBearerToken(req.headers.authorization);
   const xAuthToken = req.headers['x-auth-token'] || '';
   const queryToken = typeof req.query._t === 'string' ? req.query._t : '';
@@ -109,7 +117,7 @@ const auth = (req, res, next) => {
     req.user = verifyToken(token);
     next();
   } catch {
-    res.status(401).json({ message: 'Token inv�lido o expirado' });
+    res.status(401).json({ message: 'Token inv?lido o expirado' });
   }
 };
 
@@ -124,7 +132,7 @@ const authFromQuery = (req, res, next) => {
     req.user = verifyToken(token);
     next();
   } catch {
-    res.status(401).json({ message: 'Token inv�lido o expirado' });
+    res.status(401).json({ message: 'Token inv?lido o expirado' });
   }
 };
 
@@ -205,7 +213,7 @@ app.post('/api/admin/users/update-version', async (req, res) => {
   }
 });
 
-// Reset contrase�a por admin
+// Reset contrase?a por admin
 app.post('/api/admin/reset-password', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.body?.adminKey;
   if (!key || key !== adminResetKey) return res.status(403).json({ message: 'No autorizado' });
@@ -226,7 +234,7 @@ app.get('/', (req, res) => res.json({
 }));
 
 app.get('/health', async (req, res) => {
-  // Verificar conexi�n a Supabase
+  // Verificar conexi?n a Supabase
   let dbStatus = 'unknown';
   let dbError = null;
   try {
@@ -249,12 +257,25 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// jwt-debug eliminado por seguridad � expone informaci�n del secret
+// jwt-debug eliminado por seguridad ? expone informaci?n del secret
+
+
+// --- Endpoint version APK ---
+app.get('/api/app/version', (req, res) => {
+  res.json({
+    version: APK_VERSION,
+    versionCode: APK_VERSION_CODE,
+    downloadUrl: APK_DOWNLOAD_URL,
+    releaseNotes: 'Mejoras de rendimiento y correcciones.',
+    forceUpdate: false,
+    minVersionCode: 1,
+  });
+});
 
 app.get('/debug', (req, res) => res.json({
-  supabase_url: process.env.SUPABASE_URL || '❌ missing',
-  supabase_key: process.env.SUPABASE_SERVICE_KEY ? '✅ set (' + process.env.SUPABASE_SERVICE_KEY.substring(0,20) + '...)' : '❌ missing',
-  jwt_secret: process.env.JWT_SECRET ? '✅ set' : '❌ missing',
+  supabase_url: process.env.SUPABASE_URL || '? missing',
+  supabase_key: process.env.SUPABASE_SERVICE_KEY ? '? set (' + process.env.SUPABASE_SERVICE_KEY.substring(0,20) + '...)' : '? missing',
+  jwt_secret: process.env.JWT_SECRET ? '? set' : '? missing',
   node_env: process.env.NODE_ENV || 'not set',
   port: PORT
 }));
@@ -349,7 +370,7 @@ app.get('/api/system/dependencies', async (_req, res) => {
   res.json(payload);
 });
 
-// Stream SSE para mensajer�a en tiempo real
+// Stream SSE para mensajer?a en tiempo real
 app.get('/api/chat/stream', authFromQuery, (req, res) => {
   const userId = String(req.user.id);
   res.setHeader('Content-Type', 'text/event-stream');
@@ -393,7 +414,7 @@ app.post('/api/auth/register', async (req, res) => {
     // Verificar si ya existe
     const { data: existing } = await supabase
       .from('users').select('id').eq('phone', phone).maybeSingle();
-    if (existing) return res.status(409).json({ message: 'El tel�fono ya est� registrado' });
+    if (existing) return res.status(409).json({ message: 'El tel?fono ya est? registrado' });
 
     const hashed = await bcrypt.hash(password, 10);
     const { data: user, error } = await supabase
@@ -560,26 +581,26 @@ app.put('/api/auth/profile', auth, async (req, res) => {
   }
 });
 
-app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesi�n cerrada' }));
+app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesi?n cerrada' }));
 
-// -- Recuperaci�n de contrase�a ------------------------------------------------
-// Almac�n temporal en memoria: { phone -> { code, expiresAt } }
+// -- Recuperaci?n de contrase?a ------------------------------------------------
+// Almac?n temporal en memoria: { phone -> { code, expiresAt } }
 const resetCodes = new Map();
 
 app.post('/api/auth/send-verification', async (req, res) => {
   try {
     const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Tel�fono requerido' });
+    if (!phone) return res.status(400).json({ message: 'Tel?fono requerido' });
 
     // Verificar que el usuario existe
     const { data: user } = await supabase.from('users').select('id').eq('phone', phone).maybeSingle();
-    if (!user) return res.status(404).json({ message: 'No existe ninguna cuenta con ese n�mero' });
+    if (!user) return res.status(404).json({ message: 'No existe ninguna cuenta con ese n?mero' });
 
-    // Generar c�digo de 6 d�gitos
+    // Generar c?digo de 6 d?gitos
     const code = String(Math.floor(100000 + Math.random() * 900000));
     resetCodes.set(phone, { code, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min
 
-    // Intentar enviar SMS via Twilio si est� configurado
+    // Intentar enviar SMS via Twilio si est? configurado
     try {
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken  = process.env.TWILIO_AUTH_TOKEN;
@@ -587,7 +608,7 @@ app.post('/api/auth/send-verification', async (req, res) => {
       if (accountSid && authToken && fromPhone) {
         const twilio = require('twilio')(accountSid, authToken);
         await twilio.messages.create({
-          body: `Tu c�digo de recuperaci�n EGCHAT es: ${code}. V�lido 10 minutos.`,
+          body: `Tu c?digo de recuperaci?n EGCHAT es: ${code}. V?lido 10 minutos.`,
           from: fromPhone,
           to: phone,
         });
@@ -596,8 +617,8 @@ app.post('/api/auth/send-verification', async (req, res) => {
       console.warn('SMS no enviado (Twilio no configurado):', smsErr.message);
     }
 
-    console.log(`[RESET] C�digo para ${phone}: ${code}`);
-    res.json({ sent: true, message: 'C�digo enviado' });
+    console.log(`[RESET] C?digo para ${phone}: ${code}`);
+    res.json({ sent: true, message: 'C?digo enviado' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
@@ -606,15 +627,15 @@ app.post('/api/auth/send-verification', async (req, res) => {
 app.post('/api/auth/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-    if (!phone || !code) return res.status(400).json({ message: 'Tel�fono y c�digo requeridos' });
+    if (!phone || !code) return res.status(400).json({ message: 'Tel?fono y c?digo requeridos' });
 
     const entry = resetCodes.get(phone);
-    if (!entry) return res.status(400).json({ verified: false, message: 'No hay c�digo activo para este n�mero' });
+    if (!entry) return res.status(400).json({ verified: false, message: 'No hay c?digo activo para este n?mero' });
     if (Date.now() > entry.expiresAt) {
       resetCodes.delete(phone);
-      return res.status(400).json({ verified: false, message: 'El c�digo ha expirado. Solicita uno nuevo.' });
+      return res.status(400).json({ verified: false, message: 'El c?digo ha expirado. Solicita uno nuevo.' });
     }
-    if (entry.code !== String(code)) return res.status(400).json({ verified: false, message: 'C�digo incorrecto' });
+    if (entry.code !== String(code)) return res.status(400).json({ verified: false, message: 'C?digo incorrecto' });
 
     res.json({ verified: true });
   } catch (e) {
@@ -626,24 +647,24 @@ app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { phone, code, newPassword } = req.body;
     if (!phone || !code || !newPassword) return res.status(400).json({ message: 'Faltan datos' });
-    if (newPassword.length < 6) return res.status(400).json({ message: 'La contrase�a debe tener al menos 6 caracteres' });
+    if (newPassword.length < 6) return res.status(400).json({ message: 'La contrase?a debe tener al menos 6 caracteres' });
 
-    // Verificar c�digo
+    // Verificar c?digo
     const entry = resetCodes.get(phone);
-    if (!entry) return res.status(400).json({ message: 'C�digo no v�lido o expirado' });
+    if (!entry) return res.status(400).json({ message: 'C?digo no v?lido o expirado' });
     if (Date.now() > entry.expiresAt) {
       resetCodes.delete(phone);
-      return res.status(400).json({ message: 'El c�digo ha expirado. Solicita uno nuevo.' });
+      return res.status(400).json({ message: 'El c?digo ha expirado. Solicita uno nuevo.' });
     }
-    if (entry.code !== String(code)) return res.status(400).json({ message: 'C�digo incorrecto' });
+    if (entry.code !== String(code)) return res.status(400).json({ message: 'C?digo incorrecto' });
 
-    // Actualizar contrase�a
+    // Actualizar contrase?a
     const hash = await bcrypt.hash(newPassword, 10);
     const { error } = await supabase.from('users').update({ password_hash: hash }).eq('phone', phone);
     if (error) throw error;
 
-    resetCodes.delete(phone); // invalidar c�digo usado
-    res.json({ success: true, message: 'Contrase�a actualizada correctamente' });
+    resetCodes.delete(phone); // invalidar c?digo usado
+    res.json({ success: true, message: 'Contrase?a actualizada correctamente' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
@@ -653,7 +674,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // CONTACTOS
 // --------------------------------------------------------------------
 // ========================================================================
-// CHAT / MENSAJER��A COMPLETA
+// CHAT / MENSAJER??A COMPLETA
 // ========================================================================
 
 // Obtener todos los chats del usuario
@@ -666,7 +687,7 @@ app.get('/api/chats', auth, async (req, res) => {
       .eq('user_id', req.user.id);
 
     if (pErr) {
-      // Si la tabla no existe, devolver array vac�o
+      // Si la tabla no existe, devolver array vac?o
       return res.json([]);
     }
 
@@ -720,11 +741,11 @@ app.get('/api/chats', auth, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('Get chats error:', e.message);
-    res.json([]); // Devolver vac�o en vez de 500
+    res.json([]); // Devolver vac?o en vez de 500
   }
 });
 
-// Obtener mensajes de un chat espec��­fico
+// Obtener mensajes de un chat espec??�fico
 app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -749,7 +770,7 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
       .order('created_at', { ascending: false })
       .range(from, from + limit - 1);
 
-    // Filtrar mensajes que el usuario elimin� para s� mismo
+    // Filtrar mensajes que el usuario elimin? para s? mismo
     const { data: deletions } = await supabase
       .from('message_deletions')
       .select('message_id')
@@ -821,7 +842,7 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
 });
 
 // Crear chat privado
-// Crear chat privado �€” usa chat_participants
+// Crear chat privado ?�� usa chat_participants
 app.post('/api/chats/private', auth, async (req, res) => {
   try {
     const { participant_id, phone } = req.body;
@@ -835,7 +856,7 @@ app.post('/api/chats/private', auth, async (req, res) => {
         .single();
 
       if (userError || !found) {
-        return res.status(404).json({ message: 'Usuario no encontrado con ese n��mero' });
+        return res.status(404).json({ message: 'Usuario no encontrado con ese n??mero' });
       }
 
       targetId = found.id;
@@ -935,7 +956,7 @@ app.post('/api/chats/group', auth, async (req, res) => {
       participant_ids.push(req.user.id);
     }
 
-    // Obtener informaci�n de los participantes
+    // Obtener informaci?n de los participantes
     const { data: participants, error: userError } = await supabase
       .from('users')
       .select('id, phone, full_name, avatar_url')
@@ -985,7 +1006,7 @@ app.post('/api/chats/group', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// Upload avatar de grupo � recibe base64, sube a Supabase Storage
+// Upload avatar de grupo ? recibe base64, sube a Supabase Storage
 // --------------------------------------------------------------------
 app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
   try {
@@ -1028,7 +1049,7 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
       return res.json({ avatar_url: updated?.avatar_url || base64 });
     }
 
-    // Obtener URL p�blica
+    // Obtener URL p?blica
     const { data: publicData } = supabase.storage
       .from('avatars')
       .getPublicUrl(fileName);
@@ -1076,7 +1097,7 @@ app.put('/api/chats/:chatId', auth, async (req, res) => {
     if (!chat) return res.status(404).json({ message: 'Chat no encontrado' });
     if (chat.type !== 'group') return res.status(400).json({ message: 'Solo se pueden editar grupos' });
 
-    // Construir objeto de actualizaci�n
+    // Construir objeto de actualizaci?n
     const updates = { updated_at: new Date().toISOString() };
     if (name !== undefined && name !== null && name.trim() !== '') {
       updates.name = name.trim();
@@ -1153,7 +1174,7 @@ app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   }
 });
 
-// Marcar mensajes como le�dos
+// Marcar mensajes como le?dos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -1171,7 +1192,7 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
       return res.status(403).json({ message: 'No tienes acceso a este chat' });
     }
 
-    // Marcar mensajes como le�dos hasta el mensaje especificado
+    // Marcar mensajes como le?dos hasta el mensaje especificado
     const { error: updateError } = await supabase
       .from('message_reads')
       .upsert({
@@ -1185,21 +1206,21 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Resetear contador de no le��­dos
+    // Resetear contador de no le??�dos
     await supabase
       .from('chat_participants')
       .update({ unread_count: 0 })
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id);
 
-    res.json({ message: 'Mensajes marcados como le��­dos' });
+    res.json({ message: 'Mensajes marcados como le??�dos' });
   } catch (e) {
     console.error('Mark as read error:', e);
     res.status(500).json({ message: e.message });
   }
 });
 
-// Subir archivo de chat � acepta multipart/form-data (Android/iOS) y raw buffer (web)
+// Subir archivo de chat ? acepta multipart/form-data (Android/iOS) y raw buffer (web)
 app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -1250,7 +1271,7 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
     }
 
     if (!buffer || buffer.length === 0) {
-      return res.status(400).json({ message: 'Archivo vac�o o no recibido' });
+      return res.status(400).json({ message: 'Archivo vac?o o no recibido' });
     }
 
     const ext = fileName.split('.').pop()?.toLowerCase() || 'bin';
@@ -1269,7 +1290,7 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
       return res.status(500).json({ message: 'Error al subir archivo: ' + uploadError.message });
     }
 
-    // Obtener URL p�blica
+    // Obtener URL p?blica
     const { data: urlData } = supabase.storage
       .from('chat-files')
       .getPublicUrl(storagePath);
@@ -1289,7 +1310,7 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
   }
 });
 
-// Eliminar mensaje para m� (solo oculta para el usuario actual)
+// Eliminar mensaje para m? (solo oculta para el usuario actual)
 app.delete('/api/messages/:messageId/for-me', auth, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -1315,7 +1336,7 @@ app.delete('/api/messages/:messageId/for-me', auth, async (req, res) => {
 
     if (!part) return res.status(403).json({ message: 'Sin acceso a este chat' });
 
-    // Registrar la eliminaci�n para este usuario (upsert para evitar duplicados)
+    // Registrar la eliminaci?n para este usuario (upsert para evitar duplicados)
     const { error: delError } = await supabase
       .from('message_deletions')
       .upsert({ message_id: messageId, user_id: req.user.id }, { onConflict: 'message_id,user_id' });
@@ -1368,7 +1389,7 @@ app.delete('/api/messages/:messageId', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// CONTACTOS - GESTI��“N COMPLETA
+// CONTACTOS - GESTI??�N COMPLETA
 // --------------------------------------------------------------------
 
 // Obtener todos los contactos del usuario
@@ -1419,7 +1440,7 @@ app.post('/api/contacts', auth, async (req, res) => {
     let targetId = contact_user_id && contact_user_id.trim() ? contact_user_id.trim() : null;
 
     if (!targetId && phone) {
-      // Normalizar tel�fono: buscar con y sin prefijo +
+      // Normalizar tel?fono: buscar con y sin prefijo +
       const phoneNorm = phone.trim();
       const phoneAlt = phoneNorm.startsWith('+') ? phoneNorm.slice(1) : '+' + phoneNorm;
       console.log('[ADD CONTACT] searching by phone:', phoneNorm, 'or', phoneAlt);
@@ -1433,14 +1454,14 @@ app.post('/api/contacts', auth, async (req, res) => {
       console.log('[ADD CONTACT] phone search result:', targetUser, 'error:', userError?.message);
 
       if (userError || !targetUser) {
-        return res.status(404).json({ message: 'Usuario no encontrado con ese n�mero' });
+        return res.status(404).json({ message: 'Usuario no encontrado con ese n?mero' });
       }
 
       targetId = targetUser.id;
     }
 
     if (!targetId) {
-      return res.status(400).json({ message: 'ID de contacto o tel�fono requerido' });
+      return res.status(400).json({ message: 'ID de contacto o tel?fono requerido' });
     }
 
     console.log('[ADD CONTACT] targetId:', targetId);
@@ -1684,7 +1705,7 @@ app.get('/api/contacts/search', auth, async (req, res) => {
       .neq('id', req.user.id)
       .limit(50);
 
-    // Si hay t�rmino de b�squeda, filtrar; si no, devolver todos
+    // Si hay t?rmino de b?squeda, filtrar; si no, devolver todos
     if (q && q.length >= 2) {
       query = query.or(`phone.ilike.%${q}%,full_name.ilike.%${q}%`);
     }
@@ -1729,7 +1750,7 @@ app.get('/api/wallet/transactions', auth, async (req, res) => {
 
 app.post('/api/wallet/deposit', auth, async (req, res) => {
   const { amount, method, reference } = req.body;
-  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv��¡lido' });
+  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv??�lido' });
 
   const { data: wallet } = await supabase
     .from('wallets').select('balance').eq('user_id', req.user.id).single();
@@ -1750,7 +1771,7 @@ app.post('/api/wallet/withdraw', auth, async (req, res) => {
   const { data: wallet } = await supabase
     .from('wallets').select('balance').eq('user_id', req.user.id).single();
 
-  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv��¡lido' });
+  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv??�lido' });
   if (!wallet || amount > wallet.balance) return res.status(400).json({ message: 'Saldo insuficiente' });
 
   const newBalance = wallet.balance - amount;
@@ -1776,7 +1797,7 @@ app.post('/api/wallet/transfer', auth, async (req, res) => {
 
   const { data: tx } = await supabase.from('transactions').insert({
     user_id: req.user.id, type: 'transfer_sent', amount, method: 'EGCHAT',
-    reference: `A: ${to} ��· ${concept || ''}`, status: 'completed'
+    reference: `A: ${to} ??� ${concept || ''}`, status: 'completed'
   }).select().single();
 
   res.json({ balance: newBalance, transaction: tx });
@@ -1785,16 +1806,16 @@ app.post('/api/wallet/transfer', auth, async (req, res) => {
 app.post('/api/wallet/recharge-code', auth, async (req, res) => {
   const { code } = req.body;
   if (!code || code.replace(/-/g, '').length !== 16)
-    return res.status(400).json({ message: 'C��³digo inv��¡lido' });
+    return res.status(400).json({ message: 'C??�digo inv??�lido' });
 
-  // Verificar si el c��³digo ya fue usado
+  // Verificar si el c??�digo ya fue usado
   const { data: usedCode } = await supabase
     .from('recharge_codes').select('*').eq('code', code).single();
 
-  if (!usedCode) return res.status(400).json({ message: 'C��³digo no v��¡lido' });
-  if (usedCode.used || usedCode.is_used) return res.status(400).json({ message: 'C��³digo ya utilizado' });
+  if (!usedCode) return res.status(400).json({ message: 'C??�digo no v??�lido' });
+  if (usedCode.used || usedCode.is_used) return res.status(400).json({ message: 'C??�digo ya utilizado' });
   if (usedCode.expires_at && new Date(usedCode.expires_at) < new Date())
-    return res.status(400).json({ message: 'C��³digo expirado' });
+    return res.status(400).json({ message: 'C??�digo expirado' });
 
   const amount = usedCode?.amount || 5000;
 
@@ -1808,11 +1829,11 @@ app.post('/api/wallet/recharge-code', auth, async (req, res) => {
   await supabase.from('wallets').update({ balance: newBalance }).eq('user_id', req.user.id);
 
   await supabase.from('transactions').insert({
-    user_id: req.user.id, type: 'deposit', amount, method: 'C��³digo de recarga',
+    user_id: req.user.id, type: 'deposit', amount, method: 'C??�digo de recarga',
     reference: code, status: 'completed'
   });
 
-  res.json({ balance: newBalance, amount, message: `${amount.toLocaleString()} XAF a��±adidos` });
+  res.json({ balance: newBalance, amount, message: `${amount.toLocaleString()} XAF a??�adidos` });
 });
 
 const WALLET_LIMITS = {
@@ -1894,7 +1915,7 @@ app.get('/api/wallet/summary', auth, async (req, res) => {
 app.post('/api/wallet/hold', auth, async (req, res) => {
   const amount = Number(req.body?.amount || 0);
   const reference = req.body?.reference || `HOLD-${Date.now()}`;
-  if (amount <= 0) return res.status(400).json({ message: 'Importe inv�lido' });
+  if (amount <= 0) return res.status(400).json({ message: 'Importe inv?lido' });
   const wallet = await getWalletSafe(req.user.id);
   if (amount > Number(wallet.balance || 0)) return res.status(400).json({ message: 'Saldo insuficiente' });
   const { data: tx } = await supabase.from('transactions').insert({
@@ -1907,8 +1928,8 @@ app.post('/api/wallet/hold/:id/capture', auth, async (req, res) => {
   const holdId = req.params.id;
   const { data: hold } = await supabase.from('transactions').select('*')
     .eq('id', holdId).eq('user_id', req.user.id).eq('type', 'hold').maybeSingle();
-  if (!hold) return res.status(404).json({ message: 'Retenci�n no encontrada' });
-  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci�n ya procesada' });
+  if (!hold) return res.status(404).json({ message: 'Retenci?n no encontrada' });
+  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci?n ya procesada' });
   const wallet = await getWalletSafe(req.user.id);
   const amount = Number(hold.amount || 0);
   if (amount > Number(wallet.balance || 0)) return res.status(400).json({ message: 'Saldo insuficiente para captura' });
@@ -1926,18 +1947,18 @@ app.post('/api/wallet/hold/:id/cancel', auth, async (req, res) => {
   const holdId = req.params.id;
   const { data: hold } = await supabase.from('transactions').select('*')
     .eq('id', holdId).eq('user_id', req.user.id).eq('type', 'hold').maybeSingle();
-  if (!hold) return res.status(404).json({ message: 'Retenci�n no encontrada' });
-  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci�n ya procesada' });
+  if (!hold) return res.status(404).json({ message: 'Retenci?n no encontrada' });
+  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci?n ya procesada' });
   await supabase.from('transactions').update({ status: 'cancelled' }).eq('id', holdId);
-  res.json({ message: 'Retenci�n cancelada' });
+  res.json({ message: 'Retenci?n cancelada' });
 });
 
 app.post('/api/wallet/reverse/:txId', auth, async (req, res) => {
   const txId = req.params.txId;
   const { data: tx } = await supabase.from('transactions').select('*')
     .eq('id', txId).eq('user_id', req.user.id).maybeSingle();
-  if (!tx) return res.status(404).json({ message: 'Transacci�n no encontrada' });
-  if (tx.status === 'reversed') return res.status(400).json({ message: 'Transacci�n ya revertida' });
+  if (!tx) return res.status(404).json({ message: 'Transacci?n no encontrada' });
+  if (tx.status === 'reversed') return res.status(400).json({ message: 'Transacci?n ya revertida' });
   const reversible = ['withdraw', 'transfer_sent', 'payment', 'payment_capture'];
   if (!reversible.includes(tx.type)) return res.status(400).json({ message: 'Tipo no reversible' });
   const wallet = await getWalletSafe(req.user.id);
@@ -2052,7 +2073,7 @@ app.post('/api/wallet/ledger/journals', auth, async (req, res) => {
   await ensureSystemLedgerAccounts();
   const { concept, reference, lines } = req.body || {};
   if (!concept || !Array.isArray(lines) || lines.length < 2) {
-    return res.status(400).json({ message: 'concept y al menos 2 l�neas son requeridos' });
+    return res.status(400).json({ message: 'concept y al menos 2 l?neas son requeridos' });
   }
 
   let debit = 0;
@@ -2063,7 +2084,7 @@ app.post('/api/wallet/ledger/journals', auth, async (req, res) => {
     const entryType = String(l?.entry_type || '');
     const accountId = String(l?.account_id || '');
     if (!accountId || !['debit', 'credit'].includes(entryType) || amount <= 0) {
-      return res.status(400).json({ message: 'L�neas inv�lidas: account_id, entry_type y amount son obligatorios' });
+      return res.status(400).json({ message: 'L?neas inv?lidas: account_id, entry_type y amount son obligatorios' });
     }
     if (entryType === 'debit') debit += amount;
     else credit += amount;
@@ -2124,7 +2145,7 @@ app.post('/api/wallet/ledger/journals/:id/approve', auth, async (req, res) => {
     .eq('id', id)
     .maybeSingle();
   if (!journal) return res.status(404).json({ message: 'Asiento no encontrado' });
-  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est� pendiente de aprobaci�n' });
+  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est? pendiente de aprobaci?n' });
   if (String(journal.created_by) === String(req.user.id)) {
     return res.status(403).json({ message: 'Maker-checker activo: el creador no puede aprobar su propio asiento' });
   }
@@ -2157,7 +2178,7 @@ app.post('/api/wallet/ledger/journals/:id/reject', auth, async (req, res) => {
     .eq('id', id)
     .maybeSingle();
   if (!journal) return res.status(404).json({ message: 'Asiento no encontrado' });
-  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est� pendiente de aprobaci�n' });
+  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est? pendiente de aprobaci?n' });
   if (String(journal.created_by) === String(req.user.id)) {
     return res.status(403).json({ message: 'Maker-checker activo: el creador no puede rechazar su propio asiento' });
   }
@@ -2222,12 +2243,12 @@ app.post('/api/cemac/transfers', auth, async (req, res) => {
   try {
     const { from_country, to_country, beneficiary_name, beneficiary_account, amount, external_id } = req.body || {};
     
-    // Validaci�n robusta
+    // Validaci?n robusta
     if (!from_country || !to_country || !beneficiary_name || !beneficiary_account || Number(amount || 0) <= 0) {
       return res.status(400).json({ message: 'Datos de transferencia invalidos', code: 'VALIDATION_ERROR' });
     }
     
-    // Validar pa�ses CEMAC
+    // Validar pa?ses CEMAC
     const validCountries = ['GQ', 'CM', 'GA', 'CG', 'TD', 'CF'];
     if (!validCountries.includes(from_country) || !validCountries.includes(to_country)) {
       return res.status(400).json({ message: 'Paises no soportados', code: 'INVALID_COUNTRY' });
@@ -2396,27 +2417,27 @@ app.post('/api/lia/chat', auth, async (req, res) => {
 
   let reply = '';
   if (lower.includes('saldo') || lower.includes('balance'))
-    reply = `Tu saldo actual es **${balance.toLocaleString()} XAF**. ��¿Deseas recargar o retirar?`;
+    reply = `Tu saldo actual es **${balance.toLocaleString()} XAF**. ??�Deseas recargar o retirar?`;
   else if (lower.includes('hola') || lower.includes('buenos'))
-    reply = '��¡Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. ��¿En qu��© puedo ayudarte hoy?';
+    reply = '??�Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. ??�En qu??� puedo ayudarte hoy?';
   else if (lower.includes('taxi'))
-    reply = 'Puedo ayudarte a pedir un taxi. Ve a la secci��³n MiTaxi desde el men��º principal.';
+    reply = 'Puedo ayudarte a pedir un taxi. Ve a la secci??�n MiTaxi desde el men??� principal.';
   else if (lower.includes('salud') || lower.includes('hospital'))
-    reply = 'En la secci��³n Salud encontrar��¡s hospitales, farmacias y puedes pedir citas m��©dicas.';
+    reply = 'En la secci??�n Salud encontrar??�s hospitales, farmacias y puedes pedir citas m??�dicas.';
   else if (lower.includes('supermercado') || lower.includes('compra'))
-    reply = 'Puedes hacer compras en l��­nea desde la secci��³n Supermercados. Tenemos tiendas en Malabo y Bata.';
+    reply = 'Puedes hacer compras en l??�nea desde la secci??�n Supermercados. Tenemos tiendas en Malabo y Bata.';
   else if (lower.includes('transferir') || lower.includes('enviar dinero'))
-    reply = 'Para enviar dinero, ve a Mi Monedero �†’ Enviar, o dime el n��ºmero y el importe.';
+    reply = 'Para enviar dinero, ve a Mi Monedero ?�� Enviar, o dime el n??�mero y el importe.';
   else if (lower.includes('seguro'))
-    reply = 'Puedes contratar seguros de salud, veh��­culo, vida y hogar en la secci��³n Seguros.';
+    reply = 'Puedes contratar seguros de salud, veh??�culo, vida y hogar en la secci??�n Seguros.';
   else if (lower.includes('noticias'))
-    reply = 'Las ��ºltimas noticias de Guinea Ecuatorial y del mundo est��¡n en la secci��³n Noticias.';
+    reply = 'Las ??�ltimas noticias de Guinea Ecuatorial y del mundo est??�n en la secci??�n Noticias.';
   else if (lower.includes('gracias'))
-    reply = '��¡De nada! Estoy aqu��­ para ayudarte. ��¿Hay algo m��¡s?';
+    reply = '??�De nada! Estoy aqu??� para ayudarte. ??�Hay algo m??�s?';
   else
     reply = `Entendido: "${message}". Puedo ayudarte con saldo, transferencias, taxi, salud, supermercados, seguros y noticias.`;
 
-  // Guardar conversaci��³n en Supabase
+  // Guardar conversaci??�n en Supabase
   await supabase.from('lia_conversations').insert({
     user_id: req.user.id, message, reply
   }).catch(() => {});
@@ -2449,13 +2470,13 @@ app.post('/api/user/change-password', auth, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const { data: user } = await supabase.from('users').select('password_hash').eq('id', req.user.id).single();
   const ok = await bcrypt.compare(oldPassword, user.password_hash);
-  if (!ok) return res.status(401).json({ message: 'Contrase�a actual incorrecta' });
+  if (!ok) return res.status(401).json({ message: 'Contrase?a actual incorrecta' });
   const hashed = await bcrypt.hash(newPassword, 10);
   await supabase.from('users').update({ password_hash: hashed }).eq('id', req.user.id);
-  res.json({ message: 'Contrase�a actualizada' });
+  res.json({ message: 'Contrase?a actualizada' });
 });
 
-// Reset de contrase�a por admin (protegido con ADMIN_RESET_KEY)
+// Reset de contrase?a por admin (protegido con ADMIN_RESET_KEY)
 app.post('/api/admin/reset-password', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.body?.adminKey;
   if (!key || key !== adminResetKey) return res.status(403).json({ message: 'No autorizado' });
@@ -2464,13 +2485,13 @@ app.post('/api/admin/reset-password', async (req, res) => {
   const hashed = await bcrypt.hash(newPassword, 10);
   const { data, error } = await supabase.from('users').update({ password_hash: hashed }).eq('phone', phone).select('id, phone, full_name').single();
   if (error || !data) return res.status(404).json({ message: 'Usuario no encontrado', error: error?.message });
-  res.json({ message: 'Contrase�a reseteada', user: data });
+  res.json({ message: 'Contrase?a reseteada', user: data });
 });
 
 
 // --------------------------------------------------------------------
 // CONTACTOS
-// SERVICIOS P��šBLICOS (simulados con datos reales de GE)
+// SERVICIOS P??�BLICOS (simulados con datos reales de GE)
 // --------------------------------------------------------------------
 const sandboxStatus = ['pending', 'processing', 'completed', 'failed'];
 const safeRef = (prefix) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
@@ -2598,11 +2619,11 @@ const SUPERMERCADOS = [
   { id: '3', name: 'Mercado Mongomo', city: 'Mongomo', address: 'Plaza Central', phone: '+240 444 001', open: false },
 ];
 const PRODUCTOS = [
-  { id: '1', name: 'Arroz 5kg', price: 3500, category: 'Alimentaci��³n', stock: 50 },
-  { id: '2', name: 'Aceite 1L', price: 1200, category: 'Alimentaci��³n', stock: 30 },
+  { id: '1', name: 'Arroz 5kg', price: 3500, category: 'Alimentaci??�n', stock: 50 },
+  { id: '2', name: 'Aceite 1L', price: 1200, category: 'Alimentaci??�n', stock: 30 },
   { id: '3', name: 'Agua 6x1.5L', price: 2000, category: 'Bebidas', stock: 100 },
-  { id: '4', name: 'Leche 1L', price: 800, category: 'L��¡cteos', stock: 20 },
-  { id: '5', name: 'Pan de molde', price: 600, category: 'Panader��­a', stock: 15 },
+  { id: '4', name: 'Leche 1L', price: 800, category: 'L??�cteos', stock: 20 },
+  { id: '5', name: 'Pan de molde', price: 600, category: 'Panader??�a', stock: 15 },
 ];
 
 app.get('/api/supermarkets', auth, async (req, res) => {
@@ -2663,9 +2684,9 @@ app.get('/api/supermarkets/orders/:id', auth, async (req, res) => {
 // SALUD
 // --------------------------------------------------------------------
 const HOSPITALES = [
-  { id: '1', name: 'Hospital General de Malabo', city: 'Malabo', phone: '+240 222 100', emergency: true, specialties: ['Urgencias', 'Cirug��­a', 'Pediatr��­a'] },
-  { id: '2', name: 'Cl��­nica Santa Isabel', city: 'Malabo', phone: '+240 222 200', emergency: false, specialties: ['Medicina General', 'Ginecolog��­a'] },
-  { id: '3', name: 'Hospital Regional de Bata', city: 'Bata', phone: '+240 333 100', emergency: true, specialties: ['Urgencias', 'Traumatolog��­a'] },
+  { id: '1', name: 'Hospital General de Malabo', city: 'Malabo', phone: '+240 222 100', emergency: true, specialties: ['Urgencias', 'Cirug??�a', 'Pediatr??�a'] },
+  { id: '2', name: 'Cl??�nica Santa Isabel', city: 'Malabo', phone: '+240 222 200', emergency: false, specialties: ['Medicina General', 'Ginecolog??�a'] },
+  { id: '3', name: 'Hospital Regional de Bata', city: 'Bata', phone: '+240 333 100', emergency: true, specialties: ['Urgencias', 'Traumatolog??�a'] },
 ];
 const FARMACIAS = [
   { id: '1', name: 'Farmacia Central Malabo', city: 'Malabo', phone: '+240 222 300', open24h: true },
@@ -2760,7 +2781,7 @@ app.post('/api/taxi/request', auth, async (req, res) => {
         driver
       };
       
-      // Intentar insert con columnas espec�ficas
+      // Intentar insert con columnas espec?ficas
       const { data } = await supabase.from('taxi_rides').insert(insertData).select().maybeSingle();
       ride = data;
     } catch (insertError) {
@@ -3013,7 +3034,7 @@ app.post('/taxi/:rideId/rate', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// SEGUROS - COTIZACIONES, P��“LIZAS, RECLAMACIONES
+// SEGUROS - COTIZACIONES, P??�LIZAS, RECLAMACIONES
 // --------------------------------------------------------------------
 
 // Obtener tipos de seguros disponibles
@@ -3023,23 +3044,23 @@ app.get('/api/insurance/types', auth, async (req, res) => {
       {
         id: 'salud',
         name: 'Seguro de Salud',
-        icon: '�Ÿ¥',
-        description: 'Cobertura m��©dica completa',
-        coverage: ['consultas', 'urgencias', 'hospitalizaci��³n', 'medicamentos'],
+        icon: '?���',
+        description: 'Cobertura m??�dica completa',
+        coverage: ['consultas', 'urgencias', 'hospitalizaci??�n', 'medicamentos'],
         starting_price: 5000
       },
       {
         id: 'vehiculo',
-        name: 'Seguro de Veh��­culo',
-        icon: '�Ÿš—',
-        description: 'Protecci��³n para tu veh��­culo',
-        coverage: ['colisi��³n', 'robo', 'da��±os', 'responsabilidad civil'],
+        name: 'Seguro de Veh??�culo',
+        icon: '?���',
+        description: 'Protecci??�n para tu veh??�culo',
+        coverage: ['colisi??�n', 'robo', 'da??�os', 'responsabilidad civil'],
         starting_price: 8000
       },
       {
         id: 'vida',
         name: 'Seguro de Vida',
-        icon: '�Ÿ›¡��¸',
+        icon: '?���??��',
         description: 'Seguridad para tu familia',
         coverage: ['fallecimiento', 'invalidez', 'enfermedades graves'],
         starting_price: 3000
@@ -3047,9 +3068,9 @@ app.get('/api/insurance/types', auth, async (req, res) => {
       {
         id: 'hogar',
         name: 'Seguro de Hogar',
-        icon: '�Ÿ ',
-        description: 'Protecci��³n para tu vivienda',
-        coverage: ['incendio', 'robo', 'da��±os estructurales', 'responsabilidad civil'],
+        icon: '?���',
+        description: 'Protecci??�n para tu vivienda',
+        coverage: ['incendio', 'robo', 'da??�os estructurales', 'responsabilidad civil'],
         starting_price: 4000
       }
     ];
@@ -3061,13 +3082,13 @@ app.get('/api/insurance/types', auth, async (req, res) => {
   }
 });
 
-// Obtener cotizaci��³n de seguro
+// Obtener cotizaci??�n de seguro
 app.post('/api/insurance/quote', auth, async (req, res) => {
   try {
     const { insurance_type, coverage_amount, duration_months } = req.body;
 
     if (!insurance_type || !coverage_amount || !duration_months) {
-      return res.status(400).json({ message: 'Datos incompletos para cotizaci��³n' });
+      return res.status(400).json({ message: 'Datos incompletos para cotizaci??�n' });
     }
 
     // Calcular prima mensual (ejemplo simple)
@@ -3127,7 +3148,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
       return res.status(400).json({ message: 'Saldo insuficiente para contratar seguro' });
     }
 
-    // Crear p��³liza
+    // Crear p??�liza
     const { data: policy } = await supabase
       .from('insurance_policies')
       .insert({
@@ -3151,7 +3172,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
       .update({ balance: newBalance })
       .eq('user_id', req.user.id);
 
-    // Registrar transacci��³n
+    // Registrar transacci??�n
     await supabase
       .from('transactions')
       .insert({
@@ -3179,7 +3200,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
   }
 });
 
-// Obtener p��³lizas del usuario
+// Obtener p??�lizas del usuario
 app.get('/api/insurance/policies', auth, async (req, res) => {
   try {
     const { data: policies } = await supabase
@@ -3195,16 +3216,16 @@ app.get('/api/insurance/policies', auth, async (req, res) => {
   }
 });
 
-// Presentar reclamaci��³n
+// Presentar reclamaci??�n
 app.post('/api/insurance/claim', auth, async (req, res) => {
   try {
     const { policy_id, claim_type, description, amount } = req.body;
 
     if (!policy_id || !claim_type || !description) {
-      return res.status(400).json({ message: 'Datos incompletos para reclamaci��³n' });
+      return res.status(400).json({ message: 'Datos incompletos para reclamaci??�n' });
     }
 
-    // Verificar que la p��³liza pertenece al usuario
+    // Verificar que la p??�liza pertenece al usuario
     const { data: policy } = await supabase
       .from('insurance_policies')
       .select('id, user_id, status')
@@ -3212,14 +3233,14 @@ app.post('/api/insurance/claim', auth, async (req, res) => {
       .single();
 
     if (!policy || policy.user_id !== req.user.id) {
-      return res.status(404).json({ message: 'P��³liza no encontrada' });
+      return res.status(404).json({ message: 'P??�liza no encontrada' });
     }
 
     if (policy.status !== 'active') {
-      return res.status(400).json({ message: 'La p��³liza no est��¡ activa' });
+      return res.status(400).json({ message: 'La p??�liza no est??� activa' });
     }
 
-    // Crear reclamaci��³n
+    // Crear reclamaci??�n
     const { data: claim } = await supabase
       .from('insurance_claims')
       .insert({
@@ -3235,7 +3256,7 @@ app.post('/api/insurance/claim', auth, async (req, res) => {
       .single();
 
     res.json({
-      message: 'Reclamaci��³n presentada exitosamente',
+      message: 'Reclamaci??�n presentada exitosamente',
       claim
     });
   } catch (e) {
@@ -3264,47 +3285,47 @@ app.get('/api/insurance/claims', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// NOTICIAS - CATEGOR��AS, FEEDS, B��šSQUEDA, PERSONALIZACI��“N
+// NOTICIAS - CATEGOR??�AS, FEEDS, B??�SQUEDA, PERSONALIZACI??�N
 // --------------------------------------------------------------------
 
-// Obtener categor��­as de noticias
+// Obtener categor??�as de noticias
 app.get('/api/news/categories', auth, async (req, res) => {
   try {
     const categories = [
       {
         id: 'nacional',
         name: 'Nacional',
-        icon: '�Ÿ‡¬�Ÿ‡¶',
+        icon: '?���?���',
         description: 'Noticias de Guinea Ecuatorial'
       },
       {
         id: 'internacional',
         name: 'Internacional',
-        icon: '�ŸŒ',
+        icon: '?���',
         description: 'Noticias del mundo'
       },
       {
         id: 'deportes',
         name: 'Deportes',
-        icon: '�š½',
-        description: 'F��ºtbol y otros deportes'
+        icon: '?��',
+        description: 'F??�tbol y otros deportes'
       },
       {
         id: 'economia',
-        name: 'Econom��­a',
-        icon: '�Ÿ’°',
+        name: 'Econom??�a',
+        icon: '?���',
         description: 'Finanzas y negocios'
       },
       {
         id: 'tecnologia',
-        name: 'Tecnolog��­a',
-        icon: '�Ÿ’»',
-        description: 'Tecnolog��­a y ciencia'
+        name: 'Tecnolog??�a',
+        icon: '?���',
+        description: 'Tecnolog??�a y ciencia'
       },
       {
         id: 'cultura',
         name: 'Cultura',
-        icon: '�ŸŽ­',
+        icon: '?���',
         description: 'Arte y entretenimiento'
       }
     ];
@@ -3316,18 +3337,18 @@ app.get('/api/news/categories', auth, async (req, res) => {
   }
 });
 
-// Obtener noticias por categor��­a
+// Obtener noticias por categor??�a
 app.get('/api/news', auth, async (req, res) => {
   try {
     const { category, page = 1, limit = 20 } = req.query;
 
-    // Noticias simuladas (en producci��³n vendr��­an de una API real)
+    // Noticias simuladas (en producci??�n vendr??�an de una API real)
     const allNews = [
       {
         id: '1',
-        title: 'EGCHAT lanza nueva funcionalidad de mensajer�a instant�nea',
+        title: 'EGCHAT lanza nueva funcionalidad de mensajer?a instant?nea',
         category: 'tecnologia',
-        summary: 'La aplicaci��³n EGCHAT anuncia importantes mejoras...',
+        summary: 'La aplicaci??�n EGCHAT anuncia importantes mejoras...',
         content: '...',
         image_url: 'https://example.com/egchat-news.jpg',
         published_at: new Date().toISOString(),
@@ -3335,7 +3356,7 @@ app.get('/api/news', auth, async (req, res) => {
       },
       {
         id: '2',
-        title: 'Econom��­a de Guinea Ecuatorial muestra crecimiento',
+        title: 'Econom??�a de Guinea Ecuatorial muestra crecimiento',
         category: 'economia',
         summary: 'El Banco Central de Guinea Ecuatorial reporta...',
         content: '...',
@@ -3371,16 +3392,16 @@ app.get('/api/news/search', auth, async (req, res) => {
     const { q, category } = req.query;
 
     if (!q || q.length < 2) {
-      return res.status(400).json({ message: 'La b��ºsqueda debe tener al menos 2 caracteres' });
+      return res.status(400).json({ message: 'La b??�squeda debe tener al menos 2 caracteres' });
     }
 
-    // Noticias simuladas para b��ºsqueda
+    // Noticias simuladas para b??�squeda
     const searchResults = [
       {
         id: 'search1',
         title: `Resultados para "${q}" en EGCHAT`,
         category: category || 'todos',
-        summary: `Se encontraron art��­culos relacionados con ${q}...`,
+        summary: `Se encontraron art??�culos relacionados con ${q}...`,
         published_at: new Date().toISOString(),
         source: 'SearchEG'
       }
@@ -3500,12 +3521,12 @@ app.post('/seguros/solicitudes/:solicitudId/documentos', auth, async (req, res) 
 // NOTICIAS
 // --------------------------------------------------------------------
 const NOTICIAS = [
-  { id: '1', title: 'Presidente anuncia nuevas medidas econ��³micas para 2026', source: 'Presidencia GE', category: 'Pol��­tica', time: '14:30', isLive: true },
+  { id: '1', title: 'Presidente anuncia nuevas medidas econ??�micas para 2026', source: 'Presidencia GE', category: 'Pol??�tica', time: '14:30', isLive: true },
   { id: '2', title: 'CEMAC aprueba nuevo marco financiero regional', source: 'Noticias CEMAC', category: 'Finanzas', time: '13:45' },
-  { id: '3', title: 'Ministerio de Salud reporta avances en vacunaci��³n', source: 'Ministerio de Informaci��³n', category: 'Salud', time: '12:20' },
-  { id: '4', title: 'Nueva tecnolog��­a 5G llega a Malabo', source: 'TVGE', category: 'Tecnolog��­a', time: '11:15' },
-  { id: '5', title: 'Selecci��³n nacional se prepara para eliminatorias', source: 'Radio Nacional', category: 'Deportes', time: '10:30' },
-  { id: '6', title: 'BEAC anuncia nuevas pol��­ticas monetarias', source: 'BEAC', category: 'Finanzas', time: '09:00' },
+  { id: '3', title: 'Ministerio de Salud reporta avances en vacunaci??�n', source: 'Ministerio de Informaci??�n', category: 'Salud', time: '12:20' },
+  { id: '4', title: 'Nueva tecnolog??�a 5G llega a Malabo', source: 'TVGE', category: 'Tecnolog??�a', time: '11:15' },
+  { id: '5', title: 'Selecci??�n nacional se prepara para eliminatorias', source: 'Radio Nacional', category: 'Deportes', time: '10:30' },
+  { id: '6', title: 'BEAC anuncia nuevas pol??�ticas monetarias', source: 'BEAC', category: 'Finanzas', time: '09:00' },
 ];
 
 app.get('/api/noticias', auth, async (req, res) => {
@@ -3527,39 +3548,39 @@ app.post('/api/user/avatar', auth, async (req, res) => {
 });
 
 app.post('/lia/analyze', auth, async (_req, res) => {
-  res.json({ analysis: 'An�lisis completado.' });
+  res.json({ analysis: 'An?lisis completado.' });
 });
 
 app.post('/api/lia/analyze', auth, async (_req, res) => {
-  res.json({ analysis: 'An�lisis completado.' });
+  res.json({ analysis: 'An?lisis completado.' });
 });
 
 app.post('/lia/transcribe', auth, async (_req, res) => {
-  res.json({ text: 'Transcripci�n completada.' });
+  res.json({ text: 'Transcripci?n completada.' });
 });
 
 app.post('/api/lia/transcribe', auth, async (_req, res) => {
-  res.json({ text: 'Transcripci�n completada.' });
+  res.json({ text: 'Transcripci?n completada.' });
 });
 
 // --------------------------------------------------------------------
 // GRUPOS DE CHAT
 // --------------------------------------------------------------------
-// A�adir participante a grupo
+// A?adir participante a grupo
 app.post('/api/chats/:chatId/participants', auth, async (req, res) => {
   try {
     const { user_id } = req.body;
     await supabase.from('chat_participants').upsert({ chat_id: req.params.chatId, user_id });
-    res.json({ message: 'Participante a�adido' });
+    res.json({ message: 'Participante a?adido' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Obtener lista de participantes de un grupo con informaci�n completa
+// Obtener lista de participantes de un grupo con informaci?n completa
 app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
 
-    // Obtener todos los participantes con su informaci�n de usuario
+    // Obtener todos los participantes con su informaci?n de usuario
     const { data: participants, error } = await supabase
       .from('chat_participants')
       .select('user_id')
@@ -3666,7 +3687,7 @@ app.get('/api/chats/:chatId/wallpaper', auth, async (req, res) => {
 // --------------------------------------------------------------------
 app.get('/api/notifications', auth, async (req, res) => {
   try {
-    // Mensajes no le��­dos como notificaciones
+    // Mensajes no le??�dos como notificaciones
     const { data: parts } = await supabase.from('chat_participants').select('chat_id').eq('user_id', req.user.id);
     const chatIds = (parts || []).map(p => p.chat_id);
     if (!chatIds.length) return res.json([]);
@@ -3683,21 +3704,21 @@ app.get('/api/notifications', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// Marcar mensajes como le��­dos
+// Marcar mensajes como le??�dos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   try {
     await supabase.from('messages')
       .update({ status: 'read' })
       .eq('chat_id', req.params.chatId)
       .neq('sender_id', req.user.id);
-    res.json({ message: 'Mensajes marcados como le��­dos' });
+    res.json({ message: 'Mensajes marcados como le??�dos' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 // --------------------------------------------------------------------
 // CONTACTOS CON FOTO Y PERFIL
 // --------------------------------------------------------------------
-// Perfil p�blico de un usuario
+// Perfil p?blico de un usuario
 app.get('/api/users/:userId', auth, async (req, res) => {
   try {
     const { data } = await supabase.from('users').select('id, phone, full_name, avatar_url, created_at').eq('id', req.params.userId).single();
@@ -3707,7 +3728,7 @@ app.get('/api/users/:userId', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// ESPACIO DULCE � Canales y Comunidades
+// ESPACIO DULCE ? Canales y Comunidades
 // --------------------------------------------------------------------
 
 // Auto-crear tablas de espacios
@@ -3783,7 +3804,7 @@ const seedDefaultSpaces = async () => {
 };
 setTimeout(seedDefaultSpaces, 3000);
 
-// GET /api/spaces � listar todos los espacios con estado de seguimiento del usuario
+// GET /api/spaces ? listar todos los espacios con estado de seguimiento del usuario
 app.get('/api/spaces', auth, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -3793,7 +3814,7 @@ app.get('/api/spaces', auth, async (req, res) => {
       .order('followers_count', { ascending: false });
     if (error) return res.json([]);
 
-    // Qu� espacios sigue el usuario
+    // Qu? espacios sigue el usuario
     const { data: follows } = await supabase
       .from('space_follows')
       .select('space_id')
@@ -3804,7 +3825,7 @@ app.get('/api/spaces', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces � crear espacio
+// POST /api/spaces ? crear espacio
 app.post('/api/spaces', auth, async (req, res) => {
   try {
     const { name, description, type, cover, emoji } = req.body;
@@ -3820,7 +3841,7 @@ app.post('/api/spaces', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/spaces/:id/follow � seguir/dejar de seguir
+// POST /api/spaces/:id/follow ? seguir/dejar de seguir
 app.post('/api/spaces/:id/follow', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3840,7 +3861,7 @@ app.post('/api/spaces/:id/follow', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// GET /api/spaces/:id/posts � posts de un espacio
+// GET /api/spaces/:id/posts ? posts de un espacio
 app.get('/api/spaces/:id/posts', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3891,7 +3912,7 @@ app.get('/api/spaces/:id/posts', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces/:id/posts � publicar en un espacio
+// POST /api/spaces/:id/posts ? publicar en un espacio
 app.post('/api/spaces/:id/posts', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3906,7 +3927,7 @@ app.post('/api/spaces/:id/posts', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/spaces/posts/:postId/like � dar/quitar like
+// POST /api/spaces/posts/:postId/like ? dar/quitar like
 app.post('/api/spaces/posts/:postId/like', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3924,7 +3945,7 @@ app.post('/api/spaces/posts/:postId/like', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// GET /api/spaces/posts/:postId/comments � comentarios de un post
+// GET /api/spaces/posts/:postId/comments ? comentarios de un post
 app.get('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3948,7 +3969,7 @@ app.get('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces/posts/:postId/comments � comentar
+// POST /api/spaces/posts/:postId/comments ? comentar
 app.post('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3965,7 +3986,7 @@ app.post('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// DELETE /api/spaces/posts/:postId � eliminar post (solo autor o admin del espacio)
+// DELETE /api/spaces/posts/:postId ? eliminar post (solo autor o admin del espacio)
 app.delete('/api/spaces/posts/:postId', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -4029,7 +4050,7 @@ app.get('/api/stories', auth, async (req, res) => {
       if (c.contact_id && c.contact_id !== userId) contactIds.add(c.contact_id);
     });
 
-    // 3. Tambi�n incluir usuarios con quienes tengo chats activos
+    // 3. Tambi?n incluir usuarios con quienes tengo chats activos
     const { data: chatParts } = await supabase
       .from('chat_participants')
       .select('chat_id')
@@ -4104,7 +4125,7 @@ app.post('/api/stories', auth, async (req, res) => {
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
     const newSlides = Array.isArray(media) ? media : [media];
 
-    // Upsert: a�adir a story activa existente o crear nueva
+    // Upsert: a?adir a story activa existente o crear nueva
     const { data: existing } = await supabase
       .from('stories')
       .select('id, media')
@@ -4148,7 +4169,7 @@ app.delete('/api/stories/:storyId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// PATCH /api/stories/:storyId/slide/:idx � editar contenido de un slide
+// PATCH /api/stories/:storyId/slide/:idx ? editar contenido de un slide
 app.patch('/api/stories/:storyId/slide/:idx', auth, async (req, res) => {
   try {
     const { storyId, idx } = req.params;
@@ -4223,7 +4244,7 @@ const ensureGroupStoriesTable = async () => {
 };
 ensureGroupStoriesTable();
 
-// GET /api/stories/groups � obtener estados de todos los grupos del usuario
+// GET /api/stories/groups ? obtener estados de todos los grupos del usuario
 app.get('/api/stories/groups', auth, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -4267,7 +4288,7 @@ app.get('/api/stories/groups', auth, async (req, res) => {
     const authorsMap = {};
     (authors || []).forEach(u => { authorsMap[u.id] = u; });
 
-    // Agrupar por grupo � un entry por grupo con todos sus slides
+    // Agrupar por grupo ? un entry por grupo con todos sus slides
     const byGroup = {};
     stories.forEach(s => {
       const gid = s.group_id;
@@ -4303,7 +4324,7 @@ app.get('/api/stories/groups', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/stories/groups/:groupId � publicar estado en un grupo
+// POST /api/stories/groups/:groupId ? publicar estado en un grupo
 app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -4322,7 +4343,7 @@ app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
     const newSlides = Array.isArray(media) ? media : [media];
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
 
-    // Upsert: a�adir a story activa del usuario en este grupo o crear nueva
+    // Upsert: a?adir a story activa del usuario en este grupo o crear nueva
     const { data: existing } = await supabase
       .from('group_stories')
       .select('id, media')
@@ -4379,7 +4400,7 @@ app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/stories/groups/:groupId/view � registrar vista
+// POST /api/stories/groups/:groupId/view ? registrar vista
 app.post('/api/stories/groups/:groupId/view', auth, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -4429,9 +4450,9 @@ const updateUserVersions = async () => {
   }
 };
 
-// --- WebRTC Signaling � persistido en Supabase -------------------------------
+// --- WebRTC Signaling ? persistido en Supabase -------------------------------
 
-// TURN token endpoint � genera credenciales temporales Twilio NTS
+// TURN token endpoint ? genera credenciales temporales Twilio NTS
 const TWILIO_ACCOUNT_SID  = process.env.TWILIO_ACCOUNT_SID  || '';
 const TWILIO_API_KEY_SID  = process.env.TWILIO_API_KEY_SID  || '';
 const TWILIO_API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET || '';
@@ -4458,7 +4479,7 @@ const FALLBACK_ICE = [
 // Ruta principal usada por el frontend
 app.get('/api/turn-token', auth, async (req, res) => {
   try {
-    // Metered TURN Server � egchat.metered.live
+    // Metered TURN Server ? egchat.metered.live
     const METERED_API_KEY = process.env.METERED_API_KEY || 'JcmmvEroGtWAOMkMX8O3d9PYNe5mbMraUll_L9YKqwa0VgT';
     const METERED_DOMAIN  = process.env.METERED_DOMAIN  || 'egchat.metered.live';
 
@@ -4471,7 +4492,7 @@ app.get('/api/turn-token', auth, async (req, res) => {
     res.json({ iceServers });
   } catch (e) {
     console.error('TURN token error:', e.message);
-    // Fallback con servidores STUN p�blicos + Metered hardcoded
+    // Fallback con servidores STUN p?blicos + Metered hardcoded
     res.json({
       iceServers: [
         { urls: ['stun:stun.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
@@ -4492,7 +4513,7 @@ app.get('/api/turn-token', auth, async (req, res) => {
   }
 });
 
-// Iniciar llamada � caller env�a offer + push al destinatario
+// Iniciar llamada ? caller env?a offer + push al destinatario
 app.post('/api/call/offer', auth, async (req, res) => {
   const { callId, offer, targetUserId, type } = req.body;
   if (!callId || !offer) return res.status(400).json({ error: 'callId y offer requeridos' });
@@ -4511,7 +4532,7 @@ app.post('/api/call/offer', auth, async (req, res) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'call_id' });
 
-    // Notificar al destinatario via SSE (instant�neo)
+    // Notificar al destinatario via SSE (instant?neo)
     if (targetUserId) {
       emitToUser(targetUserId, {
         type: 'incoming_call',
@@ -4544,8 +4565,8 @@ app.post('/api/call/offer', auth, async (req, res) => {
           notificationType: 'incoming_call',
         };
 
-        // Enviar push inmediatamente � una sola vez
-        // (el SW tiene requireInteraction:true, la notificaci�n no desaparece sola)
+        // Enviar push inmediatamente ? una sola vez
+        // (el SW tiene requireInteraction:true, la notificaci?n no desaparece sola)
         await sendPushToUser(targetUserId, callPushPayload);
 
       } catch (pushErr) {
@@ -4555,7 +4576,7 @@ app.post('/api/call/offer', auth, async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: 'Error guardando sesi�n' });
+    res.status(500).json({ error: 'Error guardando sesi?n' });
   }
 });
 
@@ -4565,7 +4586,7 @@ app.post('/api/call/answer', auth, async (req, res) => {
   const { data } = await supabase.from('call_sessions').select('call_id, caller_id').eq('call_id', callId).eq('ended', false).single();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
   await supabase.from('call_sessions').update({ answer: JSON.stringify(answer), updated_at: new Date().toISOString() }).eq('call_id', callId);
-  // Notificar al caller via SSE (instant�neo � elimina el polling de answer)
+  // Notificar al caller via SSE (instant?neo ? elimina el polling de answer)
   if (data.caller_id) {
     emitToUser(data.caller_id, { type: 'call_answer', callId, answer });
   }
@@ -4597,7 +4618,7 @@ app.post('/api/call/ice', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Polling � obtener estado de la llamada
+// Polling ? obtener estado de la llamada
 app.get('/api/call/:callId', auth, async (req, res) => {
   const { data } = await supabase.from('call_sessions').select('*').eq('call_id', req.params.callId).single();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
@@ -4623,7 +4644,7 @@ app.delete('/api/call/:callId', auth, async (req, res) => {
     if (data.caller_id) emitToUser(data.caller_id, payload);
     if (data.target_user_id) emitToUser(data.target_user_id, payload);
   }
-  // Borrar despu�s de 15 segundos
+  // Borrar despu?s de 15 segundos
   setTimeout(async () => {
     await supabase.from('call_sessions').delete().eq('call_id', req.params.callId);
   }, 15000);
@@ -4641,7 +4662,7 @@ app.get('/api/call/incoming/:userId', auth, async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(5);
   if (!data || data.length === 0) return res.json([]);
-  // Limpiar sesiones muy antiguas (m�s de 150 segundos � tiempo para desbloquear tel�fono hibernado)
+  // Limpiar sesiones muy antiguas (m?s de 150 segundos ? tiempo para desbloquear tel?fono hibernado)
   const now = Date.now();
   const valid = data.filter(s => now - new Date(s.created_at).getTime() < 150000);
   res.json(valid.map(s => ({
@@ -4654,13 +4675,13 @@ app.get('/api/call/incoming/:userId', auth, async (req, res) => {
 
 // Limpiar sesiones antiguas cada 5 minutos
 setInterval(async () => {
-  const cutoff = new Date(Date.now() - 300000).toISOString(); // 5 minutos � suficiente para llamadas largas
+  const cutoff = new Date(Date.now() - 300000).toISOString(); // 5 minutos ? suficiente para llamadas largas
   await supabase.from('call_sessions').delete().lt('created_at', cutoff);
 }, 300000);
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// WEB PUSH � VAPID
+// WEB PUSH ? VAPID
 // -----------------------------------------------------------------------------
 const webpush = require('web-push');
 
@@ -4674,13 +4695,13 @@ webpush.setVapidDetails(
 );
 
 // -----------------------------------------------------------------------------
-// FIREBASE ADMIN � FCM API V1 (nativo Capacitor)
+// FIREBASE ADMIN ? FCM API V1 (nativo Capacitor)
 // -----------------------------------------------------------------------------
 let firebaseAdmin = null;
 try {
   const admin = require('firebase-admin');
-  // Opci�n 1: credenciales como JSON en variable de entorno FIREBASE_SERVICE_ACCOUNT
-  // Opci�n 2: ruta al archivo en GOOGLE_APPLICATION_CREDENTIALS (est�ndar Google)
+  // Opci?n 1: credenciales como JSON en variable de entorno FIREBASE_SERVICE_ACCOUNT
+  // Opci?n 2: ruta al archivo en GOOGLE_APPLICATION_CREDENTIALS (est?ndar Google)
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     if (!admin.apps.length) {
@@ -4695,18 +4716,18 @@ try {
     firebaseAdmin = admin;
     console.log('[FCM] Firebase Admin inicializado con GOOGLE_APPLICATION_CREDENTIALS');
   } else {
-    console.warn('[FCM] No hay credenciales Firebase configuradas � FCM nativo desactivado.');
+    console.warn('[FCM] No hay credenciales Firebase configuradas ? FCM nativo desactivado.');
   }
 } catch (e) {
   console.warn('[FCM] firebase-admin no disponible:', e.message);
 }
 
-// Guardar suscripci�n push del usuario
+// Guardar suscripci?n push del usuario
 app.post('/api/push/subscribe', auth, async (req, res) => {
   try {
     const { subscription } = req.body;
     if (!subscription || !subscription.endpoint) {
-      return res.status(400).json({ message: 'Suscripci�n inv�lida' });
+      return res.status(400).json({ message: 'Suscripci?n inv?lida' });
     }
     // Guardar en Supabase (tabla push_subscriptions)
     await supabase.from('push_subscriptions').upsert({
@@ -4717,14 +4738,14 @@ app.post('/api/push/subscribe', auth, async (req, res) => {
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,endpoint' });
 
-    res.json({ message: 'Suscripci�n guardada' });
+    res.json({ message: 'Suscripci?n guardada' });
   } catch (e) {
     console.error('Push subscribe error:', e.message);
     res.status(500).json({ message: e.message });
   }
 });
 
-// Eliminar suscripci�n push
+// Eliminar suscripci?n push
 app.post('/api/push/unsubscribe', auth, async (req, res) => {
   try {
     const { endpoint } = req.body;
@@ -4732,18 +4753,18 @@ app.post('/api/push/unsubscribe', auth, async (req, res) => {
       .delete()
       .eq('user_id', req.user.id)
       .eq('endpoint', endpoint || '');
-    res.json({ message: 'Suscripci�n eliminada' });
+    res.json({ message: 'Suscripci?n eliminada' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-// Obtener clave p�blica VAPID
+// Obtener clave p?blica VAPID
 app.get('/api/push/vapid-public-key', (req, res) => {
   res.json({ publicKey: VAPID_PUBLIC_KEY });
 });
 
-// Funci�n interna para enviar push a un usuario
+// Funci?n interna para enviar push a un usuario
 const sendPushToUser = async (userId, payload) => {
   try {
     const isCall = payload.notificationType === 'incoming_call';
@@ -4756,10 +4777,10 @@ const sendPushToUser = async (userId, payload) => {
 
     if (subs && subs.length > 0) {
       const payloadStr = JSON.stringify(payload);
-      // Para llamadas: urgency=high despierta el tel�fono aunque est� hibernado
+      // Para llamadas: urgency=high despierta el tel?fono aunque est? hibernado
       // TTL=0 en llamadas significa "entregar ahora o nunca" (no tiene sentido entregar una llamada vieja)
       const pushOptions = isCall
-        ? { urgency: 'high', TTL: 120 }   // 120s � tiempo para desbloquear el tel�fono
+        ? { urgency: 'high', TTL: 120 }   // 120s ? tiempo para desbloquear el tel?fono
         : { urgency: 'normal', TTL: 86400 };
       await Promise.allSettled(
         subs.map(sub =>
@@ -4777,7 +4798,7 @@ const sendPushToUser = async (userId, payload) => {
       );
     }
 
-    // -- Expo Push (app movil nativa � funciona con telefono hibernado) ----
+    // -- Expo Push (app movil nativa ? funciona con telefono hibernado) ----
     const { data: expoSubs } = await supabase
       .from('expo_push_tokens')
       .select('token')
@@ -4793,7 +4814,7 @@ const sendPushToUser = async (userId, payload) => {
         channelId: isCall ? 'egchat-calls' : 'egchat-messages',
         priority: isCall ? 'high' : 'normal',
         data: payload,
-        // Llamadas: TTL de 120s para dar tiempo a desbloquear el tel�fono
+        // Llamadas: TTL de 120s para dar tiempo a desbloquear el tel?fono
         ...(isCall ? { ttl: 120, expiration: Math.floor(Date.now() / 1000) + 120 } : {}),
       }));
 
@@ -4822,7 +4843,7 @@ const sendPushToUser = async (userId, payload) => {
       }
     }
 
-    // -- FCM nativo � API V1 via firebase-admin (Capacitor) ---------------
+    // -- FCM nativo ? API V1 via firebase-admin (Capacitor) ---------------
     if (firebaseAdmin) {
       const { data: fcmSubs } = await supabase
         .from('fcm_tokens')
@@ -4862,7 +4883,7 @@ const sendPushToUser = async (userId, payload) => {
               };
               await firebaseAdmin.messaging().send(message);
             } catch (fcmErr) {
-              // Limpiar tokens inv�lidos autom�ticamente
+              // Limpiar tokens inv?lidos autom?ticamente
               if (
                 fcmErr.code === 'messaging/registration-token-not-registered' ||
                 fcmErr.code === 'messaging/invalid-registration-token'
@@ -4926,7 +4947,7 @@ app.post('/api/push/fcm-token', auth, async (req, res) => {
 // PUSH DIAGNOSTICS
 // -----------------------------------------------------------------------------
 
-// Admin: verificar suscripciones por tel�fono
+// Admin: verificar suscripciones por tel?fono
 app.get('/api/push/check/:phone', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.query.key;
   if (!key || key !== (process.env.ADMIN_RESET_KEY || JWT_SECRET)) {
@@ -4943,7 +4964,7 @@ app.get('/api/push/check/:phone', async (req, res) => {
   }
 });
 
-// Admin: enviar push de prueba por tel�fono
+// Admin: enviar push de prueba por tel?fono
 app.post('/api/push/send-test/:phone', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.query.key;
   if (!key || key !== (process.env.ADMIN_RESET_KEY || JWT_SECRET)) {
@@ -4954,7 +4975,7 @@ app.post('/api/push/send-test/:phone', async (req, res) => {
     const { data: user } = await supabase.from('users').select('id, full_name').eq('phone', phone).single();
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
     const result = await sendPushToUser(user.id, {
-      title: '?? EGChat � Prueba',
+      title: '?? EGChat ? Prueba',
       body: `Hola ${user.full_name}, las notificaciones funcionan!`,
       icon: '/favicon.svg',
       tag: 'test-push-' + Date.now(),
@@ -4966,7 +4987,7 @@ app.post('/api/push/send-test/:phone', async (req, res) => {
   }
 });
 
-// Ver cu�ntas suscripciones tiene el usuario actual
+// Ver cu?ntas suscripciones tiene el usuario actual
 app.get('/api/push/my-subscriptions', auth, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -4984,7 +5005,7 @@ app.get('/api/push/my-subscriptions', auth, async (req, res) => {
 app.post('/api/push/test', auth, async (req, res) => {
   try {
     const result = await sendPushToUser(req.user.id, {
-      title: '?? EGChat � Prueba',
+      title: '?? EGChat ? Prueba',
       body: 'Las notificaciones funcionan correctamente',
       icon: '/favicon.svg',
       tag: 'test-push',
@@ -4997,7 +5018,7 @@ app.post('/api/push/test', auth, async (req, res) => {
 });
 
 // ------------------------------------------------------------------
-// NOTICIAS GOBIERNO GE � Scraping de fuentes oficiales
+// NOTICIAS GOBIERNO GE ? Scraping de fuentes oficiales
 // ------------------------------------------------------------------
 
 // Cache en memoria para no saturar las fuentes
@@ -5023,14 +5044,14 @@ async function scrapePrimatura() {
     if (!res.ok) return noticias;
     const html = await res.text();
 
-    // Extraer art�culos: busca patrones <h2> o <h3> con enlaces dentro de .post, article, .entry-title
+    // Extraer art?culos: busca patrones <h2> o <h3> con enlaces dentro de .post, article, .entry-title
     const titleRegex = /<(?:h[123]|a)[^>]*class="[^"]*(?:entry-title|post-title)[^"]*"[^>]*>[\s\S]*?<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
     const altRegex = /<article[^>]*>([\s\S]*?)<\/article>/gi;
     const dateRegex = /<time[^>]*datetime="([^"]+)"[^>]*>/i;
     const linkRegex = /<a[^>]+href="(https?:\/\/primatura\.gob\.gq\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
 
     let m;
-    // M�todo 1: buscar h2/h3 con clase entry-title
+    // M?todo 1: buscar h2/h3 con clase entry-title
     while ((m = titleRegex.exec(html)) !== null) {
       const url = m[1];
       const title = m[2].replace(/<[^>]+>/g, '').trim();
@@ -5039,7 +5060,7 @@ async function scrapePrimatura() {
       }
     }
 
-    // M�todo 2: buscar todos los enlaces a art�culos de primatura
+    // M?todo 2: buscar todos los enlaces a art?culos de primatura
     if (noticias.length === 0) {
       while ((m = linkRegex.exec(html)) !== null) {
         const url = m[1];
@@ -5198,7 +5219,7 @@ async function checkAndNotifyNewGovNews() {
       ...(lavice.status === 'fulfilled' ? lavice.value : []),
     ];
 
-    // Primera ejecuci�n: solo registrar URLs conocidas sin notificar
+    // Primera ejecuci?n: solo registrar URLs conocidas sin notificar
     if (govNewsSeenUrls.size === 0) {
       all.forEach(n => govNewsSeenUrls.add(n.url));
       console.log(`[GovNews] Scheduler iniciado. ${all.length} noticias registradas como conocidas.`);
@@ -5231,8 +5252,8 @@ async function checkAndNotifyNewGovNews() {
 function startGovNewsScheduler() {
   if (govNewsSchedulerStarted) return;
   govNewsSchedulerStarted = true;
-  console.log('[GovNews] Scheduler iniciado � revisando cada 10 minutos');
-  // Primera ejecuci�n inmediata
+  console.log('[GovNews] Scheduler iniciado ? revisando cada 10 minutos');
+  // Primera ejecuci?n inmediata
   checkAndNotifyNewGovNews();
   // Luego cada 10 minutos
   setInterval(checkAndNotifyNewGovNews, 10 * 60 * 1000);
@@ -5280,7 +5301,7 @@ app.get('/api/noticias/gobierno', async (req, res) => {
     // Si el scraping devuelve resultados, usarlos; si no, usar fallback
     const noticias = scraped.length >= 3 ? scraped : NOTICIAS_FALLBACK;
 
-    // A�adir id y timestamp
+    // A?adir id y timestamp
     const result = noticias.map((n, i) => ({
       id: `gov-${Date.now()}-${i}`,
       ...n,
@@ -5299,14 +5320,14 @@ app.get('/api/noticias/gobierno', async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// BATCH USER PROFILES � obtener perfiles actualizados de m�ltiples usuarios
+// BATCH USER PROFILES ? obtener perfiles actualizados de m?ltiples usuarios
 // Usado para sincronizar avatares y nombres en tiempo real
 // --------------------------------------------------------------------
 app.post('/api/users/batch', auth, async (req, res) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) return res.json([]);
-    // Limitar a 100 IDs por petici�n
+    // Limitar a 100 IDs por petici?n
     const safeIds = ids.slice(0, 100);
     const { data: users, error } = await supabase
       .from('users')
@@ -5320,7 +5341,7 @@ app.post('/api/users/batch', auth, async (req, res) => {
 });
 
 if (require.main === module) {
-  // -- Endpoints adicionales: edici�n de mensajes, typing, reacciones ----------
+  // -- Endpoints adicionales: edici?n de mensajes, typing, reacciones ----------
 
   // Editar mensaje (solo el remitente, dentro de 15 min)
   app.put('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
@@ -5328,13 +5349,13 @@ if (require.main === module) {
       const { chatId, messageId } = req.params;
       const { text } = req.body;
       if (!text?.trim()) return res.status(400).json({ message: 'Texto requerido' });
-      // Verificar que el mensaje pertenece al usuario y no tiene m�s de 15 min
+      // Verificar que el mensaje pertenece al usuario y no tiene m?s de 15 min
       const { data: msg } = await supabase.from('messages')
         .select('id, sender_id, created_at').eq('id', messageId).eq('chat_id', chatId).single();
       if (!msg) return res.status(404).json({ message: 'Mensaje no encontrado' });
       if (String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'No puedes editar este mensaje' });
       const age = Date.now() - new Date(msg.created_at).getTime();
-      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los �ltimos 15 minutos' });
+      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los ?ltimos 15 minutos' });
       const { data: updated, error } = await supabase.from('messages')
         .update({ text: text.trim(), edited: true, updated_at: new Date().toISOString() })
         .eq('id', messageId).select('id, text, edited, updated_at').single();
@@ -5364,7 +5385,7 @@ if (require.main === module) {
     } catch (e) { res.status(500).json({ message: e.message }); }
   });
 
-  // Indicador "escribiendo..." � almac�n en memoria con TTL 5s
+  // Indicador "escribiendo..." ? almac?n en memoria con TTL 5s
   const typingMap = new Map(); // chatId -> { userId -> timestamp }
   app.post('/api/chats/:chatId/typing', auth, async (req, res) => {
     const { chatId } = req.params;
@@ -5393,7 +5414,7 @@ if (require.main === module) {
       const { chatId, messageId } = req.params;
       const { emoji } = req.body;
       if (!emoji) return res.status(400).json({ message: 'Emoji requerido' });
-      // Upsert reacci�n (un emoji por usuario por mensaje)
+      // Upsert reacci?n (un emoji por usuario por mensaje)
       await supabase.from('message_reactions').upsert(
         { message_id: messageId, user_id: req.user.id, emoji, created_at: new Date().toISOString() },
         { onConflict: 'message_id,user_id' }
@@ -5404,7 +5425,7 @@ if (require.main === module) {
     } catch (e) { res.status(500).json({ message: e.message }); }
   });
 
-  // B�squeda de mensajes en un chat
+  // B?squeda de mensajes en un chat
   app.get('/api/chats/:chatId/messages/search', auth, async (req, res) => {
     try {
       const { chatId } = req.params;
