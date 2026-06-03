@@ -69,63 +69,54 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
-// --- Cloudinary (para almacenamiento de archivos/imágenes) -----------
-// Evita egress de Supabase Storage. Configurar en .env:
-//   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-const cloudinaryUpload = async (buffer, options = {}) => {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+// --- Almacenamiento de archivos/imágenes (sin Supabase Storage) ------
+// Proveedores soportados (en orden de preferencia):
+//   1. ImageKit.io  — imágenes + archivos, 20GB egress/mes gratis
+//      Variables: IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY, IMAGEKIT_URL_ENDPOINT
+//      Registro: https://imagekit.io  (sin restricción geográfica conocida)
+//   2. ImgBB        — solo imágenes, gratis sin límite de egress
+//      Variables: IMGBB_API_KEY
+//      Registro: https://imgbb.com  (global, sin restricciones)
+//
+// Para activar: añade las variables en Render > Settings > Environment
 
-  if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error('Cloudinary no configurado (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)');
-  }
+const uploadToImageKit = async (buffer, options = {}) => {
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || '';
+  if (!privateKey) throw new Error('IMAGEKIT_PRIVATE_KEY no configurada');
 
-  // Construir firma para autenticación Cloudinary
-  const timestamp = Math.floor(Date.now() / 1000);
-  const folder = options.folder || 'egchat';
-  const publicId = options.public_id || '';
-  const resourceType = options.resource_type || 'auto';
-
-  // Parámetros a firmar (ordenados alfabéticamente)
-  const paramsToSign = { folder, timestamp };
-  if (publicId) paramsToSign.public_id = publicId;
-
-  const sortedParams = Object.keys(paramsToSign).sort()
-    .map(k => `${k}=${paramsToSign[k]}`).join('&');
-  const stringToSign = sortedParams + apiSecret;
-
+  const https = require('https');
   const crypto = require('crypto');
-  const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
 
-  // Construir multipart/form-data manualmente
-  const boundary = `----CloudinaryBoundary${Date.now()}`;
+  const fileName = options.fileName || `upload_${Date.now()}`;
+  const folder   = options.folder   || '/egchat';
+  const base64   = buffer.toString('base64');
+
+  // Auth básica: privateKey + ':' (sin password) en base64
+  const authToken = Buffer.from(`${privateKey}:`).toString('base64');
+
+  // Construir multipart/form-data
+  const boundary = `----IKBoundary${Date.now()}`;
   const CRLF = '\r\n';
   const addField = (name, value) =>
     `--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
 
   let body = '';
-  body += addField('api_key', apiKey);
-  body += addField('timestamp', timestamp);
-  body += addField('signature', signature);
+  body += addField('fileName', fileName);
   body += addField('folder', folder);
-  if (publicId) body += addField('public_id', publicId);
+  body += addField('useUniqueFileName', 'true');
+  // El campo file acepta base64 directamente
+  body += `--${boundary}${CRLF}Content-Disposition: form-data; name="file"${CRLF}${CRLF}data:application/octet-stream;base64,${base64}${CRLF}`;
+  body += `--${boundary}--${CRLF}`;
+  const bodyBuffer = Buffer.from(body);
 
-  const headerPart = Buffer.from(
-    `--${boundary}${CRLF}Content-Disposition: form-data; name="file"; filename="upload"${CRLF}` +
-    `Content-Type: application/octet-stream${CRLF}${CRLF}`
-  );
-  const footerPart = Buffer.from(`${CRLF}--${boundary}--${CRLF}`);
-  const bodyBuffer = Buffer.concat([Buffer.from(body), headerPart, buffer, footerPart]);
-
-  // Petición HTTP a Cloudinary
-  const https = require('https');
   return new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: 'api.cloudinary.com',
-      path: `/v1_1/${cloudName}/${resourceType}/upload`,
+      hostname: 'upload.imagekit.io',
+      path: '/api/v1/files/upload',
       method: 'POST',
       headers: {
+        'Authorization': `Basic ${authToken}`,
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
         'Content-Length': bodyBuffer.length,
       },
@@ -135,8 +126,8 @@ const cloudinaryUpload = async (buffer, options = {}) => {
       resp.on('end', () => {
         try {
           const json = JSON.parse(Buffer.concat(chunks).toString());
-          if (json.error) return reject(new Error(json.error.message));
-          resolve(json);
+          if (json.message && resp.statusCode >= 400) return reject(new Error(json.message));
+          resolve({ secure_url: json.url, public_id: json.fileId });
         } catch (e) { reject(e); }
       });
     });
@@ -144,6 +135,63 @@ const cloudinaryUpload = async (buffer, options = {}) => {
     req.write(bodyBuffer);
     req.end();
   });
+};
+
+const uploadToImgBB = async (buffer, options = {}) => {
+  const apiKey = process.env.IMGBB_API_KEY;
+  if (!apiKey) throw new Error('IMGBB_API_KEY no configurada');
+
+  const https = require('https');
+  const base64 = buffer.toString('base64');
+  const name   = options.fileName || `upload_${Date.now()}`;
+
+  // ImgBB usa application/x-www-form-urlencoded
+  const body = `key=${encodeURIComponent(apiKey)}&image=${encodeURIComponent(base64)}&name=${encodeURIComponent(name)}`;
+  const bodyBuffer = Buffer.from(body);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.imgbb.com',
+      path: '/1/upload',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': bodyBuffer.length,
+      },
+    }, (resp) => {
+      const chunks = [];
+      resp.on('data', d => chunks.push(d));
+      resp.on('end', () => {
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString());
+          if (!json.success) return reject(new Error(json.error?.message || 'ImgBB upload failed'));
+          resolve({ secure_url: json.data.url, public_id: json.data.id });
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(bodyBuffer);
+    req.end();
+  });
+};
+
+// Función principal — intenta ImageKit, luego ImgBB, luego error claro
+const uploadFile = async (buffer, options = {}) => {
+  // Intentar ImageKit primero (soporta cualquier tipo de archivo)
+  if (process.env.IMAGEKIT_PRIVATE_KEY) {
+    return await uploadToImageKit(buffer, options);
+  }
+  // Fallback a ImgBB (solo imágenes)
+  if (process.env.IMGBB_API_KEY) {
+    const isImage = /^image\//.test(options.mimeType || '');
+    if (!isImage) throw new Error('ImgBB solo soporta imágenes. Configura IMAGEKIT_PRIVATE_KEY para archivos genéricos.');
+    return await uploadToImgBB(buffer, options);
+  }
+  throw new Error(
+    'No hay proveedor de almacenamiento configurado. ' +
+    'Añade IMAGEKIT_PRIVATE_KEY + IMAGEKIT_URL_ENDPOINT (imagekit.io) ' +
+    'o IMGBB_API_KEY (imgbb.com) en las variables de entorno de Render.'
+  );
 };
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001')
@@ -1131,18 +1179,18 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
     let publicUrl = '';
 
     try {
-      // Subir a Cloudinary (gratuito, sin egress de Supabase)
-      const result = await cloudinaryUpload(buffer, {
+      // Subir con el proveedor configurado (ImageKit o ImgBB)
+      const result = await uploadFile(buffer, {
         folder: 'egchat/group-avatars',
-        public_id: `group-${chatId}`,
-        resource_type: 'image',
+        fileName: `group-${chatId}`,
+        mimeType: mimeType,
       });
       publicUrl = result.secure_url;
-    } catch (cloudErr) {
-      console.error('Cloudinary upload error:', cloudErr.message);
+    } catch (uploadErr) {
+      console.error('Upload error:', uploadErr.message);
       // Fallback: guardar base64 compacto en BD (solo si imagen pequeña < 100KB)
       if (buffer.length > 102400) {
-        return res.status(503).json({ message: 'Servicio de almacenamiento no disponible. Configura CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET en las variables de entorno.' });
+        return res.status(503).json({ message: 'Almacenamiento no disponible. ' + uploadErr.message });
       }
       publicUrl = `data:${mimeType};base64,${base64Data}`;
     }
@@ -1367,20 +1415,18 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
 
     const ext = fileName.split('.').pop()?.toLowerCase() || 'bin';
 
-    // Subir a Cloudinary (evita egress de Supabase Storage)
+    // Subir con el proveedor configurado (ImageKit o ImgBB)
     let publicUrl = '';
     try {
-      const isImage = /^image\//.test(fileContentType);
-      const isVideo = /^video\//.test(fileContentType);
-      const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
-      const result = await cloudinaryUpload(buffer, {
+      const result = await uploadFile(buffer, {
         folder: `egchat/chats/${chatId}`,
-        resource_type: resourceType,
+        fileName: fileName,
+        mimeType: fileContentType,
       });
       publicUrl = result.secure_url;
-    } catch (cloudErr) {
-      console.error('Cloudinary upload error:', cloudErr.message);
-      return res.status(503).json({ message: 'Servicio de almacenamiento no disponible. Configura CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET en las variables de entorno.' });
+    } catch (uploadErr) {
+      console.error('Upload error:', uploadErr.message);
+      return res.status(503).json({ message: 'Almacenamiento no disponible. ' + uploadErr.message });
     }
 
     res.json({
