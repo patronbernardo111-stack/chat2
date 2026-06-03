@@ -7,15 +7,12 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
 const JWT_SECRET_FALLBACK = 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
-console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback');
-
-// -- Deep Links ? archivos .well-known ----------------------------------------
+console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback'); ? archivos .well-known ----------------------------------------
 // Deben servirse con Content-Type correcto para que Android/iOS los validen
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -63,11 +60,21 @@ const APK_DOWNLOAD_URL = process.env.APK_DOWNLOAD_URL || 'https://egchat-v2.verc
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
-// --- Supabase ---------------------------------------------------------
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || ''
-);
+// --- Base de datos ---------------------------------------------------
+// Si DATABASE_URL está definida (Neon/PostgreSQL directo), usar pg-client.
+// Si no, usar Supabase como fallback.
+let supabase;
+if (process.env.DATABASE_URL) {
+  console.log('Usando PostgreSQL directo (Neon) via pg-client');
+  supabase = require('./pg-client.cjs');
+} else {
+  console.log('Usando Supabase client');
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(
+    process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_KEY || ''
+  );
+}
 
 // --- Almacenamiento de archivos/imágenes (sin Supabase Storage) ------
 // Proveedores soportados (en orden de preferencia):
