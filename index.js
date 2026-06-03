@@ -69,6 +69,83 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
+// --- Cloudinary (para almacenamiento de archivos/imágenes) -----------
+// Evita egress de Supabase Storage. Configurar en .env:
+//   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+const cloudinaryUpload = async (buffer, options = {}) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey    = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('Cloudinary no configurado (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)');
+  }
+
+  // Construir firma para autenticación Cloudinary
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = options.folder || 'egchat';
+  const publicId = options.public_id || '';
+  const resourceType = options.resource_type || 'auto';
+
+  // Parámetros a firmar (ordenados alfabéticamente)
+  const paramsToSign = { folder, timestamp };
+  if (publicId) paramsToSign.public_id = publicId;
+
+  const sortedParams = Object.keys(paramsToSign).sort()
+    .map(k => `${k}=${paramsToSign[k]}`).join('&');
+  const stringToSign = sortedParams + apiSecret;
+
+  const crypto = require('crypto');
+  const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
+
+  // Construir multipart/form-data manualmente
+  const boundary = `----CloudinaryBoundary${Date.now()}`;
+  const CRLF = '\r\n';
+  const addField = (name, value) =>
+    `--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
+
+  let body = '';
+  body += addField('api_key', apiKey);
+  body += addField('timestamp', timestamp);
+  body += addField('signature', signature);
+  body += addField('folder', folder);
+  if (publicId) body += addField('public_id', publicId);
+
+  const headerPart = Buffer.from(
+    `--${boundary}${CRLF}Content-Disposition: form-data; name="file"; filename="upload"${CRLF}` +
+    `Content-Type: application/octet-stream${CRLF}${CRLF}`
+  );
+  const footerPart = Buffer.from(`${CRLF}--${boundary}--${CRLF}`);
+  const bodyBuffer = Buffer.concat([Buffer.from(body), headerPart, buffer, footerPart]);
+
+  // Petición HTTP a Cloudinary
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.cloudinary.com',
+      path: `/v1_1/${cloudName}/${resourceType}/upload`,
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': bodyBuffer.length,
+      },
+    }, (resp) => {
+      const chunks = [];
+      resp.on('data', d => chunks.push(d));
+      resp.on('end', () => {
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString());
+          if (json.error) return reject(new Error(json.error.message));
+          resolve(json);
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(bodyBuffer);
+    req.end();
+  });
+};
+
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001')
   .split(',')
   .map(origin => origin.trim())
@@ -90,7 +167,7 @@ const corsOptions = {
     return callback(new Error('CORS policy: origin not allowed'));
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 };
 
@@ -484,9 +561,8 @@ app.post('/api/auth/login-debug', async (req, res) => {
   }
 });
 
-// Handler compartido para login (usado por /api/auth/login y /api/auth/login-v2)
+// Handler compartido para login (usado por /api/auth/login-v2)
 const handleLogin = async (req, res) => {
-  const steps = [];
   try {
     const { phone, password } = req.body;
     if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
@@ -496,12 +572,24 @@ const handleLogin = async (req, res) => {
     else if (phone) variants.push('+' + phone);
 
     let user = null;
+    let dbError = null;
     for (const v of variants) {
       const result = await supabase.from('users')
         .select('id, phone, full_name, avatar_url, password_hash, app_version')
         .eq('phone', v)
         .maybeSingle();
+      if (result.error) { dbError = result.error; continue; }
       if (result.data) { user = result.data; break; }
+    }
+
+    if (!user && dbError) {
+      console.error('Login DB error:', dbError.message, dbError.code);
+      const isQuotaError = dbError.code === '53300' ||
+        (typeof dbError.message === 'string' && /bandwidth|quota|limit|exceeded|paused/i.test(dbError.message));
+      if (isQuotaError) {
+        return res.status(503).json({ message: 'Servicio temporalmente no disponible. Por favor intenta de nuevo en unos minutos.', code: 'DB_QUOTA' });
+      }
+      return res.status(503).json({ message: 'Error de conexión con la base de datos', code: 'DB_ERROR' });
     }
 
     if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
@@ -509,7 +597,8 @@ const handleLogin = async (req, res) => {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
-    try { await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id); } catch {}
+    // Actualizar last_login en background
+    supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id).then(() => {}).catch(() => {});
 
     const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
     return res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
@@ -528,13 +617,28 @@ app.post('/api/auth/login', async (req, res) => {
     if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
     else if (phone) variants.push('+' + phone);
 
+    // Una sola query con todos los campos necesarios (evita la segunda query innecesaria)
     let user = null;
+    let dbError = null;
     for (const v of variants) {
       const result = await supabase.from('users')
-        .select('id, phone, full_name, password_hash')
+        .select('id, phone, full_name, avatar_url, password_hash, app_version')
         .eq('phone', v)
         .maybeSingle();
+      if (result.error) { dbError = result.error; continue; }
       if (result.data) { user = result.data; break; }
+    }
+
+    // Si Supabase devolvió error (límite de BD, proyecto pausado, etc.) informar claramente
+    if (!user && dbError) {
+      console.error('Login DB error:', dbError.message, dbError.code);
+      // Código 53300 = too_many_connections, PGRST* = PostgREST errors
+      const isQuotaError = dbError.code === '53300' ||
+        (typeof dbError.message === 'string' && /bandwidth|quota|limit|exceeded|paused/i.test(dbError.message));
+      if (isQuotaError) {
+        return res.status(503).json({ message: 'Servicio temporalmente no disponible. Por favor intenta de nuevo en unos minutos.', code: 'DB_QUOTA' });
+      }
+      return res.status(503).json({ message: 'Error de conexión con la base de datos', code: 'DB_ERROR' });
     }
 
     if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
@@ -542,15 +646,11 @@ app.post('/api/auth/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
-    // Obtener datos completos del usuario
-    const { data: fullUser } = await supabase.from('users')
-      .select('id, phone, full_name, avatar_url, app_version')
-      .eq('id', user.id).single();
-
-    try { await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id); } catch {}
+    // Actualizar last_login en background (no bloquea la respuesta, no penaliza si falla)
+    supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id).then(() => {}).catch(() => {});
 
     const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
-    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: (fullUser || user).full_name, avatar_url: (fullUser || user).avatar_url, app_version: APP_VERSION } });
+    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
   } catch (e) {
     console.error('Login error:', e.message);
     return res.status(500).json({ message: 'Error interno del servidor' });
@@ -1006,7 +1106,7 @@ app.post('/api/chats/group', auth, async (req, res) => {
 });
 
 // --------------------------------------------------------------------
-// Upload avatar de grupo ? recibe base64, sube a Supabase Storage
+// Upload avatar de grupo — recibe base64, sube a Cloudinary (evita egress Supabase)
 // --------------------------------------------------------------------
 app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
   try {
@@ -1027,34 +1127,25 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
     // Convertir base64 a buffer
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
-    const ext = mimeType.split('/')[1] || 'jpg';
-    const fileName = `group-avatars/${chatId}-${Date.now()}.${ext}`;
 
-    // Subir a Supabase Storage (bucket: avatars)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, buffer, {
-        contentType: mimeType,
-        upsert: true,
+    let publicUrl = '';
+
+    try {
+      // Subir a Cloudinary (gratuito, sin egress de Supabase)
+      const result = await cloudinaryUpload(buffer, {
+        folder: 'egchat/group-avatars',
+        public_id: `group-${chatId}`,
+        resource_type: 'image',
       });
-
-    if (uploadError) {
-      // Si falla Storage, guardar el base64 directamente en la BD como fallback
-      const { data: updated } = await supabase
-        .from('chats')
-        .update({ avatar_url: base64, updated_at: new Date().toISOString() })
-        .eq('id', chatId)
-        .select('avatar_url')
-        .single();
-      return res.json({ avatar_url: updated?.avatar_url || base64 });
+      publicUrl = result.secure_url;
+    } catch (cloudErr) {
+      console.error('Cloudinary upload error:', cloudErr.message);
+      // Fallback: guardar base64 compacto en BD (solo si imagen pequeña < 100KB)
+      if (buffer.length > 102400) {
+        return res.status(503).json({ message: 'Servicio de almacenamiento no disponible. Configura CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET en las variables de entorno.' });
+      }
+      publicUrl = `data:${mimeType};base64,${base64Data}`;
     }
-
-    // Obtener URL p?blica
-    const { data: publicData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    const publicUrl = publicData?.publicUrl || '';
 
     // Actualizar en la BD
     await supabase
@@ -1271,31 +1362,26 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
     }
 
     if (!buffer || buffer.length === 0) {
-      return res.status(400).json({ message: 'Archivo vac?o o no recibido' });
+      return res.status(400).json({ message: 'Archivo vacío o no recibido' });
     }
 
     const ext = fileName.split('.').pop()?.toLowerCase() || 'bin';
-    const storagePath = `chats/${chatId}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
-    // Subir a Supabase Storage (bucket: chat-files)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('chat-files')
-      .upload(storagePath, buffer, {
-        contentType: fileContentType,
-        upsert: false,
+    // Subir a Cloudinary (evita egress de Supabase Storage)
+    let publicUrl = '';
+    try {
+      const isImage = /^image\//.test(fileContentType);
+      const isVideo = /^video\//.test(fileContentType);
+      const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
+      const result = await cloudinaryUpload(buffer, {
+        folder: `egchat/chats/${chatId}`,
+        resource_type: resourceType,
       });
-
-    if (uploadError) {
-      console.error('Supabase storage upload error:', uploadError.message);
-      return res.status(500).json({ message: 'Error al subir archivo: ' + uploadError.message });
+      publicUrl = result.secure_url;
+    } catch (cloudErr) {
+      console.error('Cloudinary upload error:', cloudErr.message);
+      return res.status(503).json({ message: 'Servicio de almacenamiento no disponible. Configura CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET en las variables de entorno.' });
     }
-
-    // Obtener URL p?blica
-    const { data: urlData } = supabase.storage
-      .from('chat-files')
-      .getPublicUrl(storagePath);
-
-    const publicUrl = urlData?.publicUrl || '';
 
     res.json({
       file_url: publicUrl,
@@ -5471,6 +5557,5 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
 
 
