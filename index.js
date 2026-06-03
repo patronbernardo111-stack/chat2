@@ -12,7 +12,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
 const JWT_SECRET_FALLBACK = 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
-console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback'); ? archivos .well-known ----------------------------------------
+console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback');
+
+// -- Deep Links / archivos .well-known ----------------------------------------
 // Deben servirse con Content-Type correcto para que Android/iOS los validen
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
