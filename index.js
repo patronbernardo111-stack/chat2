@@ -368,7 +368,6 @@ app.get('/', (req, res) => res.json({
 }));
 
 app.get('/health', async (req, res) => {
-  // Verificar conexi?n a Supabase
   let dbStatus = 'unknown';
   let dbError = null;
   try {
@@ -387,6 +386,7 @@ app.get('/health', async (req, res) => {
     status: dbStatus === 'ok' ? 'ok' : 'degraded',
     db: dbStatus,
     db_error: dbError,
+    db_provider: process.env.DATABASE_URL ? 'neon' : 'supabase',
     timestamp: new Date().toISOString()
   });
 });
@@ -407,9 +407,12 @@ app.get('/api/app/version', (req, res) => {
 });
 
 app.get('/debug', (req, res) => res.json({
-  supabase_url: process.env.SUPABASE_URL || '? missing',
-  supabase_key: process.env.SUPABASE_SERVICE_KEY ? '? set (' + process.env.SUPABASE_SERVICE_KEY.substring(0,20) + '...)' : '? missing',
-  jwt_secret: process.env.JWT_SECRET ? '? set' : '? missing',
+  db_provider: process.env.DATABASE_URL ? 'neon' : 'supabase',
+  database_url: process.env.DATABASE_URL ? 'set (neon)' : 'not set',
+  supabase_url: process.env.SUPABASE_URL || 'not set',
+  supabase_key: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'not set',
+  jwt_secret: process.env.JWT_SECRET ? 'set' : 'not set',
+  imagekit: process.env.IMAGEKIT_PRIVATE_KEY ? 'set' : 'not set',
   node_env: process.env.NODE_ENV || 'not set',
   port: PORT
 }));
