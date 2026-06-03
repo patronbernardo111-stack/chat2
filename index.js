@@ -5585,6 +5585,27 @@ if (require.main === module) {
     } catch (e) { res.json([]); }
   });
 
+  // ── Keep-alive: evita que Render (free tier) duerma el servidor ──────────────
+  // Render duerme procesos tras 15 min sin peticiones → causa 502 en el primer
+  // request. Este ping interno cada 10 minutos mantiene el proceso activo.
+  // Solo activo en producción para no interferir en desarrollo local.
+  if (process.env.NODE_ENV === 'production') {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://egchat-api.onrender.com`;
+    const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
+    setTimeout(() => {
+      setInterval(() => {
+        const https = require('https');
+        const req = https.get(`${SELF_URL}/health`, (res) => {
+          console.log(`[keep-alive] ping → ${res.statusCode}`);
+          res.resume(); // descartar respuesta
+        });
+        req.on('error', (e) => console.warn('[keep-alive] ping error:', e.message));
+        req.setTimeout(10000, () => { req.destroy(); console.warn('[keep-alive] ping timeout'); });
+      }, PING_INTERVAL_MS);
+    }, 60000); // primer ping tras 1 min de arranque
+    console.log(`   Keep-alive: activo (ping cada 10 min)`);
+  }
+
   app.listen(PORT, async () => {
     console.log(`\n?? EGCHAT API + Supabase en http://localhost:${PORT}`);
     console.log(`   Supabase: ${process.env.SUPABASE_URL ? '? Conectado' : '? Sin configurar'}`);
