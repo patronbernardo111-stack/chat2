@@ -82,7 +82,7 @@ const corsOptions = {
     return callback(new Error('CORS policy: origin not allowed'));
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 };
 
@@ -4925,8 +4925,19 @@ app.get('/api/noticias/gobierno', async (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, async () => {
-    console.log(`\n😎 EGCHAT API + Supabase en http://localhost:${PORT}`);
+  // Usar http.createServer para compartir puerto entre Express y WebSocket
+  const http = require('http');
+  const { initWebSocket } = require('./websocket');
+
+  const httpServer = http.createServer(app);
+  const ws = initWebSocket(httpServer);
+
+  // Exportar ws para que las rutas puedan notificar eventos en tiempo real
+  app.set('ws', ws);
+
+  httpServer.listen(PORT, async () => {
+    console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
+    console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
     console.log(`   Supabase: ${process.env.SUPABASE_URL ? '✅ Conectado' : '❌ Sin configurar'}`);
     // Iniciar scheduler de noticias del gobierno
     startGovNewsScheduler();
