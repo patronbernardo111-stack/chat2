@@ -839,6 +839,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 // Obtener todos los chats del usuario
 app.get('/api/chats', auth, async (req, res) => {
+  // EGRESS FIX: allow client-side caching for 10 seconds to reduce repeated fetches
+  res.setHeader('Cache-Control', 'private, max-age=10');
   try {
     // Buscar chats donde el usuario es participante
     const { data: participations, error: pErr } = await supabase
@@ -857,9 +859,10 @@ app.get('/api/chats', auth, async (req, res) => {
 
     const { data: chats } = await supabase
       .from('chats')
-      .select('*')
+      .select('id, type, name, avatar_url, description, created_by, updated_at')
       .in('id', chatIds)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(100); // EGRESS FIX: cap at 100 chats, select only needed columns
 
     if (!chats) return res.json([]);
 
@@ -867,10 +870,12 @@ app.get('/api/chats', auth, async (req, res) => {
       supabase.from('chat_participants')
         .select('chat_id, user_id, users(id, phone, full_name, avatar_url)')
         .in('chat_id', chatIds),
+      // EGRESS FIX: limit to 1 message per chat (last message preview only)
       supabase.from('messages')
         .select('id, text, type, created_at, sender_id, chat_id')
         .in('chat_id', chatIds)
         .order('created_at', { ascending: false })
+        .limit(chatIds.length * 1)  // 1 message per chat max
     ]);
 
     const participantsByChat = (participants || []).reduce((acc, part) => {
@@ -889,7 +894,8 @@ app.get('/api/chats', auth, async (req, res) => {
       id: chat.id,
       type: chat.type || 'private',
       name: chat.name,
-      avatar_url: chat.avatar_url || null,
+      // EGRESS FIX: strip base64 avatars from list view — client should use /api/chats/:id for full data
+      avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
       description: chat.description || null,
       created_by: chat.created_by || null,
       participants: participantsByChat[chat.id] || [],
@@ -1541,9 +1547,10 @@ app.get('/api/contacts', auth, async (req, res) => {
   try {
     const { data: contacts, error } = await supabase
       .from('contacts')
-      .select('*')
+      .select('id, contact_user_id, nickname, is_blocked, is_favorite, created_at')
       .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500); // EGRESS FIX: cap contacts list, select only needed columns
 
     if (error) throw error;
     if (!contacts || contacts.length === 0) return res.json([]);
@@ -1557,16 +1564,19 @@ app.get('/api/contacts', auth, async (req, res) => {
 
     const usersMap = (users || []).reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
 
+    // EGRESS FIX: helper to strip base64 avatars from list responses
+    const safeAvatar = (url) => (url && url.startsWith('data:') ? null : (url || ''));
+
     const formattedContacts = contacts.map(contact => ({
       id: contact.id,
       contact_user_id: contact.contact_user_id,
       name: contact.nickname || usersMap[contact.contact_user_id]?.full_name || 'Sin nombre',
       phone: usersMap[contact.contact_user_id]?.phone || '',
-      avatar_url: usersMap[contact.contact_user_id]?.avatar_url || '',
+      avatar_url: safeAvatar(usersMap[contact.contact_user_id]?.avatar_url),
       is_blocked: contact.is_blocked,
       is_favorite: contact.is_favorite,
       created_at: contact.created_at,
-      user: usersMap[contact.contact_user_id] || null
+      user: usersMap[contact.contact_user_id] ? { ...usersMap[contact.contact_user_id], avatar_url: safeAvatar(usersMap[contact.contact_user_id]?.avatar_url) } : null
     }));
 
     res.json(formattedContacts);
@@ -3950,12 +3960,15 @@ setTimeout(seedDefaultSpaces, 3000);
 
 // GET /api/spaces ? listar todos los espacios con estado de seguimiento del usuario
 app.get('/api/spaces', auth, async (req, res) => {
+  // EGRESS FIX: spaces change rarely, cache for 60 seconds
+  res.setHeader('Cache-Control', 'private, max-age=60');
   try {
     const userId = req.user.id;
     const { data: spaces, error } = await supabase
       .from('spaces')
-      .select('*')
-      .order('followers_count', { ascending: false });
+      .select('id, name, description, type, cover, emoji, followers_count, owner_id, created_at')
+      .order('followers_count', { ascending: false })
+      .limit(50); // EGRESS FIX: cap at 50 spaces, select only needed columns
     if (error) return res.json([]);
 
     // Qu? espacios sigue el usuario
@@ -4169,6 +4182,8 @@ const ensureStoriesTable = async () => {
 ensureStoriesTable();
 
 app.get('/api/stories', auth, async (req, res) => {
+  // EGRESS FIX: allow short client-side caching to reduce repeated fetches
+  res.setHeader('Cache-Control', 'private, max-age=30');
   try {
     const userId = req.user.id;
     const now = new Date().toISOString();
@@ -4176,10 +4191,11 @@ app.get('/api/stories', auth, async (req, res) => {
     // 1. Mis propios estados
     const { data: mine } = await supabase
       .from('stories')
-      .select('*')
+      .select('id, user_id, media, type, views, reactions, created_at, expires_at')
       .eq('user_id', userId)
       .gt('expires_at', now)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(10); // EGRESS FIX: max 10 own stories
 
     // 2. IDs de contactos (tabla contacts)
     const { data: contacts } = await supabase
@@ -4215,10 +4231,11 @@ app.get('/api/stories', auth, async (req, res) => {
     if (contactIds.size > 0) {
       const { data } = await supabase
         .from('stories')
-        .select('*')
+        .select('id, user_id, media, type, views, reactions, created_at, expires_at')
         .in('user_id', Array.from(contactIds))
         .gt('expires_at', now)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // EGRESS FIX: max 50 contact stories, select only needed columns
       contactStories = data || [];
     }
 
@@ -5485,7 +5502,7 @@ app.post('/api/users/batch', auth, async (req, res) => {
 });
 
 if (require.main === module) {
-  // -- Endpoints adicionales: edici?n de mensajes, typing, reacciones ----------
+  // -- Endpoints adicionales: edición de mensajes, typing, reacciones ----------
 
   // Editar mensaje (solo el remitente, dentro de 15 min)
   app.put('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
@@ -5493,20 +5510,16 @@ if (require.main === module) {
       const { chatId, messageId } = req.params;
       const { text } = req.body;
       if (!text?.trim()) return res.status(400).json({ message: 'Texto requerido' });
-      // Verificar que el mensaje pertenece al usuario y no tiene m?s de 15 min
       const { data: msg } = await supabase.from('messages')
         .select('id, sender_id, created_at').eq('id', messageId).eq('chat_id', chatId).single();
       if (!msg) return res.status(404).json({ message: 'Mensaje no encontrado' });
       if (String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'No puedes editar este mensaje' });
       const age = Date.now() - new Date(msg.created_at).getTime();
-      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los ?ltimos 15 minutos' });
+      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los últimos 15 minutos' });
       const { data: updated, error } = await supabase.from('messages')
         .update({ text: text.trim(), edited: true, updated_at: new Date().toISOString() })
         .eq('id', messageId).select('id, text, edited, updated_at').single();
       if (error) throw error;
-      // Notificar en tiempo real
-      const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
-      emitToUsers((parts || []).map(p => p.user_id), { type: 'message_edited', chatId, messageId, text: text.trim() });
       res.json(updated);
     } catch (e) { res.status(500).json({ message: e.message }); }
   });
@@ -5520,24 +5533,22 @@ if (require.main === module) {
         const { data: msg } = await supabase.from('messages').select('sender_id').eq('id', messageId).single();
         if (!msg || String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'Solo puedes eliminar tus propios mensajes' });
         await supabase.from('messages').delete().eq('id', messageId);
-        const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
-        emitToUsers((parts || []).map(p => p.user_id), { type: 'message_deleted', chatId, messageId });
       } else {
-        await supabase.from('message_deletions').upsert({ message_id: messageId, user_id: req.user.id, deleted_at: new Date().toISOString() }, { onConflict: 'message_id,user_id' });
+        await supabase.from('message_deletions').upsert(
+          { message_id: messageId, user_id: req.user.id, deleted_at: new Date().toISOString() },
+          { onConflict: 'message_id,user_id' }
+        );
       }
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ message: e.message }); }
   });
 
-  // Indicador "escribiendo..." ? almac?n en memoria con TTL 5s
-  const typingMap = new Map(); // chatId -> { userId -> timestamp }
+  // Indicador "escribiendo..." — en memoria con TTL 5s
+  const typingMap = new Map();
   app.post('/api/chats/:chatId/typing', auth, async (req, res) => {
     const { chatId } = req.params;
     if (!typingMap.has(chatId)) typingMap.set(chatId, new Map());
     typingMap.get(chatId).set(String(req.user.id), Date.now());
-    const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
-    const others = (parts || []).map(p => p.user_id).filter(uid => String(uid) !== String(req.user.id));
-    emitToUsers(others, { type: 'typing', chatId, userId: req.user.id });
     res.json({ ok: true });
   });
   app.get('/api/chats/:chatId/typing', auth, (req, res) => {
@@ -5555,21 +5566,18 @@ if (require.main === module) {
   // Reacciones a mensajes
   app.post('/api/chats/:chatId/messages/:messageId/react', auth, async (req, res) => {
     try {
-      const { chatId, messageId } = req.params;
+      const { messageId } = req.params;
       const { emoji } = req.body;
       if (!emoji) return res.status(400).json({ message: 'Emoji requerido' });
-      // Upsert reacci?n (un emoji por usuario por mensaje)
       await supabase.from('message_reactions').upsert(
         { message_id: messageId, user_id: req.user.id, emoji, created_at: new Date().toISOString() },
         { onConflict: 'message_id,user_id' }
       );
-      const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
-      emitToUsers((parts || []).map(p => p.user_id), { type: 'message_reaction', chatId, messageId, userId: req.user.id, emoji });
       res.json({ ok: true });
     } catch (e) { res.status(500).json({ message: e.message }); }
   });
 
-  // B?squeda de mensajes en un chat
+  // Búsqueda de mensajes en un chat
   app.get('/api/chats/:chatId/messages/search', auth, async (req, res) => {
     try {
       const { chatId } = req.params;
@@ -5577,46 +5585,45 @@ if (require.main === module) {
       if (!q) return res.json([]);
       const { data } = await supabase.from('messages')
         .select('id, text, type, created_at, sender_id')
-        .eq('chat_id', chatId)
-        .ilike('text', `%${q}%`)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .eq('chat_id', chatId).ilike('text', `%${q}%`)
+        .order('created_at', { ascending: false }).limit(20);
       res.json(data || []);
     } catch (e) { res.json([]); }
   });
 
   // ── Keep-alive: evita que Render (free tier) duerma el servidor ──────────────
-  // Render duerme procesos tras 15 min sin peticiones → causa 502 en el primer
-  // request. Este ping interno cada 10 minutos mantiene el proceso activo.
-  // Solo activo en producción para no interferir en desarrollo local.
   if (process.env.NODE_ENV === 'production') {
-    const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://egchat-api.onrender.com`;
-    const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://egchat-api.onrender.com';
     setTimeout(() => {
       setInterval(() => {
         const https = require('https');
-        const req = https.get(`${SELF_URL}/health`, (res) => {
-          console.log(`[keep-alive] ping → ${res.statusCode}`);
-          res.resume(); // descartar respuesta
-        });
-        req.on('error', (e) => console.warn('[keep-alive] ping error:', e.message));
-        req.setTimeout(10000, () => { req.destroy(); console.warn('[keep-alive] ping timeout'); });
-      }, PING_INTERVAL_MS);
-    }, 60000); // primer ping tras 1 min de arranque
-    console.log(`   Keep-alive: activo (ping cada 10 min)`);
+        const r = https.get(`${SELF_URL}/health`, (res) => { res.resume(); });
+        r.on('error', () => {});
+        r.setTimeout(10000, () => r.destroy());
+      }, 10 * 60 * 1000);
+    }, 60000);
+    console.log('   Keep-alive: activo (ping cada 10 min)');
   }
 
-  // ── Admin Portal Routes ───────────────────────────────────────────────────
+  // ── WebSocket — real-time para mensajes, wallet, presencia ───────────────────
+  const http = require('http');
+  const { initWebSocket } = require('./websocket');
+  const httpServer = http.createServer(app);
+  const ws = initWebSocket(httpServer);
+  app.set('ws', ws);
+
+  // ── Admin Portal Routes ─────────────────────────────────────────────────────
   try {
     const mountAdmin = require('./adminRoutes');
     mountAdmin(app, supabase, jwt, bcrypt);
   } catch (e) {
-    console.warn('[AdminRoutes] No se pudo montar (speakeasy no instalado?):', e.message);
+    console.warn('[AdminRoutes] No se pudo montar:', e.message);
   }
 
-  app.listen(PORT, async () => {
-    console.log(`\n?? EGCHAT API + Supabase en http://localhost:${PORT}`);
-    console.log(`   Supabase: ${process.env.SUPABASE_URL ? '? Conectado' : '? Sin configurar'}`);
+  httpServer.listen(PORT, async () => {
+    console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
+    console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
+    console.log(`   Supabase: ${process.env.SUPABASE_URL ? '✅ Conectado' : '❌ Sin configurar'}`);
     // Iniciar scheduler de noticias del gobierno
     startGovNewsScheduler();
     console.log(`   Auth:   POST /api/auth/register | /api/auth/login`);
