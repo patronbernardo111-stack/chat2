@@ -13,86 +13,59 @@ const NEON_URL = process.env.DATABASE_URL ||
   'postgresql://neondb_owner:npg_QGsC87gwTEbL@ep-icy-smoke-a2znhutu-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require';
 const neonPool = new Pool({ connectionString: NEON_URL });
 
-// Helper: convierte el Pool de pg en una interfaz similar a Supabase
-// para reutilizar el cÃ³digo existente con mÃ­nimos cambios
-const db = {
-  from: (table) => ({
-    _table: table,
-    _filters: [],
-    _limit: null,
-    _orderCol: null,
-    _orderAsc: true,
-    _head: false,
-    _count: false,
-    select(cols, opts) {
-      this._cols = cols === '*' ? '*' : cols;
-      if (opts?.count === 'exact') this._count = true;
-      if (opts?.head) this._head = true;
-      return this;
-    },
-    eq(col, val)   { this._filters.push({ col, op: '=',    val }); return this; },
-    gte(col, val)  { this._filters.push({ col, op: '>=',   val }); return this; },
-    lte(col, val)  { this._filters.push({ col, op: '<=',   val }); return this; },
-    ilike(col, val){ this._filters.push({ col, op: 'ILIKE',val }); return this; },
-    order(col, { ascending = true } = {}) { this._orderCol = col; this._orderAsc = ascending; return this; },
-    limit(n)       { this._limit = n; return this; },
-    async maybeSingle() {
-      this._limit = 1;
-      const r = await this._exec();
-      return { data: r.data?.[0] || null, error: r.error };
-    },
-    async single() {
-      this._limit = 1;
-      const r = await this._exec();
-      return { data: r.data?.[0] || null, error: r.error };
-    },
-    async _exec() {
-      try {
+// ── Neon DB query builder (Supabase-compatible interface) ────────────────────
+class DbQuery {
+  constructor(table) {
+    this._table = table; this._filters = []; this._limit = null;
+    this._orderCol = null; this._orderAsc = true; this._cols = '*';
+    this._count = false; this._head = false;
+    this._pendingUpdate = null; this._pendingInsert = null;
+  }
+  select(cols = '*', opts = {}) { this._cols = cols; this._count = !!(opts.count === 'exact'); this._head = !!(opts.head); return this; }
+  eq(col, val)    { this._filters.push({ col, op: '=',     val }); return this; }
+  gte(col, val)   { this._filters.push({ col, op: '>=',    val }); return this; }
+  lte(col, val)   { this._filters.push({ col, op: '<=',    val }); return this; }
+  ilike(col, val) { this._filters.push({ col, op: 'ILIKE', val }); return this; }
+  order(col, { ascending = true } = {}) { this._orderCol = col; this._orderAsc = ascending; return this; }
+  limit(n) { this._limit = n; return this; }
+  update(obj) { this._pendingUpdate = obj; return this; }
+  insert(obj) { this._pendingInsert = obj; return this; }
+  then(resolve, reject) { return this._exec().then(resolve, reject); }
+  async maybeSingle() { this._limit = 1; const r = await this._exec(); return { data: r.data?.[0] ?? null, error: r.error, count: r.count }; }
+  async single()      { this._limit = 1; const r = await this._exec(); return { data: r.data?.[0] ?? null, error: r.error, count: r.count }; }
+  _buildWhere(params) {
+    if (!this._filters.length) return '';
+    return 'WHERE ' + this._filters.map(f => { params.push(f.val); return `"${f.col}" ${f.op} $${params.length}`; }).join(' AND ');
+  }
+  async _exec() {
+    try {
+      if (this._pendingInsert) {
+        const keys = Object.keys(this._pendingInsert), vals = Object.values(this._pendingInsert);
+        const res = await neonPool.query(
+          `INSERT INTO "${this._table}" (${keys.map(k=>`"${k}"`).join(',')}) VALUES (${keys.map((_,i)=>`$${i+1}`).join(',')}) RETURNING *`, vals);
+        return { data: res.rows, error: null };
+      }
+      if (this._pendingUpdate) {
         const params = [];
-        let where = '';
-        if (this._filters.length) {
-          where = 'WHERE ' + this._filters.map(f => {
-            params.push(f.val);
-            return `"${f.col}" ${f.op} $${params.length}`;
-          }).join(' AND ');
-        }
-        const order  = this._orderCol ? `ORDER BY "${this._orderCol}" ${this._orderAsc ? 'ASC' : 'DESC'}` : '';
-        const limit  = this._limit ? `LIMIT ${this._limit}` : '';
-        if (this._head && this._count) {
-          const res = await neonPool.query(`SELECT COUNT(*) FROM "${this._table}" ${where}`, params);
-          return { data: null, count: parseInt(res.rows[0].count), error: null };
-        }
-        const cols = this._cols || '*';
-        const res  = await neonPool.query(`SELECT ${cols} FROM "${this._table}" ${where} ${order} ${limit}`, params);
-        return { data: res.rows, count: res.rowCount, error: null };
-      } catch(e) { return { data: null, error: e }; }
-    },
-    then(resolve, reject) { return this._exec().then(resolve, reject); },
-    async insert(obj) {
-      try {
-        const keys   = Object.keys(obj);
-        const vals   = Object.values(obj);
-        const cols   = keys.map(k => `"${k}"`).join(', ');
-        const phs    = keys.map((_, i) => `$${i+1}`).join(', ');
-        const res    = await neonPool.query(
-          `INSERT INTO "${this._table}" (${cols}) VALUES (${phs}) RETURNING *`, vals);
-        return { data: res.rows[0], error: null };
-      } catch(e) { return { data: null, error: e }; }
-    },
-    async update(obj) {
-      try {
-        const params = [];
-        const sets   = Object.entries(obj).map(([k, v]) => { params.push(v); return `"${k}" = $${params.length}`; }).join(', ');
-        const where  = this._filters.length
-          ? 'WHERE ' + this._filters.map(f => { params.push(f.val); return `"${f.col}" ${f.op} $${params.length}`; }).join(' AND ')
-          : '';
+        const sets = Object.entries(this._pendingUpdate).map(([k,v])=>{ params.push(v); return `"${k}"=$${params.length}`; }).join(',');
+        const where = this._buildWhere(params);
         await neonPool.query(`UPDATE "${this._table}" SET ${sets} ${where}`, params);
-        return { error: null };
-      } catch(e) { return { error: e }; }
-    },
-  }),
-};
-
+        return { data: null, error: null };
+      }
+      const params = [];
+      const where = this._buildWhere(params);
+      const order = this._orderCol ? `ORDER BY "${this._orderCol}" ${this._orderAsc?'ASC':'DESC'}` : '';
+      const lim   = this._limit ? `LIMIT ${this._limit}` : '';
+      if (this._head && this._count) {
+        const res = await neonPool.query(`SELECT COUNT(*) FROM "${this._table}" ${where}`, params);
+        return { data: null, count: parseInt(res.rows[0].count), error: null };
+      }
+      const res = await neonPool.query(`SELECT ${this._cols} FROM "${this._table}" ${where} ${order} ${lim}`, params);
+      return { data: res.rows, count: res.rowCount, error: null };
+    } catch(e) { return { data: null, count: 0, error: e }; }
+  }
+}
+const db = { from: (table) => new DbQuery(table) };
 const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'egchat_admin_secret_2026';
 
 // â”€â”€ Middleware auth admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
