@@ -5606,6 +5606,14 @@ if (require.main === module) {
     console.log(`   Keep-alive: activo (ping cada 10 min)`);
   }
 
+  // ── Admin Portal Routes ───────────────────────────────────────────────────
+  try {
+    const mountAdmin = require('./adminRoutes');
+    mountAdmin(app, supabase, jwt, bcrypt);
+  } catch (e) {
+    console.warn('[AdminRoutes] No se pudo montar (speakeasy no instalado?):', e.message);
+  }
+
   app.listen(PORT, async () => {
     console.log(`\n?? EGCHAT API + Supabase en http://localhost:${PORT}`);
     console.log(`   Supabase: ${process.env.SUPABASE_URL ? '? Conectado' : '? Sin configurar'}`);
