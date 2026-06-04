@@ -1,4 +1,4 @@
-﻿// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
+// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
 try { 
   const dotenv = require('dotenv');
   dotenv.config();
@@ -7,7 +7,6 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF
 const JWT_SECRET_FALLBACK = 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret';
 console.log('JWT_SECRET source:', process.env.JWT_SECRET ? 'environment' : 'fallback');
 
-// ── Deep Links — archivos .well-known ────────────────────────────────────────
+// -- Deep Links / archivos .well-known ----------------------------------------
 // Deben servirse con Content-Type correcto para que Android/iOS los validen
 app.get('/.well-known/assetlinks.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -47,23 +46,162 @@ app.get('/.well-known/apple-app-site-association', (req, res) => {
   });
 });
 
-// Verificar token con múltiples secrets para compatibilidad
+// Verificar token con m?ltiples secrets para compatibilidad
 const verifyToken = (token) => {
   const secrets = [JWT_SECRET, JWT_SECRET_FALLBACK].filter((s, i, arr) => arr.indexOf(s) === i);
   for (const secret of secrets) {
     try { return jwt.verify(token, secret); } catch {}
   }
-  throw new Error('Token inválido o expirado');
+  throw new Error('Token inv?lido o expirado');
 };
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.3';
+// Versi�n actual de la APK Android � actualizar aqu� cuando haya nueva APK
+const APK_VERSION = '2.5.3';
+const APK_VERSION_CODE = 6;
+const APK_DOWNLOAD_URL = process.env.APK_DOWNLOAD_URL || 'https://egchat-v2.vercel.app/egchat-latest.apk';
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
-// --- Supabase ---------------------------------------------------------
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || ''
-);
+// --- Base de datos ---------------------------------------------------
+// Si DATABASE_URL está definida (Neon/PostgreSQL directo), usar pg-client.
+// Si no, usar Supabase como fallback.
+let supabase;
+if (process.env.DATABASE_URL) {
+  console.log('Usando PostgreSQL directo (Neon) via pg-client');
+  supabase = require('./pg-client.cjs');
+} else {
+  console.log('Usando Supabase client');
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(
+    process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_KEY || ''
+  );
+}
+
+// --- Almacenamiento de archivos/imágenes (sin Supabase Storage) ------
+// Proveedores soportados (en orden de preferencia):
+//   1. ImageKit.io  — imágenes + archivos, 20GB egress/mes gratis
+//      Variables: IMAGEKIT_PUBLIC_KEY, IMAGEKIT_PRIVATE_KEY, IMAGEKIT_URL_ENDPOINT
+//      Registro: https://imagekit.io  (sin restricción geográfica conocida)
+//   2. ImgBB        — solo imágenes, gratis sin límite de egress
+//      Variables: IMGBB_API_KEY
+//      Registro: https://imgbb.com  (global, sin restricciones)
+//
+// Para activar: añade las variables en Render > Settings > Environment
+
+const uploadToImageKit = async (buffer, options = {}) => {
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT || '';
+  if (!privateKey) throw new Error('IMAGEKIT_PRIVATE_KEY no configurada');
+
+  const https = require('https');
+  const crypto = require('crypto');
+
+  const fileName = options.fileName || `upload_${Date.now()}`;
+  const folder   = options.folder   || '/egchat';
+  const base64   = buffer.toString('base64');
+
+  // Auth básica: privateKey + ':' (sin password) en base64
+  const authToken = Buffer.from(`${privateKey}:`).toString('base64');
+
+  // Construir multipart/form-data
+  const boundary = `----IKBoundary${Date.now()}`;
+  const CRLF = '\r\n';
+  const addField = (name, value) =>
+    `--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
+
+  let body = '';
+  body += addField('fileName', fileName);
+  body += addField('folder', folder);
+  body += addField('useUniqueFileName', 'true');
+  // El campo file acepta base64 directamente
+  body += `--${boundary}${CRLF}Content-Disposition: form-data; name="file"${CRLF}${CRLF}data:application/octet-stream;base64,${base64}${CRLF}`;
+  body += `--${boundary}--${CRLF}`;
+  const bodyBuffer = Buffer.from(body);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'upload.imagekit.io',
+      path: '/api/v1/files/upload',
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authToken}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': bodyBuffer.length,
+      },
+    }, (resp) => {
+      const chunks = [];
+      resp.on('data', d => chunks.push(d));
+      resp.on('end', () => {
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString());
+          if (json.message && resp.statusCode >= 400) return reject(new Error(json.message));
+          resolve({ secure_url: json.url, public_id: json.fileId });
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(bodyBuffer);
+    req.end();
+  });
+};
+
+const uploadToImgBB = async (buffer, options = {}) => {
+  const apiKey = process.env.IMGBB_API_KEY;
+  if (!apiKey) throw new Error('IMGBB_API_KEY no configurada');
+
+  const https = require('https');
+  const base64 = buffer.toString('base64');
+  const name   = options.fileName || `upload_${Date.now()}`;
+
+  // ImgBB usa application/x-www-form-urlencoded
+  const body = `key=${encodeURIComponent(apiKey)}&image=${encodeURIComponent(base64)}&name=${encodeURIComponent(name)}`;
+  const bodyBuffer = Buffer.from(body);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.imgbb.com',
+      path: '/1/upload',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': bodyBuffer.length,
+      },
+    }, (resp) => {
+      const chunks = [];
+      resp.on('data', d => chunks.push(d));
+      resp.on('end', () => {
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString());
+          if (!json.success) return reject(new Error(json.error?.message || 'ImgBB upload failed'));
+          resolve({ secure_url: json.data.url, public_id: json.data.id });
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(bodyBuffer);
+    req.end();
+  });
+};
+
+// Función principal — intenta ImageKit, luego ImgBB, luego error claro
+const uploadFile = async (buffer, options = {}) => {
+  // Intentar ImageKit primero (soporta cualquier tipo de archivo)
+  if (process.env.IMAGEKIT_PRIVATE_KEY) {
+    return await uploadToImageKit(buffer, options);
+  }
+  // Fallback a ImgBB (solo imágenes)
+  if (process.env.IMGBB_API_KEY) {
+    const isImage = /^image\//.test(options.mimeType || '');
+    if (!isImage) throw new Error('ImgBB solo soporta imágenes. Configura IMAGEKIT_PRIVATE_KEY para archivos genéricos.');
+    return await uploadToImgBB(buffer, options);
+  }
+  throw new Error(
+    'No hay proveedor de almacenamiento configurado. ' +
+    'Añade IMAGEKIT_PRIVATE_KEY + IMAGEKIT_URL_ENDPOINT (imagekit.io) ' +
+    'o IMGBB_API_KEY (imgbb.com) en las variables de entorno de Render.'
+  );
+};
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001')
   .split(',')
@@ -72,13 +210,17 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permitir sin origin (Electron file://, apps móviles, Postman)
+    // Permitir sin origin (Electron file://, Postman, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     // Permitir cualquier localhost en desarrollo
     if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+    // Permitir https://localhost — Capacitor Android usa androidScheme:'https'
+    if (/^https:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
     // Permitir cualquier subdominio de vercel.app (egchat-v2, egchat-app, etc.)
     if (/^https:\/\/egchat.*\.vercel\.app$/.test(origin)) return callback(null, true);
+    // Permitir capacitor:// e ionic:// (esquemas nativos alternativos)
+    if (/^(capacitor|ionic):\/\//.test(origin)) return callback(null, true);
     return callback(new Error('CORS policy: origin not allowed'));
   },
   credentials: true,
@@ -99,7 +241,7 @@ const parseBearerToken = (header) => {
 };
 
 const auth = (req, res, next) => {
-  // Intentar obtener token de múltiples fuentes
+  // Intentar obtener token de m?ltiples fuentes
   const authHeader = parseBearerToken(req.headers.authorization);
   const xAuthToken = req.headers['x-auth-token'] || '';
   const queryToken = typeof req.query._t === 'string' ? req.query._t : '';
@@ -109,7 +251,7 @@ const auth = (req, res, next) => {
     req.user = verifyToken(token);
     next();
   } catch {
-    res.status(401).json({ message: 'Token inválido o expirado' });
+    res.status(401).json({ message: 'Token inv?lido o expirado' });
   }
 };
 
@@ -124,7 +266,7 @@ const authFromQuery = (req, res, next) => {
     req.user = verifyToken(token);
     next();
   } catch {
-    res.status(401).json({ message: 'Token inválido o expirado' });
+    res.status(401).json({ message: 'Token inv?lido o expirado' });
   }
 };
 
@@ -205,7 +347,7 @@ app.post('/api/admin/users/update-version', async (req, res) => {
   }
 });
 
-// Reset contraseña por admin
+// Reset contrase?a por admin
 app.post('/api/admin/reset-password', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.body?.adminKey;
   if (!key || key !== adminResetKey) return res.status(403).json({ message: 'No autorizado' });
@@ -225,21 +367,104 @@ app.get('/', (req, res) => res.json({
   status: 'active'
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', async (req, res) => {
+  let dbStatus = 'unknown';
+  let dbError = null;
+  try {
+    const { error } = await supabase.from('users').select('id').limit(1);
+    if (error) {
+      dbStatus = 'error';
+      dbError = error.message;
+    } else {
+      dbStatus = 'ok';
+    }
+  } catch (e) {
+    dbStatus = 'error';
+    dbError = e.message;
+  }
+  res.json({
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
+    db: dbStatus,
+    db_error: dbError,
+    db_provider: process.env.DATABASE_URL ? 'neon' : 'supabase',
+    timestamp: new Date().toISOString()
+  });
+});
 
-app.get('/jwt-debug', (req, res) => res.json({
-  jwt_secret_source: process.env.JWT_SECRET ? 'environment' : 'fallback',
-  jwt_secret_first10: JWT_SECRET.substring(0, 10),
-  jwt_secret_length: JWT_SECRET.length,
-}));
+// jwt-debug eliminado por seguridad ? expone informaci?n del secret
+
+
+// --- Endpoint version APK ---
+app.get('/api/app/version', (req, res) => {
+  res.json({
+    version: APK_VERSION,
+    versionCode: APK_VERSION_CODE,
+    downloadUrl: APK_DOWNLOAD_URL,
+    releaseNotes: 'Mejoras de rendimiento y correcciones.',
+    forceUpdate: false,
+    minVersionCode: 1,
+  });
+});
 
 app.get('/debug', (req, res) => res.json({
-  supabase_url: process.env.SUPABASE_URL ? 'âœ… set' : 'âŒ missing',
-  supabase_key: process.env.SUPABASE_SERVICE_KEY ? 'âœ… set' : 'âŒ missing',
-  jwt_secret: process.env.JWT_SECRET ? 'âœ… set' : 'âŒ missing',
+  db_provider: process.env.DATABASE_URL ? 'neon' : 'supabase',
+  database_url: process.env.DATABASE_URL ? 'set (neon)' : 'not set',
+  supabase_url: process.env.SUPABASE_URL || 'not set',
+  supabase_key: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'not set',
+  jwt_secret: process.env.JWT_SECRET ? 'set' : 'not set',
+  imagekit: process.env.IMAGEKIT_PRIVATE_KEY ? 'set' : 'not set',
   node_env: process.env.NODE_ENV || 'not set',
   port: PORT
 }));
+
+
+
+
+// TEMP BCRYPT TEST
+app.get('/debug/bcrypt-test', async (req, res) => {
+  const phone = req.query.phone || '+240555570323';
+  const password = req.query.pass || '509871';
+  const { data, error } = await supabase.from('users').select('id, phone, password_hash').eq('phone', phone).maybeSingle();
+  if (!data) return res.json({ found: false, error: error && error.message });
+  const bcrypt = require('bcryptjs');
+  const ok = await bcrypt.compare(password, data.password_hash);
+  res.json({ found: true, phone: data.phone, hash_prefix: data.password_hash.substring(0,20), password_matches: ok });
+});
+
+// TEMP DIAG
+app.get('/debug/user-check', async (req, res) => {
+  const phone = req.query.phone || '+240555570323';
+  const variants = [phone, phone.startsWith('+') ? phone.slice(1) : '+' + phone];
+  const results = [];
+  for (const v of variants) {
+    const { data, error } = await supabase.from('users').select('id, phone, full_name, password_hash').eq('phone', v).maybeSingle();
+    results.push({
+      searched: v,
+      found: !!data,
+      error: error && error.message,
+      id: data && data.id,
+      name: data && data.full_name,
+      hash_prefix: data && data.password_hash && data.password_hash.substring(0, 20),
+      hash_valid: data && data.password_hash && data.password_hash.startsWith('$2')
+    });
+  }
+  res.json(results);
+});
+
+// Diagnostico de login - verifica si la tabla users es accesible con filtros
+app.get('/debug/login-test', async (req, res) => {
+  try {
+    const { data: d1, error: e1 } = await supabase.from('users').select('id, phone').limit(3);
+    const { data: d2, error: e2 } = await supabase.from('users').select('id, phone, password_hash').eq('phone', '+240000000000').maybeSingle();
+    res.json({
+      test1_no_filter: { ok: !e1, count: d1 && d1.length, error: e1 && e1.message },
+      test2_with_filter: { ok: e2 === null, error: e2 && e2.message, code: e2 && e2.code },
+      users_sample: (d1 || []).map(function(u) { return { id: u.id && u.id.slice(0,8), phone: u.phone }; })
+    });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
 
 app.get('/api/system/dependencies', async (_req, res) => {
   const now = Date.now();
@@ -282,7 +507,7 @@ app.get('/api/system/dependencies', async (_req, res) => {
   res.json(payload);
 });
 
-// Stream SSE para mensajería en tiempo real
+// Stream SSE para mensajer?a en tiempo real
 app.get('/api/chat/stream', authFromQuery, (req, res) => {
   const userId = String(req.user.id);
   res.setHeader('Content-Type', 'text/event-stream');
@@ -314,7 +539,7 @@ app.get('/api/chat/stream', authFromQuery, (req, res) => {
 });
 
 // AUTH
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { phone, password, full_name, avatar_url } = req.body;
@@ -326,7 +551,7 @@ app.post('/api/auth/register', async (req, res) => {
     // Verificar si ya existe
     const { data: existing } = await supabase
       .from('users').select('id').eq('phone', phone).maybeSingle();
-    if (existing) return res.status(409).json({ message: 'El teléfono ya está registrado' });
+    if (existing) return res.status(409).json({ message: 'El tel?fono ya est? registrado' });
 
     const hashed = await bcrypt.hash(password, 10);
     const { data: user, error } = await supabase
@@ -359,32 +584,139 @@ app.post('/api/auth/check-phone', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+
+// LOGIN DEBUG - ver exactamente donde falla
+app.post('/api/auth/login-debug', async (req, res) => {
+  const steps = [];
   try {
     const { phone, password } = req.body;
-    if (!phone || !password)
-      return res.status(400).json({ message: 'phone y password son requeridos' });
+    steps.push({ step: 1, msg: 'Received', phone, hasPassword: !!password });
 
-    const { data: user, error } = await supabase
-      .from('users').select('*').eq('phone', phone).maybeSingle();
+    const variants = [phone];
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
+    steps.push({ step: 2, msg: 'Variants', variants });
 
-    if (error || !user) return res.status(401).json({ message: 'Credenciales incorrectas' });
+    let user = null;
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, password_hash')
+        .eq('phone', v)
+        .maybeSingle();
+      steps.push({ step: 3, variant: v, found: !!result.data, error: result.error && result.error.message });
+      if (result.data) { user = result.data; break; }
+    }
+
+    if (!user) return res.json({ success: false, steps, reason: 'user_not_found' });
+    steps.push({ step: 4, msg: 'User found', id: user.id, hash_prefix: user.password_hash && user.password_hash.substring(0,15) });
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    steps.push({ step: 5, msg: 'bcrypt.compare result', ok });
+
+    if (!ok) return res.json({ success: false, steps, reason: 'wrong_password' });
+
+    return res.json({ success: true, steps, user: { id: user.id, phone: user.phone, name: user.full_name } });
+  } catch (e) {
+    return res.json({ success: false, steps, error: e.message });
+  }
+});
+
+// Handler compartido para login (usado por /api/auth/login-v2)
+const handleLogin = async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
+
+    const variants = [phone];
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
+
+    let user = null;
+    let dbError = null;
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, avatar_url, password_hash, app_version')
+        .eq('phone', v)
+        .maybeSingle();
+      if (result.error) { dbError = result.error; continue; }
+      if (result.data) { user = result.data; break; }
+    }
+
+    if (!user && dbError) {
+      console.error('Login DB error:', dbError.message, dbError.code);
+      const isQuotaError = dbError.code === '53300' ||
+        (typeof dbError.message === 'string' && /bandwidth|quota|limit|exceeded|paused/i.test(dbError.message));
+      if (isQuotaError) {
+        return res.status(503).json({ message: 'Servicio temporalmente no disponible. Por favor intenta de nuevo en unos minutos.', code: 'DB_QUOTA' });
+      }
+      return res.status(503).json({ message: 'Error de conexión con la base de datos', code: 'DB_ERROR' });
+    }
+
+    if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
-    // Actualizar último acceso (ignorar si la columna no existe)
-    try {
-      await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id);
-    } catch {}
+    // Actualizar last_login en background
+    supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id).then(() => {}).catch(() => {});
 
-    const token = jwt.sign({ id: user.id, phone }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
+    const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
   } catch (e) {
-    console.error('Login error:', e);
-    res.status(500).json({ message: e.message });
+    console.error('Login error:', e.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) return res.status(400).json({ message: 'phone y password son requeridos' });
+
+    const variants = [phone];
+    if (phone && phone.startsWith('+')) variants.push(phone.slice(1));
+    else if (phone) variants.push('+' + phone);
+
+    // Una sola query con todos los campos necesarios (evita la segunda query innecesaria)
+    let user = null;
+    let dbError = null;
+    for (const v of variants) {
+      const result = await supabase.from('users')
+        .select('id, phone, full_name, avatar_url, password_hash, app_version')
+        .eq('phone', v)
+        .maybeSingle();
+      if (result.error) { dbError = result.error; continue; }
+      if (result.data) { user = result.data; break; }
+    }
+
+    // Si Supabase devolvió error (límite de BD, proyecto pausado, etc.) informar claramente
+    if (!user && dbError) {
+      console.error('Login DB error:', dbError.message, dbError.code);
+      // Código 53300 = too_many_connections, PGRST* = PostgREST errors
+      const isQuotaError = dbError.code === '53300' ||
+        (typeof dbError.message === 'string' && /bandwidth|quota|limit|exceeded|paused/i.test(dbError.message));
+      if (isQuotaError) {
+        return res.status(503).json({ message: 'Servicio temporalmente no disponible. Por favor intenta de nuevo en unos minutos.', code: 'DB_QUOTA' });
+      }
+      return res.status(503).json({ message: 'Error de conexión con la base de datos', code: 'DB_ERROR' });
+    }
+
+    if (!user) return res.status(401).json({ message: 'Credenciales incorrectas' });
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
+
+    // Actualizar last_login en background (no bloquea la respuesta, no penaliza si falla)
+    supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id).then(() => {}).catch(() => {});
+
+    const token = jwt.sign({ id: user.id, phone: user.phone }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ token, user: { id: user.id, phone: user.phone, full_name: user.full_name, avatar_url: user.avatar_url, app_version: user.app_version || APP_VERSION } });
+  } catch (e) {
+    console.error('Login error:', e.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
+app.post('/api/auth/login-v2', handleLogin);
 
 app.get('/api/auth/me', auth, async (req, res) => {
   const { data: user } = await supabase
@@ -409,26 +741,26 @@ app.put('/api/auth/profile', auth, async (req, res) => {
   }
 });
 
-app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesión cerrada' }));
+app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesi?n cerrada' }));
 
-// ── Recuperación de contraseña ────────────────────────────────────────────────
-// Almacén temporal en memoria: { phone -> { code, expiresAt } }
+// -- Recuperaci?n de contrase?a ------------------------------------------------
+// Almac?n temporal en memoria: { phone -> { code, expiresAt } }
 const resetCodes = new Map();
 
 app.post('/api/auth/send-verification', async (req, res) => {
   try {
     const { phone } = req.body;
-    if (!phone) return res.status(400).json({ message: 'Teléfono requerido' });
+    if (!phone) return res.status(400).json({ message: 'Tel?fono requerido' });
 
     // Verificar que el usuario existe
     const { data: user } = await supabase.from('users').select('id').eq('phone', phone).maybeSingle();
-    if (!user) return res.status(404).json({ message: 'No existe ninguna cuenta con ese número' });
+    if (!user) return res.status(404).json({ message: 'No existe ninguna cuenta con ese n?mero' });
 
-    // Generar código de 6 dígitos
+    // Generar c?digo de 6 d?gitos
     const code = String(Math.floor(100000 + Math.random() * 900000));
     resetCodes.set(phone, { code, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min
 
-    // Intentar enviar SMS via Twilio si está configurado
+    // Intentar enviar SMS via Twilio si est? configurado
     try {
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken  = process.env.TWILIO_AUTH_TOKEN;
@@ -436,7 +768,7 @@ app.post('/api/auth/send-verification', async (req, res) => {
       if (accountSid && authToken && fromPhone) {
         const twilio = require('twilio')(accountSid, authToken);
         await twilio.messages.create({
-          body: `Tu código de recuperación EGCHAT es: ${code}. Válido 10 minutos.`,
+          body: `Tu c?digo de recuperaci?n EGCHAT es: ${code}. V?lido 10 minutos.`,
           from: fromPhone,
           to: phone,
         });
@@ -445,8 +777,8 @@ app.post('/api/auth/send-verification', async (req, res) => {
       console.warn('SMS no enviado (Twilio no configurado):', smsErr.message);
     }
 
-    console.log(`[RESET] Código para ${phone}: ${code}`);
-    res.json({ sent: true, message: 'Código enviado' });
+    console.log(`[RESET] C?digo para ${phone}: ${code}`);
+    res.json({ sent: true, message: 'C?digo enviado' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
@@ -455,15 +787,15 @@ app.post('/api/auth/send-verification', async (req, res) => {
 app.post('/api/auth/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-    if (!phone || !code) return res.status(400).json({ message: 'Teléfono y código requeridos' });
+    if (!phone || !code) return res.status(400).json({ message: 'Tel?fono y c?digo requeridos' });
 
     const entry = resetCodes.get(phone);
-    if (!entry) return res.status(400).json({ verified: false, message: 'No hay código activo para este número' });
+    if (!entry) return res.status(400).json({ verified: false, message: 'No hay c?digo activo para este n?mero' });
     if (Date.now() > entry.expiresAt) {
       resetCodes.delete(phone);
-      return res.status(400).json({ verified: false, message: 'El código ha expirado. Solicita uno nuevo.' });
+      return res.status(400).json({ verified: false, message: 'El c?digo ha expirado. Solicita uno nuevo.' });
     }
-    if (entry.code !== String(code)) return res.status(400).json({ verified: false, message: 'Código incorrecto' });
+    if (entry.code !== String(code)) return res.status(400).json({ verified: false, message: 'C?digo incorrecto' });
 
     res.json({ verified: true });
   } catch (e) {
@@ -475,34 +807,34 @@ app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { phone, code, newPassword } = req.body;
     if (!phone || !code || !newPassword) return res.status(400).json({ message: 'Faltan datos' });
-    if (newPassword.length < 6) return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+    if (newPassword.length < 6) return res.status(400).json({ message: 'La contrase?a debe tener al menos 6 caracteres' });
 
-    // Verificar código
+    // Verificar c?digo
     const entry = resetCodes.get(phone);
-    if (!entry) return res.status(400).json({ message: 'Código no válido o expirado' });
+    if (!entry) return res.status(400).json({ message: 'C?digo no v?lido o expirado' });
     if (Date.now() > entry.expiresAt) {
       resetCodes.delete(phone);
-      return res.status(400).json({ message: 'El código ha expirado. Solicita uno nuevo.' });
+      return res.status(400).json({ message: 'El c?digo ha expirado. Solicita uno nuevo.' });
     }
-    if (entry.code !== String(code)) return res.status(400).json({ message: 'Código incorrecto' });
+    if (entry.code !== String(code)) return res.status(400).json({ message: 'C?digo incorrecto' });
 
-    // Actualizar contraseña
+    // Actualizar contrase?a
     const hash = await bcrypt.hash(newPassword, 10);
     const { error } = await supabase.from('users').update({ password_hash: hash }).eq('phone', phone);
     if (error) throw error;
 
-    resetCodes.delete(phone); // invalidar código usado
-    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+    resetCodes.delete(phone); // invalidar c?digo usado
+    res.json({ success: true, message: 'Contrase?a actualizada correctamente' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // CONTACTOS
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // ========================================================================
-// CHAT / MENSAJERÁA COMPLETA
+// CHAT / MENSAJER??A COMPLETA
 // ========================================================================
 
 // Obtener todos los chats del usuario
@@ -517,7 +849,7 @@ app.get('/api/chats', auth, async (req, res) => {
       .eq('user_id', req.user.id);
 
     if (pErr) {
-      // Si la tabla no existe, devolver array vacío
+      // Si la tabla no existe, devolver array vac?o
       return res.json([]);
     }
 
@@ -575,11 +907,11 @@ app.get('/api/chats', auth, async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error('Get chats error:', e.message);
-    res.json([]); // Devolver vacío en vez de 500
+    res.json([]); // Devolver vac?o en vez de 500
   }
 });
 
-// Obtener mensajes de un chat especÁƒÂ­fico
+// Obtener mensajes de un chat espec??�fico
 app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -604,7 +936,7 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
       .order('created_at', { ascending: false })
       .range(from, from + limit - 1);
 
-    // Filtrar mensajes que el usuario eliminó para sí mismo
+    // Filtrar mensajes que el usuario elimin? para s? mismo
     const { data: deletions } = await supabase
       .from('message_deletions')
       .select('message_id')
@@ -659,7 +991,7 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
       const senderName = sender?.full_name || 'Alguien';
       const pushPayload = {
         title: senderName,
-        body: message.type === 'text' ? (message.text || 'Nuevo mensaje') : '📎 Archivo adjunto',
+        body: message.type === 'text' ? (message.text || 'Nuevo mensaje') : '?? Archivo adjunto',
         icon: '/favicon.svg',
         tag: `chat-${chatId}`,
         url: '/',
@@ -676,7 +1008,7 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
 });
 
 // Crear chat privado
-// Crear chat privado ââ‚¬â€ usa chat_participants
+// Crear chat privado ?�� usa chat_participants
 app.post('/api/chats/private', auth, async (req, res) => {
   try {
     const { participant_id, phone } = req.body;
@@ -690,7 +1022,7 @@ app.post('/api/chats/private', auth, async (req, res) => {
         .single();
 
       if (userError || !found) {
-        return res.status(404).json({ message: 'Usuario no encontrado con ese nÁºmero' });
+        return res.status(404).json({ message: 'Usuario no encontrado con ese n??mero' });
       }
 
       targetId = found.id;
@@ -790,7 +1122,7 @@ app.post('/api/chats/group', auth, async (req, res) => {
       participant_ids.push(req.user.id);
     }
 
-    // Obtener información de los participantes
+    // Obtener informaci?n de los participantes
     const { data: participants, error: userError } = await supabase
       .from('users')
       .select('id, phone, full_name, avatar_url')
@@ -839,9 +1171,9 @@ app.post('/api/chats/group', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// Upload avatar de grupo — recibe base64, sube a Supabase Storage
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// Upload avatar de grupo — recibe base64, sube a Cloudinary (evita egress Supabase)
+// --------------------------------------------------------------------
 app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -861,34 +1193,25 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
     // Convertir base64 a buffer
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
-    const ext = mimeType.split('/')[1] || 'jpg';
-    const fileName = `group-avatars/${chatId}-${Date.now()}.${ext}`;
 
-    // Subir a Supabase Storage (bucket: avatars)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, buffer, {
-        contentType: mimeType,
-        upsert: true,
+    let publicUrl = '';
+
+    try {
+      // Subir con el proveedor configurado (ImageKit o ImgBB)
+      const result = await uploadFile(buffer, {
+        folder: 'egchat/group-avatars',
+        fileName: `group-${chatId}`,
+        mimeType: mimeType,
       });
-
-    if (uploadError) {
-      // Si falla Storage, guardar el base64 directamente en la BD como fallback
-      const { data: updated } = await supabase
-        .from('chats')
-        .update({ avatar_url: base64, updated_at: new Date().toISOString() })
-        .eq('id', chatId)
-        .select('avatar_url')
-        .single();
-      return res.json({ avatar_url: updated?.avatar_url || base64 });
+      publicUrl = result.secure_url;
+    } catch (uploadErr) {
+      console.error('Upload error:', uploadErr.message);
+      // Fallback: guardar base64 compacto en BD (solo si imagen pequeña < 100KB)
+      if (buffer.length > 102400) {
+        return res.status(503).json({ message: 'Almacenamiento no disponible. ' + uploadErr.message });
+      }
+      publicUrl = `data:${mimeType};base64,${base64Data}`;
     }
-
-    // Obtener URL pública
-    const { data: publicData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    const publicUrl = publicData?.publicUrl || '';
 
     // Actualizar en la BD
     await supabase
@@ -903,9 +1226,9 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // Actualizar nombre y/o avatar de un grupo
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.put('/api/chats/:chatId', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -931,7 +1254,7 @@ app.put('/api/chats/:chatId', auth, async (req, res) => {
     if (!chat) return res.status(404).json({ message: 'Chat no encontrado' });
     if (chat.type !== 'group') return res.status(400).json({ message: 'Solo se pueden editar grupos' });
 
-    // Construir objeto de actualización
+    // Construir objeto de actualizaci?n
     const updates = { updated_at: new Date().toISOString() };
     if (name !== undefined && name !== null && name.trim() !== '') {
       updates.name = name.trim();
@@ -956,9 +1279,9 @@ app.put('/api/chats/:chatId', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // Obtener participantes de un grupo
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -1008,7 +1331,7 @@ app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   }
 });
 
-// Marcar mensajes como leídos
+// Marcar mensajes como le?dos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -1026,7 +1349,7 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
       return res.status(403).json({ message: 'No tienes acceso a este chat' });
     }
 
-    // Marcar mensajes como leídos hasta el mensaje especificado
+    // Marcar mensajes como le?dos hasta el mensaje especificado
     const { error: updateError } = await supabase
       .from('message_reads')
       .upsert({
@@ -1040,21 +1363,21 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
 
     if (updateError) throw updateError;
 
-    // Resetear contador de no leÁƒÂ­dos
+    // Resetear contador de no le??�dos
     await supabase
       .from('chat_participants')
       .update({ unread_count: 0 })
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id);
 
-    res.json({ message: 'Mensajes marcados como leÁƒÂ­dos' });
+    res.json({ message: 'Mensajes marcados como le??�dos' });
   } catch (e) {
     console.error('Mark as read error:', e);
     res.status(500).json({ message: e.message });
   }
 });
 
-// Subir archivo de chat — acepta multipart/form-data (Android/iOS) y raw buffer (web)
+// Subir archivo de chat ? acepta multipart/form-data (Android/iOS) y raw buffer (web)
 app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
@@ -1109,27 +1432,20 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
     }
 
     const ext = fileName.split('.').pop()?.toLowerCase() || 'bin';
-    const storagePath = `chats/${chatId}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
-    // Subir a Supabase Storage (bucket: chat-files)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('chat-files')
-      .upload(storagePath, buffer, {
-        contentType: fileContentType,
-        upsert: false,
+    // Subir con el proveedor configurado (ImageKit o ImgBB)
+    let publicUrl = '';
+    try {
+      const result = await uploadFile(buffer, {
+        folder: `egchat/chats/${chatId}`,
+        fileName: fileName,
+        mimeType: fileContentType,
       });
-
-    if (uploadError) {
-      console.error('Supabase storage upload error:', uploadError.message);
-      return res.status(500).json({ message: 'Error al subir archivo: ' + uploadError.message });
+      publicUrl = result.secure_url;
+    } catch (uploadErr) {
+      console.error('Upload error:', uploadErr.message);
+      return res.status(503).json({ message: 'Almacenamiento no disponible. ' + uploadErr.message });
     }
-
-    // Obtener URL pública
-    const { data: urlData } = supabase.storage
-      .from('chat-files')
-      .getPublicUrl(storagePath);
-
-    const publicUrl = urlData?.publicUrl || '';
 
     res.json({
       file_url: publicUrl,
@@ -1144,7 +1460,7 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
   }
 });
 
-// Eliminar mensaje para mí (solo oculta para el usuario actual)
+// Eliminar mensaje para m? (solo oculta para el usuario actual)
 app.delete('/api/messages/:messageId/for-me', auth, async (req, res) => {
   try {
     const { messageId } = req.params;
@@ -1170,7 +1486,7 @@ app.delete('/api/messages/:messageId/for-me', auth, async (req, res) => {
 
     if (!part) return res.status(403).json({ message: 'Sin acceso a este chat' });
 
-    // Registrar la eliminación para este usuario (upsert para evitar duplicados)
+    // Registrar la eliminaci?n para este usuario (upsert para evitar duplicados)
     const { error: delError } = await supabase
       .from('message_deletions')
       .upsert({ message_id: messageId, user_id: req.user.id }, { onConflict: 'message_id,user_id' });
@@ -1222,9 +1538,9 @@ app.delete('/api/messages/:messageId', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// CONTACTOS - GESTIÁƒâ€œN COMPLETA
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// CONTACTOS - GESTI??�N COMPLETA
+// --------------------------------------------------------------------
 
 // Obtener todos los contactos del usuario
 app.get('/api/contacts', auth, async (req, res) => {
@@ -1278,7 +1594,7 @@ app.post('/api/contacts', auth, async (req, res) => {
     let targetId = contact_user_id && contact_user_id.trim() ? contact_user_id.trim() : null;
 
     if (!targetId && phone) {
-      // Normalizar teléfono: buscar con y sin prefijo +
+      // Normalizar tel?fono: buscar con y sin prefijo +
       const phoneNorm = phone.trim();
       const phoneAlt = phoneNorm.startsWith('+') ? phoneNorm.slice(1) : '+' + phoneNorm;
       console.log('[ADD CONTACT] searching by phone:', phoneNorm, 'or', phoneAlt);
@@ -1292,14 +1608,14 @@ app.post('/api/contacts', auth, async (req, res) => {
       console.log('[ADD CONTACT] phone search result:', targetUser, 'error:', userError?.message);
 
       if (userError || !targetUser) {
-        return res.status(404).json({ message: 'Usuario no encontrado con ese número' });
+        return res.status(404).json({ message: 'Usuario no encontrado con ese n?mero' });
       }
 
       targetId = targetUser.id;
     }
 
     if (!targetId) {
-      return res.status(400).json({ message: 'ID de contacto o teléfono requerido' });
+      return res.status(400).json({ message: 'ID de contacto o tel?fono requerido' });
     }
 
     console.log('[ADD CONTACT] targetId:', targetId);
@@ -1543,7 +1859,7 @@ app.get('/api/contacts/search', auth, async (req, res) => {
       .neq('id', req.user.id)
       .limit(50);
 
-    // Si hay término de búsqueda, filtrar; si no, devolver todos
+    // Si hay t?rmino de b?squeda, filtrar; si no, devolver todos
     if (q && q.length >= 2) {
       query = query.or(`phone.ilike.%${q}%,full_name.ilike.%${q}%`);
     }
@@ -1557,9 +1873,9 @@ app.get('/api/contacts/search', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // WALLET
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.get('/api/wallet/balance', auth, async (req, res) => {
   let { data: wallet } = await supabase
     .from('wallets').select('balance, currency').eq('user_id', req.user.id).single();
@@ -1588,7 +1904,7 @@ app.get('/api/wallet/transactions', auth, async (req, res) => {
 
 app.post('/api/wallet/deposit', auth, async (req, res) => {
   const { amount, method, reference } = req.body;
-  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe invÁƒÂ¡lido' });
+  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv??�lido' });
 
   const { data: wallet } = await supabase
     .from('wallets').select('balance').eq('user_id', req.user.id).single();
@@ -1609,7 +1925,7 @@ app.post('/api/wallet/withdraw', auth, async (req, res) => {
   const { data: wallet } = await supabase
     .from('wallets').select('balance').eq('user_id', req.user.id).single();
 
-  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe invÁƒÂ¡lido' });
+  if (!amount || amount <= 0) return res.status(400).json({ message: 'Importe inv??�lido' });
   if (!wallet || amount > wallet.balance) return res.status(400).json({ message: 'Saldo insuficiente' });
 
   const newBalance = wallet.balance - amount;
@@ -1635,7 +1951,7 @@ app.post('/api/wallet/transfer', auth, async (req, res) => {
 
   const { data: tx } = await supabase.from('transactions').insert({
     user_id: req.user.id, type: 'transfer_sent', amount, method: 'EGCHAT',
-    reference: `A: ${to} Á‚Â· ${concept || ''}`, status: 'completed'
+    reference: `A: ${to} ??� ${concept || ''}`, status: 'completed'
   }).select().single();
 
   res.json({ balance: newBalance, transaction: tx });
@@ -1644,16 +1960,16 @@ app.post('/api/wallet/transfer', auth, async (req, res) => {
 app.post('/api/wallet/recharge-code', auth, async (req, res) => {
   const { code } = req.body;
   if (!code || code.replace(/-/g, '').length !== 16)
-    return res.status(400).json({ message: 'CÁƒÂ³digo invÁƒÂ¡lido' });
+    return res.status(400).json({ message: 'C??�digo inv??�lido' });
 
-  // Verificar si el cÁƒÂ³digo ya fue usado
+  // Verificar si el c??�digo ya fue usado
   const { data: usedCode } = await supabase
     .from('recharge_codes').select('*').eq('code', code).single();
 
-  if (!usedCode) return res.status(400).json({ message: 'CÁƒÂ³digo no vÁƒÂ¡lido' });
-  if (usedCode.used || usedCode.is_used) return res.status(400).json({ message: 'CÁƒÂ³digo ya utilizado' });
+  if (!usedCode) return res.status(400).json({ message: 'C??�digo no v??�lido' });
+  if (usedCode.used || usedCode.is_used) return res.status(400).json({ message: 'C??�digo ya utilizado' });
   if (usedCode.expires_at && new Date(usedCode.expires_at) < new Date())
-    return res.status(400).json({ message: 'CÁƒÂ³digo expirado' });
+    return res.status(400).json({ message: 'C??�digo expirado' });
 
   const amount = usedCode?.amount || 5000;
 
@@ -1667,11 +1983,11 @@ app.post('/api/wallet/recharge-code', auth, async (req, res) => {
   await supabase.from('wallets').update({ balance: newBalance }).eq('user_id', req.user.id);
 
   await supabase.from('transactions').insert({
-    user_id: req.user.id, type: 'deposit', amount, method: 'CÁƒÂ³digo de recarga',
+    user_id: req.user.id, type: 'deposit', amount, method: 'C??�digo de recarga',
     reference: code, status: 'completed'
   });
 
-  res.json({ balance: newBalance, amount, message: `${amount.toLocaleString()} XAF aÁƒÂ±adidos` });
+  res.json({ balance: newBalance, amount, message: `${amount.toLocaleString()} XAF a??�adidos` });
 });
 
 const WALLET_LIMITS = {
@@ -1753,7 +2069,7 @@ app.get('/api/wallet/summary', auth, async (req, res) => {
 app.post('/api/wallet/hold', auth, async (req, res) => {
   const amount = Number(req.body?.amount || 0);
   const reference = req.body?.reference || `HOLD-${Date.now()}`;
-  if (amount <= 0) return res.status(400).json({ message: 'Importe inválido' });
+  if (amount <= 0) return res.status(400).json({ message: 'Importe inv?lido' });
   const wallet = await getWalletSafe(req.user.id);
   if (amount > Number(wallet.balance || 0)) return res.status(400).json({ message: 'Saldo insuficiente' });
   const { data: tx } = await supabase.from('transactions').insert({
@@ -1766,8 +2082,8 @@ app.post('/api/wallet/hold/:id/capture', auth, async (req, res) => {
   const holdId = req.params.id;
   const { data: hold } = await supabase.from('transactions').select('*')
     .eq('id', holdId).eq('user_id', req.user.id).eq('type', 'hold').maybeSingle();
-  if (!hold) return res.status(404).json({ message: 'Retención no encontrada' });
-  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retención ya procesada' });
+  if (!hold) return res.status(404).json({ message: 'Retenci?n no encontrada' });
+  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci?n ya procesada' });
   const wallet = await getWalletSafe(req.user.id);
   const amount = Number(hold.amount || 0);
   if (amount > Number(wallet.balance || 0)) return res.status(400).json({ message: 'Saldo insuficiente para captura' });
@@ -1785,18 +2101,18 @@ app.post('/api/wallet/hold/:id/cancel', auth, async (req, res) => {
   const holdId = req.params.id;
   const { data: hold } = await supabase.from('transactions').select('*')
     .eq('id', holdId).eq('user_id', req.user.id).eq('type', 'hold').maybeSingle();
-  if (!hold) return res.status(404).json({ message: 'Retención no encontrada' });
-  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retención ya procesada' });
+  if (!hold) return res.status(404).json({ message: 'Retenci?n no encontrada' });
+  if (hold.status !== 'pending') return res.status(400).json({ message: 'Retenci?n ya procesada' });
   await supabase.from('transactions').update({ status: 'cancelled' }).eq('id', holdId);
-  res.json({ message: 'Retención cancelada' });
+  res.json({ message: 'Retenci?n cancelada' });
 });
 
 app.post('/api/wallet/reverse/:txId', auth, async (req, res) => {
   const txId = req.params.txId;
   const { data: tx } = await supabase.from('transactions').select('*')
     .eq('id', txId).eq('user_id', req.user.id).maybeSingle();
-  if (!tx) return res.status(404).json({ message: 'Transacción no encontrada' });
-  if (tx.status === 'reversed') return res.status(400).json({ message: 'Transacción ya revertida' });
+  if (!tx) return res.status(404).json({ message: 'Transacci?n no encontrada' });
+  if (tx.status === 'reversed') return res.status(400).json({ message: 'Transacci?n ya revertida' });
   const reversible = ['withdraw', 'transfer_sent', 'payment', 'payment_capture'];
   if (!reversible.includes(tx.type)) return res.status(400).json({ message: 'Tipo no reversible' });
   const wallet = await getWalletSafe(req.user.id);
@@ -1911,7 +2227,7 @@ app.post('/api/wallet/ledger/journals', auth, async (req, res) => {
   await ensureSystemLedgerAccounts();
   const { concept, reference, lines } = req.body || {};
   if (!concept || !Array.isArray(lines) || lines.length < 2) {
-    return res.status(400).json({ message: 'concept y al menos 2 líneas son requeridos' });
+    return res.status(400).json({ message: 'concept y al menos 2 l?neas son requeridos' });
   }
 
   let debit = 0;
@@ -1922,7 +2238,7 @@ app.post('/api/wallet/ledger/journals', auth, async (req, res) => {
     const entryType = String(l?.entry_type || '');
     const accountId = String(l?.account_id || '');
     if (!accountId || !['debit', 'credit'].includes(entryType) || amount <= 0) {
-      return res.status(400).json({ message: 'Líneas inválidas: account_id, entry_type y amount son obligatorios' });
+      return res.status(400).json({ message: 'L?neas inv?lidas: account_id, entry_type y amount son obligatorios' });
     }
     if (entryType === 'debit') debit += amount;
     else credit += amount;
@@ -1983,7 +2299,7 @@ app.post('/api/wallet/ledger/journals/:id/approve', auth, async (req, res) => {
     .eq('id', id)
     .maybeSingle();
   if (!journal) return res.status(404).json({ message: 'Asiento no encontrado' });
-  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no está pendiente de aprobación' });
+  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est? pendiente de aprobaci?n' });
   if (String(journal.created_by) === String(req.user.id)) {
     return res.status(403).json({ message: 'Maker-checker activo: el creador no puede aprobar su propio asiento' });
   }
@@ -2016,7 +2332,7 @@ app.post('/api/wallet/ledger/journals/:id/reject', auth, async (req, res) => {
     .eq('id', id)
     .maybeSingle();
   if (!journal) return res.status(404).json({ message: 'Asiento no encontrado' });
-  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no está pendiente de aprobación' });
+  if (journal.status !== 'pending_approval') return res.status(400).json({ message: 'El asiento no est? pendiente de aprobaci?n' });
   if (String(journal.created_by) === String(req.user.id)) {
     return res.status(403).json({ message: 'Maker-checker activo: el creador no puede rechazar su propio asiento' });
   }
@@ -2081,12 +2397,12 @@ app.post('/api/cemac/transfers', auth, async (req, res) => {
   try {
     const { from_country, to_country, beneficiary_name, beneficiary_account, amount, external_id } = req.body || {};
     
-    // Validación robusta
+    // Validaci?n robusta
     if (!from_country || !to_country || !beneficiary_name || !beneficiary_account || Number(amount || 0) <= 0) {
       return res.status(400).json({ message: 'Datos de transferencia invalidos', code: 'VALIDATION_ERROR' });
     }
     
-    // Validar países CEMAC
+    // Validar pa?ses CEMAC
     const validCountries = ['GQ', 'CM', 'GA', 'CG', 'TD', 'CF'];
     if (!validCountries.includes(from_country) || !validCountries.includes(to_country)) {
       return res.status(400).json({ message: 'Paises no soportados', code: 'INVALID_COUNTRY' });
@@ -2243,9 +2559,9 @@ app.get('/api/cemac/transfers', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // LIA-25
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.post('/api/lia/chat', auth, async (req, res) => {
   const { message } = req.body;
   const lower = message.toLowerCase();
@@ -2255,27 +2571,27 @@ app.post('/api/lia/chat', auth, async (req, res) => {
 
   let reply = '';
   if (lower.includes('saldo') || lower.includes('balance'))
-    reply = `Tu saldo actual es **${balance.toLocaleString()} XAF**. Á‚Â¿Deseas recargar o retirar?`;
+    reply = `Tu saldo actual es **${balance.toLocaleString()} XAF**. ??�Deseas recargar o retirar?`;
   else if (lower.includes('hola') || lower.includes('buenos'))
-    reply = 'Á‚Â¡Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. Á‚Â¿En quÁƒÂ© puedo ayudarte hoy?';
+    reply = '??�Hola! Soy Lia-25, tu asistente inteligente de EGCHAT. ??�En qu??� puedo ayudarte hoy?';
   else if (lower.includes('taxi'))
-    reply = 'Puedo ayudarte a pedir un taxi. Ve a la secciÁƒÂ³n MiTaxi desde el menÁƒÂº principal.';
+    reply = 'Puedo ayudarte a pedir un taxi. Ve a la secci??�n MiTaxi desde el men??� principal.';
   else if (lower.includes('salud') || lower.includes('hospital'))
-    reply = 'En la secciÁƒÂ³n Salud encontrarÁƒÂ¡s hospitales, farmacias y puedes pedir citas mÁƒÂ©dicas.';
+    reply = 'En la secci??�n Salud encontrar??�s hospitales, farmacias y puedes pedir citas m??�dicas.';
   else if (lower.includes('supermercado') || lower.includes('compra'))
-    reply = 'Puedes hacer compras en lÁƒÂ­nea desde la secciÁƒÂ³n Supermercados. Tenemos tiendas en Malabo y Bata.';
+    reply = 'Puedes hacer compras en l??�nea desde la secci??�n Supermercados. Tenemos tiendas en Malabo y Bata.';
   else if (lower.includes('transferir') || lower.includes('enviar dinero'))
-    reply = 'Para enviar dinero, ve a Mi Monedero ââ€ â€™ Enviar, o dime el nÁƒÂºmero y el importe.';
+    reply = 'Para enviar dinero, ve a Mi Monedero ?�� Enviar, o dime el n??�mero y el importe.';
   else if (lower.includes('seguro'))
-    reply = 'Puedes contratar seguros de salud, vehÁƒÂ­culo, vida y hogar en la secciÁƒÂ³n Seguros.';
+    reply = 'Puedes contratar seguros de salud, veh??�culo, vida y hogar en la secci??�n Seguros.';
   else if (lower.includes('noticias'))
-    reply = 'Las ÁƒÂºltimas noticias de Guinea Ecuatorial y del mundo estÁƒÂ¡n en la secciÁƒÂ³n Noticias.';
+    reply = 'Las ??�ltimas noticias de Guinea Ecuatorial y del mundo est??�n en la secci??�n Noticias.';
   else if (lower.includes('gracias'))
-    reply = 'Á‚Â¡De nada! Estoy aquÁƒÂ­ para ayudarte. Á‚Â¿Hay algo mÁƒÂ¡s?';
+    reply = '??�De nada! Estoy aqu??� para ayudarte. ??�Hay algo m??�s?';
   else
     reply = `Entendido: "${message}". Puedo ayudarte con saldo, transferencias, taxi, salud, supermercados, seguros y noticias.`;
 
-  // Guardar conversaciÁƒÂ³n en Supabase
+  // Guardar conversaci??�n en Supabase
   await supabase.from('lia_conversations').insert({
     user_id: req.user.id, message, reply
   }).catch(() => {});
@@ -2283,9 +2599,9 @@ app.post('/api/lia/chat', auth, async (req, res) => {
   res.json({ reply, timestamp: new Date().toISOString() });
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // USER
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.get('/api/user/profile', auth, async (req, res) => {
   const { data: user } = await supabase
     .from('users').select('id, phone, full_name, created_at, avatar_url').eq('id', req.user.id).single();
@@ -2308,13 +2624,13 @@ app.post('/api/user/change-password', auth, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const { data: user } = await supabase.from('users').select('password_hash').eq('id', req.user.id).single();
   const ok = await bcrypt.compare(oldPassword, user.password_hash);
-  if (!ok) return res.status(401).json({ message: 'Contraseña actual incorrecta' });
+  if (!ok) return res.status(401).json({ message: 'Contrase?a actual incorrecta' });
   const hashed = await bcrypt.hash(newPassword, 10);
   await supabase.from('users').update({ password_hash: hashed }).eq('id', req.user.id);
-  res.json({ message: 'Contraseña actualizada' });
+  res.json({ message: 'Contrase?a actualizada' });
 });
 
-// Reset de contraseña por admin (protegido con ADMIN_RESET_KEY)
+// Reset de contrase?a por admin (protegido con ADMIN_RESET_KEY)
 app.post('/api/admin/reset-password', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.body?.adminKey;
   if (!key || key !== adminResetKey) return res.status(403).json({ message: 'No autorizado' });
@@ -2323,14 +2639,14 @@ app.post('/api/admin/reset-password', async (req, res) => {
   const hashed = await bcrypt.hash(newPassword, 10);
   const { data, error } = await supabase.from('users').update({ password_hash: hashed }).eq('phone', phone).select('id, phone, full_name').single();
   if (error || !data) return res.status(404).json({ message: 'Usuario no encontrado', error: error?.message });
-  res.json({ message: 'Contraseña reseteada', user: data });
+  res.json({ message: 'Contrase?a reseteada', user: data });
 });
 
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // CONTACTOS
-// SERVICIOS PÁƒÅ¡BLICOS (simulados con datos reales de GE)
-// ════════════════════════════════════════════════════════════════════
+// SERVICIOS P??�BLICOS (simulados con datos reales de GE)
+// --------------------------------------------------------------------
 const sandboxStatus = ['pending', 'processing', 'completed', 'failed'];
 const safeRef = (prefix) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
 const toNum = (v) => Number(v || 0);
@@ -2448,20 +2764,20 @@ app.get('/api/servicios/orders', auth, async (req, res) => {
   res.json(data || []);
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // SUPERMERCADOS
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 const SUPERMERCADOS = [
   { id: '1', name: 'Supermarket Malabo', city: 'Malabo', address: 'Calle de la Independencia', phone: '+240 222 001', open: true },
   { id: '2', name: 'Tienda Bata Centro', city: 'Bata', address: 'Av. Hassan II', phone: '+240 333 001', open: true },
   { id: '3', name: 'Mercado Mongomo', city: 'Mongomo', address: 'Plaza Central', phone: '+240 444 001', open: false },
 ];
 const PRODUCTOS = [
-  { id: '1', name: 'Arroz 5kg', price: 3500, category: 'AlimentaciÁƒÂ³n', stock: 50 },
-  { id: '2', name: 'Aceite 1L', price: 1200, category: 'AlimentaciÁƒÂ³n', stock: 30 },
+  { id: '1', name: 'Arroz 5kg', price: 3500, category: 'Alimentaci??�n', stock: 50 },
+  { id: '2', name: 'Aceite 1L', price: 1200, category: 'Alimentaci??�n', stock: 30 },
   { id: '3', name: 'Agua 6x1.5L', price: 2000, category: 'Bebidas', stock: 100 },
-  { id: '4', name: 'Leche 1L', price: 800, category: 'LÁƒÂ¡cteos', stock: 20 },
-  { id: '5', name: 'Pan de molde', price: 600, category: 'PanaderÁƒÂ­a', stock: 15 },
+  { id: '4', name: 'Leche 1L', price: 800, category: 'L??�cteos', stock: 20 },
+  { id: '5', name: 'Pan de molde', price: 600, category: 'Panader??�a', stock: 15 },
 ];
 
 app.get('/api/supermarkets', auth, async (req, res) => {
@@ -2518,13 +2834,13 @@ app.get('/api/supermarkets/orders/:id', auth, async (req, res) => {
   res.json(data);
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // SALUD
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 const HOSPITALES = [
-  { id: '1', name: 'Hospital General de Malabo', city: 'Malabo', phone: '+240 222 100', emergency: true, specialties: ['Urgencias', 'CirugÁƒÂ­a', 'PediatrÁƒÂ­a'] },
-  { id: '2', name: 'ClÁƒÂ­nica Santa Isabel', city: 'Malabo', phone: '+240 222 200', emergency: false, specialties: ['Medicina General', 'GinecologÁƒÂ­a'] },
-  { id: '3', name: 'Hospital Regional de Bata', city: 'Bata', phone: '+240 333 100', emergency: true, specialties: ['Urgencias', 'TraumatologÁƒÂ­a'] },
+  { id: '1', name: 'Hospital General de Malabo', city: 'Malabo', phone: '+240 222 100', emergency: true, specialties: ['Urgencias', 'Cirug??�a', 'Pediatr??�a'] },
+  { id: '2', name: 'Cl??�nica Santa Isabel', city: 'Malabo', phone: '+240 222 200', emergency: false, specialties: ['Medicina General', 'Ginecolog??�a'] },
+  { id: '3', name: 'Hospital Regional de Bata', city: 'Bata', phone: '+240 333 100', emergency: true, specialties: ['Urgencias', 'Traumatolog??�a'] },
 ];
 const FARMACIAS = [
   { id: '1', name: 'Farmacia Central Malabo', city: 'Malabo', phone: '+240 222 300', open24h: true },
@@ -2580,9 +2896,9 @@ app.post('/api/salud/medicamentos/pedido', auth, async (req, res) => {
   res.json({ orderId, status: 'confirmed', total, eta: '20-30 min', message: 'Pedido de medicamentos confirmado' });
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // TAXI
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.post('/api/taxi/request', auth, async (req, res) => {
   try {
     const { origin, dest, type } = req.body;
@@ -2619,7 +2935,7 @@ app.post('/api/taxi/request', auth, async (req, res) => {
         driver
       };
       
-      // Intentar insert con columnas específicas
+      // Intentar insert con columnas espec?ficas
       const { data } = await supabase.from('taxi_rides').insert(insertData).select().maybeSingle();
       ride = data;
     } catch (insertError) {
@@ -2871,9 +3187,9 @@ app.post('/taxi/:rideId/rate', auth, async (req, res) => {
   return app._router.handle(req, res, () => {});
 });
 
-// ════════════════════════════════════════════════════════════════════
-// SEGUROS - COTIZACIONES, PÁƒâ€œLIZAS, RECLAMACIONES
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// SEGUROS - COTIZACIONES, P??�LIZAS, RECLAMACIONES
+// --------------------------------------------------------------------
 
 // Obtener tipos de seguros disponibles
 app.get('/api/insurance/types', auth, async (req, res) => {
@@ -2882,23 +3198,23 @@ app.get('/api/insurance/types', auth, async (req, res) => {
       {
         id: 'salud',
         name: 'Seguro de Salud',
-        icon: 'ðÅ¸ÂÂ¥',
-        description: 'Cobertura mÁƒÂ©dica completa',
-        coverage: ['consultas', 'urgencias', 'hospitalizaciÁƒÂ³n', 'medicamentos'],
+        icon: '?���',
+        description: 'Cobertura m??�dica completa',
+        coverage: ['consultas', 'urgencias', 'hospitalizaci??�n', 'medicamentos'],
         starting_price: 5000
       },
       {
         id: 'vehiculo',
-        name: 'Seguro de VehÁƒÂ­culo',
-        icon: 'ðÅ¸Å¡â€”',
-        description: 'ProtecciÁƒÂ³n para tu vehÁƒÂ­culo',
-        coverage: ['colisiÁƒÂ³n', 'robo', 'daÁƒÂ±os', 'responsabilidad civil'],
+        name: 'Seguro de Veh??�culo',
+        icon: '?���',
+        description: 'Protecci??�n para tu veh??�culo',
+        coverage: ['colisi??�n', 'robo', 'da??�os', 'responsabilidad civil'],
         starting_price: 8000
       },
       {
         id: 'vida',
         name: 'Seguro de Vida',
-        icon: 'ðÅ¸â€ºÂ¡Á¯Â¸Â',
+        icon: '?���??��',
         description: 'Seguridad para tu familia',
         coverage: ['fallecimiento', 'invalidez', 'enfermedades graves'],
         starting_price: 3000
@@ -2906,9 +3222,9 @@ app.get('/api/insurance/types', auth, async (req, res) => {
       {
         id: 'hogar',
         name: 'Seguro de Hogar',
-        icon: 'ðÅ¸ÂÂ ',
-        description: 'ProtecciÁƒÂ³n para tu vivienda',
-        coverage: ['incendio', 'robo', 'daÁƒÂ±os estructurales', 'responsabilidad civil'],
+        icon: '?���',
+        description: 'Protecci??�n para tu vivienda',
+        coverage: ['incendio', 'robo', 'da??�os estructurales', 'responsabilidad civil'],
         starting_price: 4000
       }
     ];
@@ -2920,13 +3236,13 @@ app.get('/api/insurance/types', auth, async (req, res) => {
   }
 });
 
-// Obtener cotizaciÁƒÂ³n de seguro
+// Obtener cotizaci??�n de seguro
 app.post('/api/insurance/quote', auth, async (req, res) => {
   try {
     const { insurance_type, coverage_amount, duration_months } = req.body;
 
     if (!insurance_type || !coverage_amount || !duration_months) {
-      return res.status(400).json({ message: 'Datos incompletos para cotizaciÁƒÂ³n' });
+      return res.status(400).json({ message: 'Datos incompletos para cotizaci??�n' });
     }
 
     // Calcular prima mensual (ejemplo simple)
@@ -2986,7 +3302,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
       return res.status(400).json({ message: 'Saldo insuficiente para contratar seguro' });
     }
 
-    // Crear pÁƒÂ³liza
+    // Crear p??�liza
     const { data: policy } = await supabase
       .from('insurance_policies')
       .insert({
@@ -3010,7 +3326,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
       .update({ balance: newBalance })
       .eq('user_id', req.user.id);
 
-    // Registrar transacciÁƒÂ³n
+    // Registrar transacci??�n
     await supabase
       .from('transactions')
       .insert({
@@ -3038,7 +3354,7 @@ app.post('/api/insurance/contract', auth, async (req, res) => {
   }
 });
 
-// Obtener pÁƒÂ³lizas del usuario
+// Obtener p??�lizas del usuario
 app.get('/api/insurance/policies', auth, async (req, res) => {
   try {
     const { data: policies } = await supabase
@@ -3054,16 +3370,16 @@ app.get('/api/insurance/policies', auth, async (req, res) => {
   }
 });
 
-// Presentar reclamaciÁƒÂ³n
+// Presentar reclamaci??�n
 app.post('/api/insurance/claim', auth, async (req, res) => {
   try {
     const { policy_id, claim_type, description, amount } = req.body;
 
     if (!policy_id || !claim_type || !description) {
-      return res.status(400).json({ message: 'Datos incompletos para reclamaciÁƒÂ³n' });
+      return res.status(400).json({ message: 'Datos incompletos para reclamaci??�n' });
     }
 
-    // Verificar que la pÁƒÂ³liza pertenece al usuario
+    // Verificar que la p??�liza pertenece al usuario
     const { data: policy } = await supabase
       .from('insurance_policies')
       .select('id, user_id, status')
@@ -3071,14 +3387,14 @@ app.post('/api/insurance/claim', auth, async (req, res) => {
       .single();
 
     if (!policy || policy.user_id !== req.user.id) {
-      return res.status(404).json({ message: 'PÁƒÂ³liza no encontrada' });
+      return res.status(404).json({ message: 'P??�liza no encontrada' });
     }
 
     if (policy.status !== 'active') {
-      return res.status(400).json({ message: 'La pÁƒÂ³liza no estÁƒÂ¡ activa' });
+      return res.status(400).json({ message: 'La p??�liza no est??� activa' });
     }
 
-    // Crear reclamaciÁƒÂ³n
+    // Crear reclamaci??�n
     const { data: claim } = await supabase
       .from('insurance_claims')
       .insert({
@@ -3094,7 +3410,7 @@ app.post('/api/insurance/claim', auth, async (req, res) => {
       .single();
 
     res.json({
-      message: 'ReclamaciÁƒÂ³n presentada exitosamente',
+      message: 'Reclamaci??�n presentada exitosamente',
       claim
     });
   } catch (e) {
@@ -3122,48 +3438,48 @@ app.get('/api/insurance/claims', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// NOTICIAS - CATEGORÁƒÂAS, FEEDS, BÁƒÅ¡SQUEDA, PERSONALIZACIÁƒâ€œN
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// NOTICIAS - CATEGOR??�AS, FEEDS, B??�SQUEDA, PERSONALIZACI??�N
+// --------------------------------------------------------------------
 
-// Obtener categorÁƒÂ­as de noticias
+// Obtener categor??�as de noticias
 app.get('/api/news/categories', auth, async (req, res) => {
   try {
     const categories = [
       {
         id: 'nacional',
         name: 'Nacional',
-        icon: 'ðÅ¸â€¡Â¬ðÅ¸â€¡Â¶',
+        icon: '?���?���',
         description: 'Noticias de Guinea Ecuatorial'
       },
       {
         id: 'internacional',
         name: 'Internacional',
-        icon: 'ðÅ¸Å’Â',
+        icon: '?���',
         description: 'Noticias del mundo'
       },
       {
         id: 'deportes',
         name: 'Deportes',
-        icon: 'âÅ¡Â½',
-        description: 'FÁƒÂºtbol y otros deportes'
+        icon: '?��',
+        description: 'F??�tbol y otros deportes'
       },
       {
         id: 'economia',
-        name: 'EconomÁƒÂ­a',
-        icon: 'ðÅ¸â€™Â°',
+        name: 'Econom??�a',
+        icon: '?���',
         description: 'Finanzas y negocios'
       },
       {
         id: 'tecnologia',
-        name: 'TecnologÁƒÂ­a',
-        icon: 'ðÅ¸â€™Â»',
-        description: 'TecnologÁƒÂ­a y ciencia'
+        name: 'Tecnolog??�a',
+        icon: '?���',
+        description: 'Tecnolog??�a y ciencia'
       },
       {
         id: 'cultura',
         name: 'Cultura',
-        icon: 'ðÅ¸Å½Â­',
+        icon: '?���',
         description: 'Arte y entretenimiento'
       }
     ];
@@ -3175,18 +3491,18 @@ app.get('/api/news/categories', auth, async (req, res) => {
   }
 });
 
-// Obtener noticias por categorÁƒÂ­a
+// Obtener noticias por categor??�a
 app.get('/api/news', auth, async (req, res) => {
   try {
     const { category, page = 1, limit = 20 } = req.query;
 
-    // Noticias simuladas (en producciÁƒÂ³n vendrÁƒÂ­an de una API real)
+    // Noticias simuladas (en producci??�n vendr??�an de una API real)
     const allNews = [
       {
         id: '1',
-        title: 'EGCHAT lanza nueva funcionalidad de mensajería instantánea',
+        title: 'EGCHAT lanza nueva funcionalidad de mensajer?a instant?nea',
         category: 'tecnologia',
-        summary: 'La aplicaciÁƒÂ³n EGCHAT anuncia importantes mejoras...',
+        summary: 'La aplicaci??�n EGCHAT anuncia importantes mejoras...',
         content: '...',
         image_url: 'https://example.com/egchat-news.jpg',
         published_at: new Date().toISOString(),
@@ -3194,7 +3510,7 @@ app.get('/api/news', auth, async (req, res) => {
       },
       {
         id: '2',
-        title: 'EconomÁƒÂ­a de Guinea Ecuatorial muestra crecimiento',
+        title: 'Econom??�a de Guinea Ecuatorial muestra crecimiento',
         category: 'economia',
         summary: 'El Banco Central de Guinea Ecuatorial reporta...',
         content: '...',
@@ -3230,16 +3546,16 @@ app.get('/api/news/search', auth, async (req, res) => {
     const { q, category } = req.query;
 
     if (!q || q.length < 2) {
-      return res.status(400).json({ message: 'La bÁƒÂºsqueda debe tener al menos 2 caracteres' });
+      return res.status(400).json({ message: 'La b??�squeda debe tener al menos 2 caracteres' });
     }
 
-    // Noticias simuladas para bÁƒÂºsqueda
+    // Noticias simuladas para b??�squeda
     const searchResults = [
       {
         id: 'search1',
         title: `Resultados para "${q}" en EGCHAT`,
         category: category || 'todos',
-        summary: `Se encontraron artÁƒÂ­culos relacionados con ${q}...`,
+        summary: `Se encontraron art??�culos relacionados con ${q}...`,
         published_at: new Date().toISOString(),
         source: 'SearchEG'
       }
@@ -3299,9 +3615,9 @@ app.get('/api/news/favorites', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // SEGUROS
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 
 const ASEGURADORAS = [
   { id: '1', name: 'COGE Seguros', products: ['Vida', 'Salud', 'Auto', 'Hogar'] },
@@ -3355,16 +3671,16 @@ app.post('/seguros/solicitudes/:solicitudId/documentos', auth, async (req, res) 
   res.status(201).json({ solicitudId, tipo: tipo || 'documento', status: 'uploaded', message: 'Documento recibido' });
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // NOTICIAS
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 const NOTICIAS = [
-  { id: '1', title: 'Presidente anuncia nuevas medidas econÁƒÂ³micas para 2026', source: 'Presidencia GE', category: 'PolÁƒÂ­tica', time: '14:30', isLive: true },
+  { id: '1', title: 'Presidente anuncia nuevas medidas econ??�micas para 2026', source: 'Presidencia GE', category: 'Pol??�tica', time: '14:30', isLive: true },
   { id: '2', title: 'CEMAC aprueba nuevo marco financiero regional', source: 'Noticias CEMAC', category: 'Finanzas', time: '13:45' },
-  { id: '3', title: 'Ministerio de Salud reporta avances en vacunaciÁƒÂ³n', source: 'Ministerio de InformaciÁƒÂ³n', category: 'Salud', time: '12:20' },
-  { id: '4', title: 'Nueva tecnologÁƒÂ­a 5G llega a Malabo', source: 'TVGE', category: 'TecnologÁƒÂ­a', time: '11:15' },
-  { id: '5', title: 'SelecciÁƒÂ³n nacional se prepara para eliminatorias', source: 'Radio Nacional', category: 'Deportes', time: '10:30' },
-  { id: '6', title: 'BEAC anuncia nuevas polÁƒÂ­ticas monetarias', source: 'BEAC', category: 'Finanzas', time: '09:00' },
+  { id: '3', title: 'Ministerio de Salud reporta avances en vacunaci??�n', source: 'Ministerio de Informaci??�n', category: 'Salud', time: '12:20' },
+  { id: '4', title: 'Nueva tecnolog??�a 5G llega a Malabo', source: 'TVGE', category: 'Tecnolog??�a', time: '11:15' },
+  { id: '5', title: 'Selecci??�n nacional se prepara para eliminatorias', source: 'Radio Nacional', category: 'Deportes', time: '10:30' },
+  { id: '6', title: 'BEAC anuncia nuevas pol??�ticas monetarias', source: 'BEAC', category: 'Finanzas', time: '09:00' },
 ];
 
 app.get('/api/noticias', auth, async (req, res) => {
@@ -3386,39 +3702,39 @@ app.post('/api/user/avatar', auth, async (req, res) => {
 });
 
 app.post('/lia/analyze', auth, async (_req, res) => {
-  res.json({ analysis: 'Análisis completado.' });
+  res.json({ analysis: 'An?lisis completado.' });
 });
 
 app.post('/api/lia/analyze', auth, async (_req, res) => {
-  res.json({ analysis: 'Análisis completado.' });
+  res.json({ analysis: 'An?lisis completado.' });
 });
 
 app.post('/lia/transcribe', auth, async (_req, res) => {
-  res.json({ text: 'Transcripción completada.' });
+  res.json({ text: 'Transcripci?n completada.' });
 });
 
 app.post('/api/lia/transcribe', auth, async (_req, res) => {
-  res.json({ text: 'Transcripción completada.' });
+  res.json({ text: 'Transcripci?n completada.' });
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // GRUPOS DE CHAT
-// ════════════════════════════════════════════════════════════════════
-// Añadir participante a grupo
+// --------------------------------------------------------------------
+// A?adir participante a grupo
 app.post('/api/chats/:chatId/participants', auth, async (req, res) => {
   try {
     const { user_id } = req.body;
     await supabase.from('chat_participants').upsert({ chat_id: req.params.chatId, user_id });
-    res.json({ message: 'Participante añadido' });
+    res.json({ message: 'Participante a?adido' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Obtener lista de participantes de un grupo con información completa
+// Obtener lista de participantes de un grupo con informaci?n completa
 app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
 
-    // Obtener todos los participantes con su información de usuario
+    // Obtener todos los participantes con su informaci?n de usuario
     const { data: participants, error } = await supabase
       .from('chat_participants')
       .select('user_id')
@@ -3520,12 +3836,12 @@ app.get('/api/chats/:chatId/wallpaper', auth, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // NOTIFICACIONES
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 app.get('/api/notifications', auth, async (req, res) => {
   try {
-    // Mensajes no leÁƒÂ­dos como notificaciones
+    // Mensajes no le??�dos como notificaciones
     const { data: parts } = await supabase.from('chat_participants').select('chat_id').eq('user_id', req.user.id);
     const chatIds = (parts || []).map(p => p.chat_id);
     if (!chatIds.length) return res.json([]);
@@ -3542,21 +3858,21 @@ app.get('/api/notifications', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// Marcar mensajes como leÁƒÂ­dos
+// Marcar mensajes como le??�dos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   try {
     await supabase.from('messages')
       .update({ status: 'read' })
       .eq('chat_id', req.params.chatId)
       .neq('sender_id', req.user.id);
-    res.json({ message: 'Mensajes marcados como leÁƒÂ­dos' });
+    res.json({ message: 'Mensajes marcados como le??�dos' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // CONTACTOS CON FOTO Y PERFIL
-// ════════════════════════════════════════════════════════════════════
-// Perfil público de un usuario
+// --------------------------------------------------------------------
+// Perfil p?blico de un usuario
 app.get('/api/users/:userId', auth, async (req, res) => {
   try {
     const { data } = await supabase.from('users').select('id, phone, full_name, avatar_url, created_at').eq('id', req.params.userId).single();
@@ -3565,9 +3881,9 @@ app.get('/api/users/:userId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// ════════════════════════════════════════════════════════════════════
-// ESPACIO DULCE — Canales y Comunidades
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// ESPACIO DULCE ? Canales y Comunidades
+// --------------------------------------------------------------------
 
 // Auto-crear tablas de espacios
 const ensureSpacesTable = async () => {
@@ -3579,7 +3895,7 @@ const ensureSpacesTable = async () => {
         description TEXT,
         type VARCHAR(20) DEFAULT 'publico' CHECK (type IN ('publico','comunidad')),
         cover TEXT,
-        emoji VARCHAR(10) DEFAULT '📢',
+        emoji VARCHAR(10) DEFAULT '??',
         owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
         followers_count INTEGER DEFAULT 0,
         created_at TIMESTAMPTZ DEFAULT NOW()
@@ -3631,18 +3947,18 @@ const seedDefaultSpaces = async () => {
     const { data } = await supabase.from('spaces').select('id').limit(1);
     if (data && data.length > 0) return; // ya existen
     const defaults = [
-      { name: 'Gobierno GE', description: 'Noticias y comunicados oficiales del Gobierno de Guinea Ecuatorial', type: 'publico', cover: 'linear-gradient(135deg,#1e3a5f,#0369a1)', emoji: '🏛️', followers_count: 48200 },
-      { name: 'Musica GQ', description: 'Lo mejor de la musica de Guinea Ecuatorial y Africa Central', type: 'comunidad', cover: 'linear-gradient(135deg,#7c3aed,#db2777)', emoji: '🎵', followers_count: 12800 },
-      { name: 'Mercado Malabo', description: 'Compra, vende e intercambia en Guinea Ecuatorial', type: 'comunidad', cover: 'linear-gradient(135deg,#059669,#0d9488)', emoji: '🛒', followers_count: 31500 },
-      { name: 'Deportes GQ', description: 'Futbol, baloncesto y todos los deportes de Guinea Ecuatorial', type: 'publico', cover: 'linear-gradient(135deg,#dc2626,#f59e0b)', emoji: '⚽', followers_count: 22100 },
-      { name: 'Tecnologia GE', description: 'Innovacion, startups y tecnologia en Guinea Ecuatorial', type: 'comunidad', cover: 'linear-gradient(135deg,#1e40af,#7c3aed)', emoji: '💻', followers_count: 8900 },
+      { name: 'Gobierno GE', description: 'Noticias y comunicados oficiales del Gobierno de Guinea Ecuatorial', type: 'publico', cover: 'linear-gradient(135deg,#1e3a5f,#0369a1)', emoji: '???', followers_count: 48200 },
+      { name: 'Musica GQ', description: 'Lo mejor de la musica de Guinea Ecuatorial y Africa Central', type: 'comunidad', cover: 'linear-gradient(135deg,#7c3aed,#db2777)', emoji: '??', followers_count: 12800 },
+      { name: 'Mercado Malabo', description: 'Compra, vende e intercambia en Guinea Ecuatorial', type: 'comunidad', cover: 'linear-gradient(135deg,#059669,#0d9488)', emoji: '??', followers_count: 31500 },
+      { name: 'Deportes GQ', description: 'Futbol, baloncesto y todos los deportes de Guinea Ecuatorial', type: 'publico', cover: 'linear-gradient(135deg,#dc2626,#f59e0b)', emoji: '?', followers_count: 22100 },
+      { name: 'Tecnologia GE', description: 'Innovacion, startups y tecnologia en Guinea Ecuatorial', type: 'comunidad', cover: 'linear-gradient(135deg,#1e40af,#7c3aed)', emoji: '??', followers_count: 8900 },
     ];
     await supabase.from('spaces').insert(defaults);
   } catch {}
 };
 setTimeout(seedDefaultSpaces, 3000);
 
-// GET /api/spaces — listar todos los espacios con estado de seguimiento del usuario
+// GET /api/spaces ? listar todos los espacios con estado de seguimiento del usuario
 app.get('/api/spaces', auth, async (req, res) => {
   // EGRESS FIX: spaces change rarely, cache for 60 seconds
   res.setHeader('Cache-Control', 'private, max-age=60');
@@ -3655,7 +3971,7 @@ app.get('/api/spaces', auth, async (req, res) => {
       .limit(50); // EGRESS FIX: cap at 50 spaces, select only needed columns
     if (error) return res.json([]);
 
-    // Qué espacios sigue el usuario
+    // Qu? espacios sigue el usuario
     const { data: follows } = await supabase
       .from('space_follows')
       .select('space_id')
@@ -3666,14 +3982,14 @@ app.get('/api/spaces', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces — crear espacio
+// POST /api/spaces ? crear espacio
 app.post('/api/spaces', auth, async (req, res) => {
   try {
     const { name, description, type, cover, emoji } = req.body;
     if (!name) return res.status(400).json({ message: 'nombre requerido' });
     const { data, error } = await supabase
       .from('spaces')
-      .insert({ name, description, type: type || 'publico', cover, emoji: emoji || '📢', owner_id: req.user.id, followers_count: 1 })
+      .insert({ name, description, type: type || 'publico', cover, emoji: emoji || '??', owner_id: req.user.id, followers_count: 1 })
       .select().single();
     if (error) throw error;
     // Auto-seguir al creador
@@ -3682,7 +3998,7 @@ app.post('/api/spaces', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/spaces/:id/follow — seguir/dejar de seguir
+// POST /api/spaces/:id/follow ? seguir/dejar de seguir
 app.post('/api/spaces/:id/follow', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3702,7 +4018,7 @@ app.post('/api/spaces/:id/follow', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// GET /api/spaces/:id/posts — posts de un espacio
+// GET /api/spaces/:id/posts ? posts de un espacio
 app.get('/api/spaces/:id/posts', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3753,7 +4069,7 @@ app.get('/api/spaces/:id/posts', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces/:id/posts — publicar en un espacio
+// POST /api/spaces/:id/posts ? publicar en un espacio
 app.post('/api/spaces/:id/posts', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3768,7 +4084,7 @@ app.post('/api/spaces/:id/posts', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// POST /api/spaces/posts/:postId/like — dar/quitar like
+// POST /api/spaces/posts/:postId/like ? dar/quitar like
 app.post('/api/spaces/posts/:postId/like', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3786,7 +4102,7 @@ app.post('/api/spaces/posts/:postId/like', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// GET /api/spaces/posts/:postId/comments — comentarios de un post
+// GET /api/spaces/posts/:postId/comments ? comentarios de un post
 app.get('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3810,7 +4126,7 @@ app.get('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   } catch (e) { res.json([]); }
 });
 
-// POST /api/spaces/posts/:postId/comments — comentar
+// POST /api/spaces/posts/:postId/comments ? comentar
 app.post('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3827,7 +4143,7 @@ app.post('/api/spaces/posts/:postId/comments', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// DELETE /api/spaces/posts/:postId — eliminar post (solo autor o admin del espacio)
+// DELETE /api/spaces/posts/:postId ? eliminar post (solo autor o admin del espacio)
 app.delete('/api/spaces/posts/:postId', auth, async (req, res) => {
   try {
     const { postId } = req.params;
@@ -3837,9 +4153,9 @@ app.delete('/api/spaces/posts/:postId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 // STORIES / ESTADOS
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 
 // Auto-crear tabla stories si no existe al primer uso
 const ensureStoriesTable = async () => {
@@ -3894,7 +4210,7 @@ app.get('/api/stories', auth, async (req, res) => {
       if (c.contact_id && c.contact_id !== userId) contactIds.add(c.contact_id);
     });
 
-    // 3. También incluir usuarios con quienes tengo chats activos
+    // 3. Tambi?n incluir usuarios con quienes tengo chats activos
     const { data: chatParts } = await supabase
       .from('chat_participants')
       .select('chat_id')
@@ -3970,7 +4286,7 @@ app.post('/api/stories', auth, async (req, res) => {
     const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
     const newSlides = Array.isArray(media) ? media : [media];
 
-    // Upsert: añadir a story activa existente o crear nueva
+    // Upsert: a?adir a story activa existente o crear nueva
     const { data: existing } = await supabase
       .from('stories')
       .select('id, media')
@@ -4014,7 +4330,7 @@ app.delete('/api/stories/:storyId', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// PATCH /api/stories/:storyId/slide/:idx — editar contenido de un slide
+// PATCH /api/stories/:storyId/slide/:idx ? editar contenido de un slide
 app.patch('/api/stories/:storyId/slide/:idx', auth, async (req, res) => {
   try {
     const { storyId, idx } = req.params;
@@ -4062,9 +4378,211 @@ app.post('/api/stories/:storyId/react', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
+// GROUP STORIES / ESTADOS DE GRUPOS
+// --------------------------------------------------------------------
+
+// Auto-crear tabla group_stories si no existe
+const ensureGroupStoriesTable = async () => {
+  try {
+    const { error } = await supabase.from('group_stories').select('id').limit(1);
+    if (error && error.message && error.message.includes('does not exist')) {
+      await supabase.rpc('exec_sql', {
+        sql: `CREATE TABLE IF NOT EXISTS group_stories (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          group_id TEXT NOT NULL,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+          media JSONB NOT NULL DEFAULT '[]',
+          views INTEGER DEFAULT 0,
+          expires_at TIMESTAMPTZ NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_group_stories_group_id ON group_stories(group_id);
+        CREATE INDEX IF NOT EXISTS idx_group_stories_expires_at ON group_stories(expires_at);`
+      }).catch(() => {});
+    }
+  } catch {}
+};
+ensureGroupStoriesTable();
+
+// GET /api/stories/groups ? obtener estados de todos los grupos del usuario
+app.get('/api/stories/groups', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const now = new Date().toISOString();
+
+    // Obtener grupos del usuario
+    const { data: chatParts } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', userId);
+
+    if (!chatParts || chatParts.length === 0) return res.json([]);
+
+    const chatIds = chatParts.map(c => c.chat_id);
+    const { data: groupChats } = await supabase
+      .from('chats')
+      .select('id, name, avatar_url, created_by')
+      .in('id', chatIds)
+      .eq('type', 'group');
+
+    if (!groupChats || groupChats.length === 0) return res.json([]);
+
+    const groupIds = groupChats.map(g => g.id.toString());
+
+    // Obtener stories activos de esos grupos
+    const { data: stories } = await supabase
+      .from('group_stories')
+      .select('*')
+      .in('group_id', groupIds)
+      .gt('expires_at', now)
+      .order('created_at', { ascending: false });
+
+    if (!stories || stories.length === 0) return res.json([]);
+
+    // Obtener datos de autores
+    const authorIds = [...new Set(stories.map(s => s.user_id))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, full_name, avatar_url')
+      .in('id', authorIds);
+    const authorsMap = {};
+    (authors || []).forEach(u => { authorsMap[u.id] = u; });
+
+    // Agrupar por grupo ? un entry por grupo con todos sus slides
+    const byGroup = {};
+    stories.forEach(s => {
+      const gid = s.group_id;
+      if (!byGroup[gid]) byGroup[gid] = { slides: [], latestAt: 0, totalViews: 0 };
+      let media = s.media;
+      if (typeof media === 'string') { try { media = JSON.parse(media); } catch { media = []; } }
+      const author = authorsMap[s.user_id] || {};
+      (Array.isArray(media) ? media : []).forEach(slide => {
+        byGroup[gid].slides.push({ ...slide, storyId: s.id, authorName: author.full_name || 'Miembro' });
+      });
+      const ts = new Date(s.created_at).getTime();
+      if (ts > byGroup[gid].latestAt) byGroup[gid].latestAt = ts;
+      byGroup[gid].totalViews += s.views || 0;
+    });
+
+    const result = groupChats
+      .filter(g => byGroup[g.id.toString()])
+      .map(g => {
+        const gid = g.id.toString();
+        const entry = byGroup[gid];
+        return {
+          groupId: gid,
+          groupName: g.name || 'Grupo',
+          groupAvatarUrl: g.avatar_url || '',
+          isAdmin: g.created_by === userId,
+          media: entry.slides,
+          views: entry.totalViews,
+          publishedAt: entry.latestAt,
+        };
+      });
+
+    res.json(result);
+  } catch (e) { res.json([]); }
+});
+
+// POST /api/stories/groups/:groupId ? publicar estado en un grupo
+app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { media } = req.body;
+    if (!media) return res.status(400).json({ message: 'media requerido' });
+
+    // Verificar que el usuario pertenece al grupo
+    const { data: part } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('chat_id', groupId)
+      .eq('user_id', req.user.id)
+      .single();
+    if (!part) return res.status(403).json({ message: 'No perteneces a este grupo' });
+
+    const newSlides = Array.isArray(media) ? media : [media];
+    const expiresAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
+    // Upsert: a?adir a story activa del usuario en este grupo o crear nueva
+    const { data: existing } = await supabase
+      .from('group_stories')
+      .select('id, media')
+      .eq('group_id', groupId)
+      .eq('user_id', req.user.id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let story;
+    if (existing) {
+      let currentMedia = existing.media;
+      if (typeof currentMedia === 'string') { try { currentMedia = JSON.parse(currentMedia); } catch { currentMedia = []; } }
+      const updatedMedia = [...(Array.isArray(currentMedia) ? currentMedia : []), ...newSlides];
+      const { data, error } = await supabase
+        .from('group_stories')
+        .update({ media: updatedMedia, expires_at: expiresAt })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      story = data;
+    } else {
+      const { data, error } = await supabase
+        .from('group_stories')
+        .insert({ group_id: groupId, user_id: req.user.id, media: newSlides, views: 0, expires_at: expiresAt })
+        .select()
+        .single();
+      if (error) throw error;
+      story = data;
+    }
+
+    // Notificar a los miembros del grupo
+    try {
+      const { data: members } = await supabase
+        .from('chat_participants')
+        .select('user_id')
+        .eq('chat_id', groupId);
+      const { data: sender } = await supabase
+        .from('users').select('full_name').eq('id', req.user.id).single();
+      const { data: group } = await supabase
+        .from('chats').select('name').eq('id', groupId).single();
+      const memberIds = (members || []).map(m => m.user_id).filter(id => id !== req.user.id);
+      emitToUsers(memberIds, {
+        type: 'group_story_new',
+        groupId,
+        groupName: group?.name || 'Grupo',
+        authorName: sender?.full_name || 'Miembro',
+      });
+    } catch {}
+
+    res.status(201).json({ id: story.id, media: story.media, expiresAt: story.expires_at });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// POST /api/stories/groups/:groupId/view ? registrar vista
+app.post('/api/stories/groups/:groupId/view', auth, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const now = new Date().toISOString();
+    const { data: stories } = await supabase
+      .from('group_stories')
+      .select('id, views')
+      .eq('group_id', groupId)
+      .gt('expires_at', now);
+    if (stories && stories.length > 0) {
+      await Promise.all(stories.map(s =>
+        supabase.from('group_stories').update({ views: (s.views || 0) + 1 }).eq('id', s.id)
+      ));
+    }
+    res.json({ ok: true });
+  } catch (e) { res.json({ ok: false }); }
+});
+
+// --------------------------------------------------------------------
 // START
-// ════════════════════════════════════════════════════════════════════
+// --------------------------------------------------------------------
 const updateUserVersions = async () => {
   const isPlaceholderSupabase =
     !process.env.SUPABASE_URL ||
@@ -4093,9 +4611,9 @@ const updateUserVersions = async () => {
   }
 };
 
-// ─── WebRTC Signaling — persistido en Supabase ───────────────────────────────
+// --- WebRTC Signaling ? persistido en Supabase -------------------------------
 
-// TURN token endpoint — genera credenciales temporales Twilio NTS
+// TURN token endpoint ? genera credenciales temporales Twilio NTS
 const TWILIO_ACCOUNT_SID  = process.env.TWILIO_ACCOUNT_SID  || '';
 const TWILIO_API_KEY_SID  = process.env.TWILIO_API_KEY_SID  || '';
 const TWILIO_API_KEY_SECRET = process.env.TWILIO_API_KEY_SECRET || '';
@@ -4122,33 +4640,41 @@ const FALLBACK_ICE = [
 // Ruta principal usada por el frontend
 app.get('/api/turn-token', auth, async (req, res) => {
   try {
-    const accountSid  = process.env.TWILIO_ACCOUNT_SID;
-    const apiKeySid   = process.env.TWILIO_API_KEY_SID;
-    const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+    // Metered TURN Server ? egchat.metered.live
+    const METERED_API_KEY = process.env.METERED_API_KEY || 'JcmmvEroGtWAOMkMX8O3d9PYNe5mbMraUll_L9YKqwa0VgT';
+    const METERED_DOMAIN  = process.env.METERED_DOMAIN  || 'egchat.metered.live';
 
-    const client = require('twilio')(apiKeySid, apiKeySecret, { accountSid });
-    const token = await client.tokens.create({ ttl: 86400 });
+    const response = await fetch(
+      `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`
+    );
+    if (!response.ok) throw new Error(`Metered API error: ${response.status}`);
+    const iceServers = await response.json();
 
-    res.json({
-      iceServers: token.iceServers.map(s => ({
-        urls: s.url || s.urls,
-        username: s.username,
-        credential: s.credential,
-      }))
-    });
+    res.json({ iceServers });
   } catch (e) {
     console.error('TURN token error:', e.message);
+    // Fallback con servidores STUN p?blicos + Metered hardcoded
     res.json({
       iceServers: [
         { urls: ['stun:stun.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
         { urls: 'stun:stun.cloudflare.com:3478' },
-        { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'], username: 'openrelayproject', credential: 'openrelayproject' }
+        {
+          urls: [
+            'turn:egchat.metered.live:80',
+            'turn:egchat.metered.live:80?transport=tcp',
+            'turn:egchat.metered.live:443',
+            'turn:egchat.metered.live:443?transport=tcp',
+            'turns:egchat.metered.live:443?transport=tcp',
+          ],
+          username: 'fallback',
+          credential: 'JcmmvEroGtWAOMkMX8O3d9PYNe5mbMraUll_L9YKqwa0VgT'
+        }
       ]
     });
   }
 });
 
-// Iniciar llamada — caller envía offer + push al destinatario
+// Iniciar llamada ? caller env?a offer + push al destinatario
 app.post('/api/call/offer', auth, async (req, res) => {
   const { callId, offer, targetUserId, type } = req.body;
   if (!callId || !offer) return res.status(400).json({ error: 'callId y offer requeridos' });
@@ -4167,6 +4693,17 @@ app.post('/api/call/offer', auth, async (req, res) => {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'call_id' });
 
+    // Notificar al destinatario via SSE (instant?neo)
+    if (targetUserId) {
+      emitToUser(targetUserId, {
+        type: 'incoming_call',
+        callId,
+        callerId: req.user.id,
+        callType: type || 'audio',
+        offer,
+      });
+    }
+
     // Enviar push de llamada entrante al destinatario
     if (targetUserId) {
       try {
@@ -4175,7 +4712,7 @@ app.post('/api/call/offer', auth, async (req, res) => {
         const callerName = caller?.full_name || 'Alguien';
         const isVideo = (type || 'audio') === 'video';
         const callPushPayload = {
-          title: isVideo ? `📹 Videollamada de ${callerName}` : `📞 Llamada de ${callerName}`,
+          title: isVideo ? `?? Videollamada de ${callerName}` : `?? Llamada de ${callerName}`,
           body: isVideo ? 'Toca para responder la videollamada' : 'Toca para responder la llamada',
           icon: caller?.avatar_url || '/favicon.svg',
           badge: '/favicon.svg',
@@ -4189,8 +4726,8 @@ app.post('/api/call/offer', auth, async (req, res) => {
           notificationType: 'incoming_call',
         };
 
-        // Enviar push inmediatamente — una sola vez
-        // (el SW tiene requireInteraction:true, la notificación no desaparece sola)
+        // Enviar push inmediatamente ? una sola vez
+        // (el SW tiene requireInteraction:true, la notificaci?n no desaparece sola)
         await sendPushToUser(targetUserId, callPushPayload);
 
       } catch (pushErr) {
@@ -4200,37 +4737,49 @@ app.post('/api/call/offer', auth, async (req, res) => {
 
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: 'Error guardando sesión' });
+    res.status(500).json({ error: 'Error guardando sesi?n' });
   }
 });
 
 // Callee responde con answer
 app.post('/api/call/answer', auth, async (req, res) => {
   const { callId, answer } = req.body;
-  const { data } = await supabase.from('call_sessions').select('call_id').eq('call_id', callId).eq('ended', false).single();
+  const { data } = await supabase.from('call_sessions').select('call_id, caller_id').eq('call_id', callId).eq('ended', false).single();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
   await supabase.from('call_sessions').update({ answer: JSON.stringify(answer), updated_at: new Date().toISOString() }).eq('call_id', callId);
+  // Notificar al caller via SSE (instant?neo ? elimina el polling de answer)
+  if (data.caller_id) {
+    emitToUser(data.caller_id, { type: 'call_answer', callId, answer });
+  }
   res.json({ ok: true });
 });
 
 // Enviar ICE candidate
 app.post('/api/call/ice', auth, async (req, res) => {
   const { callId, candidate, role } = req.body;
-  const { data } = await supabase.from('call_sessions').select('caller_candidates, callee_candidates').eq('call_id', callId).single();
+  const { data } = await supabase.from('call_sessions').select('caller_candidates, callee_candidates, caller_id, target_user_id').eq('call_id', callId).single();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
   if (role === 'caller') {
     const arr = JSON.parse(data.caller_candidates || '[]');
     arr.push(candidate);
     await supabase.from('call_sessions').update({ caller_candidates: JSON.stringify(arr), updated_at: new Date().toISOString() }).eq('call_id', callId);
+    // Enviar ICE al callee via SSE
+    if (data.target_user_id) {
+      emitToUser(data.target_user_id, { type: 'call_ice', callId, candidate, role: 'caller' });
+    }
   } else {
     const arr = JSON.parse(data.callee_candidates || '[]');
     arr.push(candidate);
     await supabase.from('call_sessions').update({ callee_candidates: JSON.stringify(arr), updated_at: new Date().toISOString() }).eq('call_id', callId);
+    // Enviar ICE al caller via SSE
+    if (data.caller_id) {
+      emitToUser(data.caller_id, { type: 'call_ice', callId, candidate, role: 'callee' });
+    }
   }
   res.json({ ok: true });
 });
 
-// Polling — obtener estado de la llamada
+// Polling ? obtener estado de la llamada
 app.get('/api/call/:callId', auth, async (req, res) => {
   const { data } = await supabase.from('call_sessions').select('*').eq('call_id', req.params.callId).single();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
@@ -4248,8 +4797,15 @@ app.get('/api/call/:callId', auth, async (req, res) => {
 
 // Terminar llamada
 app.delete('/api/call/:callId', auth, async (req, res) => {
+  const { data } = await supabase.from('call_sessions').select('caller_id, target_user_id').eq('call_id', req.params.callId).single();
   await supabase.from('call_sessions').update({ ended: true, updated_at: new Date().toISOString() }).eq('call_id', req.params.callId);
-  // Borrar después de 15 segundos
+  // Notificar a ambos participantes via SSE
+  if (data) {
+    const payload = { type: 'call_ended', callId: req.params.callId };
+    if (data.caller_id) emitToUser(data.caller_id, payload);
+    if (data.target_user_id) emitToUser(data.target_user_id, payload);
+  }
+  // Borrar despu?s de 15 segundos
   setTimeout(async () => {
     await supabase.from('call_sessions').delete().eq('call_id', req.params.callId);
   }, 15000);
@@ -4267,7 +4823,7 @@ app.get('/api/call/incoming/:userId', auth, async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(5);
   if (!data || data.length === 0) return res.json([]);
-  // Limpiar sesiones muy antiguas (más de 150 segundos — tiempo para desbloquear teléfono hibernado)
+  // Limpiar sesiones muy antiguas (m?s de 150 segundos ? tiempo para desbloquear tel?fono hibernado)
   const now = Date.now();
   const valid = data.filter(s => now - new Date(s.created_at).getTime() < 150000);
   res.json(valid.map(s => ({
@@ -4280,14 +4836,14 @@ app.get('/api/call/incoming/:userId', auth, async (req, res) => {
 
 // Limpiar sesiones antiguas cada 5 minutos
 setInterval(async () => {
-  const cutoff = new Date(Date.now() - 300000).toISOString(); // 5 minutos — suficiente para llamadas largas
+  const cutoff = new Date(Date.now() - 300000).toISOString(); // 5 minutos ? suficiente para llamadas largas
   await supabase.from('call_sessions').delete().lt('created_at', cutoff);
 }, 300000);
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WEB PUSH — VAPID
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// WEB PUSH ? VAPID
+// -----------------------------------------------------------------------------
 const webpush = require('web-push');
 
 const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  || 'BNeDJFYqIX59vgqEKxWfrI263knyPGHafMEK_WrMPeYaIm8bn62vcOah7hDlgIek4R4utB82g-cT9CwAtGn0wUs';
@@ -4299,14 +4855,14 @@ webpush.setVapidDetails(
   VAPID_PRIVATE_KEY
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIREBASE ADMIN — FCM API V1 (nativo Capacitor)
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// FIREBASE ADMIN ? FCM API V1 (nativo Capacitor)
+// -----------------------------------------------------------------------------
 let firebaseAdmin = null;
 try {
   const admin = require('firebase-admin');
-  // Opción 1: credenciales como JSON en variable de entorno FIREBASE_SERVICE_ACCOUNT
-  // Opción 2: ruta al archivo en GOOGLE_APPLICATION_CREDENTIALS (estándar Google)
+  // Opci?n 1: credenciales como JSON en variable de entorno FIREBASE_SERVICE_ACCOUNT
+  // Opci?n 2: ruta al archivo en GOOGLE_APPLICATION_CREDENTIALS (est?ndar Google)
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     if (!admin.apps.length) {
@@ -4321,18 +4877,18 @@ try {
     firebaseAdmin = admin;
     console.log('[FCM] Firebase Admin inicializado con GOOGLE_APPLICATION_CREDENTIALS');
   } else {
-    console.warn('[FCM] No hay credenciales Firebase configuradas — FCM nativo desactivado.');
+    console.warn('[FCM] No hay credenciales Firebase configuradas ? FCM nativo desactivado.');
   }
 } catch (e) {
   console.warn('[FCM] firebase-admin no disponible:', e.message);
 }
 
-// Guardar suscripción push del usuario
+// Guardar suscripci?n push del usuario
 app.post('/api/push/subscribe', auth, async (req, res) => {
   try {
     const { subscription } = req.body;
     if (!subscription || !subscription.endpoint) {
-      return res.status(400).json({ message: 'Suscripción inválida' });
+      return res.status(400).json({ message: 'Suscripci?n inv?lida' });
     }
     // Guardar en Supabase (tabla push_subscriptions)
     await supabase.from('push_subscriptions').upsert({
@@ -4343,14 +4899,14 @@ app.post('/api/push/subscribe', auth, async (req, res) => {
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id,endpoint' });
 
-    res.json({ message: 'Suscripción guardada' });
+    res.json({ message: 'Suscripci?n guardada' });
   } catch (e) {
     console.error('Push subscribe error:', e.message);
     res.status(500).json({ message: e.message });
   }
 });
 
-// Eliminar suscripción push
+// Eliminar suscripci?n push
 app.post('/api/push/unsubscribe', auth, async (req, res) => {
   try {
     const { endpoint } = req.body;
@@ -4358,23 +4914,23 @@ app.post('/api/push/unsubscribe', auth, async (req, res) => {
       .delete()
       .eq('user_id', req.user.id)
       .eq('endpoint', endpoint || '');
-    res.json({ message: 'Suscripción eliminada' });
+    res.json({ message: 'Suscripci?n eliminada' });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-// Obtener clave pública VAPID
+// Obtener clave p?blica VAPID
 app.get('/api/push/vapid-public-key', (req, res) => {
   res.json({ publicKey: VAPID_PUBLIC_KEY });
 });
 
-// Función interna para enviar push a un usuario
+// Funci?n interna para enviar push a un usuario
 const sendPushToUser = async (userId, payload) => {
   try {
     const isCall = payload.notificationType === 'incoming_call';
 
-    // ── Web Push (navegador/PWA) ──────────────────────────────────────────
+    // -- Web Push (navegador/PWA) ------------------------------------------
     const { data: subs } = await supabase
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth')
@@ -4382,10 +4938,10 @@ const sendPushToUser = async (userId, payload) => {
 
     if (subs && subs.length > 0) {
       const payloadStr = JSON.stringify(payload);
-      // Para llamadas: urgency=high despierta el teléfono aunque esté hibernado
+      // Para llamadas: urgency=high despierta el tel?fono aunque est? hibernado
       // TTL=0 en llamadas significa "entregar ahora o nunca" (no tiene sentido entregar una llamada vieja)
       const pushOptions = isCall
-        ? { urgency: 'high', TTL: 120 }   // 120s — tiempo para desbloquear el teléfono
+        ? { urgency: 'high', TTL: 120 }   // 120s ? tiempo para desbloquear el tel?fono
         : { urgency: 'normal', TTL: 86400 };
       await Promise.allSettled(
         subs.map(sub =>
@@ -4403,7 +4959,7 @@ const sendPushToUser = async (userId, payload) => {
       );
     }
 
-    // ── Expo Push (app movil nativa — funciona con telefono hibernado) ────
+    // -- Expo Push (app movil nativa ? funciona con telefono hibernado) ----
     const { data: expoSubs } = await supabase
       .from('expo_push_tokens')
       .select('token')
@@ -4419,7 +4975,7 @@ const sendPushToUser = async (userId, payload) => {
         channelId: isCall ? 'egchat-calls' : 'egchat-messages',
         priority: isCall ? 'high' : 'normal',
         data: payload,
-        // Llamadas: TTL de 120s para dar tiempo a desbloquear el teléfono
+        // Llamadas: TTL de 120s para dar tiempo a desbloquear el tel?fono
         ...(isCall ? { ttl: 120, expiration: Math.floor(Date.now() / 1000) + 120 } : {}),
       }));
 
@@ -4448,7 +5004,7 @@ const sendPushToUser = async (userId, payload) => {
       }
     }
 
-    // ── FCM nativo — API V1 via firebase-admin (Capacitor) ───────────────
+    // -- FCM nativo ? API V1 via firebase-admin (Capacitor) ---------------
     if (firebaseAdmin) {
       const { data: fcmSubs } = await supabase
         .from('fcm_tokens')
@@ -4488,7 +5044,7 @@ const sendPushToUser = async (userId, payload) => {
               };
               await firebaseAdmin.messaging().send(message);
             } catch (fcmErr) {
-              // Limpiar tokens inválidos automáticamente
+              // Limpiar tokens inv?lidos autom?ticamente
               if (
                 fcmErr.code === 'messaging/registration-token-not-registered' ||
                 fcmErr.code === 'messaging/invalid-registration-token'
@@ -4508,7 +5064,7 @@ const sendPushToUser = async (userId, payload) => {
   }
 };
 
-// ── Registrar token Expo Push (app movil nativa) ──────────────────────────
+// -- Registrar token Expo Push (app movil nativa) --------------------------
 app.post('/api/push/register-expo-token', auth, async (req, res) => {
   try {
     const { expoPushToken, platform } = req.body;
@@ -4528,7 +5084,7 @@ app.post('/api/push/register-expo-token', auth, async (req, res) => {
   }
 });
 
-// ── Registrar token FCM nativo (Capacitor @capacitor/push-notifications) ──
+// -- Registrar token FCM nativo (Capacitor @capacitor/push-notifications) --
 app.post('/api/push/fcm-token', auth, async (req, res) => {
   try {
     const { fcm_token, platform } = req.body;
@@ -4548,11 +5104,11 @@ app.post('/api/push/fcm-token', auth, async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // PUSH DIAGNOSTICS
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
-// Admin: verificar suscripciones por teléfono
+// Admin: verificar suscripciones por tel?fono
 app.get('/api/push/check/:phone', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.query.key;
   if (!key || key !== (process.env.ADMIN_RESET_KEY || JWT_SECRET)) {
@@ -4569,7 +5125,7 @@ app.get('/api/push/check/:phone', async (req, res) => {
   }
 });
 
-// Admin: enviar push de prueba por teléfono
+// Admin: enviar push de prueba por tel?fono
 app.post('/api/push/send-test/:phone', async (req, res) => {
   const key = req.headers['x-admin-key'] || req.query.key;
   if (!key || key !== (process.env.ADMIN_RESET_KEY || JWT_SECRET)) {
@@ -4580,7 +5136,7 @@ app.post('/api/push/send-test/:phone', async (req, res) => {
     const { data: user } = await supabase.from('users').select('id, full_name').eq('phone', phone).single();
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
     const result = await sendPushToUser(user.id, {
-      title: '🔔 EGChat — Prueba',
+      title: '?? EGChat ? Prueba',
       body: `Hola ${user.full_name}, las notificaciones funcionan!`,
       icon: '/favicon.svg',
       tag: 'test-push-' + Date.now(),
@@ -4592,7 +5148,7 @@ app.post('/api/push/send-test/:phone', async (req, res) => {
   }
 });
 
-// Ver cuántas suscripciones tiene el usuario actual
+// Ver cu?ntas suscripciones tiene el usuario actual
 app.get('/api/push/my-subscriptions', auth, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -4610,7 +5166,7 @@ app.get('/api/push/my-subscriptions', auth, async (req, res) => {
 app.post('/api/push/test', auth, async (req, res) => {
   try {
     const result = await sendPushToUser(req.user.id, {
-      title: '🔔 EGChat — Prueba',
+      title: '?? EGChat ? Prueba',
       body: 'Las notificaciones funcionan correctamente',
       icon: '/favicon.svg',
       tag: 'test-push',
@@ -4622,9 +5178,9 @@ app.post('/api/push/test', auth, async (req, res) => {
   }
 });
 
-// ══════════════════════════════════════════════════════════════════
-// NOTICIAS GOBIERNO GE — Scraping de fuentes oficiales
-// ══════════════════════════════════════════════════════════════════
+// ------------------------------------------------------------------
+// NOTICIAS GOBIERNO GE ? Scraping de fuentes oficiales
+// ------------------------------------------------------------------
 
 // Cache en memoria para no saturar las fuentes
 const noticiasCache = { data: [], timestamp: 0 };
@@ -4649,14 +5205,14 @@ async function scrapePrimatura() {
     if (!res.ok) return noticias;
     const html = await res.text();
 
-    // Extraer artículos: busca patrones <h2> o <h3> con enlaces dentro de .post, article, .entry-title
+    // Extraer art?culos: busca patrones <h2> o <h3> con enlaces dentro de .post, article, .entry-title
     const titleRegex = /<(?:h[123]|a)[^>]*class="[^"]*(?:entry-title|post-title)[^"]*"[^>]*>[\s\S]*?<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
     const altRegex = /<article[^>]*>([\s\S]*?)<\/article>/gi;
     const dateRegex = /<time[^>]*datetime="([^"]+)"[^>]*>/i;
     const linkRegex = /<a[^>]+href="(https?:\/\/primatura\.gob\.gq\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
 
     let m;
-    // Método 1: buscar h2/h3 con clase entry-title
+    // M?todo 1: buscar h2/h3 con clase entry-title
     while ((m = titleRegex.exec(html)) !== null) {
       const url = m[1];
       const title = m[2].replace(/<[^>]+>/g, '').trim();
@@ -4665,7 +5221,7 @@ async function scrapePrimatura() {
       }
     }
 
-    // Método 2: buscar todos los enlaces a artículos de primatura
+    // M?todo 2: buscar todos los enlaces a art?culos de primatura
     if (noticias.length === 0) {
       while ((m = linkRegex.exec(html)) !== null) {
         const url = m[1];
@@ -4763,7 +5319,7 @@ async function scrapeLaVicePress() {
   return noticias.slice(0, 10);
 }
 
-// ── Enviar push de noticia del gobierno a TODOS los usuarios suscritos ────────
+// -- Enviar push de noticia del gobierno a TODOS los usuarios suscritos --------
 async function sendGovNewsPush(noticia) {
   try {
     const { data: subs } = await supabase
@@ -4773,7 +5329,7 @@ async function sendGovNewsPush(noticia) {
     if (!subs || subs.length === 0) return;
 
     const payload = JSON.stringify({
-      title: `🏛️ ${noticia.fuente}`,
+      title: `??? ${noticia.fuente}`,
       body: noticia.title,
       notificationType: 'government_news',
       url: '/?view=estados&espacio=e1',
@@ -4804,7 +5360,7 @@ async function sendGovNewsPush(noticia) {
   }
 }
 
-// ── Scheduler: revisar noticias nuevas cada 10 minutos y notificar ────────────
+// -- Scheduler: revisar noticias nuevas cada 10 minutos y notificar ------------
 const govNewsSeenUrls = new Set();
 let govNewsSchedulerStarted = false;
 
@@ -4824,7 +5380,7 @@ async function checkAndNotifyNewGovNews() {
       ...(lavice.status === 'fulfilled' ? lavice.value : []),
     ];
 
-    // Primera ejecución: solo registrar URLs conocidas sin notificar
+    // Primera ejecuci?n: solo registrar URLs conocidas sin notificar
     if (govNewsSeenUrls.size === 0) {
       all.forEach(n => govNewsSeenUrls.add(n.url));
       console.log(`[GovNews] Scheduler iniciado. ${all.length} noticias registradas como conocidas.`);
@@ -4857,8 +5413,8 @@ async function checkAndNotifyNewGovNews() {
 function startGovNewsScheduler() {
   if (govNewsSchedulerStarted) return;
   govNewsSchedulerStarted = true;
-  console.log('[GovNews] Scheduler iniciado — revisando cada 10 minutos');
-  // Primera ejecución inmediata
+  console.log('[GovNews] Scheduler iniciado ? revisando cada 10 minutos');
+  // Primera ejecuci?n inmediata
   checkAndNotifyNewGovNews();
   // Luego cada 10 minutos
   setInterval(checkAndNotifyNewGovNews, 10 * 60 * 1000);
@@ -4906,7 +5462,7 @@ app.get('/api/noticias/gobierno', async (req, res) => {
     // Si el scraping devuelve resultados, usarlos; si no, usar fallback
     const noticias = scraped.length >= 3 ? scraped : NOTICIAS_FALLBACK;
 
-    // Añadir id y timestamp
+    // A?adir id y timestamp
     const result = noticias.map((n, i) => ({
       id: `gov-${Date.now()}-${i}`,
       ...n,
@@ -4924,21 +5480,268 @@ app.get('/api/noticias/gobierno', async (req, res) => {
   }
 });
 
+// --------------------------------------------------------------------
+// BATCH USER PROFILES ? obtener perfiles actualizados de m?ltiples usuarios
+// Usado para sincronizar avatares y nombres en tiempo real
+// --------------------------------------------------------------------
+app.post('/api/users/batch', auth, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.json([]);
+    // Limitar a 100 IDs por petici?n
+    const safeIds = ids.slice(0, 100);
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, full_name, avatar_url, phone')
+      .in('id', safeIds);
+    if (error) throw error;
+    res.json(users || []);
+  } catch (e) {
+    res.json([]);
+  }
+});
+
 if (require.main === module) {
-  // Usar http.createServer para compartir puerto entre Express y WebSocket
+  // -- Endpoints adicionales: edición de mensajes, typing, reacciones ----------
+
+  // Editar mensaje (solo el remitente, dentro de 15 min)
+  app.put('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
+    try {
+      const { chatId, messageId } = req.params;
+      const { text } = req.body;
+      if (!text?.trim()) return res.status(400).json({ message: 'Texto requerido' });
+      const { data: msg } = await supabase.from('messages')
+        .select('id, sender_id, created_at').eq('id', messageId).eq('chat_id', chatId).single();
+      if (!msg) return res.status(404).json({ message: 'Mensaje no encontrado' });
+      if (String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'No puedes editar este mensaje' });
+      const age = Date.now() - new Date(msg.created_at).getTime();
+      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los últimos 15 minutos' });
+      const { data: updated, error } = await supabase.from('messages')
+        .update({ text: text.trim(), edited: true, updated_at: new Date().toISOString() })
+        .eq('id', messageId).select('id, text, edited, updated_at').single();
+      if (error) throw error;
+      res.json(updated);
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Eliminar mensaje para todos
+  app.delete('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
+    try {
+      const { chatId, messageId } = req.params;
+      const forAll = req.query.forAll === 'true';
+      if (forAll) {
+        const { data: msg } = await supabase.from('messages').select('sender_id').eq('id', messageId).single();
+        if (!msg || String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'Solo puedes eliminar tus propios mensajes' });
+        await supabase.from('messages').delete().eq('id', messageId);
+      } else {
+        await supabase.from('message_deletions').upsert(
+          { message_id: messageId, user_id: req.user.id, deleted_at: new Date().toISOString() },
+          { onConflict: 'message_id,user_id' }
+        );
+      }
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Indicador "escribiendo..." — en memoria con TTL 5s
+  const typingMap = new Map();
+  app.post('/api/chats/:chatId/typing', auth, async (req, res) => {
+    const { chatId } = req.params;
+    if (!typingMap.has(chatId)) typingMap.set(chatId, new Map());
+    typingMap.get(chatId).set(String(req.user.id), Date.now());
+    res.json({ ok: true });
+  });
+  app.get('/api/chats/:chatId/typing', auth, (req, res) => {
+    const { chatId } = req.params;
+    const now = Date.now();
+    const map = typingMap.get(chatId) || new Map();
+    const active = [];
+    for (const [uid, ts] of map.entries()) {
+      if (now - ts < 5000 && uid !== String(req.user.id)) active.push(uid);
+      else if (now - ts >= 5000) map.delete(uid);
+    }
+    res.json({ typing: active });
+  });
+
+  // Reacciones a mensajes
+  app.post('/api/chats/:chatId/messages/:messageId/react', auth, async (req, res) => {
+    try {
+      const { messageId } = req.params;
+      const { emoji } = req.body;
+      if (!emoji) return res.status(400).json({ message: 'Emoji requerido' });
+      await supabase.from('message_reactions').upsert(
+        { message_id: messageId, user_id: req.user.id, emoji, created_at: new Date().toISOString() },
+        { onConflict: 'message_id,user_id' }
+      );
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Búsqueda de mensajes en un chat
+  app.get('/api/chats/:chatId/messages/search', auth, async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const q = (req.query.q || '').trim();
+      if (!q) return res.json([]);
+      const { data } = await supabase.from('messages')
+        .select('id, text, type, created_at, sender_id')
+        .eq('chat_id', chatId).ilike('text', `%${q}%`)
+        .order('created_at', { ascending: false }).limit(20);
+      res.json(data || []);
+    } catch (e) { res.json([]); }
+  });
+
+  // ── Keep-alive: evita que Render (free tier) duerma el servidor ──────────────
+  if (process.env.NODE_ENV === 'production') {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://egchat-api.onrender.com';
+    setTimeout(() => {
+      setInterval(() => {
+        const https = require('https');
+        const r = https.get(`${SELF_URL}/health`, (res) => { res.resume(); });
+        r.on('error', () => {});
+        r.setTimeout(10000, () => r.destroy());
+      }, 10 * 60 * 1000);
+    }, 60000);
+    console.log('   Keep-alive: activo (ping cada 10 min)');
+  }
+
+  // ── WebSocket — real-time para mensajes, wallet, presencia ───────────────────
   const http = require('http');
   const { initWebSocket } = require('./websocket');
-
   const httpServer = http.createServer(app);
   const ws = initWebSocket(httpServer);
-
-  // Exportar ws para que las rutas puedan notificar eventos en tiempo real
   app.set('ws', ws);
 
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
     console.log(`   Supabase: ${process.env.SUPABASE_URL ? '✅ Conectado' : '❌ Sin configurar'}`);
+=======
+  // -- Endpoints adicionales: edici?n de mensajes, typing, reacciones ----------
+
+  // Editar mensaje (solo el remitente, dentro de 15 min)
+  app.put('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
+    try {
+      const { chatId, messageId } = req.params;
+      const { text } = req.body;
+      if (!text?.trim()) return res.status(400).json({ message: 'Texto requerido' });
+      // Verificar que el mensaje pertenece al usuario y no tiene m?s de 15 min
+      const { data: msg } = await supabase.from('messages')
+        .select('id, sender_id, created_at').eq('id', messageId).eq('chat_id', chatId).single();
+      if (!msg) return res.status(404).json({ message: 'Mensaje no encontrado' });
+      if (String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'No puedes editar este mensaje' });
+      const age = Date.now() - new Date(msg.created_at).getTime();
+      if (age > 15 * 60 * 1000) return res.status(403).json({ message: 'Solo puedes editar mensajes de los ?ltimos 15 minutos' });
+      const { data: updated, error } = await supabase.from('messages')
+        .update({ text: text.trim(), edited: true, updated_at: new Date().toISOString() })
+        .eq('id', messageId).select('id, text, edited, updated_at').single();
+      if (error) throw error;
+      // Notificar en tiempo real
+      const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
+      emitToUsers((parts || []).map(p => p.user_id), { type: 'message_edited', chatId, messageId, text: text.trim() });
+      res.json(updated);
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Eliminar mensaje para todos
+  app.delete('/api/chats/:chatId/messages/:messageId', auth, async (req, res) => {
+    try {
+      const { chatId, messageId } = req.params;
+      const forAll = req.query.forAll === 'true';
+      if (forAll) {
+        const { data: msg } = await supabase.from('messages').select('sender_id').eq('id', messageId).single();
+        if (!msg || String(msg.sender_id) !== String(req.user.id)) return res.status(403).json({ message: 'Solo puedes eliminar tus propios mensajes' });
+        await supabase.from('messages').delete().eq('id', messageId);
+        const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
+        emitToUsers((parts || []).map(p => p.user_id), { type: 'message_deleted', chatId, messageId });
+      } else {
+        await supabase.from('message_deletions').upsert({ message_id: messageId, user_id: req.user.id, deleted_at: new Date().toISOString() }, { onConflict: 'message_id,user_id' });
+      }
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Indicador "escribiendo..." ? almac?n en memoria con TTL 5s
+  const typingMap = new Map(); // chatId -> { userId -> timestamp }
+  app.post('/api/chats/:chatId/typing', auth, async (req, res) => {
+    const { chatId } = req.params;
+    if (!typingMap.has(chatId)) typingMap.set(chatId, new Map());
+    typingMap.get(chatId).set(String(req.user.id), Date.now());
+    const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
+    const others = (parts || []).map(p => p.user_id).filter(uid => String(uid) !== String(req.user.id));
+    emitToUsers(others, { type: 'typing', chatId, userId: req.user.id });
+    res.json({ ok: true });
+  });
+  app.get('/api/chats/:chatId/typing', auth, (req, res) => {
+    const { chatId } = req.params;
+    const now = Date.now();
+    const map = typingMap.get(chatId) || new Map();
+    const active = [];
+    for (const [uid, ts] of map.entries()) {
+      if (now - ts < 5000 && uid !== String(req.user.id)) active.push(uid);
+      else if (now - ts >= 5000) map.delete(uid);
+    }
+    res.json({ typing: active });
+  });
+
+  // Reacciones a mensajes
+  app.post('/api/chats/:chatId/messages/:messageId/react', auth, async (req, res) => {
+    try {
+      const { chatId, messageId } = req.params;
+      const { emoji } = req.body;
+      if (!emoji) return res.status(400).json({ message: 'Emoji requerido' });
+      // Upsert reacci?n (un emoji por usuario por mensaje)
+      await supabase.from('message_reactions').upsert(
+        { message_id: messageId, user_id: req.user.id, emoji, created_at: new Date().toISOString() },
+        { onConflict: 'message_id,user_id' }
+      );
+      const { data: parts } = await supabase.from('chat_participants').select('user_id').eq('chat_id', chatId);
+      emitToUsers((parts || []).map(p => p.user_id), { type: 'message_reaction', chatId, messageId, userId: req.user.id, emoji });
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // B?squeda de mensajes en un chat
+  app.get('/api/chats/:chatId/messages/search', auth, async (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const q = (req.query.q || '').trim();
+      if (!q) return res.json([]);
+      const { data } = await supabase.from('messages')
+        .select('id, text, type, created_at, sender_id')
+        .eq('chat_id', chatId)
+        .ilike('text', `%${q}%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      res.json(data || []);
+    } catch (e) { res.json([]); }
+  });
+
+  // ── Keep-alive: evita que Render (free tier) duerma el servidor ──────────────
+  // Render duerme procesos tras 15 min sin peticiones → causa 502 en el primer
+  // request. Este ping interno cada 10 minutos mantiene el proceso activo.
+  // Solo activo en producción para no interferir en desarrollo local.
+  if (process.env.NODE_ENV === 'production') {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://egchat-api.onrender.com`;
+    const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
+    setTimeout(() => {
+      setInterval(() => {
+        const https = require('https');
+        const req = https.get(`${SELF_URL}/health`, (res) => {
+          console.log(`[keep-alive] ping → ${res.statusCode}`);
+          res.resume(); // descartar respuesta
+        });
+        req.on('error', (e) => console.warn('[keep-alive] ping error:', e.message));
+        req.setTimeout(10000, () => { req.destroy(); console.warn('[keep-alive] ping timeout'); });
+      }, PING_INTERVAL_MS);
+    }, 60000); // primer ping tras 1 min de arranque
+    console.log(`   Keep-alive: activo (ping cada 10 min)`);
+  }
+
+  app.listen(PORT, async () => {
+    console.log(`\n?? EGCHAT API + Supabase en http://localhost:${PORT}`);
+    console.log(`   Supabase: ${process.env.SUPABASE_URL ? '? Conectado' : '? Sin configurar'}`);
+>>>>>>> 6f9958c8765415160d5fbb4bea5cc1f479e3ad38
     // Iniciar scheduler de noticias del gobierno
     startGovNewsScheduler();
     console.log(`   Auth:   POST /api/auth/register | /api/auth/login`);
@@ -4966,6 +5769,5 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
 
 
