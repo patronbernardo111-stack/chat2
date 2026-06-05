@@ -1,4 +1,4 @@
-// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
+﻿// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
 try { 
   const dotenv = require('dotenv');
   dotenv.config();
@@ -925,7 +925,7 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
       .select('chat_id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!part) return res.status(403).json({ message: 'No tienes acceso a este chat' });
 
@@ -960,7 +960,7 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
 
     // Verificar acceso
     const { data: part } = await supabase
-      .from('chat_participants').select('chat_id').eq('chat_id', chatId).eq('user_id', req.user.id).single();
+      .from('chat_participants').select('chat_id').eq('chat_id', chatId).eq('user_id', req.user.id).maybeSingle();
     if (!part) return res.status(403).json({ message: 'Sin acceso' });
 
     const { data: message, error } = await supabase
@@ -987,7 +987,7 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
       const otherUsers = targetUsers.filter(uid => String(uid) !== String(req.user.id));
       // Obtener nombre del remitente
       const { data: sender } = await supabase
-        .from('users').select('full_name').eq('id', req.user.id).single();
+        .from('users').select('full_name').eq('id', req.user.id).maybeSingle();
       const senderName = sender?.full_name || 'Alguien';
       const pushPayload = {
         title: senderName,
@@ -1019,7 +1019,7 @@ app.post('/api/chats/private', auth, async (req, res) => {
         .from('users')
         .select('id, phone, full_name, avatar_url')
         .eq('phone', phone)
-        .single();
+        .maybeSingle();
 
       if (userError || !found) {
         return res.status(404).json({ message: 'Usuario no encontrado con ese n??mero' });
@@ -1187,7 +1187,7 @@ app.post('/api/chats/:chatId/avatar', auth, async (req, res) => {
       .select('id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
     if (!part) return res.status(403).json({ message: 'Sin acceso' });
 
     // Convertir base64 a buffer
@@ -1240,7 +1240,7 @@ app.put('/api/chats/:chatId', auth, async (req, res) => {
       .select('id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!part) return res.status(403).json({ message: 'No tienes acceso a este chat' });
 
@@ -1291,7 +1291,7 @@ app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
       .select('id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!myPart) return res.status(403).json({ message: 'No tienes acceso a este chat' });
 
@@ -1343,7 +1343,7 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
       .select('id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!part) {
       return res.status(403).json({ message: 'No tienes acceso a este chat' });
@@ -1388,7 +1388,7 @@ app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
       .select('id')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!part) return res.status(403).json({ message: 'No tienes acceso a este chat' });
 
@@ -1482,7 +1482,7 @@ app.delete('/api/messages/:messageId/for-me', auth, async (req, res) => {
       .select('chat_id')
       .eq('chat_id', message.chat_id)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (!part) return res.status(403).json({ message: 'Sin acceso a este chat' });
 
@@ -1603,7 +1603,7 @@ app.post('/api/contacts', auth, async (req, res) => {
         .from('users')
         .select('id, phone, full_name')
         .or(`phone.eq.${phoneNorm},phone.eq.${phoneAlt}`)
-        .single();
+        .maybeSingle();
 
       console.log('[ADD CONTACT] phone search result:', targetUser, 'error:', userError?.message);
 
@@ -3821,7 +3821,7 @@ app.get('/api/chats/:chatId/wallpaper', auth, async (req, res) => {
       .select('wallpaper_type, wallpaper_value, wallpaper_settings')
       .eq('chat_id', chatId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
 
@@ -4498,7 +4498,7 @@ app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
       .select('chat_id')
       .eq('chat_id', groupId)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
     if (!part) return res.status(403).json({ message: 'No perteneces a este grupo' });
 
     const newSlides = Array.isArray(media) ? media : [media];
@@ -4545,7 +4545,7 @@ app.post('/api/stories/groups/:groupId', auth, async (req, res) => {
         .select('user_id')
         .eq('chat_id', groupId);
       const { data: sender } = await supabase
-        .from('users').select('full_name').eq('id', req.user.id).single();
+        .from('users').select('full_name').eq('id', req.user.id).maybeSingle();
       const { data: group } = await supabase
         .from('chats').select('name').eq('id', groupId).single();
       const memberIds = (members || []).map(m => m.user_id).filter(id => id !== req.user.id);
