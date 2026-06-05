@@ -62,6 +62,17 @@ const APK_DOWNLOAD_URL = process.env.APK_DOWNLOAD_URL || 'https://egchat-v2.verc
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
+// --- Pool global para queries SQL directas (bypass pg-client) --------
+const { Pool: _GlobalPool } = require('pg');
+const globalPool = process.env.DATABASE_URL ? new _GlobalPool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+}) : null;
+if (globalPool) globalPool.on('error', (err) => console.error('[globalPool] error:', err.message));
+
 // --- Base de datos ---------------------------------------------------
 // Si DATABASE_URL está definida (Neon/PostgreSQL directo), usar pg-client.
 // Si no, usar Supabase como fallback.
@@ -842,91 +853,40 @@ app.get('/api/chats', auth, async (req, res) => {
   res.setHeader('Cache-Control', 'private, max-age=10');
   try {
     const userId = req.user.id;
-    const { Pool: _Pool } = require('pg');
-    const _pool = new _Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3 });
+    const pool = globalPool;
+    if (!pool) return res.json([]);
 
-    try {
-      // 1. IDs de chats del usuario
-      const chatIdsRes = await _pool.query(
-        `SELECT chat_id FROM chat_participants WHERE user_id = $1`,
-        [userId]
-      );
-      if (chatIdsRes.rows.length === 0) { await _pool.end().catch(()=>{}); return res.json([]); }
+    const chatIdsRes = await pool.query(`SELECT chat_id FROM chat_participants WHERE user_id = $1`, [userId]);
+    if (chatIdsRes.rows.length === 0) return res.json([]);
 
-      const chatIds = chatIdsRes.rows.map(r => r.chat_id);
-      const placeholders = chatIds.map((_,i) => `$${i+1}`).join(',');
+    const chatIds = chatIdsRes.rows.map(r => r.chat_id);
+    const placeholders = chatIds.map((_,i) => `$${i+1}`).join(',');
 
-      // 2. Chats
-      const chatsRes = await _pool.query(
-        `SELECT id, type, name, avatar_url, created_by, updated_at
-         FROM chats WHERE id IN (${placeholders})
-         ORDER BY updated_at DESC LIMIT 100`,
-        chatIds
-      );
+    const [chatsRes, partsRes, msgsRes] = await Promise.all([
+      pool.query(`SELECT id, type, name, avatar_url, created_by, updated_at FROM chats WHERE id IN (${placeholders}) ORDER BY updated_at DESC LIMIT 100`, chatIds),
+      pool.query(`SELECT cp.chat_id, cp.user_id, cp.unread_count, u.phone, u.full_name, u.avatar_url as user_avatar FROM chat_participants cp LEFT JOIN users u ON u.id = cp.user_id WHERE cp.chat_id IN (${placeholders})`, chatIds),
+      pool.query(`SELECT DISTINCT ON (chat_id) id, chat_id, text, type, created_at, sender_id FROM messages WHERE chat_id IN (${placeholders}) ORDER BY chat_id, created_at DESC`, chatIds),
+    ]);
 
-      // 3. Participantes con datos de usuario
-      const partsRes = await _pool.query(
-        `SELECT cp.chat_id, cp.user_id, cp.unread_count,
-                u.phone, u.full_name, u.avatar_url as user_avatar
-         FROM chat_participants cp
-         LEFT JOIN users u ON u.id = cp.user_id
-         WHERE cp.chat_id IN (${placeholders})`,
-        chatIds
-      );
-
-      // 4. Último mensaje por chat
-      const msgsRes = await _pool.query(
-        `SELECT DISTINCT ON (chat_id) id, chat_id, text, type, created_at, sender_id
-         FROM messages
-         WHERE chat_id IN (${placeholders})
-         ORDER BY chat_id, created_at DESC`,
-        chatIds
-      );
-
-      await _pool.end().catch(()=>{});
-
-      // Agrupar participantes por chat
-      const partsByChat = {};
-      for (const p of partsRes.rows) {
-        if (!partsByChat[p.chat_id]) partsByChat[p.chat_id] = [];
-        partsByChat[p.chat_id].push({
-          user_id: p.user_id,
-          phone: p.phone,
-          full_name: p.full_name,
-          avatar_url: p.user_avatar && p.user_avatar.startsWith('data:') ? null : p.user_avatar,
-          unread_count: p.unread_count || 0,
-        });
-      }
-
-      // Último mensaje por chat
-      const lastMsg = {};
-      for (const m of msgsRes.rows) {
-        lastMsg[m.chat_id] = m;
-      }
-
-      // Unread count del usuario actual
-      const myUnread = {};
-      for (const p of partsRes.rows) {
-        if (p.user_id === userId) myUnread[p.chat_id] = p.unread_count || 0;
-      }
-
-      const result = chatsRes.rows.map(chat => ({
-        id: chat.id,
-        type: chat.type || 'private',
-        name: chat.name || null,
-        avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
-        created_by: chat.created_by || null,
-        participants: partsByChat[chat.id] || [],
-        last_message: lastMsg[chat.id] || null,
-        updated_at: chat.updated_at,
-        unread_count: myUnread[chat.id] || 0,
-      }));
-
-      return res.json(result);
-    } catch(poolErr) {
-      await _pool.end().catch(()=>{});
-      throw poolErr;
+    const partsByChat = {};
+    for (const p of partsRes.rows) {
+      if (!partsByChat[p.chat_id]) partsByChat[p.chat_id] = [];
+      partsByChat[p.chat_id].push({ user_id: p.user_id, phone: p.phone, full_name: p.full_name, avatar_url: p.user_avatar && p.user_avatar.startsWith('data:') ? null : p.user_avatar });
     }
+    const lastMsg = {};
+    for (const m of msgsRes.rows) lastMsg[m.chat_id] = m;
+    const myUnread = {};
+    for (const p of partsRes.rows) { if (p.user_id === userId) myUnread[p.chat_id] = p.unread_count || 0; }
+
+    return res.json(chatsRes.rows.map(chat => ({
+      id: chat.id, type: chat.type || 'private', name: chat.name || null,
+      avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
+      created_by: chat.created_by || null, participants: partsByChat[chat.id] || [],
+      last_message: lastMsg[chat.id] || null, updated_at: chat.updated_at, unread_count: myUnread[chat.id] || 0,
+    })));
+  } catch(poolErr) {
+    throw poolErr;
+  }
   } catch (e) {
     console.error('Get chats error:', e.message);
     res.json([]);
@@ -1065,23 +1025,20 @@ app.post('/api/chats/private', auth, async (req, res) => {
     const { data: targetUser } = await supabase.from('users').select('id, phone, full_name, avatar_url').eq('id', targetId).maybeSingle();
     if (!targetUser) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    // Usar pool directo para INSERT (bypass pg-client) — más fiable
-    const { Pool } = require('pg');
-    const _pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
-    
+    // Usar globalPool para INSERT (bypass pg-client) — más fiable
     let chat;
-    try {
-      const r = await _pool.query(
+    if (globalPool) {
+      const r = await globalPool.query(
         `INSERT INTO chats (type, created_by, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING *`,
         ['private', req.user.id]
       );
       chat = r.rows[0];
-      await _pool.query(
+      await globalPool.query(
         `INSERT INTO chat_participants (chat_id, user_id) VALUES ($1, $2), ($1, $3) ON CONFLICT DO NOTHING`,
         [chat.id, req.user.id, targetId]
       );
-    } finally {
-      _pool.end().catch(() => {});
+    } else {
+      throw new Error('Pool no disponible');
     }
 
     console.log('[CREATE CHAT] created:', chat?.id);
@@ -5621,9 +5578,9 @@ if (require.main === module) {
 
     // Crear tablas faltantes directamente con pool (Neon no soporta rpc exec_sql)
     try {
-      const { Pool: _Pool } = require('pg');
-      const _initPool = new _Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
-      await _initPool.query(`
+      const pool = globalPool;
+      if (!pool) throw new Error('No globalPool');
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS call_sessions (
           call_id VARCHAR(100) PRIMARY KEY,
           offer TEXT, answer TEXT,
@@ -5703,7 +5660,7 @@ if (require.main === module) {
           expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours'
         );
       `);
-      await _initPool.end().catch(() => {});
+      await Promise.resolve(); // globalPool se mantiene abierto
       console.log('[DB] Tablas verificadas/creadas OK');
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
