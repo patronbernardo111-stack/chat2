@@ -839,75 +839,97 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 // Obtener todos los chats del usuario
 app.get('/api/chats', auth, async (req, res) => {
-  // EGRESS FIX: allow client-side caching for 10 seconds to reduce repeated fetches
   res.setHeader('Cache-Control', 'private, max-age=10');
   try {
-    // Buscar chats donde el usuario es participante
-    const { data: participations, error: pErr } = await supabase
-      .from('chat_participants')
-      .select('chat_id')
-      .eq('user_id', req.user.id);
+    const userId = req.user.id;
+    const { Pool: _Pool } = require('pg');
+    const _pool = new _Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3 });
 
-    if (pErr) {
-      // Si la tabla no existe, devolver array vac?o
-      return res.json([]);
+    try {
+      // 1. IDs de chats del usuario
+      const chatIdsRes = await _pool.query(
+        `SELECT chat_id FROM chat_participants WHERE user_id = $1`,
+        [userId]
+      );
+      if (chatIdsRes.rows.length === 0) { await _pool.end().catch(()=>{}); return res.json([]); }
+
+      const chatIds = chatIdsRes.rows.map(r => r.chat_id);
+      const placeholders = chatIds.map((_,i) => `$${i+1}`).join(',');
+
+      // 2. Chats
+      const chatsRes = await _pool.query(
+        `SELECT id, type, name, avatar_url, created_by, updated_at
+         FROM chats WHERE id IN (${placeholders})
+         ORDER BY updated_at DESC LIMIT 100`,
+        chatIds
+      );
+
+      // 3. Participantes con datos de usuario
+      const partsRes = await _pool.query(
+        `SELECT cp.chat_id, cp.user_id, cp.unread_count,
+                u.phone, u.full_name, u.avatar_url as user_avatar
+         FROM chat_participants cp
+         LEFT JOIN users u ON u.id = cp.user_id
+         WHERE cp.chat_id IN (${placeholders})`,
+        chatIds
+      );
+
+      // 4. Último mensaje por chat
+      const msgsRes = await _pool.query(
+        `SELECT DISTINCT ON (chat_id) id, chat_id, text, type, created_at, sender_id
+         FROM messages
+         WHERE chat_id IN (${placeholders})
+         ORDER BY chat_id, created_at DESC`,
+        chatIds
+      );
+
+      await _pool.end().catch(()=>{});
+
+      // Agrupar participantes por chat
+      const partsByChat = {};
+      for (const p of partsRes.rows) {
+        if (!partsByChat[p.chat_id]) partsByChat[p.chat_id] = [];
+        partsByChat[p.chat_id].push({
+          user_id: p.user_id,
+          phone: p.phone,
+          full_name: p.full_name,
+          avatar_url: p.user_avatar && p.user_avatar.startsWith('data:') ? null : p.user_avatar,
+          unread_count: p.unread_count || 0,
+        });
+      }
+
+      // Último mensaje por chat
+      const lastMsg = {};
+      for (const m of msgsRes.rows) {
+        lastMsg[m.chat_id] = m;
+      }
+
+      // Unread count del usuario actual
+      const myUnread = {};
+      for (const p of partsRes.rows) {
+        if (p.user_id === userId) myUnread[p.chat_id] = p.unread_count || 0;
+      }
+
+      const result = chatsRes.rows.map(chat => ({
+        id: chat.id,
+        type: chat.type || 'private',
+        name: chat.name || null,
+        avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
+        created_by: chat.created_by || null,
+        participants: partsByChat[chat.id] || [],
+        last_message: lastMsg[chat.id] || null,
+        updated_at: chat.updated_at,
+        unread_count: myUnread[chat.id] || 0,
+      }));
+
+      return res.json(result);
+    } catch(poolErr) {
+      await _pool.end().catch(()=>{});
+      throw poolErr;
     }
-
-    if (!participations || participations.length === 0) return res.json([]);
-
-    const chatIds = participations.map(p => p.chat_id);
-
-    const { data: chats } = await supabase
-      .from('chats')
-      .select('id, type, name, avatar_url, description, created_by, updated_at')
-      .in('id', chatIds)
-      .order('updated_at', { ascending: false })
-      .limit(100); // EGRESS FIX: cap at 100 chats, select only needed columns
-
-    if (!chats) return res.json([]);
-
-    const [{ data: participants }, { data: messages }] = await Promise.all([
-      supabase.from('chat_participants')
-        .select('chat_id, user_id, users(id, phone, full_name, avatar_url)')
-        .in('chat_id', chatIds),
-      // EGRESS FIX: limit to 1 message per chat (last message preview only)
-      supabase.from('messages')
-        .select('id, text, type, created_at, sender_id, chat_id')
-        .in('chat_id', chatIds)
-        .order('created_at', { ascending: false })
-        .limit(chatIds.length * 1)  // 1 message per chat max
-    ]);
-
-    const participantsByChat = (participants || []).reduce((acc, part) => {
-      const chatId = part.chat_id;
-      if (!acc[chatId]) acc[chatId] = [];
-      acc[chatId].push(part);
-      return acc;
-    }, {});
-
-    const lastMessageByChat = (messages || []).reduce((acc, message) => {
-      if (!acc[message.chat_id]) acc[message.chat_id] = message;
-      return acc;
-    }, {});
-
-    const result = chats.map(chat => ({
-      id: chat.id,
-      type: chat.type || 'private',
-      name: chat.name,
-      // EGRESS FIX: strip base64 avatars from list view — client should use /api/chats/:id for full data
-      avatar_url: chat.avatar_url && chat.avatar_url.startsWith('data:') ? null : (chat.avatar_url || null),
-      description: chat.description || null,
-      created_by: chat.created_by || null,
-      participants: participantsByChat[chat.id] || [],
-      last_message: lastMessageByChat[chat.id] || null,
-      updated_at: chat.updated_at,
-      unread_count: 0
-    }));
-
-    res.json(result);
   } catch (e) {
     console.error('Get chats error:', e.message);
-    res.json([]); // Devolver vac?o en vez de 500
+    res.json([]);
   }
 });
 
