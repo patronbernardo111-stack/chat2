@@ -1085,6 +1085,7 @@ app.post('/api/chats/private', auth, async (req, res) => {
       .select()
       .maybeSingle();
 
+    console.log('[CREATE CHAT] insert result:', chat?.id, 'error:', createError?.message);
     if (createError) throw createError;
     if (!chat) throw new Error('No se pudo crear el chat');
 

@@ -389,11 +389,21 @@ const pgClient = {
     // Return a proxy that chains .select() after .insert()/.update() for RETURNING
     return new Proxy(qb, {
       get(target, prop) {
+        // When chaining .select() after insert/update/upsert, DON'T change _op
+        // Just set the returning cols and keep _op as insert/update/upsert
         if (prop === 'select' && (target._op === 'insert' || target._op === 'update' || target._op === 'upsert')) {
           return (cols) => {
             target._setReturning(cols);
-            // Rebuild so select cols apply to returning
-            return target;
+            // Do NOT change _op — keep it as insert/update/upsert
+            // Return the same proxy so .single()/.maybeSingle() still work
+            return new Proxy(target, {
+              get(t2, p2) {
+                if (p2 === 'select') {
+                  return (c2) => { t2._setReturning(c2); return t2; };
+                }
+                return typeof t2[p2] === 'function' ? t2[p2].bind(t2) : t2[p2];
+              }
+            });
           };
         }
         return typeof target[prop] === 'function' ? target[prop].bind(target) : target[prop];
