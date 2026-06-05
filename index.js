@@ -1068,9 +1068,9 @@ app.post('/api/chats/private', auth, async (req, res) => {
       .from('users')
       .select('id, phone, full_name, avatar_url')
       .eq('id', targetId)
-      .single();
+      .maybeSingle();
 
-    if (userError || !targetUser) {
+    if (!targetUser) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
@@ -1083,9 +1083,10 @@ app.post('/api/chats/private', auth, async (req, res) => {
         updated_at: new Date().toISOString()
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (createError) throw createError;
+    if (!chat) throw new Error('No se pudo crear el chat');
 
     await supabase.from('chat_participants').insert([
       { chat_id: chat.id, user_id: req.user.id },
@@ -1645,60 +1646,57 @@ app.post('/api/contacts', auth, async (req, res) => {
       return res.status(409).json({ message: 'El usuario ya es tu contacto' });
     }
 
-    // Agregar contacto
+    // Agregar contacto — INSERT con ON CONFLICT para ser idempotente
     const insertData = {
       user_id: req.user.id,
       contact_user_id: targetId,
       nickname: nickname || targetUser.full_name,
     };
-    // Intentar con user_id_min/max primero, si falla sin ellos
-    try {
-      const withMinMax = {
-        ...insertData,
-        user_id_min: String(req.user.id) < String(targetId) ? req.user.id : targetId,
-        user_id_max: String(req.user.id) < String(targetId) ? targetId : req.user.id,
-      };
-      const { data: contact, error } = await supabase
-        .from('contacts')
-        .insert(withMinMax)
-        .select('*')
-        .maybeSingle();
 
-      if (error) throw error;
+    // Intentar insert directo
+    const { data: contact, error: insertError } = await supabase
+      .from('contacts')
+      .insert(insertData)
+      .select('*')
+      .maybeSingle();
 
-      const result = contact || { ...withMinMax, id: Date.now().toString() };
-      return res.json({
-        id: result.id,
-        contact_user_id: targetId,
-        name: result.nickname || targetUser.full_name,
-        phone: targetUser.phone,
-        avatar_url: targetUser.avatar_url || '',
-        is_blocked: result.is_blocked || false,
-        is_favorite: result.is_favorite || false,
-        created_at: result.created_at || new Date().toISOString(),
-        user: targetUser
-      });
-    } catch (insertErr) {
-      // Si falla por columnas extra no existentes, intentar sin user_id_min/max
-      const { data: contact, error } = await supabase
-        .from('contacts')
-        .insert(insertData)
-        .select('*')
-        .maybeSingle();
-      if (error) throw error;
-      const result = contact || insertData;
-      return res.json({
-        id: result.id || Date.now().toString(),
-        contact_user_id: targetId,
-        name: result.nickname || targetUser.full_name,
-        phone: targetUser.phone,
-        avatar_url: targetUser.avatar_url || '',
-        is_blocked: false,
-        is_favorite: false,
-        created_at: result.created_at || new Date().toISOString(),
-        user: targetUser
-      });
+    // Si hubo error de constraint (ya existe), devolver el existente
+    if (insertError) {
+      if (insertError.message?.includes('unique') || insertError.message?.includes('duplicate') || insertError.code === '23505') {
+        // Ya existe — devolver éxito igualmente
+        const { data: existing } = await supabase
+          .from('contacts')
+          .select('*')
+          .eq('user_id', req.user.id)
+          .eq('contact_user_id', targetId)
+          .maybeSingle();
+        return res.json({
+          id: existing?.id || targetId,
+          contact_user_id: targetId,
+          name: existing?.nickname || targetUser.full_name,
+          phone: targetUser.phone,
+          avatar_url: targetUser.avatar_url || '',
+          is_blocked: existing?.is_blocked || false,
+          is_favorite: existing?.is_favorite || false,
+          created_at: existing?.created_at || new Date().toISOString(),
+          user: targetUser,
+          already_exists: true
+        });
+      }
+      throw insertError;
     }
+
+    return res.json({
+      id: contact?.id || targetId,
+      contact_user_id: targetId,
+      name: contact?.nickname || targetUser.full_name,
+      phone: targetUser.phone,
+      avatar_url: targetUser.avatar_url || '',
+      is_blocked: contact?.is_blocked || false,
+      is_favorite: contact?.is_favorite || false,
+      created_at: contact?.created_at || new Date().toISOString(),
+      user: targetUser
+    });
   } catch (e) {
     console.error('Add contact error:', e);
     res.status(500).json({ message: e.message });
