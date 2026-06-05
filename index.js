@@ -1057,7 +1057,7 @@ app.post('/api/chats/private', auth, async (req, res) => {
         .in('id', common)
         .eq('type', 'private')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         return res.json(existing);
@@ -1639,7 +1639,7 @@ app.post('/api/contacts', auth, async (req, res) => {
       .select('id')
       .eq('user_id', req.user.id)
       .eq('contact_user_id', targetId)
-      .single();
+      .maybeSingle();
 
     if (existingContact) {
       return res.status(409).json({ message: 'El usuario ya es tu contacto' });
@@ -4004,7 +4004,7 @@ app.post('/api/spaces/:id/follow', auth, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const { data: existing } = await supabase
-      .from('space_follows').select('id').eq('space_id', id).eq('user_id', userId).single();
+      .from('space_follows').select('id').eq('space_id', id).eq('user_id', userId).maybeSingle();
     if (existing) {
       await supabase.from('space_follows').delete().eq('space_id', id).eq('user_id', userId);
       await supabase.from('spaces').update({ followers_count: supabase.rpc ? undefined : 0 }).eq('id', id);
@@ -4089,7 +4089,7 @@ app.post('/api/spaces/posts/:postId/like', auth, async (req, res) => {
   try {
     const { postId } = req.params;
     const userId = req.user.id;
-    const { data: existing } = await supabase.from('space_post_likes').select('id').eq('post_id', postId).eq('user_id', userId).single();
+    const { data: existing } = await supabase.from('space_post_likes').select('id').eq('post_id', postId).eq('user_id', userId).maybeSingle();
     if (existing) {
       await supabase.from('space_post_likes').delete().eq('post_id', postId).eq('user_id', userId);
       await supabase.rpc('exec_sql', { sql: `UPDATE space_posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = '${postId}'` }).catch(() => {});
@@ -4781,7 +4781,7 @@ app.post('/api/call/ice', auth, async (req, res) => {
 
 // Polling ? obtener estado de la llamada
 app.get('/api/call/:callId', auth, async (req, res) => {
-  const { data } = await supabase.from('call_sessions').select('*').eq('call_id', req.params.callId).single();
+  const { data } = await supabase.from('call_sessions').select('*').eq('call_id', req.params.callId).maybeSingle();
   if (!data) return res.status(404).json({ error: 'Llamada no encontrada' });
   res.json({
     offer: JSON.parse(data.offer || 'null'),
