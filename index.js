@@ -1008,103 +1008,68 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
 });
 
 // Crear chat privado
-// Crear chat privado ?�� usa chat_participants
+// Crear chat privado — usa chat_participants
 app.post('/api/chats/private', auth, async (req, res) => {
   try {
     const { participant_id, phone } = req.body;
     let targetId = participant_id;
 
     if (!targetId && phone) {
-      const { data: found, error: userError } = await supabase
+      const { data: found } = await supabase
         .from('users')
         .select('id, phone, full_name, avatar_url')
         .eq('phone', phone)
         .maybeSingle();
-
-      if (userError || !found) {
-        return res.status(404).json({ message: 'Usuario no encontrado con ese n??mero' });
-      }
-
+      if (!found) return res.status(404).json({ message: 'Usuario no encontrado con ese número' });
       targetId = found.id;
     }
 
-    if (!targetId) {
-      return res.status(400).json({ message: 'participant_id o phone es requerido' });
-    }
+    if (!targetId) return res.status(400).json({ message: 'participant_id o phone es requerido' });
+    if (String(targetId) === String(req.user.id)) return res.status(400).json({ message: 'No puedes crear un chat contigo mismo' });
 
-    if (targetId === req.user.id) {
-      return res.status(400).json({ message: 'No puedes crear un chat contigo mismo' });
-    }
-
-    const { data: myChats } = await supabase
-      .from('chat_participants')
-      .select('chat_id')
-      .eq('user_id', req.user.id);
-
-    const { data: theirChats } = await supabase
-      .from('chat_participants')
-      .select('chat_id')
-      .eq('user_id', targetId);
-
-    const myIds = (myChats || []).map((c) => c.chat_id);
-    const theirIds = (theirChats || []).map((c) => c.chat_id);
-    const common = myIds.filter((id) => theirIds.includes(id));
+    // Buscar chat privado existente entre los dos usuarios
+    const { data: myChats } = await supabase.from('chat_participants').select('chat_id').eq('user_id', req.user.id);
+    const { data: theirChats } = await supabase.from('chat_participants').select('chat_id').eq('user_id', targetId);
+    const myIds = (myChats || []).map(c => c.chat_id);
+    const theirIds = (theirChats || []).map(c => c.chat_id);
+    const common = myIds.filter(id => theirIds.includes(id));
 
     if (common.length > 0) {
-      const { data: existing } = await supabase
-        .from('chats')
-        .select('*')
-        .in('id', common)
-        .eq('type', 'private')
-        .limit(1)
-        .maybeSingle();
-
-      if (existing) {
-        return res.json(existing);
-      }
+      const { data: existing } = await supabase.from('chats').select('*').in('id', common).eq('type', 'private').limit(1).maybeSingle();
+      if (existing) return res.json(existing);
     }
 
-    const { data: targetUser, error: userError } = await supabase
-      .from('users')
-      .select('id, phone, full_name, avatar_url')
-      .eq('id', targetId)
-      .maybeSingle();
+    // Obtener datos del usuario destino
+    const { data: targetUser } = await supabase.from('users').select('id, phone, full_name, avatar_url').eq('id', targetId).maybeSingle();
+    if (!targetUser) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    if (!targetUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Usar pool directo para INSERT (bypass pg-client) — más fiable
+    const { Pool } = require('pg');
+    const _pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
+    
+    let chat;
+    try {
+      const r = await _pool.query(
+        `INSERT INTO chats (type, created_by, created_at, updated_at) VALUES ($1, $2, NOW(), NOW()) RETURNING *`,
+        ['private', req.user.id]
+      );
+      chat = r.rows[0];
+      await _pool.query(
+        `INSERT INTO chat_participants (chat_id, user_id) VALUES ($1, $2), ($1, $3) ON CONFLICT DO NOTHING`,
+        [chat.id, req.user.id, targetId]
+      );
+    } finally {
+      _pool.end().catch(() => {});
     }
 
-    const { data: chat, error: createError } = await supabase
-      .from('chats')
-      .insert({
-        type: 'private',
-        created_by: req.user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .maybeSingle();
+    console.log('[CREATE CHAT] created:', chat?.id);
 
-    console.log('[CREATE CHAT] insert result:', chat?.id, 'error:', createError?.message);
-    if (createError) throw createError;
-    if (!chat) throw new Error('No se pudo crear el chat');
-
-    await supabase.from('chat_participants').insert([
-      { chat_id: chat.id, user_id: req.user.id },
-      { chat_id: chat.id, user_id: targetId }
-    ]);
-
-    const formattedChat = {
+    res.status(201).json({
       ...chat,
-      participants: [
-        { user_id: req.user.id },
-        { user_id: targetId, ...targetUser }
-      ],
+      participants: [{ user_id: req.user.id }, { user_id: targetId, ...targetUser }],
       last_message: null,
       unread_count: 0
-    };
-
-    res.status(201).json(formattedChat);
+    });
   } catch (e) {
     console.error('Create private chat error:', e.message);
     res.status(500).json({ message: e.message });
@@ -5631,9 +5596,12 @@ if (require.main === module) {
     console.log(`   Auth:   POST /api/auth/register | /api/auth/login`);
     console.log(`   Wallet: GET  /api/wallet/balance | POST /api/wallet/deposit`);
     console.log(`   Lia-25: POST /api/lia/chat\n`);
-    // Crear tabla call_sessions si no existe
+
+    // Crear tablas faltantes directamente con pool (Neon no soporta rpc exec_sql)
     try {
-      await supabase.rpc('exec_sql', { sql: `
+      const { Pool: _Pool } = require('pg');
+      const _initPool = new _Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
+      await _initPool.query(`
         CREATE TABLE IF NOT EXISTS call_sessions (
           call_id VARCHAR(100) PRIMARY KEY,
           offer TEXT, answer TEXT,
@@ -5646,8 +5614,78 @@ if (require.main === module) {
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
-      `}).catch(() => {});
-    } catch {}
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          endpoint TEXT NOT NULL,
+          p256dh TEXT,
+          auth TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(user_id, endpoint)
+        );
+        CREATE TABLE IF NOT EXISTS spaces (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          description TEXT,
+          type VARCHAR(20) DEFAULT 'channel',
+          emoji VARCHAR(10),
+          cover TEXT,
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS space_follows (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          space_id UUID REFERENCES spaces(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(space_id, user_id)
+        );
+        CREATE TABLE IF NOT EXISTS space_posts (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          space_id UUID REFERENCES spaces(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          text TEXT,
+          image_url TEXT,
+          likes INTEGER DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS space_post_likes (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          post_id UUID REFERENCES space_posts(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE(post_id, user_id)
+        );
+        CREATE TABLE IF NOT EXISTS space_post_comments (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          post_id UUID REFERENCES space_posts(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          text TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS stories (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+          media JSONB DEFAULT '[]',
+          type VARCHAR(20) DEFAULT 'user',
+          views JSONB DEFAULT '[]',
+          reactions JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours'
+        );
+        CREATE TABLE IF NOT EXISTS group_stories (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          group_id TEXT NOT NULL,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          media JSONB DEFAULT '[]',
+          views JSONB DEFAULT '[]',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours'
+        );
+      `);
+      await _initPool.end().catch(() => {});
+      console.log('[DB] Tablas verificadas/creadas OK');
+    } catch(initErr) {
+      console.error('[DB] Error creando tablas:', initErr.message);
+    }
   });
   updateUserVersions();
 }
