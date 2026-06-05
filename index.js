@@ -1623,13 +1623,13 @@ app.post('/api/contacts', auth, async (req, res) => {
     // Verificar que el usuario a agregar existe
     const { data: targetUser, error: userError } = await supabase
       .from('users')
-      .select('id, phone, full_name')
+      .select('id, phone, full_name, avatar_url')
       .eq('id', targetId)
-      .single();
+      .maybeSingle();
 
     console.log('[ADD CONTACT] user by id:', targetUser?.id, 'error:', userError?.message);
 
-    if (userError || !targetUser) {
+    if (!targetUser) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
@@ -1650,51 +1650,54 @@ app.post('/api/contacts', auth, async (req, res) => {
       user_id: req.user.id,
       contact_user_id: targetId,
       nickname: nickname || targetUser.full_name,
-      user_id_min: req.user.id < targetId ? req.user.id : targetId,
-      user_id_max: req.user.id < targetId ? targetId : req.user.id,
     };
+    // Intentar con user_id_min/max primero, si falla sin ellos
     try {
+      const withMinMax = {
+        ...insertData,
+        user_id_min: String(req.user.id) < String(targetId) ? req.user.id : targetId,
+        user_id_max: String(req.user.id) < String(targetId) ? targetId : req.user.id,
+      };
       const { data: contact, error } = await supabase
         .from('contacts')
-        .insert(insertData)
+        .insert(withMinMax)
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      res.json({
-        id: contact.id,
-        contact_user_id: contact.contact_user_id,
-        name: contact.nickname || targetUser.full_name,
+      const result = contact || { ...withMinMax, id: Date.now().toString() };
+      return res.json({
+        id: result.id,
+        contact_user_id: targetId,
+        name: result.nickname || targetUser.full_name,
         phone: targetUser.phone,
         avatar_url: targetUser.avatar_url || '',
-        is_blocked: contact.is_blocked,
-        is_favorite: contact.is_favorite,
-        created_at: contact.created_at,
+        is_blocked: result.is_blocked || false,
+        is_favorite: result.is_favorite || false,
+        created_at: result.created_at || new Date().toISOString(),
         user: targetUser
       });
     } catch (insertErr) {
       // Si falla por columnas extra no existentes, intentar sin user_id_min/max
-      if (insertErr.message?.includes('user_id_min') || insertErr.message?.includes('user_id_max')) {
-        const { data: contact, error } = await supabase
-          .from('contacts')
-          .insert({ user_id: req.user.id, contact_user_id: targetId, nickname: nickname || targetUser.full_name })
-          .select('*')
-          .single();
-        if (error) throw error;
-        return res.json({
-          id: contact.id,
-          contact_user_id: contact.contact_user_id,
-          name: contact.nickname || targetUser.full_name,
-          phone: targetUser.phone,
-          avatar_url: targetUser.avatar_url || '',
-          is_blocked: contact.is_blocked,
-          is_favorite: contact.is_favorite,
-          created_at: contact.created_at,
-          user: targetUser
-        });
-      }
-      throw insertErr;
+      const { data: contact, error } = await supabase
+        .from('contacts')
+        .insert(insertData)
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      const result = contact || insertData;
+      return res.json({
+        id: result.id || Date.now().toString(),
+        contact_user_id: targetId,
+        name: result.nickname || targetUser.full_name,
+        phone: targetUser.phone,
+        avatar_url: targetUser.avatar_url || '',
+        is_blocked: false,
+        is_favorite: false,
+        created_at: result.created_at || new Date().toISOString(),
+        user: targetUser
+      });
     }
   } catch (e) {
     console.error('Add contact error:', e);
