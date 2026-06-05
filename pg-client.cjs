@@ -132,6 +132,56 @@ class QueryBuilder {
     return this;
   }
 
+  is(col, val) {
+    if (val === null || val === undefined) {
+      this._conditions.push(`"${col}" IS NULL`);
+    } else if (val === true) {
+      this._conditions.push(`"${col}" IS TRUE`);
+    } else if (val === false) {
+      this._conditions.push(`"${col}" IS FALSE`);
+    } else {
+      this._conditions.push(`"${col}" = $${this._paramIdx++}`);
+      this._params.push(val);
+    }
+    return this;
+  }
+
+  lt(col, val) {
+    this._conditions.push(`"${col}" < $${this._paramIdx++}`);
+    this._params.push(val);
+    return this;
+  }
+
+  lte(col, val) {
+    this._conditions.push(`"${col}" <= $${this._paramIdx++}`);
+    this._params.push(val);
+    return this;
+  }
+
+  gt(col, val) {
+    this._conditions.push(`"${col}" > $${this._paramIdx++}`);
+    this._params.push(val);
+    return this;
+  }
+
+  gte(col, val) {
+    this._conditions.push(`"${col}" >= $${this._paramIdx++}`);
+    this._params.push(val);
+    return this;
+  }
+
+  ilike(col, pattern) {
+    this._conditions.push(`"${col}" ILIKE $${this._paramIdx++}`);
+    this._params.push(pattern);
+    return this;
+  }
+
+  contains(col, val) {
+    this._conditions.push(`"${col}" @> $${this._paramIdx++}`);
+    this._params.push(JSON.stringify(val));
+    return this;
+  }
+
   or(filterStr) {
     // Parse simple 'col.eq.val,col2.eq.val2' format
     const parts = filterStr.split(',').map(p => p.trim());
