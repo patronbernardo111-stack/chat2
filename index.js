@@ -5666,7 +5666,18 @@ if (require.main === module) {
           expires_at TIMESTAMPTZ DEFAULT NOW() + INTERVAL '24 hours'
         );
       `);
-      await Promise.resolve(); // globalPool se mantiene abierto
+      // Auto-reparar chat_participants: reinsertar creadores que faltan
+      await pool.query(`
+        INSERT INTO chat_participants (chat_id, user_id)
+        SELECT id, created_by
+        FROM chats
+        WHERE created_by IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM chat_participants cp
+            WHERE cp.chat_id = chats.id AND cp.user_id = chats.created_by
+          )
+        ON CONFLICT (chat_id, user_id) DO NOTHING
+      `).catch(e => console.warn('[DB] Auto-repair chat_participants:', e.message));
       console.log('[DB] Tablas verificadas/creadas OK');
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
