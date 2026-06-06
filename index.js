@@ -906,7 +906,20 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
       .eq('user_id', req.user.id)
       .maybeSingle();
 
-    if (!part) return res.status(403).json({ message: 'No tienes acceso a este chat' });
+    if (!part) {
+      // Auto-reparar: si el usuario es el creador del chat, re-insertarlo como participante
+      const { data: chatInfo } = await supabase
+        .from('chats').select('id, created_by').eq('id', chatId).maybeSingle();
+      if (chatInfo && String(chatInfo.created_by) === String(req.user.id)) {
+        await supabase.from('chat_participants').upsert(
+          { chat_id: chatId, user_id: req.user.id },
+          { onConflict: 'chat_id,user_id', ignoreDuplicates: true }
+        );
+        console.log('[AUTO-REPAIR] Re-insertado participante', req.user.id, 'en chat', chatId);
+      } else {
+        return res.status(403).json({ message: 'No tienes acceso a este chat' });
+      }
+    }
 
     const { data: messages } = await supabase
       .from('messages')
@@ -940,7 +953,20 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
     // Verificar acceso
     const { data: part } = await supabase
       .from('chat_participants').select('chat_id').eq('chat_id', chatId).eq('user_id', req.user.id).maybeSingle();
-    if (!part) return res.status(403).json({ message: 'Sin acceso' });
+    if (!part) {
+      // Auto-reparar: si el usuario es el creador del chat, re-insertarlo
+      const { data: chatInfo } = await supabase
+        .from('chats').select('id, created_by').eq('id', chatId).maybeSingle();
+      if (chatInfo && String(chatInfo.created_by) === String(req.user.id)) {
+        await supabase.from('chat_participants').upsert(
+          { chat_id: chatId, user_id: req.user.id },
+          { onConflict: 'chat_id,user_id', ignoreDuplicates: true }
+        );
+        console.log('[AUTO-REPAIR] Re-insertado participante en POST msg', req.user.id, chatId);
+      } else {
+        return res.status(403).json({ message: 'Sin acceso' });
+      }
+    }
 
     const { data: message, error } = await supabase
       .from('messages')
