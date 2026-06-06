@@ -898,7 +898,7 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
   try {
     const { chatId } = req.params;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = parseInt(req.query.limit) || 200;
     const from = (page - 1) * limit;
 
     // Verificar que el usuario pertenece al chat
