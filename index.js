@@ -898,44 +898,36 @@ app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
     const limit = parseInt(req.query.limit) || 200;
     const from = (page - 1) * limit;
 
-    // Verificar que el usuario pertenece al chat
-    const { data: part } = await supabase
-      .from('chat_participants')
-      .select('chat_id')
-      .eq('chat_id', chatId)
-      .eq('user_id', req.user.id)
-      .maybeSingle();
+    const pool = globalPool;
+    if (!pool) return res.status(503).json({ message: 'DB no disponible' });
 
-    if (!part) {
-      // Auto-reparar: si el usuario es el creador del chat, re-insertarlo como participante
-      const { data: chatInfo } = await supabase
-        .from('chats').select('id, created_by').eq('id', chatId).maybeSingle();
-      if (chatInfo && String(chatInfo.created_by) === String(req.user.id)) {
-        await supabase.from('chat_participants').upsert(
-          { chat_id: chatId, user_id: req.user.id },
-          { onConflict: 'chat_id,user_id', ignoreDuplicates: true }
-        );
-        console.log('[AUTO-REPAIR] Re-insertado participante', req.user.id, 'en chat', chatId);
-      } else {
-        return res.status(403).json({ message: 'No tienes acceso a este chat' });
-      }
+    // Verificar que el usuario pertenece al chat (Neon)
+    const partRes = await pool.query(
+      `SELECT chat_id FROM chat_participants WHERE chat_id = $1 AND user_id = $2 LIMIT 1`,
+      [chatId, req.user.id]
+    );
+    if (partRes.rows.length === 0) {
+      return res.status(403).json({ message: 'No tienes acceso a este chat' });
     }
 
-    const { data: messages } = await supabase
-      .from('messages')
-      .select('id, text, type, created_at, sender_id, status, reply_to, file_url')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: false })
-      .range(from, from + limit - 1);
+    // Obtener mensajes (Neon)
+    const msgsRes = await pool.query(
+      `SELECT id, text, type, created_at, sender_id, status, reply_to, file_url
+       FROM messages
+       WHERE chat_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [chatId, limit, from]
+    );
 
-    // Filtrar mensajes que el usuario elimin? para s? mismo
-    const { data: deletions } = await supabase
-      .from('message_deletions')
-      .select('message_id')
-      .eq('user_id', req.user.id);
+    // Filtrar mensajes eliminados para este usuario
+    const delRes = await pool.query(
+      `SELECT message_id FROM message_deletions WHERE user_id = $1`,
+      [req.user.id]
+    ).catch(() => ({ rows: [] }));
 
-    const deletedIds = new Set((deletions || []).map((d) => d.message_id));
-    const filtered = (messages || []).filter(m => !deletedIds.has(m.id));
+    const deletedIds = new Set(delRes.rows.map(d => d.message_id));
+    const filtered = msgsRes.rows.filter(m => !deletedIds.has(m.id));
 
     res.json(filtered.reverse());
   } catch (e) {
@@ -950,53 +942,44 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
     const { text, type = 'text', reply_to, file_url } = req.body;
     if (!text && !file_url) return res.status(400).json({ message: 'Texto o archivo requerido' });
 
-    // Verificar acceso
-    const { data: part } = await supabase
-      .from('chat_participants').select('chat_id').eq('chat_id', chatId).eq('user_id', req.user.id).maybeSingle();
-    if (!part) {
-      // Auto-reparar: si el usuario es el creador del chat, re-insertarlo
-      const { data: chatInfo } = await supabase
-        .from('chats').select('id, created_by').eq('id', chatId).maybeSingle();
-      if (chatInfo && String(chatInfo.created_by) === String(req.user.id)) {
-        await supabase.from('chat_participants').upsert(
-          { chat_id: chatId, user_id: req.user.id },
-          { onConflict: 'chat_id,user_id', ignoreDuplicates: true }
-        );
-        console.log('[AUTO-REPAIR] Re-insertado participante en POST msg', req.user.id, chatId);
-      } else {
-        return res.status(403).json({ message: 'Sin acceso' });
-      }
-    }
+    const pool = globalPool;
+    if (!pool) return res.status(503).json({ message: 'DB no disponible' });
 
-    const { data: message, error } = await supabase
-      .from('messages')
-      .insert({ chat_id: chatId, sender_id: req.user.id, text: text || null, type, reply_to: reply_to || null, file_url: file_url || null, status: 'sent' })
-      .select('id, text, type, created_at, sender_id, status, file_url')
-      .single();
+    // Verificar acceso (Neon)
+    const partRes = await pool.query(
+      `SELECT chat_id FROM chat_participants WHERE chat_id = $1 AND user_id = $2 LIMIT 1`,
+      [chatId, req.user.id]
+    );
+    if (partRes.rows.length === 0) return res.status(403).json({ message: 'Sin acceso' });
 
-    if (error) throw error;
+    // Insertar mensaje (Neon)
+    const msgRes = await pool.query(
+      `INSERT INTO messages (chat_id, sender_id, text, type, reply_to, file_url, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'sent', NOW())
+       RETURNING id, text, type, created_at, sender_id, status, file_url`,
+      [chatId, req.user.id, text || null, type, reply_to || null, file_url || null]
+    );
+    const message = msgRes.rows[0];
 
-    await supabase.from('chats').update({ updated_at: new Date().toISOString() }).eq('id', chatId);
+    // Actualizar updated_at del chat (Neon)
+    await pool.query(`UPDATE chats SET updated_at = NOW() WHERE id = $1`, [chatId]);
 
-    // Emitir evento en tiempo real a todos los participantes del chat
+    // Emitir SSE y Web Push a participantes
     try {
-      const { data: parts } = await supabase
-        .from('chat_participants')
-        .select('user_id')
-        .eq('chat_id', chatId);
-      const targetUsers = (parts || []).map((p) => p.user_id);
+      const partsRes = await pool.query(
+        `SELECT user_id FROM chat_participants WHERE chat_id = $1`,
+        [chatId]
+      );
+      const targetUsers = partsRes.rows.map(p => p.user_id);
       emitToUsers(targetUsers, { type: 'new_message', chatId, message });
       emitToUsers(targetUsers, { type: 'chat_updated', chatId, ts: Date.now() });
 
-      // Enviar Web Push a usuarios que no son el remitente
       const otherUsers = targetUsers.filter(uid => String(uid) !== String(req.user.id));
-      // Obtener nombre del remitente
-      const { data: sender } = await supabase
-        .from('users').select('full_name').eq('id', req.user.id).maybeSingle();
-      const senderName = sender?.full_name || 'Alguien';
+      const senderRes = await pool.query(`SELECT full_name FROM users WHERE id = $1`, [req.user.id]);
+      const senderName = senderRes.rows[0]?.full_name || 'Alguien';
       const pushPayload = {
         title: senderName,
-        body: message.type === 'text' ? (message.text || 'Nuevo mensaje') : '?? Archivo adjunto',
+        body: message.type === 'text' ? (message.text || 'Nuevo mensaje') : '📎 Archivo adjunto',
         icon: '/favicon.svg',
         tag: `chat-${chatId}`,
         url: '/',
