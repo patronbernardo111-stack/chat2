@@ -974,6 +974,12 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
       emitToUsers(targetUsers, { type: 'new_message', chatId, message });
       emitToUsers(targetUsers, { type: 'chat_updated', chatId, ts: Date.now() });
 
+      // Notificar también por WebSocket para entrega instantánea
+      const wsModule = req.app.get('ws');
+      if (wsModule?.notifyNewMessage) {
+        wsModule.notifyNewMessage(chatId, message, req.user.id);
+      }
+
       const otherUsers = targetUsers.filter(uid => String(uid) !== String(req.user.id));
       const senderRes = await pool.query(`SELECT full_name FROM users WHERE id = $1`, [req.user.id]);
       const senderName = senderRes.rows[0]?.full_name || 'Alguien';
