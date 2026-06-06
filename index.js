@@ -884,9 +884,6 @@ app.get('/api/chats', auth, async (req, res) => {
       created_by: chat.created_by || null, participants: partsByChat[chat.id] || [],
       last_message: lastMsg[chat.id] || null, updated_at: chat.updated_at, unread_count: myUnread[chat.id] || 0,
     })));
-  } catch(poolErr) {
-    throw poolErr;
-  }
   } catch (e) {
     console.error('Get chats error:', e.message);
     res.json([]);
