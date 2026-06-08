@@ -5597,6 +5597,24 @@ if (require.main === module) {
     console.warn('[Official] No se pudo montar:', e.message);
   }
 
+  // ── Wallet Extended Routes ──────────────────────────────────────────────────
+  try {
+    const mountWallet = require('./routes/wallet_extended');
+    mountWallet(app, auth, globalPool, supabase);
+    console.log('[Wallet] ✅ Rutas de wallet extendidas montadas');
+  } catch (e) {
+    console.warn('[Wallet] No se pudo montar:', e.message);
+  }
+
+  // ── Merchant Routes ─────────────────────────────────────────────────────────
+  try {
+    const mountMerchant = require('./routes/merchant');
+    mountMerchant(app, auth, globalPool, supabase);
+    console.log('[Merchant] ✅ Rutas de merchant montadas');
+  } catch (e) {
+    console.warn('[Merchant] No se pudo montar:', e.message);
+  }
+
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
@@ -5804,6 +5822,46 @@ if (require.main === module) {
       `).catch(e => console.warn('[DB] Role permissions seed:', e.message));
 
       console.log('[DB] ✅ Tablas de roles verificadas/creadas');
+
+      // Crear tablas de merchant, wallet_transactions
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS merchant_products (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          merchant_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, description TEXT, price NUMERIC(12,2) NOT NULL,
+          currency TEXT DEFAULT 'XAF', category TEXT, stock INT DEFAULT 0,
+          images JSONB DEFAULT '[]', status TEXT DEFAULT 'active',
+          created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS merchant_orders (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          merchant_id UUID NOT NULL REFERENCES users(id),
+          customer_id UUID REFERENCES users(id),
+          items JSONB NOT NULL DEFAULT '[]', total_amount NUMERIC(12,2) DEFAULT 0,
+          currency TEXT DEFAULT 'XAF', status TEXT DEFAULT 'pending',
+          delivery_addr TEXT, notes TEXT, chat_id UUID,
+          created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS merchant_payouts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          merchant_id UUID NOT NULL REFERENCES users(id),
+          amount NUMERIC(12,2) NOT NULL, currency TEXT DEFAULT 'XAF',
+          bank_account TEXT, notes TEXT, status TEXT DEFAULT 'pending',
+          processed_by UUID REFERENCES users(id), processed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS wallet_transactions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          type TEXT NOT NULL, amount NUMERIC(12,2) NOT NULL,
+          description TEXT, status TEXT DEFAULT 'completed',
+          metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_merchant_products_merchant ON merchant_products(merchant_id, status);
+        CREATE INDEX IF NOT EXISTS idx_merchant_orders_merchant ON merchant_orders(merchant_id, status);
+        CREATE INDEX IF NOT EXISTS idx_wallet_tx_user ON wallet_transactions(user_id, created_at DESC);
+      `).catch(e => console.warn('[DB] Merchant tables:', e.message));
+      console.log('[DB] ✅ Tablas de merchant/wallet verificadas/creadas');
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
     }
