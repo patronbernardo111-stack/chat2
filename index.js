@@ -5626,6 +5626,15 @@ if (require.main === module) {
     console.warn('[Services] No se pudo montar:', e.message);
   }
 
+  // ── Provider Dashboard (Director + Operator) ────────────────────────────────
+  try {
+    const mountProvider = require('./routes/provider_dashboard');
+    mountProvider(app, auth, globalPool);
+    console.log('[Provider] ✅ Dashboard de proveedor montado');
+  } catch (e) {
+    console.warn('[Provider] No se pudo montar:', e.message);
+  }
+
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
@@ -5905,6 +5914,24 @@ if (require.main === module) {
         CREATE INDEX IF NOT EXISTS idx_svc_providers_key ON service_providers(provider_key);
       `).catch(e => console.warn('[DB] Service tables:', e.message));
       console.log('[DB] ✅ Tablas de servicios verificadas/creadas');
+
+      // Tablas de staff de proveedores y auto-process
+      await pool.query(`
+        ALTER TABLE service_providers ADD COLUMN IF NOT EXISTS auto_process BOOLEAN DEFAULT false;
+        ALTER TABLE service_providers ADD COLUMN IF NOT EXISTS commission_rate NUMERIC(5,4) DEFAULT 0.015;
+        ALTER TABLE service_providers ADD COLUMN IF NOT EXISTS description TEXT;
+        CREATE TABLE IF NOT EXISTS provider_staff (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID NOT NULL REFERENCES service_providers(id) ON DELETE CASCADE,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          role TEXT NOT NULL DEFAULT 'operator' CHECK (role IN ('owner','director','operator')),
+          is_active BOOLEAN DEFAULT true,
+          created_by UUID REFERENCES users(id),
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(provider_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_provider_staff_user ON provider_staff(user_id, is_active);
+      `).catch(e => console.warn('[DB] Provider staff tables:', e.message));
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
     }
