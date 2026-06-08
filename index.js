@@ -5578,6 +5578,25 @@ if (require.main === module) {
     console.warn('[AdminRoutes] No se pudo montar:', e.message);
   }
 
+  // ── Roles & Permissions Routes ──────────────────────────────────────────────
+  try {
+    const mountRoles = require('./routes/roles');
+    app.set('globalPool', globalPool);
+    mountRoles(app, auth, globalPool);
+    console.log('[Roles] ✅ Rutas de roles montadas');
+  } catch (e) {
+    console.warn('[Roles] No se pudo montar:', e.message);
+  }
+
+  // ── Official Account Routes ─────────────────────────────────────────────────
+  try {
+    const mountOfficial = require('./routes/official');
+    mountOfficial(app, auth, globalPool);
+    console.log('[Official] ✅ Rutas de cuentas oficiales montadas');
+  } catch (e) {
+    console.warn('[Official] No se pudo montar:', e.message);
+  }
+
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
@@ -5684,7 +5703,107 @@ if (require.main === module) {
           )
         ON CONFLICT (chat_id, user_id) DO NOTHING
       `).catch(e => console.warn('[DB] Auto-repair chat_participants:', e.message));
-      console.log('[DB] Tablas verificadas/creadas OK');
+
+      // Crear tablas de roles y permisos
+      await pool.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+            CREATE TYPE user_role AS ENUM ('user','official','business','merchant','moderator','admin','super_admin');
+          END IF;
+        END $$;
+
+        CREATE TABLE IF NOT EXISTS user_roles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          role user_role NOT NULL DEFAULT 'user',
+          granted_by UUID REFERENCES users(id),
+          granted_at TIMESTAMPTZ DEFAULT NOW(),
+          expires_at TIMESTAMPTZ,
+          is_active BOOLEAN DEFAULT true,
+          metadata JSONB DEFAULT '{}',
+          UNIQUE(user_id, role)
+        );
+
+        CREATE TABLE IF NOT EXISTS permissions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT UNIQUE NOT NULL,
+          description TEXT,
+          module TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS role_permissions (
+          role user_role NOT NULL,
+          permission TEXT NOT NULL REFERENCES permissions(name) ON DELETE CASCADE,
+          PRIMARY KEY (role, permission)
+        );
+
+        CREATE TABLE IF NOT EXISTS user_permissions (
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          permission TEXT NOT NULL REFERENCES permissions(name) ON DELETE CASCADE,
+          granted BOOLEAN DEFAULT true,
+          granted_by UUID REFERENCES users(id),
+          granted_at TIMESTAMPTZ DEFAULT NOW(),
+          PRIMARY KEY (user_id, permission)
+        );
+
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'user';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_by UUID REFERENCES users(id);
+
+        CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_roles_active ON user_roles(user_id, is_active);
+      `).catch(e => console.warn('[DB] Roles tables:', e.message));
+
+      // Insertar permisos base si no existen
+      await pool.query(`
+        INSERT INTO permissions (name, description, module) VALUES
+          ('chat.send','Enviar mensajes','chat'),
+          ('chat.broadcast','Enviar broadcast','chat'),
+          ('chat.delete_any','Eliminar mensajes de otros','chat'),
+          ('chat.moderate','Moderar chats','chat'),
+          ('wallet.view','Ver balance','wallet'),
+          ('wallet.transfer','Transferir dinero','wallet'),
+          ('wallet.topup','Recargar saldo','wallet'),
+          ('wallet.withdraw','Retirar saldo','wallet'),
+          ('wallet.admin','Gestionar wallets','wallet'),
+          ('business.view_stats','Ver estadísticas','business'),
+          ('business.manage','Gestionar cuenta empresarial','business'),
+          ('business.verified_badge','Badge verificado','business'),
+          ('merchant.products','Gestionar productos','merchant'),
+          ('merchant.orders','Gestionar pedidos','merchant'),
+          ('merchant.analytics','Ver analytics','merchant'),
+          ('merchant.payouts','Solicitar pagos','merchant'),
+          ('admin.users','Gestionar usuarios','admin'),
+          ('admin.roles','Asignar roles','admin'),
+          ('admin.content','Moderar contenido','admin'),
+          ('admin.system','Configuración del sistema','admin')
+        ON CONFLICT (name) DO NOTHING;
+
+        INSERT INTO role_permissions (role, permission) VALUES
+          ('user','chat.send'),('user','wallet.view'),('user','wallet.transfer'),('user','wallet.topup'),
+          ('official','chat.send'),('official','chat.broadcast'),('official','wallet.view'),
+          ('official','wallet.transfer'),('official','wallet.topup'),('official','business.verified_badge'),('official','business.view_stats'),
+          ('business','chat.send'),('business','chat.broadcast'),('business','wallet.view'),
+          ('business','wallet.transfer'),('business','wallet.topup'),('business','wallet.withdraw'),
+          ('business','business.verified_badge'),('business','business.view_stats'),('business','business.manage'),
+          ('merchant','chat.send'),('merchant','chat.broadcast'),('merchant','wallet.view'),
+          ('merchant','wallet.transfer'),('merchant','wallet.topup'),('merchant','wallet.withdraw'),
+          ('merchant','business.verified_badge'),('merchant','business.view_stats'),('merchant','business.manage'),
+          ('merchant','merchant.products'),('merchant','merchant.orders'),('merchant','merchant.analytics'),('merchant','merchant.payouts'),
+          ('moderator','chat.send'),('moderator','chat.moderate'),('moderator','chat.delete_any'),('moderator','admin.content'),
+          ('admin','chat.send'),('admin','chat.broadcast'),('admin','chat.moderate'),('admin','chat.delete_any'),
+          ('admin','wallet.view'),('admin','wallet.admin'),('admin','business.view_stats'),('admin','business.manage'),
+          ('admin','admin.users'),('admin','admin.roles'),('admin','admin.content'),
+          ('super_admin','chat.send'),('super_admin','chat.broadcast'),('super_admin','chat.moderate'),('super_admin','chat.delete_any'),
+          ('super_admin','wallet.view'),('super_admin','wallet.admin'),('super_admin','wallet.withdraw'),
+          ('super_admin','business.view_stats'),('super_admin','business.manage'),('super_admin','merchant.analytics'),
+          ('super_admin','admin.users'),('super_admin','admin.roles'),('super_admin','admin.content'),('super_admin','admin.system')
+        ON CONFLICT DO NOTHING;
+      `).catch(e => console.warn('[DB] Role permissions seed:', e.message));
+
+      console.log('[DB] ✅ Tablas de roles verificadas/creadas');
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
     }
