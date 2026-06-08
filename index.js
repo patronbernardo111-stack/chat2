@@ -5635,6 +5635,15 @@ if (require.main === module) {
     console.warn('[Provider] No se pudo montar:', e.message);
   }
 
+  // ── Company Extended (Organigrama, Regiones, Comunicados) ───────────────────
+  try {
+    const mountCompany = require('./routes/company');
+    mountCompany(app, auth, globalPool);
+    console.log('[Company] ✅ Rutas de empresa extendida montadas');
+  } catch (e) {
+    console.warn('[Company] No se pudo montar:', e.message);
+  }
+
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
@@ -5882,6 +5891,59 @@ if (require.main === module) {
         CREATE INDEX IF NOT EXISTS idx_wallet_tx_user ON wallet_transactions(user_id, created_at DESC);
       `).catch(e => console.warn('[DB] Merchant tables:', e.message));
       console.log('[DB] ✅ Tablas de merchant/wallet verificadas/creadas');
+
+      // Tablas empresa extendida (organigrama, regiones, comunicados)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS company_regions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID REFERENCES service_providers(id) ON DELETE CASCADE,
+          name TEXT NOT NULL, description TEXT, color TEXT DEFAULT '#1485EE',
+          cover_url TEXT, is_active BOOLEAN DEFAULT true, sort_order INT DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS company_org_chart (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID REFERENCES service_providers(id) ON DELETE CASCADE,
+          region_id UUID REFERENCES company_regions(id) ON DELETE SET NULL,
+          parent_id UUID REFERENCES company_org_chart(id) ON DELETE SET NULL,
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          name TEXT NOT NULL, title TEXT NOT NULL, phone TEXT, email TEXT,
+          photo_url TEXT, is_active BOOLEAN DEFAULT true, sort_order INT DEFAULT 0,
+          created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS company_stats (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID REFERENCES service_providers(id) ON DELETE CASCADE,
+          region_id UUID REFERENCES company_regions(id) ON DELETE SET NULL,
+          stat_type TEXT NOT NULL, stat_label TEXT NOT NULL,
+          stat_value NUMERIC(14,2) DEFAULT 0, unit TEXT DEFAULT '', period TEXT,
+          updated_at TIMESTAMPTZ DEFAULT NOW(), created_by UUID REFERENCES users(id)
+        );
+        CREATE TABLE IF NOT EXISTS company_staff (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID REFERENCES service_providers(id) ON DELETE CASCADE,
+          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          role_title TEXT DEFAULT 'Empleado',
+          region_id UUID REFERENCES company_regions(id) ON DELETE SET NULL,
+          is_active BOOLEAN DEFAULT true, added_by UUID REFERENCES users(id),
+          added_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(provider_id, user_id)
+        );
+        CREATE TABLE IF NOT EXISTS company_announcements (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          provider_id UUID REFERENCES service_providers(id) ON DELETE CASCADE,
+          author_id UUID REFERENCES users(id),
+          title TEXT NOT NULL, body TEXT NOT NULL,
+          category TEXT DEFAULT 'general',
+          region_id UUID REFERENCES company_regions(id) ON DELETE SET NULL,
+          is_published BOOLEAN DEFAULT false, published_at TIMESTAMPTZ,
+          expires_at TIMESTAMPTZ, cover_url TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_company_ann_published ON company_announcements(is_published, published_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_company_staff_prov ON company_staff(provider_id, is_active);
+      `).catch(e => console.warn('[DB] Company tables:', e.message));
+      console.log('[DB] ✅ Tablas empresa extendida verificadas');
 
       // Tablas de pedidos de servicios (recarga, internet, canales, etc.)
       await pool.query(`
