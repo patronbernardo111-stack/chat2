@@ -3,8 +3,11 @@
 -- Ejecutar en: Neon Dashboard > SQL Editor
 -- ══════════════════════════════════════════════════════════════════
 
--- Tipos de rol disponibles
-CREATE TYPE user_role AS ENUM ('user', 'official', 'business', 'merchant', 'moderator', 'admin', 'super_admin');
+-- Tipos de rol disponibles (compatible con Neon/PostgreSQL)
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('user', 'official', 'business', 'merchant', 'moderator', 'admin', 'super_admin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Tabla de roles por usuario
 CREATE TABLE IF NOT EXISTS user_roles (

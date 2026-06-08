@@ -5615,6 +5615,17 @@ if (require.main === module) {
     console.warn('[Merchant] No se pudo montar:', e.message);
   }
 
+  // ── Services (Recarga, Internet, Canales, etc.) ─────────────────────────────
+  try {
+    // Exponer emitToUsers para que las rutas puedan notificar por SSE
+    app.set('emitToUsers', emitToUsers);
+    const mountServices = require('./routes/services');
+    mountServices(app, auth, globalPool);
+    console.log('[Services] ✅ Rutas de servicios montadas');
+  } catch (e) {
+    console.warn('[Services] No se pudo montar:', e.message);
+  }
+
   httpServer.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + WebSocket en http://localhost:${PORT}`);
     console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
@@ -5862,6 +5873,38 @@ if (require.main === module) {
         CREATE INDEX IF NOT EXISTS idx_wallet_tx_user ON wallet_transactions(user_id, created_at DESC);
       `).catch(e => console.warn('[DB] Merchant tables:', e.message));
       console.log('[DB] ✅ Tablas de merchant/wallet verificadas/creadas');
+
+      // Tablas de pedidos de servicios (recarga, internet, canales, etc.)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS service_orders (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          provider_id TEXT NOT NULL,
+          provider_name TEXT NOT NULL,
+          provider_color TEXT DEFAULT '#007AFF',
+          category TEXT NOT NULL,
+          package_id TEXT, package_name TEXT,
+          amount NUMERIC(12,2) NOT NULL, currency TEXT DEFAULT 'XAF',
+          phone_target TEXT, notes TEXT, metadata JSONB DEFAULT '{}',
+          status TEXT DEFAULT 'pending',
+          processed_by UUID REFERENCES users(id), processed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS service_providers (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+          provider_key TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL, category TEXT NOT NULL,
+          color TEXT DEFAULT '#007AFF', logo_url TEXT,
+          api_endpoint TEXT, api_key_hash TEXT,
+          has_api BOOLEAN DEFAULT false, is_active BOOLEAN DEFAULT true,
+          metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_svc_orders_user ON service_orders(user_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_svc_orders_provider ON service_orders(provider_id, status);
+        CREATE INDEX IF NOT EXISTS idx_svc_providers_key ON service_providers(provider_key);
+      `).catch(e => console.warn('[DB] Service tables:', e.message));
+      console.log('[DB] ✅ Tablas de servicios verificadas/creadas');
     } catch(initErr) {
       console.error('[DB] Error creando tablas:', initErr.message);
     }
