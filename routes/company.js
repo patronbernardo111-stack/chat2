@@ -233,7 +233,41 @@ module.exports = (app, auth, globalPool) => {
   // COMUNICADOS PÚBLICOS
   // ════════════════════════════════════════════════════════════════
 
-  // Públicos: cualquier usuario puede ver los comunicados publicados de un proveedor
+  // Endpoint genérico público: comunicados de todos los proveedores de electricidad
+  // usado en el FacturasModal del usuario para ver avisos de SEGESA, cortes, etc.
+  app.get('/api/company/public-announcements', async (req, res) => {
+    try {
+      const { category, provider_key } = req.query;
+      let whereExtra = '';
+      const params = [true];
+      if (provider_key) {
+        params.push(provider_key);
+        whereExtra += ` AND sp.provider_key = $${params.length}`;
+      }
+      // Si se pide por categoría (puede ser lista separada por comas)
+      if (category) {
+        const cats = String(category).split(',').map(c => c.trim()).filter(Boolean);
+        params.push(cats);
+        whereExtra += ` AND ca.category = ANY($${params.length})`;
+      }
+      const r = await globalPool.query(
+        `SELECT ca.id, ca.title, ca.body, ca.category, ca.published_at, ca.cover_url, ca.region_id,
+                sp.name as provider_name, sp.provider_key, sp.color as provider_color,
+                cr.name as region_name
+         FROM company_announcements ca
+         JOIN service_providers sp ON sp.id = ca.provider_id
+         LEFT JOIN company_regions cr ON cr.id = ca.region_id
+         WHERE ca.is_published = $1
+           AND (ca.expires_at IS NULL OR ca.expires_at > NOW())
+           ${whereExtra}
+         ORDER BY ca.published_at DESC LIMIT 20`,
+        params
+      );
+      res.json(r.rows);
+    } catch (e) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Públicos por proveedor específico
   app.get('/api/company/:providerKey/announcements', async (req, res) => {
     try {
       const r = await globalPool.query(
