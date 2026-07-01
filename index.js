@@ -3653,10 +3653,32 @@ app.get('/api/noticias/:id', auth, async (req, res) => {
 });
 
 app.post('/api/user/avatar', auth, async (req, res) => {
-  res.json({
-    message: 'Avatar recibido',
-    avatar_url: `https://egchat-api.onrender.com/static/avatars/${req.user.id}-${Date.now()}.jpg`
-  });
+  try {
+    const userId = req.user.id;
+    const body = req.body || {};
+    // Opción 1: URL directa
+    if (body.avatar_url) {
+      await supabase.from('users').update({ avatar_url: body.avatar_url }).eq('id', userId);
+      return res.json({ avatar_url: body.avatar_url });
+    }
+    // Opción 2: base64
+    const b64 = body.avatar_base64 || body.data;
+    if (b64) {
+      const clean = String(b64).replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(clean, 'base64');
+      const fileName = 'avatar_' + userId + '_' + Date.now() + '.jpg';
+      const { error: upErr } = await supabase.storage.from('avatars')
+        .upload(fileName, buffer, { contentType: 'image/jpeg', upsert: true });
+      if (!upErr) {
+        const pub = supabase.storage.from('avatars').getPublicUrl(fileName);
+        const publicUrl = pub.data.publicUrl;
+        await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', userId);
+        return res.json({ avatar_url: publicUrl });
+      }
+    }
+    res.json({ avatar_url: null, message: 'Proporciona avatar_url o avatar_base64' });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+})
 });
 
 app.post('/lia/analyze', auth, async (_req, res) => {
