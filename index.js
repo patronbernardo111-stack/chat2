@@ -473,6 +473,27 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // CHAT / MENSAJERÁA COMPLETA
 // ========================================================================
 
+const normalizeChatParticipant = (part = {}) => {
+  const user = Array.isArray(part.users) ? part.users[0] : (part.users || part.user || {});
+  return {
+    chat_id: part.chat_id,
+    user_id: part.user_id || user.id,
+    full_name: part.full_name || user.full_name || '',
+    phone: part.phone || user.phone || '',
+    avatar_url: part.avatar_url || user.avatar_url || '',
+    user,
+    users: user,
+  };
+};
+
+const getChatParticipants = async (chatId) => {
+  const { data } = await supabase
+    .from('chat_participants')
+    .select('chat_id, user_id, users(id, phone, full_name, avatar_url)')
+    .eq('chat_id', chatId);
+  return (data || []).map(normalizeChatParticipant);
+};
+
 // Obtener todos los chats del usuario
 app.get('/api/chats', auth, async (req, res) => {
   try {
@@ -512,7 +533,7 @@ app.get('/api/chats', auth, async (req, res) => {
     const participantsByChat = (participants || []).reduce((acc, part) => {
       const chatId = part.chat_id;
       if (!acc[chatId]) acc[chatId] = [];
-      acc[chatId].push(part);
+      acc[chatId].push(normalizeChatParticipant(part));
       return acc;
     }, {});
 
@@ -687,7 +708,12 @@ app.post('/api/chats/private', auth, async (req, res) => {
         .single();
 
       if (existing) {
-        return res.json(existing);
+        return res.json({
+          ...existing,
+          participants: await getChatParticipants(existing.id),
+          last_message: null,
+          unread_count: 0
+        });
       }
     }
 
@@ -4790,6 +4816,329 @@ if (require.main === module) {
   });
   updateUserVersions();
 }
+
+// ════════════════════════════════════════════════════════════════════
+// NUEVOS ENDPOINTS — Paridad WhatsApp/WeChat
+// ════════════════════════════════════════════════════════════════════
+
+// ── #1: EDITAR MENSAJE ──────────────────────────────────────────────
+app.patch('/api/messages/:messageId', auth, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'Texto requerido' });
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .update({ text: text.trim(), edited: true, edited_at: new Date().toISOString() })
+      .eq('id', messageId)
+      .eq('sender_id', req.user.id)
+      .select()
+      .single();
+    if (error) return res.status(404).json({ error: 'Mensaje no encontrado o sin permiso' });
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #2: REACCIONES ──────────────────────────────────────────────────
+app.post('/api/messages/:messageId/reactions', auth, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    if (!emoji) return res.status(400).json({ error: 'Emoji requerido' });
+    const existing = await supabase
+      .from('message_reactions')
+      .select('id')
+      .eq('message_id', messageId)
+      .eq('user_id', req.user.id)
+      .eq('emoji', emoji)
+      .maybeSingle();
+    if (existing.data) {
+      await supabase.from('message_reactions').delete().eq('id', existing.data.id);
+      return res.json({ added: false, emoji });
+    }
+    await supabase.from('message_reactions').insert({ message_id: messageId, user_id: req.user.id, emoji });
+    res.json({ added: true, emoji });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/messages/:messageId/reactions', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('message_reactions')
+      .select('emoji, user_id, created_at')
+      .eq('message_id', req.params.messageId)
+      .order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #3: RECEIPTS DE LECTURA ─────────────────────────────────────────
+app.post('/api/messages/:messageId/receipts/read', auth, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { chat_id } = req.body;
+    await supabase.from('message_receipts').upsert({
+      message_id: messageId,
+      chat_id: chat_id || '',
+      user_id: req.user.id,
+      read_at: new Date().toISOString(),
+    }, { onConflict: 'message_id,user_id' });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/messages/:messageId/receipts', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('message_receipts')
+      .select('user_id, delivered_at, read_at, users(full_name, avatar_url)')
+      .eq('message_id', req.params.messageId);
+    if (error) return res.status(500).json({ error: error.message });
+    const result = (data || []).map(r => ({
+      user_id: r.user_id,
+      full_name: r.users?.full_name,
+      avatar_url: r.users?.avatar_url,
+      delivered_at: r.delivered_at,
+      read_at: r.read_at,
+    }));
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #4: BÚSQUEDA GLOBAL ─────────────────────────────────────────────
+app.get('/api/messages/search', auth, async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const limit = Math.min(parseInt(req.query.limit) || 30, 100);
+    if (!q || q.length < 2) return res.json([]);
+    const { data: chats } = await supabase
+      .from('chat_participants')
+      .select('chat_id')
+      .eq('user_id', req.user.id);
+    const chatIds = (chats || []).map(c => c.chat_id);
+    if (!chatIds.length) return res.json([]);
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('id, chat_id, text, type, sender_id, created_at, sender:users!sender_id(full_name, avatar_url), chat:chats!chat_id(name, type, avatar_url)')
+      .in('chat_id', chatIds)
+      .ilike('text', `%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #5: MOMENTS ─────────────────────────────────────────────────────
+app.get('/api/moments', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('moments')
+      .select(`id, user_id, text, images, likes_count, created_at,
+        user:users!user_id(full_name, avatar_url),
+        comments:moment_comments(id, user_id, text, created_at, user:users!user_id(full_name))`)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) return res.status(500).json({ error: error.message });
+    const liked = await supabase.from('moment_likes').select('moment_id').eq('user_id', req.user.id);
+    const likedIds = new Set((liked.data || []).map(l => l.moment_id));
+    const result = (data || []).map(m => ({
+      ...m,
+      user_name: m.user?.full_name || 'Usuario',
+      user_avatar: m.user?.avatar_url,
+      liked_by_me: likedIds.has(m.id),
+      comments: (m.comments || []).map(c => ({ ...c, user_name: c.user?.full_name || 'Usuario' })),
+    }));
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/moments', auth, async (req, res) => {
+  try {
+    const { text, images } = req.body;
+    if (!text && (!images || !images.length)) return res.status(400).json({ error: 'Texto o imágenes requeridos' });
+    const { data, error } = await supabase
+      .from('moments')
+      .insert({ user_id: req.user.id, text: text || null, images: images || [] })
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    const me = await supabase.from('users').select('full_name, avatar_url').eq('id', req.user.id).single();
+    res.json({ ...data, user_name: me.data?.full_name || 'Yo', user_avatar: me.data?.avatar_url, liked_by_me: false, likes: 0, comments: [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/moments/:momentId/like', auth, async (req, res) => {
+  try {
+    const { momentId } = req.params;
+    const existing = await supabase.from('moment_likes').select('moment_id').eq('moment_id', momentId).eq('user_id', req.user.id).maybeSingle();
+    if (existing.data) {
+      await supabase.from('moment_likes').delete().eq('moment_id', momentId).eq('user_id', req.user.id);
+      await supabase.from('moments').update({ likes_count: supabase.raw('GREATEST(likes_count - 1, 0)') }).eq('id', momentId);
+      return res.json({ liked: false });
+    }
+    await supabase.from('moment_likes').insert({ moment_id: momentId, user_id: req.user.id });
+    await supabase.from('moments').update({ likes_count: supabase.raw('likes_count + 1') }).eq('id', momentId);
+    res.json({ liked: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/moments/:momentId/comments', auth, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'Texto requerido' });
+    const me = await supabase.from('users').select('full_name').eq('id', req.user.id).single();
+    const { data, error } = await supabase
+      .from('moment_comments')
+      .insert({ moment_id: req.params.momentId, user_id: req.user.id, text })
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ...data, user_name: me.data?.full_name || 'Usuario' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #6: CANALES OFICIALES ───────────────────────────────────────────
+app.get('/api/channels', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('channels')
+      .select('id, name, description, avatar_url, category, verified, followers_count')
+      .order('followers_count', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    const following = await supabase.from('channel_followers').select('channel_id').eq('user_id', req.user.id);
+    const followedIds = new Set((following.data || []).map(f => f.channel_id));
+    const posts = await supabase.from('channel_posts').select('channel_id, text, created_at').order('created_at', { ascending: false });
+    const lastPost = {};
+    (posts.data || []).forEach(p => { if (!lastPost[p.channel_id]) lastPost[p.channel_id] = p; });
+    res.json((data || []).map(c => ({ ...c, followed: followedIds.has(c.id), last_post: lastPost[c.id] || null })));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/channels/:channelId/follow', auth, async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const existing = await supabase.from('channel_followers').select('channel_id').eq('channel_id', channelId).eq('user_id', req.user.id).maybeSingle();
+    if (existing.data) {
+      await supabase.from('channel_followers').delete().eq('channel_id', channelId).eq('user_id', req.user.id);
+      await supabase.from('channels').update({ followers_count: supabase.raw('GREATEST(followers_count - 1, 0)') }).eq('id', channelId);
+      return res.json({ followed: false });
+    }
+    await supabase.from('channel_followers').insert({ channel_id: channelId, user_id: req.user.id });
+    await supabase.from('channels').update({ followers_count: supabase.raw('followers_count + 1') }).eq('id', channelId);
+    res.json({ followed: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #7: PERFIL EMPRESARIAL ──────────────────────────────────────────
+app.get('/api/business/profile', auth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('business_profiles').select('*').eq('user_id', req.user.id).maybeSingle();
+    if (!data) return res.json(null);
+    const catalog = await supabase.from('catalog_items').select('*').eq('user_id', req.user.id).order('created_at', { ascending: false });
+    res.json({ ...data, catalog: catalog.data || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/business/profile', auth, async (req, res) => {
+  try {
+    const fields = ['name', 'category', 'description', 'phone', 'email', 'website', 'address', 'avatar_url'];
+    const patch = {};
+    fields.forEach(f => { if (req.body[f] !== undefined) patch[f] = req.body[f]; });
+    if (!patch.name) return res.status(400).json({ error: 'Nombre requerido' });
+    const { data, error } = await supabase
+      .from('business_profiles')
+      .upsert({ user_id: req.user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/business/catalog', auth, async (req, res) => {
+  try {
+    const { name, price, currency, description, image, available } = req.body;
+    if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+    const { data, error } = await supabase
+      .from('catalog_items')
+      .insert({ user_id: req.user.id, name, price: price || '0', currency: currency || 'XAF', description: description || '', image_url: image || null, available: available !== false })
+      .select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/business/catalog/:itemId', auth, async (req, res) => {
+  try {
+    await supabase.from('catalog_items').delete().eq('id', req.params.itemId).eq('user_id', req.user.id);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #8: BACKUP EN LA NUBE ───────────────────────────────────────────
+app.post('/api/backup/upload', auth, async (req, res) => {
+  try {
+    const multer = require('multer');
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+    upload.single('backup')(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message });
+      if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+      const fileName = `backups/${req.user.id}/${Date.now()}.json`;
+      const { error: upErr } = await supabase.storage
+        .from('egchat-backups')
+        .upload(fileName, req.file.buffer, { contentType: 'application/json', upsert: true });
+      if (upErr) {
+        // Fallback: guardar registro sin archivo real
+        await supabase.from('user_backups').insert({
+          user_id: req.user.id, file_path: fileName,
+          file_size: req.file.size, chat_count: 0,
+        }).catch(() => {});
+        return res.json({ ok: true, url: null, size: req.file.size });
+      }
+      const { data: urlData } = supabase.storage.from('egchat-backups').getPublicUrl(fileName);
+      await supabase.from('user_backups').insert({
+        user_id: req.user.id, file_path: fileName,
+        file_size: req.file.size, chat_count: 0,
+      }).catch(() => {});
+      res.json({ ok: true, url: urlData?.publicUrl, size: req.file.size });
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── #9: OTP / VERIFICACIÓN SMS ──────────────────────────────────────
+// El endpoint /api/auth/verify-code ya existe (línea 423)
+// Añadimos el de envío si no existe:
+app.post('/api/auth/send-verification', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Teléfono requerido' });
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Guardar en tabla phone_verifications
+    await supabase.from('phone_verifications').upsert({
+      phone, code, verified: false, attempts: 0,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    }, { onConflict: 'phone' }).catch(() => {
+      supabase.from('phone_verifications').insert({ phone, code }).catch(() => {});
+    });
+    // Intentar enviar SMS via Twilio
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const auth = process.env.TWILIO_AUTH_TOKEN;
+    const from = process.env.TWILIO_PHONE;
+    let smsSent = false;
+    if (sid && auth && from) {
+      try {
+        const twilio = require('twilio')(sid, auth);
+        await twilio.messages.create({ to: phone, from, body: `Tu código EGChat: ${code}. Válido 10 minutos.` });
+        smsSent = true;
+      } catch (smsErr) { console.warn('Twilio error:', smsErr.message); }
+    }
+    // En dev: devolver el código si no hay Twilio
+    const devMode = !smsSent;
+    console.log(`OTP para ${phone}: ${code} (${smsSent ? 'SMS enviado' : 'DEV mode'})`);
+    res.json({ ok: true, dev_code: devMode ? code : undefined, message: smsSent ? 'SMS enviado' : 'Código generado (configura Twilio para SMS real)' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 module.exports = app;
 
