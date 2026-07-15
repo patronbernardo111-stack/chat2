@@ -28,10 +28,9 @@ CREATE INDEX IF NOT EXISTS idx_receipts_message_id ON message_receipts(message_i
 CREATE INDEX IF NOT EXISTS idx_receipts_chat_id ON message_receipts(chat_id);
 
 -- ── 3. CAMPO edited EN messages (si no existe) ───────────────────
--- Los mensajes ya existen en la tabla chat_messages.
--- Añadimos columna edited si no existe:
-ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited BOOLEAN DEFAULT FALSE;
-ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+-- La tabla de mensajes se llama "messages" en este proyecto
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited BOOLEAN DEFAULT FALSE;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
 
 -- ── 4. MOMENTS / FEED SOCIAL ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS moments (
@@ -155,8 +154,8 @@ CREATE TABLE IF NOT EXISTS phone_verifications (
 CREATE INDEX IF NOT EXISTS idx_phone_verifications_phone ON phone_verifications(phone);
 
 -- ── 9. Full-text search en mensajes ──────────────────────────────
--- Crear índice de búsqueda full-text en chat_messages
-CREATE INDEX IF NOT EXISTS idx_chat_messages_text_search 
-  ON chat_messages USING gin(to_tsvector('spanish', COALESCE(text, '')));
-CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_id ON chat_messages(chat_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at DESC);
+-- Índice full-text en messages
+CREATE INDEX IF NOT EXISTS idx_messages_text_search 
+  ON messages USING gin(to_tsvector('spanish', COALESCE(text, '')));
+CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);

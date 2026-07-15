@@ -4829,7 +4829,7 @@ app.patch('/api/messages/:messageId', auth, async (req, res) => {
     const { text } = req.body;
     if (!text || !text.trim()) return res.status(400).json({ error: 'Texto requerido' });
     const { data, error } = await supabase
-      .from('chat_messages')
+      .from('messages')
       .update({ text: text.trim(), edited: true, edited_at: new Date().toISOString() })
       .eq('id', messageId)
       .eq('sender_id', req.user.id)
@@ -4920,7 +4920,7 @@ app.get('/api/messages/search', auth, async (req, res) => {
     const chatIds = (chats || []).map(c => c.chat_id);
     if (!chatIds.length) return res.json([]);
     const { data, error } = await supabase
-      .from('chat_messages')
+      .from('messages')
       .select('id, chat_id, text, type, sender_id, created_at, sender:users!sender_id(full_name, avatar_url), chat:chats!chat_id(name, type, avatar_url)')
       .in('chat_id', chatIds)
       .ilike('text', `%${q}%`)
