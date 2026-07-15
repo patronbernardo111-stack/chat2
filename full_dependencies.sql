@@ -95,7 +95,7 @@ create table if not exists messages (
 );
 
 alter table messages
-  add constraint if not exists messages_reply_to_fkey
+  add constraint messages_reply_to_fkey
   foreign key (reply_to) references messages(id) on delete set null;
 
 create table if not exists message_reads (
@@ -248,3 +248,130 @@ values
   ('EGCHAT-RESET-001', 5000, now() + interval '365 days'),
   ('EGCHAT-RESET-002', 10000, now() + interval '365 days')
 on conflict (code) do nothing;
+
+-- Columnas y tablas faltantes detectadas en el deploy
+ALTER TABLE users ADD COLUMN IF NOT EXISTS app_version varchar(20) default '2.5.3';
+
+CREATE TABLE IF NOT EXISTS stories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  media jsonb default '[]'::jsonb,
+  created_at timestamptz default now(),
+  expires_at timestamptz default (now() + interval '24 hours')
+);
+
+CREATE TABLE IF NOT EXISTS group_stories (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid references chats(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  media jsonb default '[]'::jsonb,
+  created_at timestamptz default now(),
+  expires_at timestamptz default (now() + interval '24 hours')
+);
+
+CREATE TABLE IF NOT EXISTS spaces (
+  id uuid primary key default gen_random_uuid(),
+  name varchar(120) not null,
+  description text,
+  type varchar(30) default 'community',
+  cover text,
+  emoji varchar(10),
+  created_by uuid references users(id) on delete set null,
+  created_at timestamptz default now()
+);
+
+CREATE TABLE IF NOT EXISTS space_followers (
+  id uuid primary key default gen_random_uuid(),
+  space_id uuid references spaces(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(space_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS space_posts (
+  id uuid primary key default gen_random_uuid(),
+  space_id uuid references spaces(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  text text,
+  image_url text,
+  likes integer default 0,
+  created_at timestamptz default now()
+);
+
+CREATE TABLE IF NOT EXISTS space_post_likes (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid references space_posts(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(post_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS space_comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid references space_posts(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  text text not null,
+  created_at timestamptz default now()
+);
+
+CREATE TABLE IF NOT EXISTS message_deletions (
+  id uuid primary key default gen_random_uuid(),
+  message_id uuid references messages(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(message_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  title text,
+  body text,
+  data jsonb default '{}'::jsonb,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  endpoint text not null,
+  keys jsonb not null,
+  platform varchar(20),
+  created_at timestamptz default now(),
+  unique(endpoint)
+);
+
+CREATE TABLE IF NOT EXISTS chat_wallpapers (
+  id uuid primary key default gen_random_uuid(),
+  chat_id uuid references chats(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  wallpaper_type varchar(20) default 'default',
+  wallpaper_value text,
+  wallpaper_settings jsonb default '{}'::jsonb,
+  created_at timestamptz default now(),
+  unique(chat_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS contact_favorites (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  contact_id uuid references contacts(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(user_id, contact_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_favorites (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete cascade,
+  chat_id uuid references chats(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(user_id, chat_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stories_user ON stories(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_stories_group ON group_stories(group_id);
+CREATE INDEX IF NOT EXISTS idx_spaces_created_by ON spaces(created_by);
+CREATE INDEX IF NOT EXISTS idx_space_posts_space ON space_posts(space_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id);
