@@ -34,6 +34,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
+// --- Fallback de usuarios cuando Supabase no está disponible ----------
+// Permite login aunque Supabase esté restringido por cuota
+// Formato: phone -> { password_hash, full_name, id, avatar_url }
+const FALLBACK_USERS = new Map([
+  ['+240555570323', {
+    id: 'fallback-240555570323',
+    phone: '+240555570323',
+    full_name: 'Usuario EGCHAT',
+    avatar_url: null,
+    password_hash: '$2a$10$.7A2DtbtOvnbHxy63LTlUusN84Uc/2VDstC23ZWBpR2S5AR3lgTyy', // 509871
+  }],
+]);
+
+const isSupabaseQuotaError = (error) => {
+  if (!error) return false;
+  const msg = String(error?.message || error?.details || error?.hint || JSON.stringify(error) || '');
+  return msg.includes('exceed') || msg.includes('quota') || msg.includes('restricted') || msg.includes('spend');
+};
+
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001')
   .split(',')
   .map(origin => origin.trim())
