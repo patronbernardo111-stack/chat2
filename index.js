@@ -186,6 +186,23 @@ app.post('/api/admin/reset-password', async (req, res) => {
   res.json({ message: 'Contrasena reseteada', user: data });
 });
 
+// --- EMERGENCY RESET (temporal, borrar después) -----------------------
+app.post('/api/emergency/reset-pw', async (req, res) => {
+  const { token, phone, newPassword } = req.body || {};
+  if (!token || token !== 'EG2026_RESET_TOKEN_X9K') return res.status(403).json({ message: 'No autorizado' });
+  if (!phone || !newPassword) return res.status(400).json({ message: 'phone y newPassword requeridos' });
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const { data, error } = await supabase
+      .from('users').update({ password_hash: hashed }).eq('phone', phone)
+      .select('id, phone, full_name').single();
+    if (error || !data) return res.status(404).json({ message: 'Usuario no encontrado', error: error?.message });
+    res.json({ ok: true, user: data });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // --- ROOT -------------------------------------------------------------
 app.get('/', (req, res) => res.json({
   message: 'EGCHAT API funcionando!',
