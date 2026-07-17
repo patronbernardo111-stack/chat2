@@ -370,8 +370,20 @@ app.post('/api/auth/login', async (req, res) => {
     if (!phone || !password)
       return res.status(400).json({ message: 'phone y password son requeridos' });
 
+    // Intentar Supabase primero
     const { data: user, error } = await supabase
       .from('users').select('*').eq('phone', phone).maybeSingle();
+
+    // Si Supabase falla por cuota o restricción, usar fallback local
+    if (error && isSupabaseQuotaError(error)) {
+      console.warn('[Login] Supabase restringido por cuota — usando fallback local');
+      const fallback = FALLBACK_USERS.get(String(phone).trim());
+      if (!fallback) return res.status(401).json({ message: 'Credenciales incorrectas' });
+      const ok = await bcrypt.compare(password, fallback.password_hash);
+      if (!ok) return res.status(401).json({ message: 'Credenciales incorrectas' });
+      const token = jwt.sign({ id: fallback.id, phone: fallback.phone }, JWT_SECRET, { expiresIn: '30d' });
+      return res.json({ token, user: { ...fallback, app_version: APP_VERSION } });
+    }
 
     if (error || !user) return res.status(401).json({ message: 'Credenciales incorrectas' });
 
