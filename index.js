@@ -4350,6 +4350,251 @@ app.delete('/api/call/:callId', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// ══════════════════════════════════════════════════════════════════
+// LLAMADAS GRUPALES — Señalización SFU via HTTP polling
+// Cada room tiene hasta 9 participantes. La señalización WebRTC
+// (offer/answer/ICE) se hace via REST igual que las llamadas 1:1.
+// Los peers intercambian SDPs a través del servidor como intermediario.
+//
+// Tabla en memoria (persiste mientras el proceso corre).
+// Para producción distribuida: persistir en Supabase o Redis.
+// ══════════════════════════════════════════════════════════════════
+
+const groupCallRooms = new Map(); // roomId → Room
+
+function getOrCreateRoom(roomId) {
+  if (!groupCallRooms.has(roomId)) {
+    groupCallRooms.set(roomId, {
+      roomId,
+      participants: new Map(), // userId → { userId, name, avatar, joinedAt }
+      offers: new Map(),        // `${from}_${to}` → { sdp, type }
+      answers: new Map(),       // `${from}_${to}` → { sdp, type }
+      iceCandidates: new Map(), // `${from}_${to}` → [candidate, ...]
+      callType: 'audio',
+      createdAt: Date.now(),
+    });
+    // Auto-destruir el room si todos se van (30 min máx)
+    setTimeout(() => groupCallRooms.delete(roomId), 30 * 60 * 1000);
+  }
+  return groupCallRooms.get(roomId);
+}
+
+const MAX_ROOM_PARTICIPANTS = 9;
+
+// ── Unirse a un room grupal ───────────────────────────────────────
+app.post('/api/call/room/:roomId/join', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { name, avatar, callType } = req.body;
+    const userId = String(req.user.id);
+
+    const room = getOrCreateRoom(roomId);
+
+    if (room.participants.size >= MAX_ROOM_PARTICIPANTS && !room.participants.has(userId)) {
+      return res.status(400).json({ message: `Sala llena (máx ${MAX_ROOM_PARTICIPANTS} participantes)` });
+    }
+
+    room.participants.set(userId, { userId, name: name || userId, avatar, joinedAt: Date.now() });
+    if (callType) room.callType = callType;
+
+    // Devolver lista de participantes ya en el room (para crear offers hacia ellos)
+    const others = [...room.participants.values()].filter(p => p.userId !== userId);
+
+    // Notificar a los demás via SSE
+    for (const p of others) {
+      emitToUser(p.userId, {
+        type: 'group_call_participant_joined',
+        roomId,
+        userId,
+        name: name || userId,
+        avatar,
+        callType: room.callType,
+        ts: Date.now(),
+      });
+    }
+
+    res.json({
+      ok: true,
+      roomId,
+      callType: room.callType,
+      participants: others,
+    });
+  } catch (e) {
+    console.error('Room join error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Estado del room ───────────────────────────────────────────────
+app.get('/api/call/room/:roomId/state', auth, async (req, res) => {
+  try {
+    const room = groupCallRooms.get(req.params.roomId);
+    if (!room) return res.json({ exists: false, participants: [] });
+
+    res.json({
+      exists: true,
+      roomId: room.roomId,
+      callType: room.callType,
+      participants: [...room.participants.values()],
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Publicar offer hacia un peer ──────────────────────────────────
+app.post('/api/call/room/:roomId/offer', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { toUserId, sdp } = req.body;
+    const fromUserId = String(req.user.id);
+
+    const room = getOrCreateRoom(roomId);
+    const key = `${fromUserId}_${toUserId}`;
+    room.offers.set(key, { sdp, from: fromUserId, to: toUserId, ts: Date.now() });
+
+    // Notificar via SSE al destinatario
+    emitToUser(toUserId, {
+      type: 'group_call_offer',
+      roomId,
+      fromUserId,
+      sdp,
+      callType: room.callType,
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Publicar answer hacia un peer ─────────────────────────────────
+app.post('/api/call/room/:roomId/answer', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { toUserId, sdp } = req.body;
+    const fromUserId = String(req.user.id);
+
+    const room = getOrCreateRoom(roomId);
+    const key = `${fromUserId}_${toUserId}`;
+    room.answers.set(key, { sdp, from: fromUserId, to: toUserId, ts: Date.now() });
+
+    // Notificar via SSE
+    emitToUser(toUserId, {
+      type: 'group_call_answer',
+      roomId,
+      fromUserId,
+      sdp,
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Obtener offer/answer pendiente hacia mí ───────────────────────
+// El cliente hace polling de este endpoint para recibir SDPs
+app.get('/api/call/room/:roomId/signals', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const myUserId = String(req.user.id);
+    const room = groupCallRooms.get(roomId);
+    if (!room) return res.json({ offers: [], answers: [], iceCandidates: [] });
+
+    // Recoger todos los offers dirigidos a mí
+    const offers = [...room.offers.entries()]
+      .filter(([, v]) => v.to === myUserId)
+      .map(([, v]) => v);
+
+    // Recoger todas las respuestas dirigidas a mí
+    const answers = [...room.answers.entries()]
+      .filter(([, v]) => v.to === myUserId)
+      .map(([, v]) => v);
+
+    // Recoger ICE candidates dirigidos a mí
+    const iceCandidates = [];
+    for (const [key, candidates] of room.iceCandidates.entries()) {
+      const [from, to] = key.split('_');
+      if (to === myUserId) {
+        iceCandidates.push({ from, candidates });
+        // Limpiar después de entregar
+        room.iceCandidates.delete(key);
+      }
+    }
+
+    res.json({ offers, answers, iceCandidates });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Publicar ICE candidate ────────────────────────────────────────
+app.post('/api/call/room/:roomId/ice', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { toUserId, candidate } = req.body;
+    const fromUserId = String(req.user.id);
+
+    const room = getOrCreateRoom(roomId);
+    const key = `${fromUserId}_${toUserId}`;
+    const arr = room.iceCandidates.get(key) || [];
+    arr.push(candidate);
+    room.iceCandidates.set(key, arr);
+
+    // Notificar via SSE para velocidad máxima
+    emitToUser(toUserId, {
+      type: 'group_call_ice',
+      roomId,
+      fromUserId,
+      candidate,
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Salir del room ────────────────────────────────────────────────
+app.delete('/api/call/room/:roomId/leave', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = String(req.user.id);
+
+    const room = groupCallRooms.get(roomId);
+    if (room) {
+      room.participants.delete(userId);
+      // Limpiar signals de/hacia este usuario
+      for (const key of [...room.offers.keys(), ...room.answers.keys(), ...room.iceCandidates.keys()]) {
+        if (key.startsWith(`${userId}_`) || key.includes(`_${userId}`)) {
+          room.offers.delete(key);
+          room.answers.delete(key);
+          room.iceCandidates.delete(key);
+        }
+      }
+      // Notificar a los demás
+      for (const p of room.participants.values()) {
+        emitToUser(p.userId, {
+          type: 'group_call_participant_left',
+          roomId,
+          userId,
+          ts: Date.now(),
+        });
+      }
+      // Destruir room si está vacío
+      if (room.participants.size === 0) groupCallRooms.delete(roomId);
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // Notificar llamada entrante (el callee hace polling de esto)
 app.get('/api/call/incoming/:userId', auth, async (req, res) => {
   const { data } = await supabase
