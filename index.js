@@ -1024,6 +1024,84 @@ app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   }
 });
 
+// ── Marcar TODOS los mensajes del chat como leídos (doble check real) ──
+// El receptor llama a este endpoint al abrir el chat.
+// Actualiza status → 'read' en chat_messages para los mensajes ajenos
+// y emite evento SSE a los emisores para que actualicen sus checks azules.
+app.post('/api/chats/:chatId/read-all', auth, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const readerId = req.user.id;
+
+    // Verificar que el usuario pertenece al chat
+    const { data: part } = await supabase
+      .from('chat_participants')
+      .select('id')
+      .eq('chat_id', chatId)
+      .eq('user_id', readerId)
+      .single();
+
+    if (!part) return res.status(403).json({ message: 'No tienes acceso a este chat' });
+
+    // Obtener mensajes no leídos enviados por otros
+    const { data: unread } = await supabase
+      .from('chat_messages')
+      .select('id, sender_id')
+      .eq('chat_id', chatId)
+      .neq('sender_id', readerId)
+      .neq('status', 'read');
+
+    if (!unread || unread.length === 0) {
+      return res.json({ ok: true, updated: 0 });
+    }
+
+    const unreadIds = unread.map(m => m.id);
+
+    // Actualizar status a 'read' en BD
+    await supabase
+      .from('chat_messages')
+      .update({ status: 'read' })
+      .in('id', unreadIds);
+
+    // Resetear contador de no leídos del receptor
+    await supabase
+      .from('chat_participants')
+      .update({ unread_count: 0 })
+      .eq('chat_id', chatId)
+      .eq('user_id', readerId);
+
+    // Actualizar last_read en message_reads
+    await supabase
+      .from('message_reads')
+      .upsert({
+        chat_id: chatId,
+        user_id: readerId,
+        last_read_message_id: unreadIds[unreadIds.length - 1],
+        read_at: new Date().toISOString(),
+      }, { onConflict: 'chat_id,user_id' });
+
+    // Notificar a los emisores via SSE para que sus checks se pongan azules
+    const senderIds = [...new Set(unread.map(m => String(m.sender_id)))];
+    for (const senderId of senderIds) {
+      const senderMsgIds = unread
+        .filter(m => String(m.sender_id) === senderId)
+        .map(m => m.id);
+      emitToUser(senderId, {
+        type: 'read',
+        chatId,
+        messageIds: senderMsgIds,
+        readerId,
+        ts: Date.now(),
+      });
+    }
+
+    res.json({ ok: true, updated: unreadIds.length });
+  } catch (e) {
+    console.error('Read-all error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // Subir archivo de chat — acepta multipart/form-data (Android/iOS) y raw buffer (web)
 app.post('/api/chats/:chatId/upload', auth, async (req, res) => {
   try {
