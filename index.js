@@ -675,6 +675,9 @@ const getChatParticipants = async (chatId) => {
 // Obtener todos los chats del usuario
 app.get('/api/chats', auth, async (req, res) => {
   try {
+    // Si Supabase está restringido por cuota, devolver lista vacía
+    if (!(await supabaseOk())) return res.json([]);
+
     // Buscar chats donde el usuario es participante
     const { data: participations, error: pErr } = await supabase
       .from('chat_participants')
