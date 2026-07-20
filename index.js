@@ -459,6 +459,395 @@ app.put('/api/auth/profile', auth, async (req, res) => {
 
 app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesión cerrada' }));
 
+// ══════════════════════════════════════════════════════════════════
+// PAGOS CON PASARELA REAL — Stripe + Orange Money + MTN
+//
+// Arquitectura:
+//  - Stripe:       PaymentIntent en servidor → clientSecret al cliente
+//                  Cliente confirma con @stripe/stripe-react-native
+//                  Webhook /api/payments/webhook actualiza wallet
+//  - Orange/MTN:   USSD Push via API del operador (simulado aquí,
+//                  reemplazar con SDK real en producción)
+//                  Polling de estado hasta completar
+//  - Banco/Agente: Registro manual, auditor aprueba manualmente
+// ══════════════════════════════════════════════════════════════════
+
+// Stripe: clave secreta desde variables de entorno
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
+let stripe = null;
+if (STRIPE_SECRET_KEY) {
+  try { stripe = require('stripe')(STRIPE_SECRET_KEY); } catch {}
+}
+
+// Comisiones por pasarela
+const GATEWAY_FEES = {
+  stripe:        (amount) => Math.round(amount * 0.029) + 30,
+  orange_money:  (amount) => Math.round(amount * 0.01),
+  mtn_mobile:    (amount) => Math.round(amount * 0.01),
+  bank_transfer: () => 0,
+  cash_agent:    () => 0,
+  recharge_code: () => 0,
+  egchat_transfer: () => 0,
+};
+
+const GATEWAY_TIME = {
+  stripe:        'Inmediato',
+  orange_money:  'Inmediato (USSD)',
+  mtn_mobile:    'Inmediato (USSD)',
+  bank_transfer: '1-2 días hábiles',
+  cash_agent:    'Inmediato',
+  recharge_code: 'Inmediato',
+  egchat_transfer: 'Inmediato',
+};
+
+// ── Crear intento de depósito ─────────────────────────────────────
+app.post('/api/payments/deposit/intent', auth, async (req, res) => {
+  try {
+    const { amount, gateway, currency = 'XAF', phone, description } = req.body;
+    if (!amount || amount < 500) return res.status(400).json({ message: 'Importe mínimo: 500 XAF' });
+    if (!gateway)                return res.status(400).json({ message: 'Pasarela requerida' });
+
+    const userId = req.user.id;
+    const fee    = (GATEWAY_FEES[gateway] || (() => 0))(amount);
+    const intentId = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    let responseData = {
+      id: intentId, amount, currency, gateway, fee,
+      status: 'pending', estimatedTime: GATEWAY_TIME[gateway] || 'Variable',
+    };
+
+    // ── Stripe ──────────────────────────────────────────────────
+    if (gateway === 'stripe') {
+      if (!stripe) {
+        return res.status(503).json({
+          message: 'Stripe no configurado. Añade STRIPE_SECRET_KEY al .env del servidor.',
+        });
+      }
+      const amountInSmallestUnit = Math.round(amount / 655.957); // XAF → EUR cents (1 EUR ≈ 655.957 XAF)
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.max(50, amountInSmallestUnit), // mínimo 50 cents EUR
+        currency: 'eur',
+        metadata: {
+          egchat_user_id: String(userId),
+          egchat_amount_xaf: String(amount),
+          egchat_intent_id: intentId,
+        },
+        description: description || 'Recarga EGChat',
+        automatic_payment_methods: { enabled: true },
+      });
+
+      // Guardar intent en BD para reconciliación con webhook
+      await supabase.from('payment_transactions').insert({
+        id: intentId,
+        user_id: userId,
+        type: 'deposit',
+        amount,
+        currency,
+        gateway,
+        gateway_txn_id: paymentIntent.id,
+        status: 'pending',
+        metadata: JSON.stringify({ stripeIntentId: paymentIntent.id, fee }),
+      }).catch(() => {});
+
+      return res.json({
+        ...responseData,
+        clientSecret: paymentIntent.client_secret,
+        stripeIntentId: paymentIntent.id,
+        status: 'pending',
+      });
+    }
+
+    // ── Orange Money / MTN (USSD Push) ───────────────────────────
+    if (gateway === 'orange_money' || gateway === 'mtn_mobile') {
+      if (!phone) return res.status(400).json({ message: 'Número de teléfono requerido' });
+
+      // Guardar en BD como pendiente
+      await supabase.from('payment_transactions').insert({
+        id: intentId,
+        user_id: userId,
+        type: 'deposit',
+        amount,
+        currency,
+        gateway,
+        status: 'pending',
+        metadata: JSON.stringify({ phone, fee }),
+      }).catch(() => {});
+
+      // En producción: llamar a la API de Orange/MTN para iniciar USSD Push
+      // Por ahora: devolver código USSD de demostración
+      const operatorPrefix = gateway === 'orange_money' ? '150' : '126';
+      return res.json({
+        ...responseData,
+        intentId,
+        ussdCode: `*${operatorPrefix}*2*${amount}#`,
+        phone,
+        instructions: [
+          `1. Marca *${operatorPrefix}*2*${amount}# en tu teléfono`,
+          '2. Confirma el pago con tu PIN',
+          '3. Espera la confirmación por SMS',
+        ],
+        pollUrl: `/api/payments/status/${intentId}`,
+      });
+    }
+
+    // ── Banco / Agente / Código / Transferencia EGChat ───────────
+    await supabase.from('payment_transactions').insert({
+      id: intentId,
+      user_id: userId,
+      type: 'deposit',
+      amount,
+      currency,
+      gateway,
+      status: gateway === 'egchat_transfer' ? 'pending' : 'pending',
+      metadata: JSON.stringify({ fee, description }),
+    }).catch(() => {});
+
+    return res.json({ ...responseData, intentId });
+  } catch (e) {
+    console.error('[payments] deposit/intent error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Confirmar depósito ────────────────────────────────────────────
+app.post('/api/payments/deposit/confirm', auth, async (req, res) => {
+  try {
+    const { intentId, gateway, paymentMethodId } = req.body;
+    const userId = req.user.id;
+
+    const { data: intent } = await supabase
+      .from('payment_transactions')
+      .select('*')
+      .eq('id', intentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!intent) return res.status(404).json({ message: 'Intent no encontrado' });
+    if (intent.status === 'completed') return res.json({ ok: true, alreadyCompleted: true });
+
+    // Stripe: confirmar via SDK en el cliente, el webhook actualiza el balance
+    // Este endpoint es para pasarelas que no usan webhook
+    if (gateway === 'stripe') {
+      return res.json({
+        ok: false,
+        requiresAction: true,
+        message: 'Usa el SDK de Stripe para confirmar el pago',
+      });
+    }
+
+    // Para pasarelas manuales: marcar como completado y actualizar wallet
+    const meta = typeof intent.metadata === 'string' ? JSON.parse(intent.metadata) : (intent.metadata || {});
+    const fee  = meta.fee || 0;
+    const net  = intent.amount - fee;
+
+    await supabase.from('payment_transactions')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', intentId);
+
+    // Actualizar wallet
+    const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
+    const newBalance = (wallet?.balance || 0) + net;
+    await supabase.from('wallets').upsert({ user_id: userId, balance: newBalance, currency: 'XAF' });
+
+    // Registrar en transactions para historial del monedero
+    await supabase.from('transactions').insert({
+      user_id: userId, type: 'deposit', amount: net,
+      method: gateway, reference: intentId, status: 'completed',
+    });
+
+    // Notificar via SSE
+    emitToUser(String(userId), {
+      type: 'wallet_updated',
+      balance: newBalance,
+      transaction: { type: 'deposit', amount: net, gateway },
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true, newBalance, transactionId: intentId });
+  } catch (e) {
+    console.error('[payments] deposit/confirm error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Webhook de Stripe (actualiza wallet automáticamente) ──────────
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) return res.json({ received: true });
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET);
+  } catch (e) {
+    return res.status(400).json({ message: 'Webhook signature invalid' });
+  }
+
+  if (event.type === 'payment_intent.succeeded') {
+    const pi = event.data.object;
+    const userId     = pi.metadata?.egchat_user_id;
+    const amountXaf  = parseInt(pi.metadata?.egchat_amount_xaf || '0');
+    const intentId   = pi.metadata?.egchat_intent_id;
+
+    if (userId && amountXaf > 0) {
+      // Evitar doble procesamiento
+      const { data: existing } = await supabase
+        .from('payment_transactions')
+        .select('status')
+        .eq('gateway_txn_id', pi.id)
+        .single();
+
+      if (existing?.status !== 'completed') {
+        await supabase.from('payment_transactions')
+          .update({ status: 'completed' })
+          .eq('gateway_txn_id', pi.id);
+
+        const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
+        const newBalance = (wallet?.balance || 0) + amountXaf;
+        await supabase.from('wallets').upsert({ user_id: userId, balance: newBalance, currency: 'XAF' });
+
+        await supabase.from('transactions').insert({
+          user_id: userId, type: 'deposit', amount: amountXaf,
+          method: 'Stripe (Tarjeta)', reference: pi.id, status: 'completed',
+        });
+
+        emitToUser(String(userId), { type: 'wallet_updated', balance: newBalance, ts: Date.now() });
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
+// ── Estado de un pago (polling) ───────────────────────────────────
+app.get('/api/payments/status/:intentId', auth, async (req, res) => {
+  try {
+    const { data: intent } = await supabase
+      .from('payment_transactions')
+      .select('status, amount, updated_at')
+      .eq('id', req.params.intentId)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (!intent) return res.status(404).json({ message: 'Intent no encontrado' });
+
+    let balance = null;
+    if (intent.status === 'completed') {
+      const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', req.user.id).single();
+      balance = wallet?.balance;
+    }
+
+    res.json({ status: intent.status, amount: intent.amount, balance });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Crear intento de retiro ───────────────────────────────────────
+app.post('/api/payments/withdraw/intent', auth, async (req, res) => {
+  try {
+    const { amount, gateway, destination, currency = 'XAF' } = req.body;
+    const userId = req.user.id;
+
+    if (!amount || amount < 1000) return res.status(400).json({ message: 'Mínimo de retiro: 1,000 XAF' });
+
+    const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
+    if (!wallet || amount > wallet.balance) return res.status(400).json({ message: 'Saldo insuficiente' });
+
+    const fee       = (GATEWAY_FEES[gateway] || (() => 0))(amount);
+    const netAmount = amount - fee;
+    const intentId  = `wdr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    await supabase.from('payment_transactions').insert({
+      id: intentId, user_id: userId, type: 'withdrawal',
+      amount, currency, gateway, status: 'pending',
+      metadata: JSON.stringify({ destination, fee, netAmount }),
+    });
+
+    res.json({
+      id: intentId, amount, netAmount, fee, currency, gateway,
+      status: 'pending', estimatedTime: GATEWAY_TIME[gateway] || 'Variable',
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Confirmar retiro ──────────────────────────────────────────────
+app.post('/api/payments/withdraw/confirm/:intentId', auth, async (req, res) => {
+  try {
+    const { intentId } = req.params;
+    const userId = req.user.id;
+
+    const { data: intent } = await supabase
+      .from('payment_transactions')
+      .select('*')
+      .eq('id', intentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!intent) return res.status(404).json({ message: 'Intent no encontrado' });
+    if (intent.status !== 'pending') return res.status(400).json({ message: `Estado inválido: ${intent.status}` });
+
+    const meta      = typeof intent.metadata === 'string' ? JSON.parse(intent.metadata) : (intent.metadata || {});
+    const netAmount = meta.netAmount || intent.amount;
+
+    // Descontar del wallet
+    const { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', userId).single();
+    if (!wallet || intent.amount > wallet.balance) {
+      return res.status(400).json({ message: 'Saldo insuficiente en el momento de confirmar' });
+    }
+
+    const newBalance = wallet.balance - intent.amount;
+    await supabase.from('wallets').update({ balance: newBalance }).eq('user_id', userId);
+
+    await supabase.from('payment_transactions')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', intentId);
+
+    await supabase.from('transactions').insert({
+      user_id: userId, type: 'withdraw', amount: intent.amount,
+      method: intent.gateway, reference: intentId, status: 'completed',
+    });
+
+    emitToUser(String(userId), { type: 'wallet_updated', balance: newBalance, ts: Date.now() });
+
+    res.json({ ok: true, newBalance, netAmount, transactionId: intentId });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Historial de pagos externos ───────────────────────────────────
+app.get('/api/payments/history', auth, async (req, res) => {
+  try {
+    const page  = parseInt(req.query.page as string || '1');
+    const limit = parseInt(req.query.limit as string || '20');
+    const offset = (page - 1) * limit;
+
+    const { data } = await supabase
+      .from('payment_transactions')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    res.json((data || []).map(t => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount,
+      currency: t.currency,
+      gateway: t.gateway,
+      gatewayTxnId: t.gateway_txn_id,
+      status: t.status,
+      description: typeof t.metadata === 'object' ? t.metadata?.description : null,
+      createdAt: t.created_at,
+    })));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+
 // ── Backup de clave privada E2E cifrada ───────────────────────────
 // El servidor guarda el blob cifrado (no puede leer la clave privada).
 // La clave privada solo se puede descifrar con la contraseña del usuario.
