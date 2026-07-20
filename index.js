@@ -1406,6 +1406,9 @@ app.delete('/api/messages/:messageId', auth, async (req, res) => {
 // Obtener todos los contactos del usuario
 app.get('/api/contacts', auth, async (req, res) => {
   try {
+    // Si Supabase está restringido por cuota, devolver lista vacía
+    if (!(await supabaseOk())) return res.json([]);
+
     const { data: contacts, error } = await supabase
       .from('contacts')
       .select('*')
