@@ -422,6 +422,19 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/auth/me', auth, async (req, res) => {
+  // Si Supabase está restringido por cuota, devolver datos del token JWT
+  if (!(await supabaseOk())) {
+    const fallback = FALLBACK_USERS.get(String(req.user.phone || '').trim());
+    return res.json({
+      id: req.user.id,
+      phone: req.user.phone,
+      full_name: fallback?.full_name || 'Usuario EGCHAT',
+      avatar_url: fallback?.avatar_url || null,
+      created_at: new Date().toISOString(),
+      app_version: APP_VERSION,
+      _offline: true,
+    });
+  }
   const { data: user } = await supabase
     .from('users').select('id, phone, full_name, avatar_url, created_at').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
