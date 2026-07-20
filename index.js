@@ -428,6 +428,104 @@ app.put('/api/auth/profile', auth, async (req, res) => {
 
 app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesión cerrada' }));
 
+// ── Backup de clave privada E2E cifrada ───────────────────────────
+// El servidor guarda el blob cifrado (no puede leer la clave privada).
+// La clave privada solo se puede descifrar con la contraseña del usuario.
+
+// Guardar/actualizar backup de clave E2E
+app.post('/api/auth/e2e-key-backup', auth, async (req, res) => {
+  try {
+    const { encryptedKey, salt, publicKey, version, algorithm } = req.body;
+    if (!encryptedKey || !salt || !publicKey) {
+      return res.status(400).json({ message: 'encryptedKey, salt y publicKey son requeridos' });
+    }
+
+    // Upsert en la tabla users: guardar el blob cifrado
+    await supabase.from('users').update({
+      e2e_public_key:      publicKey,
+      e2e_key_backup:      JSON.stringify({ encryptedKey, salt, version: version || 1, algorithm: algorithm || 'nacl-secretbox-pbkdf2-sha512-100k' }),
+      e2e_backup_updated:  new Date().toISOString(),
+    }).eq('id', req.user.id);
+
+    res.json({ ok: true, backed_up_at: new Date().toISOString() });
+  } catch (e) {
+    console.error('E2E backup error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Obtener backup de clave E2E (para restaurar en nuevo dispositivo)
+app.get('/api/auth/e2e-key-backup', auth, async (req, res) => {
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('e2e_key_backup, e2e_public_key, e2e_backup_updated')
+      .eq('id', req.user.id)
+      .single();
+
+    if (!user?.e2e_key_backup) {
+      return res.status(404).json({ message: 'No hay backup de clave E2E' });
+    }
+
+    const backup = typeof user.e2e_key_backup === 'string'
+      ? JSON.parse(user.e2e_key_backup)
+      : user.e2e_key_backup;
+
+    res.json({
+      encryptedKey: backup.encryptedKey,
+      salt:         backup.salt,
+      publicKey:    user.e2e_public_key,
+      version:      backup.version || 1,
+      algorithm:    backup.algorithm,
+      backedUpAt:   user.e2e_backup_updated,
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// HEAD — verificar si existe backup sin descargar el blob
+app.head('/api/auth/e2e-key-backup', auth, async (req, res) => {
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('e2e_key_backup')
+      .eq('id', req.user.id)
+      .single();
+    if (user?.e2e_key_backup) res.status(200).end();
+    else res.status(404).end();
+  } catch {
+    res.status(500).end();
+  }
+});
+
+// Subir/actualizar clave pública E2E (para que contactos cifren hacia ti)
+app.post('/api/auth/e2e-key', auth, async (req, res) => {
+  try {
+    const { publicKey } = req.body;
+    if (!publicKey) return res.status(400).json({ message: 'publicKey es requerido' });
+    await supabase.from('users').update({ e2e_public_key: publicKey }).eq('id', req.user.id);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Obtener clave pública E2E de un usuario (para cifrar mensajes hacia él)
+app.get('/api/users/:userId/e2e-key', auth, async (req, res) => {
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('e2e_public_key')
+      .eq('id', req.params.userId)
+      .single();
+    if (!user?.e2e_public_key) return res.status(404).json({ message: 'Sin clave E2E' });
+    res.json({ publicKey: user.e2e_public_key });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // ── Recuperación de contraseña ────────────────────────────────────────────────
 // Almacén temporal en memoria: { phone -> { code, expiresAt } }
 const resetCodes = new Map();
@@ -4590,6 +4688,84 @@ app.delete('/api/call/room/:roomId/leave', auth, async (req, res) => {
     }
 
     res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── Stickers — catálogo y paquetes ───────────────────────────────
+
+// Catálogo de paquetes disponibles
+app.get('/api/stickers/catalog', auth, async (req, res) => {
+  try {
+    const { data: packs } = await supabase
+      .from('sticker_packs')
+      .select('*')
+      .eq('is_active', true)
+      .order('download_count', { ascending: false })
+      .limit(50);
+
+    if (!packs?.length) {
+      // Fallback con paquetes integrados si la tabla está vacía
+      return res.json([
+        { id: 'guinea_eq',    name: 'Guinea Ecuatorial', author: 'EGChat', downloadCount: 1420, coverUrl: 'https://media.tenor.com/KWBXqCNb-0AAAAAi/party-celebration.gif', stickers: [] },
+        { id: 'africa_vibes', name: 'África Vibes',       author: 'EGChat', downloadCount: 890,  coverUrl: 'https://media.tenor.com/fRQXPTpRZqUAAAAi/clapping-applause.gif',  stickers: [] },
+        { id: 'fun_animals',  name: 'Animales Divertidos', author: 'EGChat', downloadCount: 2100, coverUrl: 'https://media.tenor.com/wnRH0YZDlmAAAAAi/laugh-lol.gif',           stickers: [] },
+      ]);
+    }
+
+    res.json(packs.map(p => ({
+      id: p.id, name: p.name, author: p.author,
+      coverUrl: p.cover_url, downloadCount: p.download_count,
+      stickers: typeof p.stickers === 'string' ? JSON.parse(p.stickers) : (p.stickers || []),
+    })));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Instalar paquete
+app.post('/api/stickers/packs/:packId/install', auth, async (req, res) => {
+  try {
+    const { packId } = req.params;
+    await supabase.from('user_sticker_packs').upsert(
+      { user_id: req.user.id, pack_id: packId, installed_at: new Date().toISOString() },
+      { onConflict: 'user_id,pack_id' },
+    );
+    // Incrementar contador de descargas
+    await supabase.rpc('increment', { table: 'sticker_packs', id: packId, col: 'download_count' }).catch(() => {
+      supabase.from('sticker_packs').select('download_count').eq('id', packId).single()
+        .then(({ data }) => {
+          if (data) supabase.from('sticker_packs').update({ download_count: (data.download_count || 0) + 1 }).eq('id', packId);
+        });
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Desinstalar paquete
+app.delete('/api/stickers/packs/:packId/install', auth, async (req, res) => {
+  try {
+    await supabase.from('user_sticker_packs')
+      .delete()
+      .eq('user_id', req.user.id)
+      .eq('pack_id', req.params.packId);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Paquetes instalados del usuario
+app.get('/api/stickers/installed', auth, async (req, res) => {
+  try {
+    const { data } = await supabase
+      .from('user_sticker_packs')
+      .select('pack_id, installed_at')
+      .eq('user_id', req.user.id);
+    res.json((data || []).map(r => r.pack_id));
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
