@@ -4771,6 +4771,54 @@ app.get('/api/stickers/installed', auth, async (req, res) => {
   }
 });
 
+// ── Mini-Apps — catálogo dinámico ────────────────────────────────
+
+app.get('/api/mini-apps', auth, async (req, res) => {
+  try {
+    const { data: apps } = await supabase
+      .from('mini_apps')
+      .select('*')
+      .eq('is_active', true)
+      .order('installs_count', { ascending: false })
+      .limit(50);
+
+    if (!apps?.length) {
+      // Fallback con apps integradas si la tabla está vacía
+      return res.json([]);
+    }
+
+    res.json(apps.map(a => ({
+      id: a.id, name: a.name, description: a.description,
+      icon: a.icon_url, accentColor: a.accent_color || '#00c8a0',
+      url: a.url, category: a.category || 'utilities',
+      permissions: a.permissions || [],
+      verified: a.is_verified, developer: a.developer_name || 'Terceros',
+      installsCount: a.installs_count || 0,
+    })));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Instalar mini-app (registrar uso)
+app.post('/api/mini-apps/:appId/install', auth, async (req, res) => {
+  try {
+    const { appId } = req.params;
+    await supabase.from('user_mini_apps').upsert(
+      { user_id: req.user.id, app_id: appId, last_used_at: new Date().toISOString() },
+      { onConflict: 'user_id,app_id' },
+    );
+    // Incrementar contador
+    const { data: app } = await supabase.from('mini_apps').select('installs_count').eq('id', appId).single();
+    if (app) {
+      await supabase.from('mini_apps').update({ installs_count: (app.installs_count || 0) + 1 }).eq('id', appId);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // Notificar llamada entrante (el callee hace polling de esto)
 app.get('/api/call/incoming/:userId', auth, async (req, res) => {
   const { data } = await supabase
