@@ -1737,6 +1737,10 @@ app.get('/api/contacts/search', auth, async (req, res) => {
 // WALLET
 // ════════════════════════════════════════════════════════════════════
 app.get('/api/wallet/balance', auth, async (req, res) => {
+  // Si Supabase está restringido por cuota, devolver balance de emergencia
+  if (!(await supabaseOk())) {
+    return res.json({ balance: 0, currency: 'XAF', _offline: true });
+  }
   let { data: wallet } = await supabase
     .from('wallets').select('balance, currency').eq('user_id', req.user.id).single();
   if (!wallet) {
