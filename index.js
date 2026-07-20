@@ -53,6 +53,24 @@ const isSupabaseQuotaError = (error) => {
   return msg.includes('exceed') || msg.includes('quota') || msg.includes('restricted') || msg.includes('spend');
 };
 
+// --- Helper: detecta si Supabase está operativo (caché 60s) -----------
+// Se auto-desactiva en cuanto Supabase se recupera.
+const _supabaseStatus = { ok: true, checkedAt: 0 };
+const SUPABASE_CHECK_TTL = 60_000; // 60 segundos
+const supabaseOk = async () => {
+  const now = Date.now();
+  if (now - _supabaseStatus.checkedAt < SUPABASE_CHECK_TTL) return _supabaseStatus.ok;
+  try {
+    const { error } = await supabase.from('users').select('id').limit(1);
+    _supabaseStatus.ok = !isSupabaseQuotaError(error);
+    _supabaseStatus.checkedAt = now;
+  } catch {
+    _supabaseStatus.ok = false;
+    _supabaseStatus.checkedAt = now;
+  }
+  return _supabaseStatus.ok;
+};
+
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://127.0.0.1:3001')
   .split(',')
   .map(origin => origin.trim())
