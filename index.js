@@ -25,7 +25,7 @@ const verifyToken = (token) => {
   }
   throw new Error('Token inválido o expirado');
 };
-const APP_VERSION = '2.5.2';
+const APP_VERSION = '2.5.3'; // fix: emergency list-users + supabase quota fallback
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
