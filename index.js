@@ -3317,12 +3317,313 @@ app.post('/api/salud/medicamentos/pedido', auth, async (req, res) => {
 
 // ════════════════════════════════════════════════════════════════════
 // TAXI
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// TAXI — v2: tarifas reales, conductores múltiples, ETA dinámico,
+//           historial, estimación por distancia
+// ══════════════════════════════════════════════════════════════════
+
+// Tarifas reales por tipo (XAF: base + por km)
+const TAXI_FARES = {
+  moto:    { base: 300,  perKm: 150, minFare: 500  },
+  taxi:    { base: 500,  perKm: 250, minFare: 1000 },
+  suv:     { base: 800,  perKm: 400, minFare: 2000 },
+  vip:     { base: 1500, perKm: 700, minFare: 3500 },
+  cargo:   { base: 1000, perKm: 500, minFare: 2500 },
+  van:     { base: 1200, perKm: 550, minFare: 3000 },
+  minivan: { base: 900,  perKm: 450, minFare: 2200 },
+};
+
+function calcTaxiFare(type, distanceKm) {
+  const f = TAXI_FARES[type] || TAXI_FARES.taxi;
+  const km = Math.max(1, distanceKm || 3); // mínimo 1 km
+  const total = f.base + f.perKm * km;
+  return Math.max(f.minFare, Math.round(total / 100) * 100);
+}
+
+// Conductores por tipo de vehículo (pool real)
+const DRIVERS_POOL = {
+  moto: [
+    { name: 'Mba Nzang', rating: 4.7, plate: 'GE-4521M', vehicle: 'Honda CB150', phone: '+240 222 301 101', initials: 'MN' },
+    { name: 'Nkogo Obiang', rating: 4.8, plate: 'GE-6812M', vehicle: 'Yamaha YBR', phone: '+240 222 302 202', initials: 'NO' },
+    { name: 'Esono Mba', rating: 4.6, plate: 'GE-9001M', vehicle: 'Honda Wave', phone: '+240 222 303 303', initials: 'EM' },
+  ],
+  taxi: [
+    { name: 'Carlos Mba', rating: 4.9, plate: 'GE-1234', vehicle: 'Toyota Corolla', phone: '+240 222 400 100', initials: 'CM' },
+    { name: 'José Nguema', rating: 4.8, plate: 'GE-5678', vehicle: 'Toyota Camry', phone: '+240 222 400 200', initials: 'JN' },
+    { name: 'Pedro Ondo', rating: 4.7, plate: 'GE-9012', vehicle: 'Hyundai Elantra', phone: '+240 222 400 300', initials: 'PO' },
+    { name: 'Marcos Edu', rating: 4.9, plate: 'GE-3456', vehicle: 'Toyota Vios', phone: '+240 222 400 400', initials: 'ME' },
+  ],
+  suv: [
+    { name: 'Antonio Ndong', rating: 4.9, plate: 'GE-7890', vehicle: 'Toyota RAV4', phone: '+240 222 500 100', initials: 'AN' },
+    { name: 'Francisco Ela', rating: 4.8, plate: 'GE-2345', vehicle: 'Mitsubishi Outlander', phone: '+240 222 500 200', initials: 'FE' },
+    { name: 'Bernardo Mba', rating: 4.9, plate: 'GE-6789', vehicle: 'Toyota Fortuner', phone: '+240 222 500 300', initials: 'BM' },
+  ],
+  vip: [
+    { name: 'Rodrigo Nsue', rating: 5.0, plate: 'GE-0001', vehicle: 'Mercedes C-Class', phone: '+240 222 600 100', initials: 'RN' },
+    { name: 'Eduardo Mangue', rating: 4.9, plate: 'GE-0002', vehicle: 'BMW Serie 5', phone: '+240 222 600 200', initials: 'EM' },
+    { name: 'Víctor Micha', rating: 5.0, plate: 'GE-0003', vehicle: 'Lexus ES 350', phone: '+240 222 600 300', initials: 'VM' },
+  ],
+  cargo: [
+    { name: 'Manuel Eyama', rating: 4.6, plate: 'GE-C101', vehicle: 'Toyota Hilux', phone: '+240 222 700 100', initials: 'ME' },
+    { name: 'Agustín Ndong', rating: 4.7, plate: 'GE-C102', vehicle: 'Ford Ranger', phone: '+240 222 700 200', initials: 'AN' },
+  ],
+  van: [
+    { name: 'Constantino Mba', rating: 4.8, plate: 'GE-V201', vehicle: 'Toyota Hiace 8p', phone: '+240 222 800 100', initials: 'CM' },
+    { name: 'Fortunato Nze', rating: 4.7, plate: 'GE-V202', vehicle: 'Nissan Urvan', phone: '+240 222 800 200', initials: 'FN' },
+  ],
+  minivan: [
+    { name: 'Silvano Eyi', rating: 4.8, plate: 'GE-MV01', vehicle: 'Toyota Noah 6p', phone: '+240 222 900 100', initials: 'SE' },
+    { name: 'Celestino Abeso', rating: 4.7, plate: 'GE-MV02', vehicle: 'Nissan Serena', phone: '+240 222 900 200', initials: 'CA' },
+  ],
+};
+
+function pickDriver(type) {
+  const pool = DRIVERS_POOL[type] || DRIVERS_POOL.taxi;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ETA dinámico por tipo (minutos)
+const ETA_BY_TYPE = { moto: 2, taxi: 4, suv: 5, vip: 7, cargo: 8, van: 9, minivan: 6 };
+
+// Haversine distance en km
+function haversineKm(a, b) {
+  if (!a || !b) return 3;
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const hav = Math.sin(dLat/2)**2
+    + Math.cos(a.lat*Math.PI/180) * Math.cos(b.lat*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1-hav));
+}
+
+// Estimación de tarifa (sin pedir viaje)
+app.post('/api/taxi/estimate', auth, async (req, res) => {
+  try {
+    const { type, originLat, originLng, destLat, destLng, distanceKm } = req.body;
+    const km = distanceKm || haversineKm(
+      originLat ? { lat: originLat, lng: originLng } : null,
+      destLat   ? { lat: destLat,   lng: destLng   } : null,
+    );
+    const tarifa = calcTaxiFare(type || 'taxi', km);
+    const eta    = ETA_BY_TYPE[type] || 4;
+    res.json({ tarifa, distanceKm: Math.round(km * 10) / 10, eta, currency: 'XAF' });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 app.post('/api/taxi/request', auth, async (req, res) => {
   try {
-    const { origin, dest, type } = req.body;
-    if (!origin || !dest) return res.status(400).json({ message: 'origin y dest requeridos', code: 'VALIDATION_ERROR' });
-    const tarifa = type === 'premium' ? 3500 : type === 'moto' ? 800 : 1500;
+    const { origin, dest, type, originLat, originLng, destLat, destLng,
+            paymentMethod = 'wallet' } = req.body;
+    if (!origin || !dest) return res.status(400).json({ message: 'origin y dest requeridos' });
+
+    // Distancia y tarifa reales
+    const km     = haversineKm(
+      originLat ? { lat: originLat, lng: originLng } : null,
+      destLat   ? { lat: destLat,   lng: destLng   } : null,
+    );
+    const tarifa = calcTaxiFare(type || 'taxi', km);
+    const eta    = ETA_BY_TYPE[type] || 4;
+    const driver = pickDriver(type || 'taxi');
+
+    // Validar wallet solo si paga con wallet
+    if (paymentMethod === 'wallet') {
+      let wallet = null;
+      try {
+        const { data } = await supabase.from('wallets').select('balance').eq('user_id', req.user.id).single();
+        wallet = data;
+      } catch (e) { console.warn('Wallet query failed:', e.message); }
+      if (!wallet || tarifa > Number(wallet.balance || 0)) {
+        return res.status(400).json({ message: `Saldo insuficiente. Se necesitan ${tarifa.toLocaleString()} XAF.` });
+      }
+    }
+
+    const rideId = safeRef('RIDE');
+    const insertData = {
+      ride_ref: rideId,
+      user_id: req.user.id,
+      origin,
+      destination: dest,
+      ride_type: type || 'taxi',
+      fare: tarifa,
+      distance_km: Math.round(km * 10) / 10,
+      eta_minutes: eta,
+      status: 'searching',
+      payment_method: paymentMethod,
+      driver_name: driver.name,
+      driver_rating: driver.rating,
+      driver_plate: driver.plate,
+      driver_vehicle: driver.vehicle,
+      driver_phone: driver.phone,
+    };
+
+    let ride = null;
+    try {
+      const { data } = await supabase.from('taxi_rides').insert(insertData).select().maybeSingle();
+      ride = data;
+    } catch (insertErr) {
+      console.warn('taxi_rides insert failed, using fallback:', insertErr.message);
+      ride = { id: rideId, ...insertData, created_at: new Date().toISOString() };
+      getUserStore(taxiFallbackStore, req.user.id).push(ride);
+    }
+
+    // Simular progreso: searching → matched → riding → completed en el backend
+    const rideRef = ride?.ride_ref || rideId;
+    setTimeout(async () => {
+      try {
+        await supabase.from('taxi_rides').update({ status: 'matched' }).eq('ride_ref', rideRef);
+        const us = getUserStore(taxiFallbackStore, req.user.id);
+        const fi = us.findIndex(r => r.ride_ref === rideRef);
+        if (fi !== -1) us[fi].status = 'matched';
+      } catch {}
+    }, 5000);
+
+    setTimeout(async () => {
+      try {
+        await supabase.from('taxi_rides').update({ status: 'riding' }).eq('ride_ref', rideRef);
+        const us = getUserStore(taxiFallbackStore, req.user.id);
+        const fi = us.findIndex(r => r.ride_ref === rideRef);
+        if (fi !== -1) us[fi].status = 'riding';
+      } catch {}
+    }, eta * 60 * 1000 + 5000);
+
+    try { await logAudit(req.user.id, 'taxi_request', 'taxi', ride?.id || rideId, { tarifa, type }); } catch {}
+
+    res.json({
+      rideId,
+      driver,
+      eta,
+      tarifa,
+      distanceKm: Math.round(km * 10) / 10,
+      type: type || 'taxi',
+      status: 'searching',
+      paymentMethod,
+    });
+  } catch (e) {
+    console.error('Taxi request error:', e);
+    res.status(500).json({ message: 'Error al solicitar taxi' });
+  }
+});
+
+app.get('/api/taxi/:rideId/status', auth, async (req, res) => {
+  try {
+    let ride = null;
+    try {
+      const { data } = await supabase.from('taxi_rides')
+        .select('*').eq('user_id', req.user.id).eq('ride_ref', req.params.rideId).maybeSingle();
+      ride = data;
+    } catch (e) { console.warn('Taxi status query failed:', e.message); }
+
+    if (!ride) {
+      const userRides = getUserStore(taxiFallbackStore, req.user.id);
+      ride = userRides.find(r => r.ride_ref === req.params.rideId);
+    }
+
+    if (!ride) return res.status(404).json({ message: 'Viaje no encontrado' });
+
+    res.json({
+      rideId:          ride.ride_ref,
+      status:          ride.status || 'processing',
+      eta:             ride.status === 'completed' ? 0 : (ride.eta_minutes || 4),
+      distanceKm:      ride.distance_km || 3,
+      fare:            ride.fare,
+      driver: {
+        name:    ride.driver_name,
+        rating:  ride.driver_rating,
+        plate:   ride.driver_plate,
+        vehicle: ride.driver_vehicle,
+        phone:   ride.driver_phone,
+        initials:(ride.driver_name || 'CN').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+      },
+      driver_location: { lat: 3.752 + Math.random()*0.005, lng: 8.774 + Math.random()*0.005 },
+      paymentMethod:   ride.payment_method || 'wallet',
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'Error al obtener estado del viaje' });
+  }
+});
+
+app.post('/api/taxi/:rideId/cancel', auth, async (req, res) => {
+  try {
+    const rideId = req.params.rideId;
+    try {
+      await supabase.from('taxi_rides').update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('user_id', req.user.id).eq('ride_ref', rideId);
+    } catch (e) { console.warn('Taxi cancel update failed:', e.message); }
+    const userRides = getUserStore(taxiFallbackStore, req.user.id);
+    const fi = userRides.findIndex(r => r.ride_ref === rideId);
+    if (fi !== -1) userRides[fi].status = 'cancelled';
+    try { await logAudit(req.user.id, 'taxi_cancel', 'taxi', rideId, {}); } catch {}
+    res.json({ message: 'Viaje cancelado', rideId });
+  } catch (e) {
+    res.status(500).json({ message: 'Error al cancelar viaje' });
+  }
+});
+
+app.post('/api/taxi/:rideId/rate', auth, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: 'Rating 1-5' });
+    const rideId = req.params.rideId;
+
+    let ride = null;
+    try {
+      const { data } = await supabase.from('taxi_rides')
+        .select('*').eq('user_id', req.user.id).eq('ride_ref', rideId).maybeSingle();
+      ride = data;
+    } catch {}
+    if (!ride) {
+      const us = getUserStore(taxiFallbackStore, req.user.id);
+      ride = us.find(r => r.ride_ref === rideId);
+    }
+    if (!ride) return res.status(404).json({ message: 'Viaje no encontrado' });
+
+    const upd = { rating, rating_comment: comment||null, status: 'completed', updated_at: new Date().toISOString() };
+    try {
+      await supabase.from('taxi_rides').update(upd).eq('user_id', req.user.id).eq('ride_ref', rideId);
+    } catch {}
+    const us = getUserStore(taxiFallbackStore, req.user.id);
+    const fi = us.findIndex(r => r.ride_ref === rideId);
+    if (fi !== -1) Object.assign(us[fi], upd);
+
+    // Descontar del wallet si fue pago con wallet
+    if (ride.payment_method !== 'cash') {
+      try { await debitWalletWithTx(req.user.id, ride.fare||0, 'TAXI', `TAXI-${rideId}`, 'taxi'); } catch {}
+    }
+
+    try { await logAudit(req.user.id, 'taxi_rate', 'taxi', rideId, { rating }); } catch {}
+    res.json({ message: 'Valoración enviada', rating, rideId });
+  } catch (e) {
+    res.status(500).json({ message: 'Error al valorar viaje' });
+  }
+});
+
+app.get('/api/taxi/rides', auth, async (req, res) => {
+  try {
+    const page  = parseInt(String(req.query.page  || '1'));
+    const limit = parseInt(String(req.query.limit || '20'));
+    const offset = (page - 1) * limit;
+
+    let rides = [];
+    try {
+      const { data } = await supabase.from('taxi_rides')
+        .select('*').eq('user_id', req.user.id)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      rides = data || [];
+    } catch (e) { console.warn('Taxi rides query failed:', e.message); }
+
+    const fallbackRides = getUserStore(taxiFallbackStore, req.user.id);
+    const combined = [...rides, ...fallbackRides];
+    const unique = combined.filter((r, i, a) => i === a.findIndex(x => x.ride_ref === r.ride_ref));
+    unique.sort((a, b) => new Date(b.created_at||0).getTime() - new Date(a.created_at||0).getTime());
+
+    res.json(unique.slice(0, limit));
+  } catch (e) {
+    res.status(500).json({ message: 'Error al obtener historial' });
+  }
+});
     
     // Validar wallet con fallback
     let wallet = null;
