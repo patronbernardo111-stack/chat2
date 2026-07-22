@@ -982,8 +982,8 @@ app.post('/api/payments/withdraw/confirm/:intentId', auth, async (req, res) => {
 // ── Historial de pagos externos ───────────────────────────────────
 app.get('/api/payments/history', auth, async (req, res) => {
   try {
-    const page  = parseInt(req.query.page as string || '1');
-    const limit = parseInt(req.query.limit as string || '20');
+    const page  = parseInt(String(req.query.page  || '1'));
+    const limit = parseInt(String(req.query.limit || '20'));
     const offset = (page - 1) * limit;
 
     const { data } = await supabase
