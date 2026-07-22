@@ -3315,8 +3315,6 @@ app.post('/api/salud/medicamentos/pedido', auth, async (req, res) => {
   res.json({ orderId, status: 'confirmed', total, eta: '20-30 min', message: 'Pedido de medicamentos confirmado' });
 });
 
-// ════════════════════════════════════════════════════════════════════
-// TAXI
 // ══════════════════════════════════════════════════════════════════
 // TAXI — v2: tarifas reales, conductores múltiples, ETA dinámico,
 //           historial, estimación por distancia
