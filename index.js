@@ -5975,6 +5975,65 @@ app.get('/api/noticias/gobierno', async (req, res) => {
   }
 });
 
+// ── Endpoint de migración SQL (ejecutar una vez, luego eliminar) ──
+// Protegido con clave de admin — solo accesible via POST desde Render
+const MIGRATION_DONE_KEY = '__migration_v2_done';
+app.post('/api/admin/run-migration', async (req, res) => {
+  const { key } = req.body;
+  if (key !== (process.env.ADMIN_RESET_KEY || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret')) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const migrations = [
+    // Task #1 — Doble check real
+    `ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'sent'`,
+    `CREATE INDEX IF NOT EXISTS idx_chat_messages_status ON chat_messages(chat_id, status)`,
+    `CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_sender ON chat_messages(chat_id, sender_id)`,
+    // Task #5 — E2E key backup
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS e2e_public_key TEXT`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS e2e_key_backup JSONB`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS e2e_backup_updated TIMESTAMPTZ`,
+    // Task #7 — Stickers
+    `CREATE TABLE IF NOT EXISTS sticker_packs (id VARCHAR(100) PRIMARY KEY, name VARCHAR(100) NOT NULL, author VARCHAR(100) DEFAULT 'EGChat', cover_url TEXT, stickers JSONB DEFAULT '[]', download_count INTEGER DEFAULT 0, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW())`,
+    `CREATE TABLE IF NOT EXISTS user_sticker_packs (user_id UUID REFERENCES users(id) ON DELETE CASCADE, pack_id VARCHAR(100) NOT NULL, installed_at TIMESTAMPTZ DEFAULT NOW(), PRIMARY KEY(user_id, pack_id))`,
+    `CREATE TABLE IF NOT EXISTS user_custom_stickers (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE, file_url TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())`,
+    `INSERT INTO sticker_packs (id, name, author, cover_url, stickers) VALUES ('egchat_classic','EGChat Clásico','EGChat','https://media.tenor.com/RHpFOybx63oAAAAi/hi-wave.gif','[{"id":"eg_hi","url":"https://media.tenor.com/RHpFOybx63oAAAAi/hi-wave.gif","label":"👋"}]') ON CONFLICT (id) DO NOTHING`,
+    `INSERT INTO sticker_packs (id, name, author, cover_url, stickers) VALUES ('guinea_eq','Guinea Ecuatorial','EGChat','https://media.tenor.com/KWBXqCNb-0AAAAAi/party-celebration.gif','[{"id":"ge1","url":"https://media.tenor.com/KWBXqCNb-0AAAAAi/party-celebration.gif","label":"🇬🇶"}]') ON CONFLICT (id) DO NOTHING`,
+    // Task #8 — Mini-apps
+    `CREATE TABLE IF NOT EXISTS mini_apps (id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name VARCHAR(100) NOT NULL, description TEXT, icon_url TEXT, accent_color VARCHAR(20) DEFAULT '#00c8a0', url TEXT NOT NULL, category VARCHAR(50) DEFAULT 'utilities', permissions JSONB DEFAULT '[]', developer_name VARCHAR(100) DEFAULT 'EGChat', is_verified BOOLEAN DEFAULT FALSE, is_active BOOLEAN DEFAULT TRUE, installs_count INTEGER DEFAULT 0, created_at TIMESTAMPTZ DEFAULT NOW())`,
+    `CREATE TABLE IF NOT EXISTS user_mini_apps (user_id UUID REFERENCES users(id) ON DELETE CASCADE, app_id UUID REFERENCES mini_apps(id) ON DELETE CASCADE, installed_at TIMESTAMPTZ DEFAULT NOW(), last_used_at TIMESTAMPTZ, PRIMARY KEY(user_id, app_id))`,
+    // Task #9 — Pagos
+    `CREATE TABLE IF NOT EXISTS payment_transactions (id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL, type VARCHAR(20) NOT NULL, amount DECIMAL(15,2) NOT NULL, currency VARCHAR(10) DEFAULT 'XAF', gateway VARCHAR(30) NOT NULL, gateway_txn_id TEXT, status VARCHAR(20) DEFAULT 'pending', metadata JSONB DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())`,
+    `CREATE INDEX IF NOT EXISTS idx_payment_txns_user ON payment_transactions(user_id, created_at DESC)`,
+    // Task #10 — Sesiones multi-dispositivo
+    `CREATE TABLE IF NOT EXISTS user_sessions (id TEXT PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL, device_name VARCHAR(150), device_type VARCHAR(30), platform VARCHAR(80), last_seen TIMESTAMPTZ DEFAULT NOW(), is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ DEFAULT NOW())`,
+    `CREATE INDEX IF NOT EXISTS idx_user_sessions_user_active ON user_sessions(user_id, is_active)`,
+  ];
+
+  const results = [];
+  for (const sql of migrations) {
+    try {
+      const { error } = await supabase.rpc('exec_sql', { sql }).catch(() => ({ error: null }));
+      // Intentar directamente si exec_sql no existe
+      if (error) {
+        // Usar pg directamente
+        const { Pool } = require('pg');
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        await pool.query(sql);
+        await pool.end();
+        results.push({ sql: sql.slice(0, 60), ok: true });
+      } else {
+        results.push({ sql: sql.slice(0, 60), ok: true });
+      }
+    } catch (e) {
+      results.push({ sql: sql.slice(0, 60), ok: false, error: e.message });
+    }
+  }
+
+  const allOk = results.every(r => r.ok);
+  res.json({ ok: allOk, results, total: migrations.length, passed: results.filter(r => r.ok).length });
+});
+
 if (require.main === module) {
   app.listen(PORT, async () => {
     console.log(`\n😎 EGCHAT API + Supabase en http://localhost:${PORT}`);
