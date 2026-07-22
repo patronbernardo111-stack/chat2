@@ -5977,11 +5977,10 @@ app.get('/api/noticias/gobierno', async (req, res) => {
 });
 
 // ── Endpoint de migración SQL (ejecutar una vez, luego eliminar) ──
-// Protegido con clave de admin — solo accesible via POST desde Render
-const MIGRATION_DONE_KEY = '__migration_v2_done';
+const MIGRATION_KEY = 'egchat_migrate_v2_2026';
 app.post('/api/admin/run-migration', async (req, res) => {
   const { key } = req.body;
-  if (key !== (process.env.ADMIN_RESET_KEY || 'EGchat2025!xK9mP3nQ7rL2vW8tY4uJ6hF1bN5cA0dE_prod_secret')) {
+  if (key !== MIGRATION_KEY) {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
