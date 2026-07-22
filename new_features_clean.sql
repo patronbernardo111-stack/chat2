@@ -424,3 +424,34 @@ ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY payment_txns_own ON payment_transactions
   USING (user_id = auth.uid()::uuid);
 */
+
+-- ══════════════════════════════════════════════════════════════════
+-- Mi Taxi v2 — tabla taxi_rides
+-- Pegar en Supabase SQL Editor
+-- ══════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS taxi_rides (
+  id             UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  ride_ref       VARCHAR(60) UNIQUE NOT NULL,
+  user_id        UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  origin         TEXT NOT NULL,
+  destination    TEXT NOT NULL,
+  ride_type      VARCHAR(20) DEFAULT 'taxi',
+  fare           DECIMAL(10,2),
+  distance_km    DECIMAL(6,2),
+  eta_minutes    INTEGER DEFAULT 4,
+  status         VARCHAR(20) DEFAULT 'searching',
+  payment_method VARCHAR(20) DEFAULT 'wallet',
+  driver_name    VARCHAR(100),
+  driver_rating  DECIMAL(2,1),
+  driver_plate   VARCHAR(20),
+  driver_vehicle VARCHAR(80),
+  driver_phone   VARCHAR(30),
+  rating         SMALLINT CHECK (rating BETWEEN 1 AND 5),
+  rating_comment TEXT,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_taxi_rides_user    ON taxi_rides(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_taxi_rides_status  ON taxi_rides(status);
+CREATE INDEX IF NOT EXISTS idx_taxi_rides_ref     ON taxi_rides(ride_ref);
