@@ -1,5 +1,6 @@
 
 ﻿// Cargar variables de entorno (solo en local, en Render vienen del dashboard)
+// v2.5.2 — build forzado para limpiar cache Render
 try { 
   const dotenv = require('dotenv');
   dotenv.config();
