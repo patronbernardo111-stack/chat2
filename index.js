@@ -224,6 +224,22 @@ app.post('/api/admin/reset-password', async (req, res) => {
   res.json({ message: 'Contrasena reseteada', user: data });
 });
 
+// --- EMERGENCY: listar usuarios reales de Supabase -------------------
+app.get('/api/emergency/list-users', async (req, res) => {
+  const { token } = req.query;
+  if (!token || token !== 'EG2026_RESET_TOKEN_X9K') return res.status(403).json({ message: 'No autorizado' });
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, phone, full_name, avatar_url')
+      .limit(200);
+    if (error) return res.status(500).json({ message: error.message, detail: error.details });
+    res.json({ ok: true, count: data.length, users: data });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // --- EMERGENCY RESET (temporal, borrar después) -----------------------
 app.post('/api/emergency/reset-pw', async (req, res) => {
   const { token, phone, newPassword } = req.body || {};
