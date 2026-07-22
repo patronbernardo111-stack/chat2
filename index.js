@@ -460,6 +460,168 @@ app.put('/api/auth/profile', auth, async (req, res) => {
 app.post('/api/auth/logout', auth, (req, res) => res.json({ message: 'Sesión cerrada' }));
 
 // ══════════════════════════════════════════════════════════════════
+// SESIONES MULTI-DISPOSITIVO
+// Registro, heartbeat, listado y revocación de sesiones activas.
+// Permite al usuario ver todos sus dispositivos conectados (como
+// WhatsApp Web) y cerrar sesiones remotamente.
+// ══════════════════════════════════════════════════════════════════
+
+// Registrar / actualizar sesión del dispositivo actual
+app.post('/api/auth/sessions/register', auth, async (req, res) => {
+  try {
+    const { deviceId, deviceName, deviceType, platform } = req.body;
+    const userId = req.user.id;
+
+    if (!deviceId) return res.status(400).json({ message: 'deviceId requerido' });
+
+    await supabase.from('user_sessions').upsert({
+      id:          `${userId}_${deviceId}`,
+      user_id:     userId,
+      device_name: deviceName || 'Dispositivo',
+      device_type: deviceType || 'unknown',
+      platform:    platform   || '',
+      last_seen:   new Date().toISOString(),
+      is_active:   true,
+    }, { onConflict: 'id' });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Heartbeat — mantener sesión viva
+app.post('/api/auth/sessions/heartbeat', auth, async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    const userId = req.user.id;
+    await supabase.from('user_sessions')
+      .update({ last_seen: new Date().toISOString(), is_active: true })
+      .eq('id', `${userId}_${deviceId}`);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Listar sesiones activas del usuario
+app.get('/api/auth/sessions', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: sessions } = await supabase
+      .from('user_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('last_seen', { ascending: false });
+
+    res.json((sessions || []).map(s => ({
+      id:           s.id,
+      deviceId:     s.device_name ? s.id.replace(`${userId}_`, '') : s.id,
+      deviceName:   s.device_name,
+      deviceType:   s.device_type,
+      platform:     s.platform,
+      lastSeen:     s.last_seen,
+      createdAt:    s.created_at,
+    })));
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Revocar una sesión específica (cerrar otro dispositivo)
+app.delete('/api/auth/sessions/:sessionId', auth, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+
+    // Verificar que la sesión pertenece a este usuario
+    const { data: session } = await supabase
+      .from('user_sessions')
+      .select('id, user_id')
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!session) return res.status(404).json({ message: 'Sesión no encontrada' });
+
+    await supabase.from('user_sessions').update({ is_active: false }).eq('id', sessionId);
+
+    // Extraer deviceId del id compuesto "userId_deviceId"
+    const deviceId = sessionId.replace(`${userId}_`, '');
+
+    // Notificar al dispositivo remoto via SSE para que cierre sesión
+    emitToUser(String(userId), {
+      type: 'session_revoked',
+      deviceId,
+      sessionId,
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Cerrar todas las sesiones excepto la actual
+app.delete('/api/auth/sessions/all-except-current', auth, async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    const userId = req.user.id;
+    const currentSessionId = `${userId}_${deviceId}`;
+
+    const { data: sessions } = await supabase
+      .from('user_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .neq('id', currentSessionId);
+
+    if (sessions?.length) {
+      await supabase.from('user_sessions')
+        .update({ is_active: false })
+        .in('id', sessions.map(s => s.id));
+
+      // Notificar a todos los otros dispositivos
+      emitToUser(String(userId), {
+        type: 'session_revoked',
+        all: true,
+        exceptDeviceId: deviceId,
+        ts: Date.now(),
+      });
+    }
+
+    res.json({ ok: true, revoked: sessions?.length || 0 });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Sincronización bilateral: emitir mensaje a todos los otros dispositivos del usuario
+// Esto se llama internamente después de enviar un mensaje, para que el móvil
+// reciba el mensaje enviado desde web/desktop
+app.post('/api/auth/sessions/sync-message', auth, async (req, res) => {
+  try {
+    const { chatId, message, senderDeviceId } = req.body;
+    const userId = req.user.id;
+
+    // Emitir a todos los dispositivos del usuario EXCEPTO el que envió
+    emitToUser(String(userId), {
+      type: 'sync_message',
+      chatId,
+      message,
+      senderDeviceId,
+      ts: Date.now(),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
 // PAGOS CON PASARELA REAL — Stripe + Orange Money + MTN
 //
 // Arquitectura:
