@@ -42,7 +42,7 @@ const FALLBACK_USERS = new Map([
   ['+240555570323', {
     id: 'fallback-240555570323',
     phone: '+240555570323',
-    full_name: 'Raymon Reddintone',
+    full_name: 'Raymon Reddintone', // Usuario principal
     avatar_url: null,
     password_hash: '$2a$10$.7A2DtbtOvnbHxy63LTlUusN84Uc/2VDstC23ZWBpR2S5AR3lgTyy', // 509871
   }],
