@@ -31,8 +31,8 @@ const dependencyCache = { timestamp: 0, result: null };
 
 // --- Supabase ---------------------------------------------------------
 const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || ''
+  process.env.SUPABASE_URL || 'https://fjtoxjcuyfapeprniink.supabase.co',
+  process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdG94amN1eWZhcGVwcm5paW5rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTMxMjQxMywiZXhwIjoyMDkwODg4NDEzfQ.MpI67gnRfcnMCFCvOgg0OJet-wHRaSPjMg-AmP0v2cY'
 );
 
 // --- Fallback de usuarios cuando Supabase no está disponible ----------
