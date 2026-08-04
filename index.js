@@ -417,6 +417,27 @@ app.post('/api/auth/check-phone', async (req, res) => {
   }
 });
 
+// Heartbeat — mantener online_status=true y notificar contactos
+app.post('/api/auth/heartbeat', auth, async (req, res) => {
+  try {
+    const userId = String(req.user.id);
+    await supabase.from('users').update({ online_status: true, last_seen: new Date().toISOString() }).eq('id', userId);
+    // Notificar contactos bidireccionales
+    const [{ data: c1 }, { data: c2 }] = await Promise.all([
+      supabase.from('contacts').select('user_id').eq('contact_user_id', userId),
+      supabase.from('contacts').select('contact_user_id').eq('user_id', userId),
+    ]);
+    const ids = new Set([
+      ...((c1 || []).map(c => String(c.user_id))),
+      ...((c2 || []).map(c => String(c.contact_user_id))),
+    ]);
+    ids.forEach(id => emitToUser(id, { type: 'presence', userId, online: true, ts: Date.now() }));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
