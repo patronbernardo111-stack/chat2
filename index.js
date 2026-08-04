@@ -1747,6 +1747,12 @@ app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
 
 // Marcar mensajes como leídos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { message_id } = req.body;
+
+    // Verificar acceso al chat
+    const { data: part } = await supabase
       .from('chat_participants')
       .select('id')
       .eq('chat_id', chatId)
