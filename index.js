@@ -336,6 +336,21 @@ app.get('/api/chat/stream', authFromQuery, (req, res) => {
   // Evento inicial
   res.write(`data: ${JSON.stringify({ type: 'connected', userId, ts: Date.now() })}\n\n`);
 
+  // Marcar online y notificar contactos
+  const notifyPresence = async (online) => {
+    try {
+      await supabase.from('users').update({ online_status: online, last_seen: new Date().toISOString() }).eq('id', userId);
+      const { data: contacts } = await supabase.from('contacts').select('user_id').eq('contact_user_id', userId);
+      const { data: myContacts } = await supabase.from('contacts').select('contact_user_id').eq('user_id', userId);
+      const notifyIds = new Set([
+        ...(contacts || []).map(c => String(c.user_id)),
+        ...(myContacts || []).map(c => String(c.contact_user_id)),
+      ]);
+      notifyIds.forEach(id => emitToUser(id, { type: 'presence', userId, online, ts: Date.now() }));
+    } catch {}
+  };
+  notifyPresence(true);
+
   // Keepalive para evitar timeout en proxies
   const heartbeat = setInterval(() => {
     try {
@@ -348,7 +363,10 @@ app.get('/api/chat/stream', authFromQuery, (req, res) => {
     const streams = chatStreams.get(userId);
     if (streams) {
       streams.delete(res);
-      if (streams.size === 0) chatStreams.delete(userId);
+      if (streams.size === 0) {
+        chatStreams.delete(userId);
+        notifyPresence(false);
+      }
     }
   });
 });
