@@ -1745,6 +1745,33 @@ app.get('/api/chats/:chatId/participants', auth, async (req, res) => {
   }
 });
 
+// Typing indicator — emite evento SSE al otro participante
+app.post('/api/chats/:chatId/typing', auth, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { is_typing } = req.body;
+    const senderId = String(req.user.id);
+    // Obtener los otros participantes del chat
+    const { data: parts } = await supabase
+      .from('chat_participants')
+      .select('user_id')
+      .eq('chat_id', chatId)
+      .neq('user_id', senderId);
+    (parts || []).forEach(p => {
+      emitToUser(String(p.user_id), {
+        type: 'typing',
+        chatId,
+        userId: senderId,
+        isTyping: !!is_typing,
+        ts: Date.now(),
+      });
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // Marcar mensajes como leídos
 app.post('/api/chats/:chatId/read', auth, async (req, res) => {
   try {
