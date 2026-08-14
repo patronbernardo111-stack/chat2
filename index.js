@@ -3294,6 +3294,254 @@ app.get('/api/servicios/orders', auth, async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════════
+// RECARGAS MÓVILES
+// ════════════════════════════════════════════════════════════════════
+const MOBILE_OPERATORS = [
+  { id: 'getesa', name: 'GETESA', code: '+240 222', color: '#1485EE' },
+  { id: 'gecomsa', name: 'GECOMSA', code: '+240 333', color: '#2E9E6B' },
+  { id: 'orange', name: 'Orange GE', code: '+240 555', color: '#FF8C00' }
+];
+
+const MOBILE_PACKAGES = {
+  getesa: [
+    { id: 'g1', name: 'Recarga 1000 XAF', type: 'saldo', price: 1000, validity: '30 días', desc: '1000 XAF de saldo' },
+    { id: 'g2', name: 'Recarga 2500 XAF', type: 'saldo', price: 2500, validity: '30 días', desc: '2500 XAF de saldo' },
+    { id: 'g3', name: 'Pack Datos 1GB', type: 'datos', price: 3000, validity: '7 días', desc: '1GB de datos móviles' },
+    { id: 'g4', name: 'Pack Datos 5GB', type: 'datos', price: 8000, validity: '30 días', desc: '5GB de datos móviles' },
+    { id: 'g5', name: 'Pack Llamadas', type: 'minutos', price: 2000, validity: '7 días', desc: '60 minutos gratis' }
+  ],
+  gecomsa: [
+    { id: 'c1', name: 'Recarga 1000 XAF', type: 'saldo', price: 1000, validity: '30 días', desc: '1000 XAF de saldo' },
+    { id: 'c2', name: 'Recarga 2500 XAF', type: 'saldo', price: 2500, validity: '30 días', desc: '2500 XAF de saldo' },
+    { id: 'c3', name: 'Pack Datos 2GB', type: 'datos', price: 4000, validity: '15 días', desc: '2GB de datos móviles' },
+    { id: 'c4', name: 'Pack Datos 10GB', type: 'datos', price: 12000, validity: '30 días', desc: '10GB de datos móviles' }
+  ],
+  orange: [
+    { id: 'o1', name: 'Recarga 1500 XAF', type: 'saldo', price: 1500, validity: '30 días', desc: '1500 XAF de saldo' },
+    { id: 'o2', name: 'Recarga 3000 XAF', type: 'saldo', price: 3000, validity: '30 días', desc: '3000 XAF de saldo' },
+    { id: 'o3', name: 'Pack Orange 3GB', type: 'datos', price: 5000, validity: '30 días', desc: '3GB de datos Orange' },
+    { id: 'o4', name: 'Pack Orange Ilimitado', type: 'datos', price: 15000, validity: '30 días', desc: 'Datos ilimitados' }
+  ]
+};
+
+// Obtener operadores móviles disponibles
+app.get('/api/services/mobile/operators', auth, async (req, res) => {
+  res.json(MOBILE_OPERATORS);
+});
+
+// Obtener paquetes de un operador específico
+app.get('/api/services/mobile/operators/:operatorId/packages', auth, async (req, res) => {
+  const { operatorId } = req.params;
+  const packages = MOBILE_PACKAGES[operatorId] || [];
+  res.json(packages);
+});
+
+// Procesar recarga móvil
+app.post('/api/services/mobile/recharge', auth, async (req, res) => {
+  const { operatorId, packageId, phone, amount } = req.body;
+  
+  if (!operatorId || !packageId || !phone || !amount) {
+    return res.status(400).json({ message: 'Datos incompletos', code: 'VALIDATION_ERROR' });
+  }
+
+  const operator = MOBILE_OPERATORS.find(op => op.id === operatorId);
+  const packages = MOBILE_PACKAGES[operatorId] || [];
+  const pkg = packages.find(p => p.id === packageId);
+
+  if (!operator || !pkg) {
+    return res.status(400).json({ message: 'Operador o paquete no válido', code: 'VALIDATION_ERROR' });
+  }
+
+  if (amount !== pkg.price) {
+    return res.status(400).json({ message: 'Monto incorrecto', code: 'VALIDATION_ERROR' });
+  }
+
+  // Debitar del monedero
+  const deb = await debitWalletWithTx(req.user.id, amount, 'EGCHAT', `${operatorId.toUpperCase()}-${phone}`, 'mobile_recharge');
+  if (!deb.ok) {
+    return res.status(400).json({ message: deb.message, code: 'INSUFFICIENT_BALANCE' });
+  }
+
+  const response = {
+    success: true,
+    balance: deb.balance,
+    referencia: safeRef('REC'),
+    operator: operator.name,
+    phone,
+    package: pkg.name,
+    amount,
+    validity: pkg.validity,
+    message: `Recarga ${pkg.name} completada para ${phone}`
+  };
+
+  // Crear orden de servicio
+  await createServiceOrder(req.user.id, 'mobile_recharge', operatorId, amount, phone, req.body, response);
+  
+  res.json(response);
+});
+
+// Obtener historial de recargas
+app.get('/api/services/mobile/history', auth, async (req, res) => {
+  const { data } = await supabase
+    .from('service_orders')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .eq('provider', 'mobile_recharge')
+    .order('created_at', { ascending: false });
+  
+  res.json(data || []);
+});
+
+// ════════════════════════════════════════════════════════════════════
+// GESTIÓN DE FACTURAS PERSONALES
+// ════════════════════════════════════════════════════════════════════
+const BILL_CATEGORIES = [
+  { id: 'electricidad', name: 'Electricidad', icon: '⚡', provider: 'SEGESA', color: '#F59E0B' },
+  { id: 'agua', name: 'Agua', icon: '💧', provider: 'SNGE', color: '#06B6D4' },
+  { id: 'telefono', name: 'Teléfono', icon: '📞', provider: 'GETESA', color: '#8B5CF6' },
+  { id: 'internet', name: 'Internet', icon: '🌐', provider: 'GECOMSA', color: '#10B981' },
+  { id: 'seguro', name: 'Seguro', icon: '🛡️', provider: 'COGE', color: '#F59E0B' },
+  { id: 'impuestos', name: 'Impuestos', icon: '🏛️', provider: 'DGI', color: '#EF4444' },
+  { id: 'alquiler', name: 'Alquiler', icon: '🏠', provider: '', color: '#6B7280' },
+  { id: 'otros', name: 'Otros', icon: '📄', provider: '', color: '#9CA3AF' }
+];
+
+// Obtener categorías de facturas
+app.get('/api/services/bills/categories', auth, async (req, res) => {
+  res.json(BILL_CATEGORIES);
+});
+
+// Crear nueva factura personal
+app.post('/api/services/bills', auth, async (req, res) => {
+  const { service, provider, amount, dueDate, reference, categoryId } = req.body;
+  
+  if (!service || !amount || !dueDate) {
+    return res.status(400).json({ message: 'Datos incompletos', code: 'VALIDATION_ERROR' });
+  }
+
+  const category = BILL_CATEGORIES.find(c => c.id === categoryId);
+  const billData = {
+    user_id: req.user.id,
+    service: service,
+    provider: provider || category?.provider || '',
+    amount: parseInt(amount, 10),
+    due_date: dueDate,
+    reference: reference || '',
+    category_id: categoryId || 'otros',
+    icon: category?.icon || '📄',
+    color: category?.color || '#9CA3AF',
+    status: 'pendiente',
+    created_at: new Date().toISOString()
+  };
+
+  const { data: bill, error } = await supabase
+    .from('user_bills')
+    .insert(billData)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Create bill error:', error);
+    return res.status(500).json({ message: 'Error al crear factura' });
+  }
+
+  res.json({ success: true, bill });
+});
+
+// Obtener facturas del usuario
+app.get('/api/services/bills', auth, async (req, res) => {
+  const { status } = req.query;
+  
+  let query = supabase
+    .from('user_bills')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .order('due_date', { ascending: true });
+
+  if (status && status !== 'todas') {
+    query = query.eq('status', status);
+  }
+
+  const { data: bills } = await query;
+  res.json(bills || []);
+});
+
+// Pagar factura personal
+app.post('/api/services/bills/:billId/pay', auth, async (req, res) => {
+  const { billId } = req.params;
+  const { paymentMethod = 'EGCHAT' } = req.body;
+
+  // Obtener factura
+  const { data: bill, error: billError } = await supabase
+    .from('user_bills')
+    .select('*')
+    .eq('id', billId)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (billError || !bill) {
+    return res.status(404).json({ message: 'Factura no encontrada' });
+  }
+
+  if (bill.status === 'pagada') {
+    return res.status(400).json({ message: 'La factura ya está pagada' });
+  }
+
+  // Debitar del monedero
+  const deb = await debitWalletWithTx(req.user.id, bill.amount, paymentMethod, `BILL-${billId}`, 'bill_payment');
+  if (!deb.ok) {
+    return res.status(400).json({ message: deb.message, code: 'INSUFFICIENT_BALANCE' });
+  }
+
+  // Marcar factura como pagada
+  const { error: updateError } = await supabase
+    .from('user_bills')
+    .update({ 
+      status: 'pagada',
+      paid_at: new Date().toISOString()
+    })
+    .eq('id', billId);
+
+  if (updateError) {
+    console.error('Update bill error:', updateError);
+    return res.status(500).json({ message: 'Error al actualizar factura' });
+  }
+
+  const response = {
+    success: true,
+    balance: deb.balance,
+    referencia: safeRef('PAY'),
+    service: bill.service,
+    amount: bill.amount,
+    message: `Pago de ${bill.service} completado`
+  };
+
+  // Crear orden de servicio para el historial
+  await createServiceOrder(req.user.id, 'bill_payment', bill.category_id, bill.amount, bill.reference, 
+    { billId, service: bill.service }, response);
+
+  res.json(response);
+});
+
+// Eliminar factura personal
+app.delete('/api/services/bills/:billId', auth, async (req, res) => {
+  const { billId } = req.params;
+
+  const { error } = await supabase
+    .from('user_bills')
+    .delete()
+    .eq('id', billId)
+    .eq('user_id', req.user.id);
+
+  if (error) {
+    console.error('Delete bill error:', error);
+    return res.status(500).json({ message: 'Error al eliminar factura' });
+  }
+
+  res.json({ success: true, message: 'Factura eliminada' });
+});
+
+// ════════════════════════════════════════════════════════════════════
 // SUPERMERCADOS
 // ════════════════════════════════════════════════════════════════════
 const SUPERMERCADOS = [
