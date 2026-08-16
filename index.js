@@ -1446,32 +1446,6 @@ app.post('/api/chats/:chatId/messages', auth, async (req, res) => {
 // Crear chat privado
 // Crear chat privado ââ‚¬â€ usa chat_participants
 
-// Notes chat endpoint
-app.post('/api/chats/notes', auth, async (req, res) => {
-  try {
-    const userId = String(req.user.id);
-    const { data: myParts } = await supabase
-      .from('chat_participants').select('chat_id').eq('user_id', userId);
-    for (const row of (myParts || [])) {
-      const { data: parts } = await supabase
-        .from('chat_participants').select('user_id').eq('chat_id', row.chat_id);
-      if (parts?.length === 1 && String(parts[0].user_id) === userId) {
-        return res.json({ id: row.chat_id });
-      }
-    }
-    const { data: chat, error } = await supabase
-      .from('chats')
-      .insert({ type: 'private', created_by: userId, created_at: new Date().toISOString() })
-      .select('id').single();
-    if (error) throw error;
-    await supabase.from('chat_participants').insert({
-      chat_id: chat.id, user_id: userId, joined_at: new Date().toISOString(),
-    });
-    res.json({ id: chat.id });
-  } catch (e) {
-    res.status(500).json({ message: e.message });
-  }
-});
 
 app.post('/api/chats/private', auth, async (req, res) => {
   try {
