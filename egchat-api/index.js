@@ -267,6 +267,9 @@ app.get('/', (req, res) => res.json({
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+// Test deploy version
+app.get('/api/test-deploy', (req, res) => res.json({ version: '5f87063-NEW', wallet_transfer: 'active', supabase: true }));
+
 app.get('/jwt-debug', (req, res) => res.json({
   jwt_secret_source: process.env.JWT_SECRET ? 'environment' : 'fallback',
   jwt_secret_first10: JWT_SECRET.substring(0, 10),
