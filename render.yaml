@@ -3,7 +3,6 @@ services:
     name: egchat-api
     env: node
     plan: free
-    rootDir: server
     buildCommand: npm install --production
     startCommand: node index.js
     healthCheckPath: /health
