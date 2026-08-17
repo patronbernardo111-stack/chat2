@@ -58,7 +58,7 @@ const APP_VERSION = '1.0.0-firebase';
 // ── CORS ──────────────────────────────────────────────────────────
 const allowedOrigins = (
   process.env.CORS_ALLOWED_ORIGINS
-  || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000'
+  || 'https://egchat-app.vercel.app,https://egchat-v2.vercel.app,http://localhost:5173,http://localhost:3001,http://localhost:3000,http://localhost:8081,http://localhost:19006'
 ).split(',').map(o => o.trim()).filter(Boolean);
 
 app.use(cors({
@@ -411,6 +411,107 @@ app.post('/api/wallet/recharge-code', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+app.post('/api/wallet/transfer', auth, async (req, res) => {
+  try {
+    const { to, amount, concept } = req.body;
+    
+    // Validación básica
+    if (!to || !amount || amount <= 0) {
+      return res.status(400).json({ message: 'Destinatario y monto requeridos' });
+    }
+    if (amount > 10000000) {
+      return res.status(400).json({ message: 'Monto máximo: 10,000,000 XAF' });
+    }
+
+    // Obtener wallet del remitente
+    const senderWallet = await getWalletSafe(req.user.id);
+    if (amount > Number(senderWallet.balance || 0)) {
+      return res.status(400).json({ message: 'Saldo insuficiente' });
+    }
+
+    // Buscar destinatario por teléfono o ID
+    let recipientId = null;
+    let recipientName = to;
+
+    // Intentar buscar por ID primero
+    if (to.match(/^[0-9a-f-]{20,}$/i)) {
+      const userSnap = await col('users').doc(to).get();
+      if (userSnap.exists) {
+        recipientId = userSnap.id;
+        recipientName = userSnap.data().full_name || to;
+      }
+    }
+
+    // Si no se encontró, buscar por teléfono
+    if (!recipientId && to.match(/^\+?[0-9\s()-]+$/)) {
+      const cleanPhone = to.replace(/[^0-9+]/g, '');
+      const phoneSnap = await col('users').where('phone', '==', cleanPhone).limit(1).get();
+      if (!phoneSnap.empty) {
+        const userDoc = phoneSnap.docs[0];
+        recipientId = userDoc.id;
+        recipientName = userDoc.data().full_name || cleanPhone;
+      }
+    }
+
+    // Verificar que no sea auto-transferencia
+    if (recipientId && recipientId === req.user.id) {
+      return res.status(400).json({ message: 'No puedes transferir dinero a ti mismo' });
+    }
+
+    // Actualizar balance del remitente
+    const newBalance = Number(senderWallet.balance) - amount;
+    await col('wallets').doc(String(req.user.id)).update({
+      balance: newBalance,
+      updated_at: new Date().toISOString()
+    });
+
+    // Si se encontró destinatario, actualizar su wallet
+    if (recipientId) {
+      const recipientWallet = await getWalletSafe(recipientId);
+      const recipientNewBalance = Number(recipientWallet.balance || 0) + amount;
+      await col('wallets').doc(String(recipientId)).update({
+        balance: recipientNewBalance,
+        updated_at: new Date().toISOString()
+      });
+    }
+
+    // Registrar transacción del remitente
+    const txRef = await col('transactions').add({
+      user_id: req.user.id,
+      type: 'transfer_sent',
+      amount: -amount,
+      method: 'EGCHAT',
+      reference: `Transferencia a: ${recipientName}${concept ? ' · ' + concept : ''}`,
+      status: 'completed',
+      created_at: new Date().toISOString()
+    });
+
+    // Si hay destinatario registrado, crear su transacción de ingreso
+    if (recipientId) {
+      await col('transactions').add({
+        user_id: recipientId,
+        type: 'transfer_received',
+        amount: amount,
+        method: 'EGCHAT',
+        reference: `Transferencia de usuario${concept ? ' · ' + concept : ''}`,
+        status: 'completed',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      success: true,
+      balance: newBalance,
+      transaction: { id: txRef.id },
+      recipient: recipientName,
+      message: 'Transferencia completada exitosamente'
+    });
+  } catch (e) {
+    console.error('POST /api/wallet/transfer error:', e);
+    res.status(500).json({ message: e.message || 'Error al procesar la transferencia' });
+  }
+});
+
 
 // ════════════════════════════════════════════════════════════════════
 // CONTACTS
@@ -646,22 +747,7 @@ app.post('/api/chats/group', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-app.post('/api/chats/notes', auth, async (req, res) => {
-  try {
-    const userId = String(req.user.id);
-    const pSnap = await col('chat_participants').where('user_id', '==', userId).get();
-    for (const doc of pSnap.docs) {
-      const chatId = doc.data().chat_id;
-      const chatParts = await col('chat_participants').where('chat_id', '==', chatId).get();
-      if (chatParts.size === 1) return res.json({ id: chatId });
-    }
-    const now = new Date().toISOString();
-    const chatRef = col('chats').doc();
-    await chatRef.set({ type: 'private', created_by: userId, created_at: now, updated_at: now });
-    await col('chat_participants').add({ chat_id: chatRef.id, user_id: userId, joined_at: now });
-    res.json({ id: chatRef.id });
-  } catch (e) { res.status(500).json({ message: e.message }); }
-});
+
 
 app.get('/api/chats/:chatId/messages', auth, async (req, res) => {
   try {
