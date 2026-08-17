@@ -268,7 +268,7 @@ app.get('/', (req, res) => res.json({
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Test deploy version
-app.get('/api/test-deploy', (req, res) => res.json({ version: '5f87063-NEW', wallet_transfer: 'active', supabase: true }));
+app.get('/api/test-deploy', (req, res) => res.json({ version: '7bfcbc3-TWILIO-FIXED', wallet_transfer: 'active', supabase: true, sms_verification: 'active' }));
 
 // Test wallet/transfer validation (sin auth)
 app.post('/api/test-wallet-validation', async (req, res) => {
