@@ -270,6 +270,18 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 // Test deploy version
 app.get('/api/test-deploy', (req, res) => res.json({ version: '7bfcbc3-TWILIO-FIXED', wallet_transfer: 'active', supabase: true, sms_verification: 'active' }));
 
+// Helper para generar hash de contraseña (solo dev)
+app.post('/api/dev/hash-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ message: 'Password requerido' });
+    const hash = await bcrypt.hash(password, 10);
+    res.json({ password, hash });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 // Test wallet/transfer validation (sin auth)
 app.post('/api/test-wallet-validation', async (req, res) => {
   const { to, amount } = req.body;
