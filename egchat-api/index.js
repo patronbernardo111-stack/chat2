@@ -1183,7 +1183,7 @@ app.get('/api/users/:userId/e2e-key', auth, async (req, res) => {
 // Almacén temporal en memoria: { phone -> { code, expiresAt } }
 const resetCodes = new Map();
 
-app.post('/api/auth/send-verification', async (req, res) => {
+app.post('/api/auth/request-password-reset', async (req, res) => {
   try {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ message: 'Teléfono requerido' });
