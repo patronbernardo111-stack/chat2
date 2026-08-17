@@ -1225,10 +1225,15 @@ app.post('/api/auth/verify-code', async (req, res) => {
     const { phone, code } = req.body;
     if (!phone || !code) return res.status(400).json({ message: 'Teléfono y código requeridos' });
 
-    const entry = resetCodes.get(phone);
+    // Buscar en verificationCodes (registro) o resetCodes (recuperación)
+    const verificationEntry = global.verificationCodes?.get(phone);
+    const resetEntry = resetCodes.get(phone);
+    const entry = verificationEntry || resetEntry;
+
     if (!entry) return res.status(400).json({ verified: false, message: 'No hay código activo para este número' });
     if (Date.now() > entry.expiresAt) {
-      resetCodes.delete(phone);
+      if (verificationEntry) global.verificationCodes.delete(phone);
+      if (resetEntry) resetCodes.delete(phone);
       return res.status(400).json({ verified: false, message: 'El código ha expirado. Solicita uno nuevo.' });
     }
     if (entry.code !== String(code)) return res.status(400).json({ verified: false, message: 'Código incorrecto' });
@@ -7078,6 +7083,53 @@ app.post('/api/backup/upload', auth, async (req, res) => {
 });
 
 // ── #9: OTP / VERIFICACIÓN SMS ──────────────────────────────────────
+// Enviar código SMS de verificación
+app.post('/api/auth/send-verification', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ message: 'Teléfono requerido' });
+
+    // Generar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutos
+
+    // Guardar en memoria (en producción usar Redis o DB)
+    if (!global.verificationCodes) global.verificationCodes = new Map();
+    global.verificationCodes.set(phone, { code, expiresAt });
+
+    // Intentar enviar SMS via Twilio
+    try {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const fromPhone = process.env.TWILIO_PHONE;
+
+      if (accountSid && authToken && fromPhone) {
+        const twilio = require('twilio')(accountSid, authToken);
+        await twilio.messages.create({
+          body: `Tu código de verificación EGCHAT es: ${code}. Válido 10 minutos.`,
+          from: fromPhone,
+          to: phone
+        });
+        console.log(`[SMS] Código enviado a ${phone}: ${code}`);
+        return res.json({ message: 'Código enviado', sent: true });
+      }
+    } catch (twilioError) {
+      console.error('[SMS] Error Twilio:', twilioError.message);
+    }
+
+    // Si Twilio no está configurado o falló, devolver código en desarrollo
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV] Código de verificación para ${phone}: ${code}`);
+      return res.json({ message: 'Código generado (dev mode)', code, sent: false });
+    }
+
+    res.json({ message: 'Código generado', sent: false });
+  } catch (e) {
+    console.error('[SMS] Error:', e);
+    res.status(500).json({ message: 'Error al enviar código' });
+  }
+});
+
 // El endpoint /api/auth/verify-code ya existe (línea 423)
 // Añadimos el de envío si no existe:
 
