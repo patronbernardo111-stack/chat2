@@ -270,6 +270,18 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 // Test deploy version
 app.get('/api/test-deploy', (req, res) => res.json({ version: '5f87063-NEW', wallet_transfer: 'active', supabase: true }));
 
+// Test wallet/transfer validation (sin auth)
+app.post('/api/test-wallet-validation', async (req, res) => {
+  const { to, amount } = req.body;
+  if (!to || !amount || amount <= 0) {
+    return res.status(400).json({ message: 'Destinatario y monto requeridos' });
+  }
+  if (amount > 10000000) {
+    return res.status(400).json({ message: 'Monto máximo: 10,000,000 XAF' });
+  }
+  res.json({ validation: 'passed', to, amount });
+});
+
 app.get('/jwt-debug', (req, res) => res.json({
   jwt_secret_source: process.env.JWT_SECRET ? 'environment' : 'fallback',
   jwt_secret_first10: JWT_SECRET.substring(0, 10),
