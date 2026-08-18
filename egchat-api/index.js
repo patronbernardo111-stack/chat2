@@ -302,11 +302,12 @@ app.get('/jwt-debug', (req, res) => res.json({
 }));
 
 app.get('/debug', (req, res) => res.json({
-  supabase_url: process.env.SUPABASE_URL ? 'âœ… set' : 'âŒ missing',
-  supabase_key: process.env.SUPABASE_SERVICE_KEY ? 'âœ… set' : 'âŒ missing',
-  jwt_secret: process.env.JWT_SECRET ? 'âœ… set' : 'âŒ missing',
+  supabase_url_env: process.env.SUPABASE_URL || 'NO ENV — fallback activo',
+  supabase_key: process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'MISSING',
+  jwt_secret: process.env.JWT_SECRET ? 'SET' : 'MISSING',
   node_env: process.env.NODE_ENV || 'not set',
-  port: PORT
+  port: PORT,
+  version: APP_VERSION
 }));
 
 app.get('/api/system/dependencies', async (_req, res) => {
