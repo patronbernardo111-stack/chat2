@@ -25,14 +25,15 @@ const verifyToken = (token) => {
   }
   throw new Error('Token inválido o expirado');
 };
-const APP_VERSION = '2.5.5'; // fix: supabase correcto fjtoxjcuyfapeprniink // fix: emergency list-users + supabase quota fallback
+const APP_VERSION = '2.5.6'; // fix: supabase correcto → fqfxtjnfhvpggssbymdn (proyecto con usuarios reales)
 const chatStreams = new Map();
 const dependencyCache = { timestamp: 0, result: null };
 
 // --- Supabase ---------------------------------------------------------
+// Proyecto correcto: fqfxtjnfhvpggssbymdn (tiene todos los usuarios)
 const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://fjtoxjcuyfapeprniink.supabase.co',
-  process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdG94amN1eWZhcGVwcm5paW5rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTMxMjQxMywiZXhwIjoyMDkwODg4NDEzfQ.MpI67gnRfcnMCFCvOgg0OJet-wHRaSPjMg-AmP0v2cY'
+  process.env.SUPABASE_URL || 'https://fqfxtjnfhvpggssbymdn.supabase.co',
+  process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxZnh0am5maHZwZ2dzc2J5bWRuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTg0MzgyMCwiZXhwIjoyMTAxNDE5ODIwfQ.ulwcC4WW-00pgjKzzs9CclyMGad1y4dqjS7P-c2O-CM'
 );
 
 // --- Fallback de usuarios cuando Supabase no está disponible ----------
