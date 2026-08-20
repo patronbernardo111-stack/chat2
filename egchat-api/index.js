@@ -7153,6 +7153,498 @@ app.post('/api/auth/send-verification', async (req, res) => {
 // El endpoint /api/auth/verify-code ya existe (línea 423)
 // Añadimos el de envío si no existe:
 
+// ══════════════════════════════════════════════════════════════════
+// MI DJANGUE — Tanda / Caja de Ahorro Grupal
+// ══════════════════════════════════════════════════════════════════
+
+// ── Helpers ───────────────────────────────────────────────────────
+const calcNextPayoutDate = (frequency) => {
+  const d = new Date();
+  if (frequency === 'daily')   d.setDate(d.getDate() + 1);
+  if (frequency === 'weekly')  d.setDate(d.getDate() + 7);
+  if (frequency === 'monthly') d.setMonth(d.getMonth() + 1);
+  if (frequency === 'annual')  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString();
+};
+
+// ── GET /api/djangue — Mis djangues (como miembro o responsable) ──
+app.get('/api/djangue', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Grupos donde soy miembro
+    const { data: memberRows } = await supabase
+      .from('djangue_members')
+      .select('group_id')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    const memberGroupIds = (memberRows || []).map(r => r.group_id);
+
+    // Grupos donde soy dueño o secretario (aunque no esté en members)
+    const { data: ownedGroups } = await supabase
+      .from('djangue_groups')
+      .select('id')
+      .or(`owner_id.eq.${userId},secretary_id.eq.${userId}`);
+
+    const ownedIds = (ownedGroups || []).map(r => r.id);
+    const allIds   = [...new Set([...memberGroupIds, ...ownedIds])];
+
+    if (!allIds.length) return res.json([]);
+
+    const { data: groups, error } = await supabase
+      .from('djangue_groups')
+      .select(`
+        id, name, description, frequency, quota_amount, currency,
+        max_members, status, current_turn, total_turns, next_payout_at,
+        owner_id, secretary_id, created_at,
+        djangue_wallets (balance),
+        djangue_members (count)
+      `)
+      .in('id', allIds)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Enriquecer con info de si ya pagué este turno
+    const enriched = await Promise.all((groups || []).map(async (g) => {
+      const { data: myMember } = await supabase
+        .from('djangue_members')
+        .select('id, turn_order')
+        .eq('group_id', g.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const { data: myContrib } = myMember ? await supabase
+        .from('djangue_contributions')
+        .select('status')
+        .eq('group_id', g.id)
+        .eq('user_id', userId)
+        .eq('turn_number', g.current_turn)
+        .maybeSingle() : { data: null };
+
+      return {
+        ...g,
+        wallet_balance: g.djangue_wallets?.[0]?.balance ?? 0,
+        member_count: g.djangue_members?.[0]?.count ?? 0,
+        my_role: g.owner_id === userId ? 'owner' : g.secretary_id === userId ? 'secretary' : 'member',
+        my_turn_order: myMember?.turn_order ?? null,
+        my_paid_this_turn: myContrib?.status === 'paid',
+        is_my_turn: myMember?.turn_order === g.current_turn,
+      };
+    }));
+
+    res.json(enriched);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── POST /api/djangue — Crear grupo ───────────────────────────────
+app.post('/api/djangue', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, description, frequency, quota_amount, max_members, secretary_phone } = req.body;
+
+    if (!name || !frequency || !quota_amount)
+      return res.status(400).json({ message: 'name, frequency y quota_amount son requeridos' });
+    if (!['daily','weekly','monthly','annual'].includes(frequency))
+      return res.status(400).json({ message: 'frequency debe ser: daily, weekly, monthly, annual' });
+    if (quota_amount < 100)
+      return res.status(400).json({ message: 'Cuota mínima: 100 XAF' });
+
+    // Buscar secretario por teléfono (opcional)
+    let secretaryId = null;
+    if (secretary_phone) {
+      const { data: sec } = await supabase
+        .from('users').select('id').eq('phone', secretary_phone).maybeSingle();
+      if (!sec) return res.status(404).json({ message: 'Secretario no encontrado. Verifica el teléfono.' });
+      secretaryId = sec.id;
+    }
+
+    // Crear grupo
+    const { data: group, error: gErr } = await supabase
+      .from('djangue_groups')
+      .insert({
+        name, description, frequency,
+        quota_amount: Number(quota_amount),
+        max_members: max_members || 12,
+        owner_id: userId,
+        secretary_id: secretaryId,
+        current_turn: 1,
+        total_turns: 0,
+        next_payout_at: calcNextPayoutDate(frequency),
+      })
+      .select()
+      .single();
+    if (gErr) throw gErr;
+
+    // Crear monedero del djangue
+    await supabase.from('djangue_wallets').insert({ group_id: group.id, balance: 0 });
+
+    // Actualizar wallet_id en el grupo
+    const { data: wallet } = await supabase
+      .from('djangue_wallets').select('id').eq('group_id', group.id).single();
+    await supabase.from('djangue_groups').update({ wallet_id: wallet.id }).eq('id', group.id);
+
+    // Agregar al owner como primer miembro (turno 1)
+    await supabase.from('djangue_members').insert({
+      group_id: group.id, user_id: userId, turn_order: 1, status: 'active',
+    });
+    await supabase.from('djangue_groups').update({ total_turns: 1 }).eq('id', group.id);
+
+    // Si hay secretario diferente al owner, agregarlo también
+    if (secretaryId && secretaryId !== userId) {
+      await supabase.from('djangue_members').insert({
+        group_id: group.id, user_id: secretaryId, turn_order: 2, status: 'active',
+      });
+      await supabase.from('djangue_groups').update({ total_turns: 2 }).eq('id', group.id);
+    }
+
+    res.status(201).json({ ...group, wallet_id: wallet.id });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── GET /api/djangue/:id — Detalle del grupo ──────────────────────
+app.get('/api/djangue/:id', auth, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const groupId = req.params.id;
+
+    const { data: group, error } = await supabase
+      .from('djangue_groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+    if (error || !group) return res.status(404).json({ message: 'Djangue no encontrado' });
+
+    // Verificar que el usuario es miembro, owner o secretario
+    const { data: myMember } = await supabase
+      .from('djangue_members')
+      .select('id, turn_order')
+      .eq('group_id', groupId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!myMember && group.owner_id !== userId && group.secretary_id !== userId)
+      return res.status(403).json({ message: 'No eres miembro de este djangue' });
+
+    // Obtener miembros con sus usuarios y estado de pago del turno actual
+    const { data: members } = await supabase
+      .from('djangue_members')
+      .select('id, turn_order, status, user_id, joined_at')
+      .eq('group_id', groupId)
+      .eq('status', 'active')
+      .order('turn_order');
+
+    const membersWithInfo = await Promise.all((members || []).map(async (m) => {
+      const { data: user } = await supabase
+        .from('users').select('id, full_name, phone, avatar_url').eq('id', m.user_id).single();
+      const { data: contrib } = await supabase
+        .from('djangue_contributions')
+        .select('status, amount, paid_at')
+        .eq('group_id', groupId)
+        .eq('user_id', m.user_id)
+        .eq('turn_number', group.current_turn)
+        .maybeSingle();
+      return {
+        ...m,
+        user,
+        paid_current_turn: contrib?.status === 'paid',
+        contribution: contrib || null,
+        is_current_beneficiary: m.turn_order === group.current_turn,
+      };
+    }));
+
+    // Monedero del djangue
+    const { data: wallet } = await supabase
+      .from('djangue_wallets').select('balance, currency').eq('group_id', groupId).single();
+
+    // Total cotizado este turno
+    const { data: contribs } = await supabase
+      .from('djangue_contributions')
+      .select('amount, status')
+      .eq('group_id', groupId)
+      .eq('turn_number', group.current_turn);
+
+    const totalPaidThisTurn = (contribs || [])
+      .filter(c => c.status === 'paid')
+      .reduce((sum, c) => sum + Number(c.amount), 0);
+
+    const expectedTotal = group.quota_amount * (membersWithInfo.length - 1); // todos menos el beneficiario
+
+    res.json({
+      ...group,
+      members: membersWithInfo,
+      wallet,
+      my_role: group.owner_id === userId ? 'owner' : group.secretary_id === userId ? 'secretary' : 'member',
+      my_turn_order: myMember?.turn_order ?? null,
+      is_my_turn: myMember?.turn_order === group.current_turn,
+      total_paid_this_turn: totalPaidThisTurn,
+      expected_total_this_turn: expectedTotal,
+      paid_count: (contribs || []).filter(c => c.status === 'paid').length,
+      pending_count: membersWithInfo.length - (contribs || []).filter(c => c.status === 'paid').length,
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── POST /api/djangue/:id/members — Agregar miembro ───────────────
+app.post('/api/djangue/:id/members', auth, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const groupId = req.params.id;
+    const { phone } = req.body;
+
+    if (!phone) return res.status(400).json({ message: 'Teléfono requerido' });
+
+    const { data: group } = await supabase
+      .from('djangue_groups').select('*').eq('id', groupId).single();
+    if (!group) return res.status(404).json({ message: 'Djangue no encontrado' });
+
+    // Solo owner o secretario pueden agregar
+    if (group.owner_id !== userId && group.secretary_id !== userId)
+      return res.status(403).json({ message: 'Solo el responsable o secretario pueden agregar miembros' });
+
+    // Buscar usuario por teléfono
+    const { data: newUser } = await supabase
+      .from('users').select('id, full_name, phone, avatar_url').eq('phone', phone).maybeSingle();
+    if (!newUser) return res.status(404).json({ message: 'Usuario no encontrado con ese teléfono' });
+
+    // Verificar que no sea ya miembro
+    const { data: existing } = await supabase
+      .from('djangue_members')
+      .select('id').eq('group_id', groupId).eq('user_id', newUser.id).maybeSingle();
+    if (existing) return res.status(409).json({ message: 'Este usuario ya es miembro del djangue' });
+
+    // Verificar capacidad
+    const { data: currentMembers } = await supabase
+      .from('djangue_members').select('id').eq('group_id', groupId).eq('status', 'active');
+    if ((currentMembers || []).length >= group.max_members)
+      return res.status(400).json({ message: `El djangue está lleno (máx. ${group.max_members} miembros)` });
+
+    const nextTurn = group.total_turns + 1;
+
+    const { data: member, error } = await supabase
+      .from('djangue_members')
+      .insert({ group_id: groupId, user_id: newUser.id, turn_order: nextTurn, status: 'active' })
+      .select().single();
+    if (error) throw error;
+
+    await supabase.from('djangue_groups')
+      .update({ total_turns: nextTurn })
+      .eq('id', groupId);
+
+    res.status(201).json({ member, user: newUser });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── POST /api/djangue/:id/pay — Pagar cuota del turno actual ──────
+app.post('/api/djangue/:id/pay', auth, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const groupId = req.params.id;
+
+    const { data: group } = await supabase
+      .from('djangue_groups').select('*').eq('id', groupId).single();
+    if (!group) return res.status(404).json({ message: 'Djangue no encontrado' });
+    if (group.status !== 'active') return res.status(400).json({ message: 'Este djangue no está activo' });
+
+    // Verificar que es miembro
+    const { data: member } = await supabase
+      .from('djangue_members')
+      .select('id, turn_order').eq('group_id', groupId).eq('user_id', userId).eq('status', 'active').maybeSingle();
+    if (!member) return res.status(403).json({ message: 'No eres miembro de este djangue' });
+
+    // El beneficiario del turno actual no paga
+    if (member.turn_order === group.current_turn)
+      return res.status(400).json({ message: 'Es tu turno de recibir, no de pagar' });
+
+    // Verificar que no haya pagado ya
+    const { data: existing } = await supabase
+      .from('djangue_contributions')
+      .select('id, status').eq('group_id', groupId).eq('user_id', userId)
+      .eq('turn_number', group.current_turn).maybeSingle();
+    if (existing?.status === 'paid')
+      return res.status(409).json({ message: 'Ya pagaste tu cuota para este turno' });
+
+    // Verificar saldo en monedero personal
+    const { data: wallet } = await supabase
+      .from('wallets').select('id, balance').eq('user_id', userId).single();
+    if (!wallet) return res.status(404).json({ message: 'Monedero no encontrado' });
+    if (Number(wallet.balance) < Number(group.quota_amount))
+      return res.status(400).json({ message: `Saldo insuficiente. Necesitas ${group.quota_amount} XAF` });
+
+    // Monedero del djangue
+    const { data: djangueWallet } = await supabase
+      .from('djangue_wallets').select('id, balance').eq('group_id', groupId).single();
+
+    // Descontar del monedero personal
+    await supabase.from('wallets')
+      .update({ balance: Number(wallet.balance) - Number(group.quota_amount) })
+      .eq('id', wallet.id);
+
+    // Agregar al monedero del djangue
+    await supabase.from('djangue_wallets')
+      .update({ balance: Number(djangueWallet.balance) + Number(group.quota_amount) })
+      .eq('id', djangueWallet.id);
+
+    // Registrar transacción en historial general
+    const { data: tx } = await supabase.from('transactions').insert({
+      user_id: userId,
+      type: 'djangue_contribution',
+      amount: -Number(group.quota_amount),
+      currency: group.currency,
+      description: `Cuota djangue "${group.name}" — Turno ${group.current_turn}`,
+      status: 'completed',
+    }).select('id').single();
+
+    // Registrar contribución
+    const { data: contrib, error: cErr } = await supabase
+      .from('djangue_contributions')
+      .upsert({
+        group_id: groupId,
+        member_id: member.id,
+        user_id: userId,
+        turn_number: group.current_turn,
+        amount: group.quota_amount,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        transaction_id: tx?.id,
+      }, { onConflict: 'group_id,member_id,turn_number' })
+      .select().single();
+    if (cErr) throw cErr;
+
+    // Verificar si todos pagaron → ejecutar payout automático
+    const { data: allMembers } = await supabase
+      .from('djangue_members').select('id, turn_order, user_id')
+      .eq('group_id', groupId).eq('status', 'active');
+
+    const nonBeneficiaries = (allMembers || []).filter(m => m.turn_order !== group.current_turn);
+
+    const { data: paidContribs } = await supabase
+      .from('djangue_contributions')
+      .select('user_id').eq('group_id', groupId)
+      .eq('turn_number', group.current_turn).eq('status', 'paid');
+
+    const allPaid = paidContribs?.length >= nonBeneficiaries.length;
+
+    if (allPaid) {
+      // Encontrar beneficiario
+      const beneficiary = (allMembers || []).find(m => m.turn_order === group.current_turn);
+      if (beneficiary) {
+        const payoutAmount = Number(djangueWallet.balance) + Number(group.quota_amount); // incluye este pago
+
+        // Transferir al monedero del beneficiario
+        const { data: benWallet } = await supabase
+          .from('wallets').select('id, balance').eq('user_id', beneficiary.user_id).single();
+
+        if (benWallet) {
+          await supabase.from('wallets')
+            .update({ balance: Number(benWallet.balance) + payoutAmount })
+            .eq('id', benWallet.id);
+
+          // Vaciar monedero del djangue
+          await supabase.from('djangue_wallets').update({ balance: 0 }).eq('group_id', groupId);
+
+          // Registrar payout
+          await supabase.from('djangue_payouts').insert({
+            group_id: groupId, beneficiary_id: beneficiary.user_id,
+            turn_number: group.current_turn, amount: payoutAmount,
+            status: 'completed', paid_at: new Date().toISOString(),
+          });
+
+          // Registrar transacción para el beneficiario
+          await supabase.from('transactions').insert({
+            user_id: beneficiary.user_id,
+            type: 'djangue_payout',
+            amount: payoutAmount,
+            currency: group.currency,
+            description: `Turno ${group.current_turn} djangue "${group.name}"`,
+            status: 'completed',
+          });
+
+          // Avanzar turno
+          const nextTurn = group.current_turn + 1;
+          const isCompleted = nextTurn > (allMembers || []).length;
+
+          await supabase.from('djangue_groups').update({
+            current_turn: isCompleted ? group.current_turn : nextTurn,
+            status: isCompleted ? 'completed' : 'active',
+            next_payout_at: isCompleted ? null : calcNextPayoutDate(group.frequency),
+          }).eq('id', groupId);
+        }
+      }
+    }
+
+    res.json({
+      ok: true,
+      contribution: contrib,
+      all_paid: allPaid,
+      new_balance: Number(wallet.balance) - Number(group.quota_amount),
+      message: allPaid
+        ? `¡Todos pagaron! El beneficiario recibió el fondo del turno ${group.current_turn}.`
+        : `Cuota pagada correctamente (${group.quota_amount} ${group.currency})`,
+    });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── GET /api/djangue/:id/contributions — Ver quién ha pagado ──────
+app.get('/api/djangue/:id/contributions', auth, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const groupId = req.params.id;
+
+    const { data: group } = await supabase
+      .from('djangue_groups').select('*').eq('id', groupId).single();
+    if (!group) return res.status(404).json({ message: 'Djangue no encontrado' });
+
+    // Verificar acceso
+    const { data: member } = await supabase
+      .from('djangue_members').select('id').eq('group_id', groupId).eq('user_id', userId).maybeSingle();
+    if (!member && group.owner_id !== userId && group.secretary_id !== userId)
+      return res.status(403).json({ message: 'Sin acceso' });
+
+    const turnNumber = req.query.turn ? Number(req.query.turn) : group.current_turn;
+
+    const { data: contribs } = await supabase
+      .from('djangue_contributions')
+      .select('*, users(full_name, phone, avatar_url)')
+      .eq('group_id', groupId)
+      .eq('turn_number', turnNumber)
+      .order('paid_at', { ascending: false });
+
+    res.json({ turn_number: turnNumber, contributions: contribs || [] });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// ── DELETE /api/djangue/:id — Cancelar djangue (solo owner) ───────
+app.delete('/api/djangue/:id', auth, async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const groupId = req.params.id;
+
+    const { data: group } = await supabase
+      .from('djangue_groups').select('owner_id').eq('id', groupId).single();
+    if (!group) return res.status(404).json({ message: 'Djangue no encontrado' });
+    if (group.owner_id !== userId) return res.status(403).json({ message: 'Solo el responsable puede cancelar' });
+
+    await supabase.from('djangue_groups').update({ status: 'cancelled' }).eq('id', groupId);
+    res.json({ ok: true, message: 'Djangue cancelado' });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
 module.exports = app;
 
 
